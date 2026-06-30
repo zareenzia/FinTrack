@@ -35,7 +35,7 @@
     </div>
 
     <div class="row mb-4">
-        <div class="col-md-3 mb-3">
+        <div class="col-md-2 mb-3">
             <div class="card border-success">
                 <div class="card-body">
                     <h6 class="card-title text-success">Total Income</h6>
@@ -43,7 +43,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3 mb-3">
+        <div class="col-md-2 mb-3">
             <div class="card border-danger">
                 <div class="card-body">
                     <h6 class="card-title text-danger">Total Expense</h6>
@@ -51,7 +51,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3 mb-3">
+        <div class="col-md-2 mb-3">
             <div class="card border-info">
                 <div class="card-body">
                     <h6 class="card-title text-info">Balance</h6>
@@ -59,11 +59,27 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3 mb-3">
+        <div class="col-md-2 mb-3">
+            <div class="card border-primary">
+                <div class="card-body">
+                    <h6 class="card-title text-primary">Savings Rate</h6>
+                    <h3 id="savings-rate">0.00%</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2 mb-3">
+            <div class="card border-secondary">
+                <div class="card-body">
+                    <h6 class="card-title text-secondary">Assets Value</h6>
+                    <h3 id="total-assets">$0.00</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2 mb-3">
             <div class="card border-warning">
                 <div class="card-body">
-                    <h6 class="card-title text-warning">Transactions</h6>
-                    <h3 id="transaction-count">0</h3>
+                    <h6 class="card-title text-warning">Net Worth</h6>
+                    <h3 id="net-worth">$0.00</h3>
                 </div>
             </div>
         </div>
@@ -140,7 +156,9 @@
             document.getElementById('total-income').textContent = '$' + Number(summary.total_income).toFixed(2);
             document.getElementById('total-expense').textContent = '$' + Number(summary.total_expense).toFixed(2);
             document.getElementById('balance').textContent = '$' + Number(summary.balance).toFixed(2);
-            document.getElementById('transaction-count').textContent = summary.transaction_count;
+            document.getElementById('savings-rate').textContent = Number(summary.savings_rate || 0).toFixed(2) + '%';
+            document.getElementById('total-assets').textContent = '$' + Number(summary.total_assets || 0).toFixed(2);
+            document.getElementById('net-worth').textContent = '$' + Number(summary.net_worth || 0).toFixed(2);
 
             const breakdown = await fetch('/api/analytics/category-breakdown').then(r => r.json());
             drawCategoryChart(breakdown);

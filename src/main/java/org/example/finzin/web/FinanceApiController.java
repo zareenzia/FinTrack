@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -37,8 +38,10 @@ public class FinanceApiController {
 
     private final AtomicLong categoryId = new AtomicLong(0);
     private final AtomicLong transactionId = new AtomicLong(0);
+    private final AtomicLong assetId = new AtomicLong(0);
     private final Map<Long, Category> categories = new LinkedHashMap<>();
     private final Map<Long, TransactionItem> transactions = new LinkedHashMap<>();
+    private final Map<Long, AssetItem> assets = new LinkedHashMap<>();
     private final ObjectMapper objectMapper = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
@@ -70,6 +73,35 @@ public class FinanceApiController {
         return ResponseEntity.status(HttpStatus.CREATED).body(category);
     }
 
+    @PutMapping("/categories/{id}")
+    public ResponseEntity<?> updateCategory(@PathVariable Long id, @RequestBody CategoryRequest request) {
+        Category existing = categories.get(id);
+        if (existing == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Category not found"));
+        }
+        if (request == null || request.name == null || request.name.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Category name is required"));
+        }
+
+        String updatedName = request.name.trim();
+        boolean duplicate = categories.values().stream()
+                .anyMatch(c -> !c.id().equals(id) && c.name().equalsIgnoreCase(updatedName));
+        if (duplicate) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Category name already exists"));
+        }
+
+        Category updated = new Category(
+                id,
+                updatedName,
+                request.description == null ? existing.description() : request.description,
+                request.color == null || request.color.isBlank() ? existing.color() : request.color,
+                request.icon == null || request.icon.isBlank() ? existing.icon() : request.icon
+        );
+        categories.put(id, updated);
+        persistData();
+        return ResponseEntity.ok(updated);
+    }
+
     @DeleteMapping("/categories/{id}")
     public ResponseEntity<?> deleteCategory(@PathVariable Long id) {
         if (!categories.containsKey(id)) {
@@ -77,6 +109,65 @@ public class FinanceApiController {
         }
         categories.remove(id);
         transactions.values().removeIf(t -> t.categoryId().equals(id));
+        persistData();
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/assets")
+    public List<AssetItem> getAssets() {
+        return assets.values().stream()
+                .sorted(Comparator.comparingLong(AssetItem::id))
+                .toList();
+    }
+
+    @PostMapping("/assets")
+    public ResponseEntity<?> createAsset(@RequestBody AssetRequest request) {
+        if (request == null || request.name == null || request.name.isBlank() || request.value == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Asset name and value are required"));
+        }
+
+        AssetItem asset = new AssetItem(
+                assetId.incrementAndGet(),
+                request.name.trim(),
+                request.type == null ? "General" : request.type,
+                request.description == null ? "" : request.description,
+                request.value,
+                LocalDateTime.now()
+        );
+        assets.put(asset.id(), asset);
+        persistData();
+        return ResponseEntity.status(HttpStatus.CREATED).body(asset);
+    }
+
+    @PutMapping("/assets/{id}")
+    public ResponseEntity<?> updateAsset(@PathVariable Long id, @RequestBody AssetRequest request) {
+        AssetItem existing = assets.get(id);
+        if (existing == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Asset not found"));
+        }
+        if (request == null || request.name == null || request.name.isBlank() || request.value == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Asset name and value are required"));
+        }
+
+        AssetItem updated = new AssetItem(
+                id,
+                request.name.trim(),
+                request.type == null ? existing.type() : request.type,
+                request.description == null ? existing.description() : request.description,
+                request.value,
+                LocalDateTime.now()
+        );
+        assets.put(id, updated);
+        persistData();
+        return ResponseEntity.ok(updated);
+    }
+
+    @DeleteMapping("/assets/{id}")
+    public ResponseEntity<?> deleteAsset(@PathVariable Long id) {
+        if (!assets.containsKey(id)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Asset not found"));
+        }
+        assets.remove(id);
         persistData();
         return ResponseEntity.noContent().build();
     }
@@ -142,19 +233,34 @@ public class FinanceApiController {
 
     @GetMapping("/analytics/summary")
     public Map<String, Object> summary() {
-        double income = transactions.values().stream()
-                .filter(t -> t.transactionType().equals("income"))
-                .mapToDouble(TransactionItem::amount)
-                .sum();
-        double expense = transactions.values().stream()
-                .filter(t -> t.transactionType().equals("expense"))
-                .mapToDouble(TransactionItem::amount)
-                .sum();
+        double income = getTotalIncome();
+        double expense = getTotalExpense();
+        double savings = income - expense;
+        double totalAssets = getTotalAssets();
+        double savingsRate = income == 0 ? 0 : (savings / income) * 100;
         return Map.of(
                 "total_income", income,
                 "total_expense", expense,
-                "balance", income - expense,
+                "balance", savings,
+                "total_savings", savings,
+                "savings_rate", savingsRate,
+                "total_assets", totalAssets,
+                "net_worth", savings + totalAssets,
                 "transaction_count", transactions.size()
+        );
+    }
+
+    @GetMapping("/analytics/savings")
+    public Map<String, Object> savings() {
+        double income = getTotalIncome();
+        double expense = getTotalExpense();
+        double totalSavings = income - expense;
+        double savingsRate = income == 0 ? 0 : (totalSavings / income) * 100;
+        return Map.of(
+                "total_income", income,
+                "total_expense", expense,
+                "total_savings", totalSavings,
+                "savings_rate", savingsRate
         );
     }
 
@@ -235,6 +341,26 @@ public class FinanceApiController {
         );
     }
 
+    private double getTotalIncome() {
+        return transactions.values().stream()
+                .filter(t -> t.transactionType().equals("income"))
+                .mapToDouble(TransactionItem::amount)
+                .sum();
+    }
+
+    private double getTotalExpense() {
+        return transactions.values().stream()
+                .filter(t -> t.transactionType().equals("expense"))
+                .mapToDouble(TransactionItem::amount)
+                .sum();
+    }
+
+    private double getTotalAssets() {
+        return assets.values().stream()
+                .mapToDouble(AssetItem::value)
+                .sum();
+    }
+
     private LocalDateTime parseDate(String dateString) {
         if (dateString == null || dateString.isBlank()) {
             return LocalDateTime.now();
@@ -301,14 +427,31 @@ public class FinanceApiController {
                         ));
                     }
                 }
+                JsonNode assetNodes = root.path("assets");
+                if (assetNodes.isArray()) {
+                    for (JsonNode node : assetNodes) {
+                        Long id = node.path("id").asLong();
+                        String name = node.path("name").asText("");
+                        if (name.isBlank()) {
+                            continue;
+                        }
+                        String type = node.path("type").asText("General");
+                        String description = node.path("description").asText("");
+                        Double value = node.path("value").asDouble();
+                        String updatedAt = node.has("updated_at") ? node.path("updated_at").asText("") : node.path("updatedAt").asText("");
+                        assets.put(id, new AssetItem(id, name, type, description, value, parseDate(updatedAt)));
+                    }
+                }
                 categoryId.set(categories.keySet().stream().mapToLong(Long::longValue).max().orElse(0));
                 transactionId.set(transactions.keySet().stream().mapToLong(Long::longValue).max().orElse(0));
+                assetId.set(assets.keySet().stream().mapToLong(Long::longValue).max().orElse(0));
                 if (!categories.isEmpty()) {
                     return;
                 }
             } catch (IOException ignored) {
                 categories.clear();
                 transactions.clear();
+                assets.clear();
             }
         }
 
@@ -333,6 +476,17 @@ public class FinanceApiController {
                         t.transactionType(),
                         t.date().toString(),
                         t.createdAt().toString()
+                ));
+            }
+            data.assets = new ArrayList<>();
+            for (AssetItem a : assets.values()) {
+                data.assets.add(new AssetPersisted(
+                        a.id(),
+                        a.name(),
+                        a.type(),
+                        a.description(),
+                        a.value(),
+                        a.updatedAt().toString()
                 ));
             }
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(DATA_PATH.toFile(), data);
@@ -377,9 +531,28 @@ public class FinanceApiController {
     ) {
     }
 
+    private record AssetItem(
+            Long id,
+            String name,
+            String type,
+            String description,
+            Double value,
+            LocalDateTime updatedAt
+    ) {
+    }
+
+    private record AssetRequest(
+            String name,
+            String type,
+            String description,
+            Double value
+    ) {
+    }
+
     private static class DataStore {
         public List<Category> categories;
         public List<TransactionPersisted> transactions;
+        public List<AssetPersisted> assets;
 
         public DataStore() {
         }
@@ -393,6 +566,16 @@ public class FinanceApiController {
             String transaction_type,
             String date,
             String created_at
+    ) {
+    }
+
+    private record AssetPersisted(
+            Long id,
+            String name,
+            String type,
+            String description,
+            Double value,
+            String updated_at
     ) {
     }
 }
