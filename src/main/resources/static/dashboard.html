@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - FinTrack</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">
+            <i class="fas fa-wallet"></i> FinTrack
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link active" href="/dashboard">Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" href="/transactions">Transactions</a></li>
+                <li class="nav-item"><a class="nav-link" href="#">Settings</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h2 class="mb-4"><i class="fas fa-chart-pie"></i> Dashboard</h2>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card border-success">
+                <div class="card-body">
+                    <h6 class="card-title text-success">Total Income</h6>
+                    <h3 id="total-income">$0.00</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-danger">
+                <div class="card-body">
+                    <h6 class="card-title text-danger">Total Expense</h6>
+                    <h3 id="total-expense">$0.00</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-info">
+                <div class="card-body">
+                    <h6 class="card-title text-info">Balance</h6>
+                    <h3 id="balance">$0.00</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-warning">
+                <div class="card-body">
+                    <h6 class="card-title text-warning">Transactions</h6>
+                    <h3 id="transaction-count">0</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="fas fa-pie-chart"></i> Expense by Category</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="fas fa-line-chart"></i> Monthly Trend</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="monthlyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="fas fa-history"></i> Recent Transactions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th>Category</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                            </tr>
+                            </thead>
+                            <tbody id="recent-tx-body">
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">Loading...</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="footer mt-5 py-3 bg-light text-center">
+    <div class="container">
+        <span class="text-muted">© 2024 FinTrack - Personal Financial Tracker</span>
+    </div>
+</footer>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        loadDashboard();
+    });
+
+    async function loadDashboard() {
+        try {
+            const summary = await fetch('/api/analytics/summary').then(r => r.json());
+            document.getElementById('total-income').textContent = '$' + Number(summary.total_income).toFixed(2);
+            document.getElementById('total-expense').textContent = '$' + Number(summary.total_expense).toFixed(2);
+            document.getElementById('balance').textContent = '$' + Number(summary.balance).toFixed(2);
+            document.getElementById('transaction-count').textContent = summary.transaction_count;
+
+            const breakdown = await fetch('/api/analytics/category-breakdown').then(r => r.json());
+            drawCategoryChart(breakdown);
+
+            const monthly = await fetch('/api/analytics/monthly').then(r => r.json());
+            drawMonthlyChart(monthly);
+
+            const transactions = await fetch('/api/transactions?limit=10').then(r => r.json());
+            drawRecentTransactions(transactions);
+        } catch (error) {
+            console.error('Error loading dashboard:', error);
+        }
+    }
+
+    function drawCategoryChart(data) {
+        const ctx = document.getElementById('categoryChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.map(d => d.category),
+                datasets: [{
+                    data: data.map(d => d.total),
+                    backgroundColor: data.map(d => d.color || '#3498db')
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {position: 'bottom'}
+                }
+            }
+        });
+    }
+
+    function drawMonthlyChart(data) {
+        const months = {};
+        data.forEach(d => {
+            if (!months[d.month]) months[d.month] = {income: 0, expense: 0};
+            if (d.type === 'income') months[d.month].income = Number(d.total);
+            else months[d.month].expense = Number(d.total);
+        });
+
+        const ctx = document.getElementById('monthlyChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Object.keys(months),
+                datasets: [
+                    {
+                        label: 'Income',
+                        data: Object.values(months).map(m => m.income),
+                        borderColor: '#28a745',
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Expense',
+                        data: Object.values(months).map(m => m.expense),
+                        borderColor: '#dc3545',
+                        tension: 0.1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {position: 'top'}
+                }
+            }
+        });
+    }
+
+    function drawRecentTransactions(transactions) {
+        const tbody = document.getElementById('recent-tx-body');
+        tbody.innerHTML = transactions.map(tx => `
+        <tr>
+            <td>${new Date(tx.date).toLocaleDateString()}</td>
+            <td>${tx.description}</td>
+            <td><span class="badge bg-secondary">${tx.category_name}</span></td>
+            <td>
+                <span class="badge ${tx.transaction_type === 'income' ? 'bg-success' : 'bg-danger'}">
+                    ${tx.transaction_type.charAt(0).toUpperCase() + tx.transaction_type.slice(1)}
+                </span>
+            </td>
+            <td class="text-end ${tx.transaction_type === 'income' ? 'text-success fw-bold' : 'text-danger fw-bold'}">
+                ${tx.transaction_type === 'income' ? '+' : '-'}$${Number(tx.amount).toFixed(2)}
+            </td>
+        </tr>
+    `).join('') || '<tr><td colspan="5" class="text-center text-muted">No transactions yet</td></tr>';
+    }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</body>
+</html>

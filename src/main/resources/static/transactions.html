@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transactions - FinTrack</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div id="toastContainer" class="notification-toast-container" aria-live="polite" aria-atomic="true"></div>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">
+            <i class="fas fa-wallet"></i> FinTrack
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link" href="/dashboard">Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link active" href="/transactions">Transactions</a></li>
+                <li class="nav-item"><a class="nav-link" href="#">Settings</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h2 class="mb-4"><i class="fas fa-exchange-alt"></i> Transactions</h2>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0"><i class="fas fa-plus"></i> Add New Transaction</h6>
+                </div>
+                <div class="card-body">
+                    <form id="transactionForm">
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <input type="text" class="form-control" id="description" required placeholder="e.g., Grocery shopping">
+                        </div>
+                        <div class="mb-3">
+                            <label for="amount" class="form-label">Amount</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="amount" step="0.01" required placeholder="0.00">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="category" class="form-label">Category</label>
+                            <select class="form-select" id="category" required>
+                                <option value="">Select or create a category</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="type" class="form-label">Type</label>
+                            <select class="form-select" id="type" required>
+                                <option value="expense">Expense</option>
+                                <option value="income">Income</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="date" class="form-label">Date</label>
+                            <input type="date" class="form-control" id="date" required>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="fas fa-save"></i> Add Transaction
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="fas fa-tags"></i> Manage Categories</h6>
+                </div>
+                <div class="card-body">
+                    <form id="categoryForm">
+                        <div class="mb-3">
+                            <label for="catName" class="form-label">Category Name</label>
+                            <input type="text" class="form-control" id="catName" required placeholder="e.g., Groceries">
+                        </div>
+                        <div class="mb-3">
+                            <label for="catColor" class="form-label">Color</label>
+                            <input type="color" class="form-control form-control-color" id="catColor" value="#3498db">
+                        </div>
+                        <button type="submit" class="btn btn-info w-100">
+                            <i class="fas fa-plus"></i> Create Category
+                        </button>
+                    </form>
+                    <div id="categoriesList" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="fas fa-list"></i> All Transactions</h6>
+                </div>
+                <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                    <div id="transactionsList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="footer mt-5 py-3 bg-light text-center">
+    <div class="container">
+        <span class="text-muted">© 2024 FinTrack - Personal Financial Tracker</span>
+    </div>
+</footer>
+
+<script>
+    document.getElementById('date').valueAsDate = new Date();
+
+    document.addEventListener('DOMContentLoaded', function () {
+        loadCategories();
+        loadTransactions();
+    });
+
+    document.getElementById('categoryForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const category = {
+            name: document.getElementById('catName').value,
+            color: document.getElementById('catColor').value,
+            icon: 'tag'
+        };
+
+        try {
+            const response = await fetch('/api/categories', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(category)
+            });
+            if (response.ok) {
+                document.getElementById('categoryForm').reset();
+                loadCategories();
+                showTopNotification('Category created successfully.', 'success');
+            } else {
+                const errorData = await response.json().catch(() => null);
+                showTopNotification(errorData?.error || 'Error creating category.', 'error');
+            }
+        } catch (error) {
+            showTopNotification('Unable to create category right now.', 'error');
+        }
+    });
+
+    async function loadCategories() {
+        try {
+            const response = await fetch('/api/categories');
+            const categories = await response.json();
+
+            const select = document.getElementById('category');
+            select.innerHTML = '<option value="">Select a category</option>';
+            categories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat.id;
+                option.textContent = cat.name;
+                select.appendChild(option);
+            });
+
+            const list = document.getElementById('categoriesList');
+            list.innerHTML = categories.map(cat => `
+                <span class="badge" style="background:${cat.color}">
+                    ${cat.name}
+                    <button type="button" onclick="deleteCategory(${cat.id})">&times;</button>
+                </span>
+            `).join('');
+        } catch (error) {
+            showTopNotification('Unable to load categories.', 'error');
+        }
+    }
+
+    async function deleteCategory(id) {
+        try {
+            const response = await fetch(`/api/categories/${id}`, {method: 'DELETE'});
+            if (response.ok) {
+                loadCategories();
+                loadTransactions();
+                showTopNotification('Category deleted successfully.', 'success');
+            } else {
+                const errorData = await response.json().catch(() => null);
+                showTopNotification(errorData?.error || 'Error deleting category.', 'error');
+            }
+        } catch (error) {
+            showTopNotification('Unable to delete category right now.', 'error');
+        }
+    }
+
+    document.getElementById('transactionForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const transaction = {
+            description: document.getElementById('description').value,
+            amount: parseFloat(document.getElementById('amount').value),
+            category_id: parseInt(document.getElementById('category').value, 10),
+            transaction_type: document.getElementById('type').value,
+            date: document.getElementById('date').value
+        };
+
+        try {
+            const response = await fetch('/api/transactions', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(transaction)
+            });
+
+            if (response.ok) {
+                document.getElementById('transactionForm').reset();
+                document.getElementById('date').valueAsDate = new Date();
+                loadTransactions();
+                showTopNotification('Transaction added.', 'success');
+            } else {
+                showTopNotification('Failed to add transaction.', 'error');
+            }
+        } catch (error) {
+            showTopNotification('Unable to add transaction right now.', 'error');
+        }
+    });
+
+    async function loadTransactions() {
+        try {
+            const response = await fetch('/api/transactions');
+            const transactions = await response.json();
+            const list = document.getElementById('transactionsList');
+            if (!transactions.length) {
+                list.innerHTML = '<p class="text-muted">No transactions yet</p>';
+                return;
+            }
+
+            list.innerHTML = transactions.map(tx => `
+            <div class="card mb-2">
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">${tx.description}</h6>
+                            <small class="text-muted">${new Date(tx.date).toLocaleDateString()} • ${tx.category_name}</small>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold ${tx.transaction_type === 'income' ? 'text-success' : 'text-danger'}">
+                                ${tx.transaction_type === 'income' ? '+' : '-'}$${Number(tx.amount).toFixed(2)}
+                            </div>
+                            <button class="btn btn-sm btn-danger" onclick="deleteTransaction(${tx.id})">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        } catch (error) {
+            showTopNotification('Unable to load transactions.', 'error');
+        }
+    }
+
+    async function deleteTransaction(id) {
+        try {
+            const response = await fetch(`/api/transactions/${id}`, {method: 'DELETE'});
+            if (response.ok) {
+                loadTransactions();
+                showTopNotification('Transaction deleted.', 'success');
+            } else {
+                showTopNotification('Failed to delete transaction.', 'error');
+            }
+        } catch (error) {
+            showTopNotification('Unable to delete transaction right now.', 'error');
+        }
+    }
+
+    function showTopNotification(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `notification-toast notification-${type}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+        requestAnimationFrame(() => toast.classList.add('show'));
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 5000);
+    }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
