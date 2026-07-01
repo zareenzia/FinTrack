@@ -1,20 +1,20 @@
 package org.example.finzin.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 @Entity
-@Table(name = "categories")
+@Table(name = "categories", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"userId", "name"}, name = "uk_user_category_name")
+})
 public class CategoryEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = true)
+    private Long userId;
+
+    @Column(nullable = false)
     private String name;
 
     @Column(columnDefinition = "TEXT")
@@ -29,7 +29,8 @@ public class CategoryEntity {
     public CategoryEntity() {
     }
 
-    public CategoryEntity(String name, String description, String color, String icon) {
+    public CategoryEntity(Long userId, String name, String description, String color, String icon) {
+        this.userId = userId;
         this.name = name;
         this.description = description;
         this.color = color;
@@ -42,6 +43,14 @@ public class CategoryEntity {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public String getName() {

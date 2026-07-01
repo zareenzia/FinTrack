@@ -165,6 +165,10 @@
                         <li><a class="dropdown-item disabled" href="#">
                             <i class="fas fa-cogs"></i> System Settings (Coming Soon)
                         </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="#" onclick="logout()">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a></li>
                     </ul>
                 </li>
                 <li class="nav-item">
@@ -518,5 +522,6 @@
         return text ? text.replace(/[&<>"']/g, m => map[m]) : '';
     }
 </script>
+<script src="/js/auth-ui.js"></script>
 </body>
 </html>

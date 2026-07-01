@@ -51,11 +51,12 @@ public class DataMigrationRunner implements ApplicationRunner {
         JsonNode root = objectMapper.readTree(DATA_PATH.toFile());
         Map<Long, CategoryEntity> categoryMap = new HashMap<>();
 
-        // Migrate categories
+        // Migrate categories (assign to Leah user with id=1)
         JsonNode categoryNodes = root.path("categories");
         if (categoryNodes.isArray()) {
             for (JsonNode node : categoryNodes) {
                 CategoryEntity entity = new CategoryEntity(
+                        1L,  // Leah user ID
                         node.path("name").asText(""),
                         node.path("description").asText(""),
                         node.path("color").asText("#3498db"),
@@ -67,7 +68,7 @@ public class DataMigrationRunner implements ApplicationRunner {
             }
         }
 
-        // Migrate transactions
+        // Migrate transactions (assign to Leah user with id=1)
         JsonNode transactionNodes = root.path("transactions");
         if (transactionNodes.isArray()) {
             for (JsonNode node : transactionNodes) {
@@ -76,6 +77,7 @@ public class DataMigrationRunner implements ApplicationRunner {
 
                 if (category != null) {
                     TransactionEntity entity = new TransactionEntity(
+                            1L,  // Leah user ID
                             node.path("amount").asDouble(),
                             node.path("description").asText(""),
                             category,
@@ -89,11 +91,12 @@ public class DataMigrationRunner implements ApplicationRunner {
             }
         }
 
-        // Migrate assets
+        // Migrate assets (assign to Leah user with id=1)
         JsonNode assetNodes = root.path("assets");
         if (assetNodes.isArray()) {
             for (JsonNode node : assetNodes) {
                 AssetEntity entity = new AssetEntity(
+                        1L,  // Leah user ID
                         node.path("name").asText(""),
                         node.path("type").asText("General"),
                         node.path("description").asText(""),

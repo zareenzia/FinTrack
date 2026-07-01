@@ -1,5 +1,6 @@
 package org.example.finzin.web;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.example.finzin.entity.AssetEntity;
 import org.example.finzin.entity.CategoryEntity;
 import org.example.finzin.entity.NoteEntity;
@@ -50,70 +51,82 @@ public class FinanceApiController {
         this.noteRepository = noteRepository;
         this.todoRepository = todoRepository;
     }
+    
+    private Long getUserId(HttpServletRequest request) {
+        Object userId = request.getAttribute("userId");
+        return userId != null ? (Long) userId : 1L; // Default to Leah (user 1) if not authenticated
+    }
 
     // ============== CATEGORY ENDPOINTS ==============
     @GetMapping("/categories")
-    public List<Map<String, Object>> getCategories() {
-        return categoryRepository.findAll().stream()
+    public List<Map<String, Object>> getCategories(HttpServletRequest request) {
+        Long userId = getUserId(request);
+        return categoryRepository.findByUserId(userId).stream()
                 .sorted(Comparator.comparingLong(CategoryEntity::getId))
                 .map(this::toCategoryResponse)
                 .collect(Collectors.toList());
     }
 
     @PostMapping("/categories")
-    public ResponseEntity<?> createCategory(@RequestBody CategoryRequest request) {
-        if (request == null || request.name == null || request.name.isBlank()) {
+    public ResponseEntity<?> createCategory(HttpServletRequest request, @RequestBody CategoryRequest body) {
+        Long userId = getUserId(request);
+        
+        if (body == null || body.name == null || body.name.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Category name is required"));
         }
 
-        if (categoryRepository.existsByNameIgnoreCase(request.name.trim())) {
+        if (categoryRepository.existsByUserIdAndNameIgnoreCase(userId, body.name.trim())) {
             return ResponseEntity.badRequest().body(Map.of("error", "Category name already exists"));
         }
 
         CategoryEntity entity = new CategoryEntity(
-                request.name.trim(),
-                request.description == null ? "" : request.description,
-                request.color == null || request.color.isBlank() ? "#3498db" : request.color,
-                request.icon == null || request.icon.isBlank() ? "tag" : request.icon
+                userId,
+                body.name.trim(),
+                body.description == null ? "" : body.description,
+                body.color == null || body.color.isBlank() ? "#3498db" : body.color,
+                body.icon == null || body.icon.isBlank() ? "tag" : body.icon
         );
         CategoryEntity saved = categoryRepository.save(entity);
         return ResponseEntity.status(HttpStatus.CREATED).body(toCategoryResponse(saved));
     }
 
     @PutMapping("/categories/{id}")
-    public ResponseEntity<?> updateCategory(@PathVariable Long id, @RequestBody CategoryRequest request) {
+    public ResponseEntity<?> updateCategory(HttpServletRequest request, @PathVariable Long id, @RequestBody CategoryRequest body) {
+        Long userId = getUserId(request);
         CategoryEntity existing = categoryRepository.findById(id).orElse(null);
-        if (existing == null) {
+        if (existing == null || !existing.getUserId().equals(userId)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Category not found"));
         }
-        if (request == null || request.name == null || request.name.isBlank()) {
+        if (body == null || body.name == null || body.name.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Category name is required"));
         }
 
-        String updatedName = request.name.trim();
-        boolean duplicate = categoryRepository.findAll().stream()
+        String updatedName = body.name.trim();
+        boolean duplicate = categoryRepository.findByUserId(userId).stream()
                 .anyMatch(c -> !c.getId().equals(id) && c.getName().equalsIgnoreCase(updatedName));
         if (duplicate) {
             return ResponseEntity.badRequest().body(Map.of("error", "Category name already exists"));
         }
 
         existing.setName(updatedName);
-        if (request.description != null) {
-            existing.setDescription(request.description);
+        if (body.description != null) {
+            existing.setDescription(body.description);
         }
-        if (request.color != null && !request.color.isBlank()) {
-            existing.setColor(request.color);
+        if (body.color != null && !body.color.isBlank()) {
+            existing.setColor(body.color);
         }
-        if (request.icon != null && !request.icon.isBlank()) {
-            existing.setIcon(request.icon);
+        if (body.icon != null && !body.icon.isBlank()) {
+            existing.setIcon(body.icon);
         }
         CategoryEntity updated = categoryRepository.save(existing);
         return ResponseEntity.ok(toCategoryResponse(updated));
     }
 
     @DeleteMapping("/categories/{id}")
-    public ResponseEntity<?> deleteCategory(@PathVariable Long id) {
-        if (!categoryRepository.existsById(id)) {
+    public ResponseEntity<?> deleteCategory(HttpServletRequest request, @PathVariable Long id) {
+        Long userId = getUserId(request);
+        CategoryEntity entity = categoryRepository.findById(id).orElse(null);
+        if (entity == null || !entity.getUserId().equals(userId)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Category not found"));
         }
         categoryRepository.deleteById(id);
@@ -122,24 +135,28 @@ public class FinanceApiController {
 
     // ============== ASSET ENDPOINTS ==============
     @GetMapping("/assets")
-    public List<Map<String, Object>> getAssets() {
-        return assetRepository.findAll().stream()
+    public List<Map<String, Object>> getAssets(HttpServletRequest request) {
+        Long userId = getUserId(request);
+        return assetRepository.findByUserId(userId).stream()
                 .sorted(Comparator.comparingLong(AssetEntity::getId))
                 .map(this::toAssetResponse)
                 .collect(Collectors.toList());
     }
 
     @PostMapping("/assets")
-    public ResponseEntity<?> createAsset(@RequestBody AssetRequest request) {
-        if (request == null || request.name == null || request.name.isBlank() || request.value == null) {
+    public ResponseEntity<?> createAsset(HttpServletRequest request, @RequestBody AssetRequest body) {
+        Long userId = getUserId(request);
+        
+        if (body == null || body.name == null || body.name.isBlank() || body.value == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "Asset name and value are required"));
         }
 
         AssetEntity entity = new AssetEntity(
-                request.name.trim(),
-                request.type == null ? "General" : request.type,
-                request.description == null ? "" : request.description,
-                request.value,
+                userId,
+                body.name.trim(),
+                body.type == null ? "General" : body.type,
+                body.description == null ? "" : body.description,
+                body.value,
                 LocalDateTime.now()
         );
         AssetEntity saved = assetRepository.save(entity);
@@ -147,31 +164,34 @@ public class FinanceApiController {
     }
 
     @PutMapping("/assets/{id}")
-    public ResponseEntity<?> updateAsset(@PathVariable Long id, @RequestBody AssetRequest request) {
+    public ResponseEntity<?> updateAsset(HttpServletRequest request, @PathVariable Long id, @RequestBody AssetRequest body) {
+        Long userId = getUserId(request);
         AssetEntity existing = assetRepository.findById(id).orElse(null);
-        if (existing == null) {
+        if (existing == null || !existing.getUserId().equals(userId)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Asset not found"));
         }
-        if (request == null || request.name == null || request.name.isBlank() || request.value == null) {
+        if (body == null || body.name == null || body.name.isBlank() || body.value == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "Asset name and value are required"));
         }
 
-        existing.setName(request.name.trim());
-        if (request.type != null) {
-            existing.setType(request.type);
+        existing.setName(body.name.trim());
+        if (body.type != null) {
+            existing.setType(body.type);
         }
-        if (request.description != null) {
-            existing.setDescription(request.description);
+        if (body.description != null) {
+            existing.setDescription(body.description);
         }
-        existing.setValue(request.value);
+        existing.setValue(body.value);
         existing.setCreatedAt(LocalDateTime.now());
         AssetEntity updated = assetRepository.save(existing);
         return ResponseEntity.ok(toAssetResponse(updated));
     }
 
     @DeleteMapping("/assets/{id}")
-    public ResponseEntity<?> deleteAsset(@PathVariable Long id) {
-        if (!assetRepository.existsById(id)) {
+    public ResponseEntity<?> deleteAsset(HttpServletRequest request, @PathVariable Long id) {
+        Long userId = getUserId(request);
+        AssetEntity entity = assetRepository.findById(id).orElse(null);
+        if (entity == null || !entity.getUserId().equals(userId)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Asset not found"));
         }
         assetRepository.deleteById(id);
@@ -181,11 +201,13 @@ public class FinanceApiController {
     // ============== TRANSACTION ENDPOINTS ==============
     @GetMapping("/transactions")
     public List<Map<String, Object>> getTransactions(
+            HttpServletRequest request,
             @RequestParam(required = false, name = "category_id") Long categoryIdFilter,
             @RequestParam(required = false, name = "type") String type,
             @RequestParam(required = false, defaultValue = "100") Integer limit
     ) {
-        List<TransactionEntity> transactions = transactionRepository.findAll();
+        Long userId = getUserId(request);
+        List<TransactionEntity> transactions = transactionRepository.findByUserId(userId);
         
         return transactions.stream()
                 .filter(t -> categoryIdFilter == null || t.getCategory().getId().equals(categoryIdFilter))
@@ -197,31 +219,34 @@ public class FinanceApiController {
     }
 
     @PostMapping("/transactions")
-    public ResponseEntity<?> createTransaction(@RequestBody TransactionRequest request) {
-        if (request == null
-                || request.description == null
-                || request.description.isBlank()
-                || request.amount == null
-                || request.category_id == null
-                || request.transaction_type == null
-                || request.transaction_type.isBlank()) {
+    public ResponseEntity<?> createTransaction(HttpServletRequest request, @RequestBody TransactionRequest body) {
+        Long userId = getUserId(request);
+        
+        if (body == null
+                || body.description == null
+                || body.description.isBlank()
+                || body.amount == null
+                || body.category_id == null
+                || body.transaction_type == null
+                || body.transaction_type.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Missing required fields"));
         }
 
-        CategoryEntity category = categoryRepository.findById(request.category_id).orElse(null);
-        if (category == null) {
+        CategoryEntity category = categoryRepository.findById(body.category_id).orElse(null);
+        if (category == null || !category.getUserId().equals(userId)) {
             return ResponseEntity.badRequest().body(Map.of("error", "Invalid category"));
         }
 
-        String normalizedType = request.transaction_type.toLowerCase(Locale.ROOT);
+        String normalizedType = body.transaction_type.toLowerCase(Locale.ROOT);
         if (!normalizedType.equals("income") && !normalizedType.equals("expense")) {
             return ResponseEntity.badRequest().body(Map.of("error", "transaction_type must be income or expense"));
         }
 
-        LocalDateTime date = parseDate(request.date);
+        LocalDateTime date = parseDate(body.date);
         TransactionEntity entity = new TransactionEntity(
-                request.amount,
-                request.description.trim(),
+                userId,
+                body.amount,
+                body.description.trim(),
                 category,
                 normalizedType,
                 date,
@@ -232,8 +257,10 @@ public class FinanceApiController {
     }
 
     @DeleteMapping("/transactions/{id}")
-    public ResponseEntity<?> deleteTransaction(@PathVariable Long id) {
-        if (!transactionRepository.existsById(id)) {
+    public ResponseEntity<?> deleteTransaction(HttpServletRequest request, @PathVariable Long id) {
+        Long userId = getUserId(request);
+        TransactionEntity entity = transactionRepository.findById(id).orElse(null);
+        if (entity == null || !entity.getUserId().equals(userId)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Transaction not found"));
         }
         transactionRepository.deleteById(id);
@@ -242,26 +269,30 @@ public class FinanceApiController {
 
     // ============== NOTE ENDPOINTS ==============
     @GetMapping("/notes")
-    public List<Map<String, Object>> getNotes(@RequestParam(required = false) String search) {
+    public List<Map<String, Object>> getNotes(HttpServletRequest request, @RequestParam(required = false) String search) {
+        Long userId = getUserId(request);
         List<NoteEntity> notes = search != null && !search.isBlank() ? 
-                noteRepository.searchNotes(search) : 
-                noteRepository.findByArchivedFalseOrderByPinnedDescUpdatedAtDesc(false);
+                noteRepository.searchByUserIdAndContent(userId, search) : 
+                noteRepository.findByUserIdAndArchivedFalseOrderByPinnedDescUpdatedAtDesc(userId);
         
         return notes.stream().map(this::toNoteResponse).collect(Collectors.toList());
     }
 
     @PostMapping("/notes")
-    public ResponseEntity<?> createNote(@RequestBody NoteRequest request) {
-        if (request.title == null || request.title.isBlank()) {
+    public ResponseEntity<?> createNote(HttpServletRequest request, @RequestBody NoteRequest body) {
+        Long userId = getUserId(request);
+        
+        if (body.title == null || body.title.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Title is required"));
         }
 
         NoteEntity entity = new NoteEntity();
-        entity.setTitle(request.title.trim());
-        entity.setContent(request.content != null ? request.content : "");
-        entity.setColor(request.color != null ? request.color : "#FFE082");
-        entity.setTags(request.tags != null ? request.tags : "");
-        entity.setPinned(request.pinned != null ? request.pinned : false);
+        entity.setUserId(userId);
+        entity.setTitle(body.title.trim());
+        entity.setContent(body.content != null ? body.content : "");
+        entity.setColor(body.color != null ? body.color : "#FFE082");
+        entity.setTags(body.tags != null ? body.tags : "");
+        entity.setPinned(body.pinned != null ? body.pinned : false);
         entity.setArchived(false);
 
         NoteEntity saved = noteRepository.save(entity);
@@ -269,29 +300,30 @@ public class FinanceApiController {
     }
 
     @PutMapping("/notes/{id}")
-    public ResponseEntity<?> updateNote(@PathVariable Long id, @RequestBody NoteRequest request) {
+    public ResponseEntity<?> updateNote(HttpServletRequest request, @PathVariable Long id, @RequestBody NoteRequest body) {
+        Long userId = getUserId(request);
         NoteEntity entity = noteRepository.findById(id).orElse(null);
-        if (entity == null) {
+        if (entity == null || !entity.getUserId().equals(userId)) {
             return ResponseEntity.notFound().build();
         }
 
-        if (request.title != null && !request.title.isBlank()) {
-            entity.setTitle(request.title.trim());
+        if (body.title != null && !body.title.isBlank()) {
+            entity.setTitle(body.title.trim());
         }
-        if (request.content != null) {
-            entity.setContent(request.content);
+        if (body.content != null) {
+            entity.setContent(body.content);
         }
-        if (request.color != null) {
-            entity.setColor(request.color);
+        if (body.color != null) {
+            entity.setColor(body.color);
         }
-        if (request.tags != null) {
-            entity.setTags(request.tags);
+        if (body.tags != null) {
+            entity.setTags(body.tags);
         }
-        if (request.pinned != null) {
-            entity.setPinned(request.pinned);
+        if (body.pinned != null) {
+            entity.setPinned(body.pinned);
         }
-        if (request.archived != null) {
-            entity.setArchived(request.archived);
+        if (body.archived != null) {
+            entity.setArchived(body.archived);
         }
 
         NoteEntity updated = noteRepository.save(entity);
@@ -299,8 +331,10 @@ public class FinanceApiController {
     }
 
     @DeleteMapping("/notes/{id}")
-    public ResponseEntity<?> deleteNote(@PathVariable Long id) {
-        if (!noteRepository.existsById(id)) {
+    public ResponseEntity<?> deleteNote(HttpServletRequest request, @PathVariable Long id) {
+        Long userId = getUserId(request);
+        NoteEntity entity = noteRepository.findById(id).orElse(null);
+        if (entity == null || !entity.getUserId().equals(userId)) {
             return ResponseEntity.notFound().build();
         }
         noteRepository.deleteById(id);
@@ -310,16 +344,18 @@ public class FinanceApiController {
     // ============== TODO ENDPOINTS ==============
     @GetMapping("/todos")
     public List<Map<String, Object>> getTodos(
+            HttpServletRequest request,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String priority
     ) {
+        Long userId = getUserId(request);
         List<TodoEntity> todos;
 
         if (search != null && !search.isBlank()) {
-            todos = todoRepository.searchTodos(search);
+            todos = todoRepository.searchByUserIdAndTitle(userId, search);
         } else {
-            todos = todoRepository.findActiveTodos();
+            todos = todoRepository.findByUserIdAndCompletedFalse(userId);
         }
 
         if (status != null && !status.isBlank()) {
@@ -334,62 +370,66 @@ public class FinanceApiController {
     }
 
     @PostMapping("/todos")
-    public ResponseEntity<?> createTodo(@RequestBody TodoRequest request) {
-        if (request.title == null || request.title.isBlank()) {
+    public ResponseEntity<?> createTodo(HttpServletRequest request, @RequestBody TodoRequest body) {
+        Long userId = getUserId(request);
+        
+        if (body.title == null || body.title.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Title is required"));
         }
 
         TodoEntity entity = new TodoEntity();
-        entity.setTitle(request.title.trim());
-        entity.setDescription(request.description != null ? request.description : "");
-        entity.setDueDate(request.dueDate);
-        entity.setDueTime(request.dueTime);
-        entity.setPriority(request.priority != null ? request.priority : "medium");
-        entity.setCategory(request.category != null ? request.category : "");
-        entity.setStatus(request.status != null ? request.status : "pending");
+        entity.setUserId(userId);
+        entity.setTitle(body.title.trim());
+        entity.setDescription(body.description != null ? body.description : "");
+        entity.setDueDate(body.dueDate);
+        entity.setDueTime(body.dueTime);
+        entity.setPriority(body.priority != null ? body.priority : "medium");
+        entity.setCategory(body.category != null ? body.category : "");
+        entity.setStatus(body.status != null ? body.status : "pending");
         entity.setCompleted(false);
-        entity.setColor(request.color != null ? request.color : "#29B6F6");
+        entity.setColor(body.color != null ? body.color : "#29B6F6");
 
         TodoEntity saved = todoRepository.save(entity);
         return ResponseEntity.status(HttpStatus.CREATED).body(toTodoResponse(saved));
     }
 
     @PutMapping("/todos/{id}")
-    public ResponseEntity<?> updateTodo(@PathVariable Long id, @RequestBody TodoRequest request) {
+    public ResponseEntity<?> updateTodo(HttpServletRequest request, @PathVariable Long id, @RequestBody TodoRequest body) {
+        Long userId = getUserId(request);
         TodoEntity entity = todoRepository.findById(id).orElse(null);
-        if (entity == null) {
+        if (entity == null || !entity.getUserId().equals(userId)) {
             return ResponseEntity.notFound().build();
         }
 
-        if (request.title != null && !request.title.isBlank()) {
-            entity.setTitle(request.title.trim());
+        if (body.title != null && !body.title.isBlank()) {
+            entity.setTitle(body.title.trim());
         }
-        if (request.description != null) {
-            entity.setDescription(request.description);
+        if (body.description != null) {
+            entity.setDescription(body.description);
         }
-        if (request.dueDate != null) {
-            entity.setDueDate(request.dueDate);
+        if (body.dueDate != null) {
+            entity.setDueDate(body.dueDate);
         }
-        if (request.dueTime != null) {
-            entity.setDueTime(request.dueTime);
+        if (body.dueTime != null) {
+            entity.setDueTime(body.dueTime);
         }
-        if (request.priority != null) {
-            entity.setPriority(request.priority);
+        if (body.priority != null) {
+            entity.setPriority(body.priority);
         }
-        if (request.category != null) {
-            entity.setCategory(request.category);
+        if (body.category != null) {
+            entity.setCategory(body.category);
         }
-        if (request.status != null) {
-            entity.setStatus(request.status);
+        if (body.status != null) {
+            entity.setStatus(body.status);
         }
-        if (request.completed != null) {
-            entity.setCompleted(request.completed);
-            if (request.completed) {
+        if (body.completed != null) {
+            entity.setCompleted(body.completed);
+            if (body.completed) {
                 entity.setStatus("completed");
             }
         }
-        if (request.color != null) {
-            entity.setColor(request.color);
+        if (body.color != null) {
+            entity.setColor(body.color);
         }
 
         TodoEntity updated = todoRepository.save(entity);
@@ -397,8 +437,10 @@ public class FinanceApiController {
     }
 
     @DeleteMapping("/todos/{id}")
-    public ResponseEntity<?> deleteTodo(@PathVariable Long id) {
-        if (!todoRepository.existsById(id)) {
+    public ResponseEntity<?> deleteTodo(HttpServletRequest request, @PathVariable Long id) {
+        Long userId = getUserId(request);
+        TodoEntity entity = todoRepository.findById(id).orElse(null);
+        if (entity == null || !entity.getUserId().equals(userId)) {
             return ResponseEntity.notFound().build();
         }
         todoRepository.deleteById(id);
@@ -407,11 +449,12 @@ public class FinanceApiController {
 
     // ============== ANALYTICS ENDPOINTS ==============
     @GetMapping("/analytics/summary")
-    public Map<String, Object> summary() {
-        double income = getTotalIncome();
-        double expense = getTotalExpense();
+    public Map<String, Object> summary(HttpServletRequest request) {
+        Long userId = getUserId(request);
+        double income = getTotalIncome(userId);
+        double expense = getTotalExpense(userId);
         double savings = income - expense;
-        double totalAssets = getTotalAssets();
+        double totalAssets = getTotalAssets(userId);
         double savingsRate = income == 0 ? 0 : (savings / income) * 100;
         
         return Map.of(
@@ -422,14 +465,15 @@ public class FinanceApiController {
                 "savings_rate", savingsRate,
                 "total_assets", totalAssets,
                 "net_worth", savings + totalAssets,
-                "transaction_count", transactionRepository.count()
+                "transaction_count", transactionRepository.countByUserId(userId)
         );
     }
 
     @GetMapping("/analytics/savings")
-    public Map<String, Object> savings() {
-        double income = getTotalIncome();
-        double expense = getTotalExpense();
+    public Map<String, Object> savings(HttpServletRequest request) {
+        Long userId = getUserId(request);
+        double income = getTotalIncome(userId);
+        double expense = getTotalExpense(userId);
         double totalSavings = income - expense;
         double savingsRate = income == 0 ? 0 : (totalSavings / income) * 100;
         return Map.of(
@@ -441,9 +485,10 @@ public class FinanceApiController {
     }
 
     @GetMapping("/analytics/category-breakdown")
-    public List<Map<String, Object>> categoryBreakdown() {
+    public List<Map<String, Object>> categoryBreakdown(HttpServletRequest request) {
+        Long userId = getUserId(request);
         Map<Long, BreakdownAccumulator> grouped = new LinkedHashMap<>();
-        transactionRepository.findAll().stream()
+        transactionRepository.findByUserId(userId).stream()
                 .filter(t -> t.getTransactionType().equals("expense"))
                 .forEach(t -> {
                     BreakdownAccumulator acc = grouped.computeIfAbsent(t.getCategory().getId(), k -> new BreakdownAccumulator());
@@ -468,9 +513,10 @@ public class FinanceApiController {
     }
 
     @GetMapping("/analytics/monthly")
-    public List<Map<String, Object>> monthly() {
+    public List<Map<String, Object>> monthly(HttpServletRequest request) {
+        Long userId = getUserId(request);
         Map<YearMonth, Totals> grouped = new LinkedHashMap<>();
-        for (TransactionEntity t : transactionRepository.findAll()) {
+        for (TransactionEntity t : transactionRepository.findByUserId(userId)) {
             YearMonth month = YearMonth.from(t.getDate());
             Totals totals = grouped.computeIfAbsent(month, m -> new Totals());
             if (t.getTransactionType().equals("income")) {
@@ -527,18 +573,18 @@ public class FinanceApiController {
     }
 
 
-    private double getTotalIncome() {
-        Double sum = transactionRepository.sumByTransactionType("income");
+    private double getTotalIncome(Long userId) {
+        Double sum = transactionRepository.sumByUserIdAndTransactionType(userId, "income");
         return sum == null ? 0 : sum;
     }
 
-    private double getTotalExpense() {
-        Double sum = transactionRepository.sumByTransactionType("expense");
+    private double getTotalExpense(Long userId) {
+        Double sum = transactionRepository.sumByUserIdAndTransactionType(userId, "expense");
         return sum == null ? 0 : sum;
     }
 
-    private double getTotalAssets() {
-        Double sum = assetRepository.sumAllValues();
+    private double getTotalAssets(Long userId) {
+        Double sum = assetRepository.sumValuesByUserId(userId);
         return sum == null ? 0 : sum;
     }
 
