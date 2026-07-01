@@ -11,7 +11,7 @@
 <body>
 <div id="toastContainer" class="notification-toast-container" aria-live="polite" aria-atomic="true"></div>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #18230F; border-bottom: 3px solid #255F38;">
     <div class="container-fluid">
         <a class="navbar-brand" href="/">
             <i class="fas fa-wallet"></i> FinTrack
@@ -20,12 +20,12 @@
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ms-auto">
-                <li class="nav-item"><a class="nav-link" href="/dashboard">Dashboard</a></li>
-                <li class="nav-item"><a class="nav-link active" href="/transactions">Transactions</a></li>
+            <ul class="navbar-nav ms-auto navbar-icons-only">
+                <li class="nav-item"><a class="nav-link" href="/dashboard" title="Home"><i class="fas fa-home"></i></a></li>
+                <li class="nav-item"><a class="nav-link active" href="/transactions" title="Transactions"><i class="fas fa-exchange-alt"></i></a></li>
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="settingsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-cog"></i> Settings
+                    <a class="nav-link dropdown-toggle" href="#" id="settingsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" title="Settings">
+                        <i class="fas fa-cog"></i>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="settingsDropdown">
                         <li><a class="dropdown-item" href="#" onclick="openCategoryManagementModal(event)">
@@ -36,6 +36,11 @@
                             <i class="fas fa-cogs"></i> System Settings (Coming Soon)
                         </a></li>
                     </ul>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#userProfileModal" title="User Profile">
+                        <i class="fas fa-user-circle"></i>
+                    </a>
                 </li>
             </ul>
         </div>
@@ -255,6 +260,56 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-success" id="createCategoryBtn">Create Category</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Profile Modal -->
+<div class="modal fade" id="userProfileModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user"></i> User Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <div class="position-relative d-inline-block">
+                        <img src="https://via.placeholder.com/120" id="profilePicture" class="rounded-circle border" style="width: 120px; height: 120px; object-fit: cover;">
+                        <button type="button" class="btn btn-sm btn-primary position-absolute bottom-0 end-0 rounded-circle" title="Change Picture" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-camera"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Full Name</label>
+                    <input type="text" class="form-control" id="userName" value="User Name" placeholder="Enter your full name">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Email</label>
+                    <input type="email" class="form-control" id="userEmail" value="user@example.com" placeholder="Enter your email" disabled>
+                </div>
+                <hr>
+                <h6 class="fw-bold mb-3"><i class="fas fa-lock"></i> Change Password</h6>
+                <div class="mb-3">
+                    <label class="form-label">Current Password</label>
+                    <input type="password" class="form-control" placeholder="Enter current password">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">New Password</label>
+                    <input type="password" class="form-control" placeholder="Enter new password">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Confirm Password</label>
+                    <input type="password" class="form-control" placeholder="Confirm new password">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Save Changes (Coming Soon)
+                </button>
             </div>
         </div>
     </div>

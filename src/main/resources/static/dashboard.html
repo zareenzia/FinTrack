@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #18230F; border-bottom: 3px solid #255F38;">
     <div class="container-fluid">
         <a class="navbar-brand" href="/">
             <i class="fas fa-wallet"></i> FinTrack
@@ -18,12 +18,12 @@
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ms-auto">
-                <li class="nav-item"><a class="nav-link active" href="/dashboard">Dashboard</a></li>
-                <li class="nav-item"><a class="nav-link" href="/transactions">Transactions</a></li>
+            <ul class="navbar-nav ms-auto navbar-icons-only">
+                <li class="nav-item"><a class="nav-link active" href="/dashboard" title="Home"><i class="fas fa-home"></i></a></li>
+                <li class="nav-item"><a class="nav-link" href="/transactions" title="Transactions"><i class="fas fa-exchange-alt"></i></a></li>
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="settingsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-cog"></i> Settings
+                    <a class="nav-link dropdown-toggle" href="#" id="settingsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" title="Settings">
+                        <i class="fas fa-cog"></i>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="settingsDropdown">
                         <li><a class="dropdown-item" href="/transactions#update-categories">
@@ -35,18 +35,17 @@
                         </a></li>
                     </ul>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#userProfileModal" title="User Profile">
+                        <i class="fas fa-user-circle"></i>
+                    </a>
+                </li>
             </ul>
         </div>
     </div>
 </nav>
 
 <div class="container-fluid mt-4">
-    <div class="row">
-        <div class="col-md-12">
-            <h2 class="mb-4"><i class="fas fa-chart-pie"></i> Dashboard</h2>
-        </div>
-    </div>
-
     <div class="row mb-4">
         <div class="col-md-2 mb-3">
             <div class="card border-success">
@@ -99,23 +98,50 @@
     </div>
 
     <div class="row mb-4">
-        <div class="col-md-6">
+       <div class="col-md-4">
             <div class="card">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h6 class="mb-0"><i class="fas fa-pie-chart"></i> Expense by Category</h6>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-light active" id="categoryPieBtn" onclick="switchCategoryChart('pie')" title="Pie Chart">
+                            <i class="fas fa-chart-pie"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-light" id="categoryBarBtn" onclick="switchCategoryChart('bar')" title="Bar Chart">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body">
-                    <canvas id="categoryChart"></canvas>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
+                   <div class="row" style="height: 380px; display: flex; align-items: center;">
+                       <div class="col-md-5" id="categoryLegendContainer">
+                           <div id="categoryLegend"></div>
+                       </div>
+                       <div class="col-md-7" style="display: flex; align-items: center; justify-content: center;">
+                           <div style="width: 100%; height: 300px; position: relative;">
+                               <canvas id="categoryChart"></canvas>
+                           </div>
+                       </div>
+                   </div>
+               </div>
+           </div>
+       </div>
+       <div class="col-md-8">
             <div class="card">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h6 class="mb-0"><i class="fas fa-line-chart"></i> Monthly Trend</h6>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-light active" id="monthlyLineBtn" onclick="switchMonthlyChart('line')" title="Line Chart">
+                            <i class="fas fa-line-chart"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-light" id="monthlyBarBtn" onclick="switchMonthlyChart('bar')" title="Bar Chart">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <canvas id="monthlyChart"></canvas>
+                <div class="card-body" style="height: 420px; display: flex; align-items: center; justify-content: center;">
+                    <div style="width: 100%; height: 300px; position: relative;">
+                        <canvas id="monthlyChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -136,17 +162,81 @@
                                 <th>Description</th>
                                 <th>Category</th>
                                 <th>Type</th>
-                                <th>Amount</th>
+                                <th class="text-end">Amount</th>
+                                <th class="text-center" style="width: 50px;"></th>
                             </tr>
                             </thead>
                             <tbody id="recent-tx-body">
                             <tr>
-                                <td colspan="5" class="text-center text-muted">Loading...</td>
+                                <td colspan="6" class="text-center text-muted">Loading...</td>
                             </tr>
                             </tbody>
                         </table>
                     </div>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div>
+                            <span id="tx-page-info" class="text-muted"></span>
+                        </div>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-outline-primary" id="tx-prev-btn" onclick="previousTransactionPage()">
+                                <i class="fas fa-chevron-left"></i> Previous
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" id="tx-next-btn" onclick="nextTransactionPage()">
+                                Next <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Profile Modal -->
+<div class="modal fade" id="userProfileModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user"></i> User Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <div class="position-relative d-inline-block">
+                        <img src="https://via.placeholder.com/120" id="profilePicture" class="rounded-circle border" style="width: 120px; height: 120px; object-fit: cover;">
+                        <button type="button" class="btn btn-sm btn-primary position-absolute bottom-0 end-0 rounded-circle" title="Change Picture" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-camera"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Full Name</label>
+                    <input type="text" class="form-control" id="userName" value="User Name" placeholder="Enter your full name">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Email</label>
+                    <input type="email" class="form-control" id="userEmail" value="user@example.com" placeholder="Enter your email" disabled>
+                </div>
+                <hr>
+                <h6 class="fw-bold mb-3"><i class="fas fa-lock"></i> Change Password</h6>
+                <div class="mb-3">
+                    <label class="form-label">Current Password</label>
+                    <input type="password" class="form-control" placeholder="Enter current password">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">New Password</label>
+                    <input type="password" class="form-control" placeholder="Enter new password">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Confirm Password</label>
+                    <input type="password" class="form-control" placeholder="Confirm new password">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Save Changes (Coming Soon)
+                </button>
             </div>
         </div>
     </div>
@@ -159,6 +249,17 @@
 </footer>
 
 <script>
+    let allTransactions = [];
+    let currentPage = 0;
+    const pageSize = 5;
+    let categoryChartData = [];
+    let monthlyChartData = [];
+    let categoryChartType = 'pie';
+    let monthlyChartType = 'line';
+    let categoryChartInstance = null;
+    let monthlyChartInstance = null;
+    let categoryColorMap = {};
+
     document.addEventListener('DOMContentLoaded', function () {
         loadDashboard();
     });
@@ -173,83 +274,43 @@
             document.getElementById('total-assets').textContent = '$' + Number(summary.total_assets || 0).toFixed(2);
             document.getElementById('net-worth').textContent = '$' + Number(summary.net_worth || 0).toFixed(2);
 
+            // Fetch categories and build color map
+            const categories = await fetch('/api/categories').then(r => r.json());
+            categoryColorMap = {};
+            categories.forEach(cat => {
+                categoryColorMap[cat.name] = cat.color || '#6c757d';
+            });
+
             const breakdown = await fetch('/api/analytics/category-breakdown').then(r => r.json());
+            categoryChartData = breakdown;
             drawCategoryChart(breakdown);
 
             const monthly = await fetch('/api/analytics/monthly').then(r => r.json());
+            monthlyChartData = monthly;
             drawMonthlyChart(monthly);
 
-            const transactions = await fetch('/api/transactions?limit=10').then(r => r.json());
-            drawRecentTransactions(transactions);
+            const transactions = await fetch('/api/transactions?limit=1000').then(r => r.json());
+            allTransactions = transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+            currentPage = 0;
+            displayTransactionPage();
         } catch (error) {
             console.error('Error loading dashboard:', error);
         }
     }
 
-    function drawCategoryChart(data) {
-        const ctx = document.getElementById('categoryChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: data.map(d => d.category),
-                datasets: [{
-                    data: data.map(d => d.total),
-                    backgroundColor: data.map(d => d.color || '#3498db')
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {position: 'bottom'}
-                }
-            }
-        });
-    }
+    function displayTransactionPage() {
+        const start = currentPage * pageSize;
+        const end = start + pageSize;
+        const pageTransactions = allTransactions.slice(start, end);
 
-    function drawMonthlyChart(data) {
-        const months = {};
-        data.forEach(d => {
-            if (!months[d.month]) months[d.month] = {income: 0, expense: 0};
-            if (d.type === 'income') months[d.month].income = Number(d.total);
-            else months[d.month].expense = Number(d.total);
-        });
-
-        const ctx = document.getElementById('monthlyChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: Object.keys(months),
-                datasets: [
-                    {
-                        label: 'Income',
-                        data: Object.values(months).map(m => m.income),
-                        borderColor: '#28a745',
-                        tension: 0.1
-                    },
-                    {
-                        label: 'Expense',
-                        data: Object.values(months).map(m => m.expense),
-                        borderColor: '#dc3545',
-                        tension: 0.1
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {position: 'top'}
-                }
-            }
-        });
-    }
-
-    function drawRecentTransactions(transactions) {
         const tbody = document.getElementById('recent-tx-body');
-        tbody.innerHTML = transactions.map(tx => `
+        tbody.innerHTML = pageTransactions.map(tx => {
+            const categoryColor = categoryColorMap[tx.category_name] || '#6c757d';
+            return `
         <tr>
             <td>${new Date(tx.date).toLocaleDateString()}</td>
             <td>${tx.description}</td>
-            <td><span class="badge bg-secondary">${tx.category_name}</span></td>
+            <td><span class="badge" style="background-color: ${categoryColor}; color: #fff;">${tx.category_name}</span></td>
             <td>
                 <span class="badge ${tx.transaction_type === 'income' ? 'bg-success' : 'bg-danger'}">
                     ${tx.transaction_type.charAt(0).toUpperCase() + tx.transaction_type.slice(1)}
@@ -258,8 +319,268 @@
             <td class="text-end ${tx.transaction_type === 'income' ? 'text-success fw-bold' : 'text-danger fw-bold'}">
                 ${tx.transaction_type === 'income' ? '+' : '-'}$${Number(tx.amount).toFixed(2)}
             </td>
+            <td class="text-center">
+                <button type="button" class="btn btn-sm btn-link text-danger p-0" onclick="deleteTransaction(${tx.id})" title="Delete Transaction" style="text-decoration: none;">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </td>
         </tr>
-    `).join('') || '<tr><td colspan="5" class="text-center text-muted">No transactions yet</td></tr>';
+    `;
+        }).join('') || '<tr><td colspan="6" class="text-center text-muted">No transactions yet</td></tr>';
+
+        const totalPages = Math.ceil(allTransactions.length / pageSize);
+        document.getElementById('tx-page-info').textContent = `Page ${currentPage + 1} of ${totalPages}`;
+
+        document.getElementById('tx-prev-btn').disabled = currentPage === 0;
+        document.getElementById('tx-next-btn').disabled = currentPage >= totalPages - 1;
+    }
+
+    function nextTransactionPage() {
+        const totalPages = Math.ceil(allTransactions.length / pageSize);
+        if (currentPage < totalPages - 1) {
+            currentPage++;
+            displayTransactionPage();
+        }
+    }
+
+    function previousTransactionPage() {
+        if (currentPage > 0) {
+            currentPage--;
+            displayTransactionPage();
+        }
+    }
+
+    function drawCategoryChart(data) {
+        const ctx = document.getElementById('categoryChart').getContext('2d');
+        if (categoryChartInstance) {
+            categoryChartInstance.destroy();
+        }
+
+        if (categoryChartType === 'pie') {
+            categoryChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.map(d => d.category),
+                    datasets: [{
+                        data: data.map(d => d.total),
+                        backgroundColor: data.map(d => d.color || '#3498db')
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {display: false}
+                    }
+                }
+            });
+            document.getElementById('categoryLegendContainer').style.display = 'block';
+        } else if (categoryChartType === 'bar') {
+            categoryChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => d.category),
+                    datasets: [{
+                        label: 'Expense',
+                        data: data.map(d => d.total),
+                        backgroundColor: data.map(d => d.color || '#3498db'),
+                        borderRadius: 6,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            document.getElementById('categoryLegendContainer').style.display = 'none';
+        }
+
+        // Generate simple category legend
+        const legendContainer = document.getElementById('categoryLegend');
+        legendContainer.innerHTML = data.map(d => `
+            <div class="d-flex align-items-center mb-2">
+                <div style="width: 16px; height: 16px; background-color: ${d.color || '#3498db'}; border-radius: 3px; margin-right: 8px; flex-shrink: 0;"></div>
+                <span style="font-size: 0.9rem;">${d.category}</span>
+            </div>
+        `).join('');
+    }
+
+    function switchCategoryChart(type) {
+        categoryChartType = type;
+        document.getElementById('categoryPieBtn').classList.toggle('active', type === 'pie');
+        document.getElementById('categoryBarBtn').classList.toggle('active', type === 'bar');
+        drawCategoryChart(categoryChartData);
+    }
+
+    function drawMonthlyChart(data) {
+        // Fiscal year: July 2026 - June 2027
+        const fiscalYear = ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+        const monthMap = {
+            '07': 'Jul', '08': 'Aug', '09': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Dec',
+            '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May', '06': 'Jun'
+        };
+
+        // Initialize all fiscal months with 0 values
+        const months = {};
+        fiscalYear.forEach(month => {
+            months[month] = { income: 0, expense: 0 };
+        });
+
+        // Populate with actual data
+        data.forEach(d => {
+            if (d.month) {
+                const monthNum = d.month.toString().padStart(2, '0').slice(-2);
+                const monthLabel = monthMap[monthNum];
+                if (monthLabel && months[monthLabel]) {
+                    if (d.type === 'income') months[monthLabel].income = Number(d.total);
+                    else months[monthLabel].expense = Number(d.total);
+                }
+            }
+        });
+
+        const ctx = document.getElementById('monthlyChart').getContext('2d');
+        if (monthlyChartInstance) {
+            monthlyChartInstance.destroy();
+        }
+
+        if (monthlyChartType === 'line') {
+            monthlyChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: fiscalYear,
+                    datasets: [
+                        {
+                            label: 'Income',
+                            data: fiscalYear.map(m => months[m].income),
+                            borderColor: '#28a745',
+                            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'Expense',
+                            data: fiscalYear.map(m => months[m].expense),
+                            borderColor: '#dc3545',
+                            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        } else if (monthlyChartType === 'bar') {
+            monthlyChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: fiscalYear,
+                    datasets: [
+                        {
+                            label: 'Income',
+                            data: fiscalYear.map(m => months[m].income),
+                            backgroundColor: '#28a745',
+                            borderRadius: 6,
+                            borderSkipped: false
+                        },
+                        {
+                            label: 'Expense',
+                            data: fiscalYear.map(m => months[m].expense),
+                            backgroundColor: '#dc3545',
+                            borderRadius: 6,
+                            borderSkipped: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    function switchMonthlyChart(type) {
+        monthlyChartType = type;
+        document.getElementById('monthlyLineBtn').classList.toggle('active', type === 'line');
+        document.getElementById('monthlyBarBtn').classList.toggle('active', type === 'bar');
+        drawMonthlyChart(monthlyChartData);
+    }
+
+    async function deleteTransaction(id) {
+        if (!confirm('Are you sure you want to delete this transaction?')) {
+            return;
+        }
+        try {
+            const response = await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
+            if (response.ok) {
+                showNotification('Transaction deleted successfully', 'success');
+                loadDashboard();
+            } else {
+                showNotification('Failed to delete transaction', 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting transaction:', error);
+            showNotification('Error deleting transaction', 'error');
+        }
+    }
+
+    function showNotification(message, type = 'success') {
+        const notificationHTML = `
+            <div class="alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        const container = document.createElement('div');
+        container.innerHTML = notificationHTML;
+        document.body.appendChild(container.firstElementChild);
+        
+        setTimeout(() => {
+            container.firstElementChild?.remove();
+        }, 5000);
     }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
