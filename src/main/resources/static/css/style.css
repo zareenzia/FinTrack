@@ -35,6 +35,18 @@ main, .container-fluid {
     border-bottom: 3px solid var(--accent-color);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     backdrop-filter: blur(10px);
+    position: relative;
+    z-index: 1040;
+}
+
+.navbar-collapse {
+    position: relative;
+    z-index: 1041;
+}
+
+.nav-item.dropdown {
+    position: relative;
+    z-index: 1042;
 }
 
 .navbar-brand {
@@ -104,6 +116,47 @@ main, .container-fluid {
     height: 8px;
     background: var(--surface-color);
     border-radius: 50%;
+}
+
+/* ===== DROPDOWN MENU ===== */
+.dropdown-menu {
+    z-index: 9999 !important;
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.99) !important;
+    margin-top: 8px;
+    animation: slideDown 0.3s ease-out;
+}
+
+.dropdown-menu.show {
+    z-index: 9999 !important;
+}
+
+.dropdown-item {
+    color: var(--primary-color);
+    font-weight: 500;
+    padding: 12px 20px;
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    margin: 4px 8px;
+}
+
+.dropdown-item:hover {
+    background-color: #f0f4f0;
+    color: var(--accent-color);
+    transform: translateX(4px);
+}
+
+.dropdown-item.disabled {
+    color: #ccc;
+    cursor: not-allowed;
+}
+
+.dropdown-divider {
+    margin: 8px 0;
+    opacity: 0.2;
 }
 
 /* ===== FOOTER ===== */
