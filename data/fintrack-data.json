@@ -19,7 +19,7 @@
     "icon" : "tag"
   }, {
     "id" : 4,
-    "name" : "Loan payment CC",
+    "name" : "Loan payment",
     "description" : "",
     "color" : "#73076a",
     "icon" : "tag"
@@ -122,5 +122,6 @@
     "transaction_type" : "income",
     "date" : "2026-07-01T00:00",
     "created_at" : "2026-06-30T09:11:31.277393"
-  } ]
+  } ],
+  "assets" : [ ]
 }

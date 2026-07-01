@@ -207,3 +207,22 @@ canvas {
         padding: 15px;
     }
 }
+
+/* Collapsible header styling */
+.card-header[data-bs-toggle="collapse"] {
+    transition: all 0.3s ease;
+}
+
+.card-header[data-bs-toggle="collapse"]:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+#transactionsChevron {
+    transition: transform 0.3s ease;
+}
+
+#transactionsCollapse.show ~ .card-header #transactionsChevron,
+.card-header[aria-expanded="true"] #transactionsChevron {
+    transform: rotate(180deg);
+}
+
