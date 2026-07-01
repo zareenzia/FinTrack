@@ -2,9 +2,13 @@ package org.example.finzin.web;
 
 import org.example.finzin.entity.AssetEntity;
 import org.example.finzin.entity.CategoryEntity;
+import org.example.finzin.entity.NoteEntity;
+import org.example.finzin.entity.TodoEntity;
 import org.example.finzin.entity.TransactionEntity;
 import org.example.finzin.repository.AssetRepository;
 import org.example.finzin.repository.CategoryRepository;
+import org.example.finzin.repository.NoteRepository;
+import org.example.finzin.repository.TodoRepository;
 import org.example.finzin.repository.TransactionRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,11 +40,15 @@ public class FinanceApiController {
     private final CategoryRepository categoryRepository;
     private final TransactionRepository transactionRepository;
     private final AssetRepository assetRepository;
+    private final NoteRepository noteRepository;
+    private final TodoRepository todoRepository;
 
-    public FinanceApiController(CategoryRepository categoryRepository, TransactionRepository transactionRepository, AssetRepository assetRepository) {
+    public FinanceApiController(CategoryRepository categoryRepository, TransactionRepository transactionRepository, AssetRepository assetRepository, NoteRepository noteRepository, TodoRepository todoRepository) {
         this.categoryRepository = categoryRepository;
         this.transactionRepository = transactionRepository;
         this.assetRepository = assetRepository;
+        this.noteRepository = noteRepository;
+        this.todoRepository = todoRepository;
     }
 
     // ============== CATEGORY ENDPOINTS ==============
@@ -229,6 +237,171 @@ public class FinanceApiController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Transaction not found"));
         }
         transactionRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ============== NOTE ENDPOINTS ==============
+    @GetMapping("/notes")
+    public List<Map<String, Object>> getNotes(@RequestParam(required = false) String search) {
+        List<NoteEntity> notes = search != null && !search.isBlank() ? 
+                noteRepository.searchNotes(search) : 
+                noteRepository.findByArchivedFalseOrderByPinnedDescUpdatedAtDesc(false);
+        
+        return notes.stream().map(this::toNoteResponse).collect(Collectors.toList());
+    }
+
+    @PostMapping("/notes")
+    public ResponseEntity<?> createNote(@RequestBody NoteRequest request) {
+        if (request.title == null || request.title.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Title is required"));
+        }
+
+        NoteEntity entity = new NoteEntity();
+        entity.setTitle(request.title.trim());
+        entity.setContent(request.content != null ? request.content : "");
+        entity.setColor(request.color != null ? request.color : "#FFE082");
+        entity.setTags(request.tags != null ? request.tags : "");
+        entity.setPinned(request.pinned != null ? request.pinned : false);
+        entity.setArchived(false);
+
+        NoteEntity saved = noteRepository.save(entity);
+        return ResponseEntity.status(HttpStatus.CREATED).body(toNoteResponse(saved));
+    }
+
+    @PutMapping("/notes/{id}")
+    public ResponseEntity<?> updateNote(@PathVariable Long id, @RequestBody NoteRequest request) {
+        NoteEntity entity = noteRepository.findById(id).orElse(null);
+        if (entity == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (request.title != null && !request.title.isBlank()) {
+            entity.setTitle(request.title.trim());
+        }
+        if (request.content != null) {
+            entity.setContent(request.content);
+        }
+        if (request.color != null) {
+            entity.setColor(request.color);
+        }
+        if (request.tags != null) {
+            entity.setTags(request.tags);
+        }
+        if (request.pinned != null) {
+            entity.setPinned(request.pinned);
+        }
+        if (request.archived != null) {
+            entity.setArchived(request.archived);
+        }
+
+        NoteEntity updated = noteRepository.save(entity);
+        return ResponseEntity.ok(toNoteResponse(updated));
+    }
+
+    @DeleteMapping("/notes/{id}")
+    public ResponseEntity<?> deleteNote(@PathVariable Long id) {
+        if (!noteRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        noteRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ============== TODO ENDPOINTS ==============
+    @GetMapping("/todos")
+    public List<Map<String, Object>> getTodos(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String priority
+    ) {
+        List<TodoEntity> todos;
+
+        if (search != null && !search.isBlank()) {
+            todos = todoRepository.searchTodos(search);
+        } else {
+            todos = todoRepository.findActiveTodos();
+        }
+
+        if (status != null && !status.isBlank()) {
+            todos = todos.stream().filter(t -> t.getStatus().equalsIgnoreCase(status)).collect(Collectors.toList());
+        }
+
+        if (priority != null && !priority.isBlank()) {
+            todos = todos.stream().filter(t -> t.getPriority().equalsIgnoreCase(priority)).collect(Collectors.toList());
+        }
+
+        return todos.stream().map(this::toTodoResponse).collect(Collectors.toList());
+    }
+
+    @PostMapping("/todos")
+    public ResponseEntity<?> createTodo(@RequestBody TodoRequest request) {
+        if (request.title == null || request.title.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Title is required"));
+        }
+
+        TodoEntity entity = new TodoEntity();
+        entity.setTitle(request.title.trim());
+        entity.setDescription(request.description != null ? request.description : "");
+        entity.setDueDate(request.dueDate);
+        entity.setDueTime(request.dueTime);
+        entity.setPriority(request.priority != null ? request.priority : "medium");
+        entity.setCategory(request.category != null ? request.category : "");
+        entity.setStatus(request.status != null ? request.status : "pending");
+        entity.setCompleted(false);
+        entity.setColor(request.color != null ? request.color : "#29B6F6");
+
+        TodoEntity saved = todoRepository.save(entity);
+        return ResponseEntity.status(HttpStatus.CREATED).body(toTodoResponse(saved));
+    }
+
+    @PutMapping("/todos/{id}")
+    public ResponseEntity<?> updateTodo(@PathVariable Long id, @RequestBody TodoRequest request) {
+        TodoEntity entity = todoRepository.findById(id).orElse(null);
+        if (entity == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (request.title != null && !request.title.isBlank()) {
+            entity.setTitle(request.title.trim());
+        }
+        if (request.description != null) {
+            entity.setDescription(request.description);
+        }
+        if (request.dueDate != null) {
+            entity.setDueDate(request.dueDate);
+        }
+        if (request.dueTime != null) {
+            entity.setDueTime(request.dueTime);
+        }
+        if (request.priority != null) {
+            entity.setPriority(request.priority);
+        }
+        if (request.category != null) {
+            entity.setCategory(request.category);
+        }
+        if (request.status != null) {
+            entity.setStatus(request.status);
+        }
+        if (request.completed != null) {
+            entity.setCompleted(request.completed);
+            if (request.completed) {
+                entity.setStatus("completed");
+            }
+        }
+        if (request.color != null) {
+            entity.setColor(request.color);
+        }
+
+        TodoEntity updated = todoRepository.save(entity);
+        return ResponseEntity.ok(toTodoResponse(updated));
+    }
+
+    @DeleteMapping("/todos/{id}")
+    public ResponseEntity<?> deleteTodo(@PathVariable Long id) {
+        if (!todoRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        todoRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 
@@ -421,5 +594,64 @@ public class FinanceApiController {
             String description,
             Double value
     ) {
+    }
+
+    private record NoteRequest(
+            String title,
+            String content,
+            String color,
+            String tags,
+            Boolean pinned,
+            Boolean archived
+    ) {
+    }
+
+    private record TodoRequest(
+            String title,
+            String description,
+            java.time.LocalDate dueDate,
+            String dueTime,
+            String priority,
+            String category,
+            String status,
+            Boolean completed,
+            String color
+    ) {
+    }
+
+    private Map<String, Object> toNoteResponse(NoteEntity entity) {
+        String preview = entity.getContent() != null && entity.getContent().length() > 100 ?
+                entity.getContent().substring(0, 100) + "..." :
+                (entity.getContent() != null ? entity.getContent() : "");
+
+        return Map.of(
+                "id", entity.getId(),
+                "title", entity.getTitle(),
+                "content", entity.getContent() != null ? entity.getContent() : "",
+                "preview", preview,
+                "color", entity.getColor() != null ? entity.getColor() : "#FFE082",
+                "tags", entity.getTags() != null ? entity.getTags() : "",
+                "pinned", entity.getPinned() != null ? entity.getPinned() : false,
+                "archived", entity.getArchived() != null ? entity.getArchived() : false,
+                "created_at", entity.getCreatedAt().toString(),
+                "updated_at", entity.getUpdatedAt().toString()
+        );
+    }
+
+    private Map<String, Object> toTodoResponse(TodoEntity entity) {
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("id", entity.getId());
+        response.put("title", entity.getTitle());
+        response.put("description", entity.getDescription() != null ? entity.getDescription() : "");
+        response.put("due_date", entity.getDueDate() != null ? entity.getDueDate().toString() : "");
+        response.put("due_time", entity.getDueTime() != null ? entity.getDueTime() : "");
+        response.put("priority", entity.getPriority());
+        response.put("category", entity.getCategory() != null ? entity.getCategory() : "");
+        response.put("status", entity.getStatus());
+        response.put("completed", entity.getCompleted() != null ? entity.getCompleted() : false);
+        response.put("color", entity.getColor() != null ? entity.getColor() : "#29B6F6");
+        response.put("created_at", entity.getCreatedAt().toString());
+        response.put("updated_at", entity.getUpdatedAt().toString());
+        return response;
     }
 }

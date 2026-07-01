@@ -20,5 +20,15 @@ public class PageController {
     public String transactions() {
         return "forward:/transactions.html";
     }
+
+    @GetMapping("/notes")
+    public String notes() {
+        return "forward:/notes.html";
+    }
+
+    @GetMapping("/todos")
+    public String todos() {
+        return "forward:/todos.html";
+    }
 }
 

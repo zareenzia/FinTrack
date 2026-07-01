@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do - FinTrack</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .progress-card {
+            background: linear-gradient(135deg, var(--accent-color) 0%, #1a6644 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-stat {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            font-size: 0.95rem;
+        }
+
+        .progress-bar-custom {
+            height: 12px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 16px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: white;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+
+        .todo-item {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .todo-item:hover {
+            border-color: var(--accent-color);
+            box-shadow: 0 4px 12px rgba(37, 95, 56, 0.1);
+        }
+
+        .todo-item.completed {
+            background: #f5f5f5;
+            opacity: 0.7;
+        }
+
+        .todo-item.completed .todo-title {
+            text-decoration: line-through;
+            color: #999;
+        }
+
+        .todo-checkbox {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .todo-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .todo-title {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+            word-break: break-word;
+        }
+
+        .todo-meta {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            font-size: 0.85rem;
+            flex-wrap: wrap;
+        }
+
+        .todo-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .priority-high { background: #ffebee; color: #c62828; }
+        .priority-medium { background: #fff3e0; color: #e65100; }
+        .priority-low { background: #e8f5e9; color: #2e7d32; }
+
+        .status-pending { background: #e3f2fd; color: #1565c0; }
+        .status-in_progress { background: #f3e5f5; color: #6a1b9a; }
+        .status-completed { background: #e8f5e9; color: #2e7d32; }
+
+        .todo-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .todo-btn {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            background: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .todo-btn:hover {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .filter-btn.active {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+
+        .filter-btn:hover {
+            border-color: var(--accent-color);
+        }
+
+        .overdue {
+            background: #ffebee;
+            border-color: #e53935;
+        }
+
+        .due-today {
+            background: #fff3e0;
+            border-color: #f57c00;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            color: #ccc;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #18230F; border-bottom: 3px solid #255F38;">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">
+            <i class="fas fa-wallet"></i> FinTrack
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto navbar-icons-only">
+                <li class="nav-item"><a class="nav-link" href="/dashboard" title="Home"><i class="fas fa-home"></i></a></li>
+                <li class="nav-item"><a class="nav-link" href="/transactions" title="Transactions"><i class="fas fa-exchange-alt"></i></a></li>
+                <li class="nav-item"><a class="nav-link" href="/notes" title="Notes"><i class="fas fa-note-sticky"></i></a></li>
+                <li class="nav-item"><a class="nav-link active" href="/todos" title="To-Do"><i class="fas fa-tasks"></i></a></li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="settingsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" title="Settings">
+                        <i class="fas fa-cog"></i>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="settingsDropdown">
+                        <li><a class="dropdown-item" href="/transactions#update-categories">
+                            <i class="fas fa-tags"></i> Update your Categories
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item disabled" href="#">
+                            <i class="fas fa-cogs"></i> System Settings (Coming Soon)
+                        </a></li>
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#userProfileModal" title="User Profile">
+                        <i class="fas fa-user-circle"></i>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-tasks"></i> To-Do List</h2>
+                <button class="btn btn-primary" onclick="openCreateTodoModal()">
+                    <i class="fas fa-plus"></i> New Task
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Card -->
+    <div class="progress-card">
+        <h5 style="margin-bottom: 16px;">Tasks Progress</h5>
+        <div class="progress-stat">
+            <span style="font-size: 1.1rem;">📊</span>
+            <span>Total: <strong id="totalTasks">0</strong></span>
+        </div>
+        <div class="progress-stat">
+            <span style="font-size: 1.1rem;">✅</span>
+            <span>Completed: <strong id="completedTasks">0</strong></span>
+        </div>
+        <div class="progress-stat">
+            <span style="font-size: 1.1rem;">⏳</span>
+            <span>Pending: <strong id="pendingTasks">0</strong></span>
+        </div>
+        <div class="progress-stat">
+            <span style="font-size: 1.1rem;">⚠️</span>
+            <span>Overdue: <strong id="overdueTasks">0</strong></span>
+        </div>
+        <div class="progress-bar-custom">
+            <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+        </div>
+        <div style="font-weight: 600;"><span id="completionPercent">0</span>% Completed</div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-bar">
+        <button class="filter-btn active" onclick="filterTodos('all')">All</button>
+        <button class="filter-btn" onclick="filterTodos('pending')">Pending</button>
+        <button class="filter-btn" onclick="filterTodos('in_progress')">In Progress</button>
+        <button class="filter-btn" onclick="filterTodos('completed')">Completed</button>
+        <button class="filter-btn" onclick="filterTodos('overdue')">Overdue</button>
+    </div>
+
+    <!-- Search -->
+    <div class="mb-4">
+        <input type="text" class="form-control" id="searchTodos" placeholder="Search tasks..." onkeyup="searchTodos()">
+    </div>
+
+    <!-- Tasks List -->
+    <div id="todosContainer">
+        <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <p class="mt-2">No tasks yet. Create one to get started!</p>
+        </div>
+    </div>
+</div>
+
+<!-- Create/Edit Todo Modal -->
+<div class="modal fade" id="todoModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="todoModalTitle">New Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Title <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="todoTitle" placeholder="Task title">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Description</label>
+                    <textarea class="form-control" id="todoDescription" rows="4" placeholder="Task description..."></textarea>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Due Date</label>
+                            <input type="date" class="form-control" id="todoDueDate">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Due Time</label>
+                            <input type="time" class="form-control" id="todoDueTime">
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Priority</label>
+                            <select class="form-control" id="todoPriority">
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Status</label>
+                            <select class="form-control" id="todoStatus">
+                                <option value="pending" selected>Pending</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Category</label>
+                    <input type="text" class="form-control" id="todoCategory" placeholder="e.g., Work, Personal">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveTodo()">Save Task</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Todo Confirmation Modal -->
+<div class="modal fade" id="deleteTodoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Do you want to delete this task?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteTodoBtn">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Profile Modal -->
+<div class="modal fade" id="userProfileModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user"></i> User Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <div class="position-relative d-inline-block">
+                        <img src="https://via.placeholder.com/120" id="profilePicture" class="rounded-circle border" style="width: 120px; height: 120px; object-fit: cover;">
+                        <button type="button" class="btn btn-sm btn-primary position-absolute bottom-0 end-0 rounded-circle" title="Change Picture" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-camera"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Full Name</label>
+                    <input type="text" class="form-control" id="userName" value="User Name" placeholder="Enter your full name">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Email</label>
+                    <input type="email" class="form-control" id="userEmail" value="user@example.com" placeholder="Enter your email">
+                </div>
+                <hr>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Change Password</label>
+                    <input type="password" class="form-control mb-2" placeholder="Current Password">
+                    <input type="password" class="form-control mb-2" placeholder="New Password">
+                    <input type="password" class="form-control" placeholder="Confirm Password">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    let allTodos = [];
+    let currentFilter = 'all';
+    let editingTodoId = null;
+    let deleteTodoId = null;
+    let deleteTodoModal = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        deleteTodoModal = new bootstrap.Modal(document.getElementById('deleteTodoModal'));
+        document.getElementById('confirmDeleteTodoBtn').addEventListener('click', confirmDeleteTodo);
+        loadTodos();
+    });
+
+    async function loadTodos() {
+        try {
+            const response = await fetch('/api/todos');
+            allTodos = await response.json();
+            updateProgress();
+            displayTodos(allTodos);
+        } catch (error) {
+            console.error('Error loading todos:', error);
+        }
+    }
+
+    function updateProgress() {
+        const total = allTodos.length;
+        const completed = allTodos.filter(t => t.completed).length;
+        const pending = allTodos.filter(t => t.status === 'pending').length;
+        const overdue = allTodos.filter(t => {
+            if (t.due_date && !t.completed) {
+                return new Date(t.due_date) < new Date();
+            }
+            return false;
+        }).length;
+
+        const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+        document.getElementById('totalTasks').textContent = total;
+        document.getElementById('completedTasks').textContent = completed;
+        document.getElementById('pendingTasks').textContent = pending;
+        document.getElementById('overdueTasks').textContent = overdue;
+        document.getElementById('completionPercent').textContent = percent;
+        document.getElementById('progressFill').style.width = percent + '%';
+    }
+
+    function displayTodos(todos) {
+        const container = document.getElementById('todosContainer');
+        if (todos.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <p class="mt-2">No tasks found.</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = todos.map(todo => {
+            const isOverdue = todo.due_date && !todo.completed && new Date(todo.due_date) < new Date();
+            const isDueToday = todo.due_date && new Date(todo.due_date).toDateString() === new Date().toDateString();
+            const cardClass = isOverdue ? 'overdue' : (isDueToday ? 'due-today' : '');
+
+            return `
+                <div class="todo-item ${todo.completed ? 'completed' : ''} ${cardClass}">
+                    <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''} onchange="toggleTodo(${todo.id}, this.checked)">
+                    <div class="todo-content">
+                        <div class="todo-title">${escapeHtml(todo.title)}</div>
+                        <div class="todo-meta">
+                            ${todo.due_date ? `<span><i class="fas fa-calendar"></i> ${new Date(todo.due_date).toLocaleDateString()}</span>` : ''}
+                            ${todo.due_time ? `<span><i class="fas fa-clock"></i> ${todo.due_time}</span>` : ''}
+                            <span class="todo-badge priority-${todo.priority}">${todo.priority.toUpperCase()}</span>
+                            <span class="todo-badge status-${todo.status}">${todo.status.replace('_', ' ').toUpperCase()}</span>
+                            ${todo.category ? `<span class="todo-badge" style="background: #e0e0e0; color: #333;">${escapeHtml(todo.category)}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="todo-actions">
+                        <button class="todo-btn" onclick="editTodo(${todo.id})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="todo-btn" onclick="deleteTodo(${todo.id})" title="Delete">
+                            <i class="fas fa-trash text-danger"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function openCreateTodoModal() {
+        editingTodoId = null;
+        document.getElementById('todoModalTitle').textContent = 'New Task';
+        document.getElementById('todoTitle').value = '';
+        document.getElementById('todoDescription').value = '';
+        document.getElementById('todoDueDate').value = '';
+        document.getElementById('todoDueTime').value = '';
+        document.getElementById('todoPriority').value = 'medium';
+        document.getElementById('todoStatus').value = 'pending';
+        document.getElementById('todoCategory').value = '';
+        new bootstrap.Modal(document.getElementById('todoModal')).show();
+    }
+
+    async function editTodo(id) {
+        const todo = allTodos.find(t => t.id === id);
+        if (!todo) return;
+
+        editingTodoId = id;
+        document.getElementById('todoModalTitle').textContent = 'Edit Task';
+        document.getElementById('todoTitle').value = todo.title;
+        document.getElementById('todoDescription').value = todo.description;
+        document.getElementById('todoDueDate').value = todo.due_date;
+        document.getElementById('todoDueTime').value = todo.due_time;
+        document.getElementById('todoPriority').value = todo.priority;
+        document.getElementById('todoStatus').value = todo.status;
+        document.getElementById('todoCategory').value = todo.category;
+        new bootstrap.Modal(document.getElementById('todoModal')).show();
+    }
+
+    async function saveTodo() {
+        const title = document.getElementById('todoTitle').value.trim();
+        if (!title) {
+            alert('Title is required');
+            return;
+        }
+
+        const todoData = {
+            title,
+            description: document.getElementById('todoDescription').value,
+            dueDate: document.getElementById('todoDueDate').value || null,
+            dueTime: document.getElementById('todoDueTime').value || null,
+            priority: document.getElementById('todoPriority').value,
+            status: document.getElementById('todoStatus').value,
+            category: document.getElementById('todoCategory').value,
+            completed: false
+        };
+
+        try {
+            const url = editingTodoId ? `/api/todos/${editingTodoId}` : '/api/todos';
+            const method = editingTodoId ? 'PUT' : 'POST';
+            const response = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(todoData)
+            });
+
+            if (response.ok) {
+                showNotification(editingTodoId ? 'Task updated' : 'Task created', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('todoModal')).hide();
+                loadTodos();
+            } else {
+                showNotification('Failed to save task', 'error');
+            }
+        } catch (error) {
+            console.error('Error saving todo:', error);
+            showNotification('Error saving task', 'error');
+        }
+    }
+
+    async function toggleTodo(id, completed) {
+        const todo = allTodos.find(t => t.id === id);
+        if (!todo) return;
+
+        try {
+            const response = await fetch(`/api/todos/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...todo, completed, status: completed ? 'completed' : 'pending' })
+            });
+
+            if (response.ok) {
+                loadTodos();
+            }
+        } catch (error) {
+            console.error('Error toggling todo:', error);
+        }
+    }
+
+    async function deleteTodo(id) {
+        deleteTodoId = id;
+        deleteTodoModal.show();
+    }
+
+    async function confirmDeleteTodo() {
+        if (deleteTodoId === null) return;
+        try {
+            const response = await fetch(`/api/todos/${deleteTodoId}`, { method: 'DELETE' });
+            if (response.ok) {
+                deleteTodoModal.hide();
+                deleteTodoId = null;
+                showNotification('Task deleted', 'success');
+                loadTodos();
+            } else {
+                showNotification('Failed to delete task', 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting todo:', error);
+            showNotification('Error deleting task', 'error');
+        }
+    }
+
+    function filterTodos(filter) {
+        currentFilter = filter;
+        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+
+        let filtered = allTodos;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        switch(filter) {
+            case 'pending':
+                filtered = allTodos.filter(t => t.status === 'pending');
+                break;
+            case 'in_progress':
+                filtered = allTodos.filter(t => t.status === 'in_progress');
+                break;
+            case 'completed':
+                filtered = allTodos.filter(t => t.completed);
+                break;
+            case 'overdue':
+                filtered = allTodos.filter(t => {
+                    if (t.due_date && !t.completed) {
+                        return new Date(t.due_date) < today;
+                    }
+                    return false;
+                });
+                break;
+        }
+
+        displayTodos(filtered);
+    }
+
+    function searchTodos() {
+        const search = document.getElementById('searchTodos').value;
+        if (!search) {
+            filterTodos(currentFilter);
+            return;
+        }
+
+        const filtered = allTodos.filter(todo =>
+            todo.title.toLowerCase().includes(search.toLowerCase()) ||
+            todo.description.toLowerCase().includes(search.toLowerCase())
+        );
+        displayTodos(filtered);
+    }
+
+    function showNotification(message, type = 'success') {
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        const alertHTML = `
+            <div class="alert ${alertClass} alert-dismissible fade show" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        const div = document.createElement('div');
+        div.innerHTML = alertHTML;
+        document.body.appendChild(div.firstElementChild);
+
+        setTimeout(() => {
+            div.firstElementChild?.remove();
+        }, 5000);
+    }
+
+    function escapeHtml(text) {
+        const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+        return text ? text.replace(/[&<>"']/g, m => map[m]) : '';
+    }
+</script>
+</body>
+</html>
