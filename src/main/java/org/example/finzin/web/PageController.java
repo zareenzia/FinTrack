@@ -12,7 +12,7 @@ public class PageController {
         if (request.getAttribute("userId") != null) {
             return "redirect:/dashboard";
         }
-        return "forward:/index.html";
+        return "redirect:/login";
     }
 
     @GetMapping("/login")
