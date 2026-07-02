@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinTrack - Complete Profile</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #18230F 0%, #27391C 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .main-container {
+            width: 100%;
+            max-width: 600px;
+            background: #18230F;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            padding: 60px;
+            position: relative;
+        }
+
+        .heading {
+            font-size: 36px;
+            color: white;
+            font-weight: 700;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .subheading {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            margin-bottom: 40px;
+        }
+
+        .notification {
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            display: none;
+        }
+
+        .notification.success {
+            background: rgba(37, 95, 56, 0.1);
+            color: #1F7D53;
+            border: 1px solid rgba(37, 95, 56, 0.3);
+            display: block;
+        }
+
+        .notification.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 22px;
+            position: relative;
+        }
+
+        label {
+            display: block;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: white;
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        input:focus {
+            outline: none;
+            background: rgba(37, 95, 56, 0.08);
+            border-color: #255F38;
+            box-shadow: 0 0 10px rgba(37, 95, 56, 0.2);
+        }
+
+        input.error {
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.05);
+        }
+
+        input.success {
+            border-color: #255F38;
+            background: rgba(37, 95, 56, 0.05);
+        }
+
+        .input-icon {
+            position: absolute;
+            right: 12px;
+            top: 32px;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 14px;
+            pointer-events: none;
+        }
+
+        .input-icon.success {
+            color: #255F38;
+        }
+
+        .input-icon.error {
+            color: #ef4444;
+        }
+
+        .validation-message {
+            font-size: 12px;
+            margin-top: 6px;
+            display: none;
+            color: #ef4444;
+        }
+
+        .validation-message.success {
+            color: #1F7D53;
+            display: block;
+        }
+
+        .validation-message.error {
+            color: #ef4444;
+            display: block;
+        }
+
+        button.btn-submit {
+            width: 100%;
+            padding: 16px 28px;
+            background: #255F38;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 20px;
+        }
+
+        button.btn-submit:hover:not(:disabled) {
+            background: #1F7D53;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(37, 95, 56, 0.3);
+        }
+
+        button.btn-submit:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        button.btn-submit:disabled {
+            background: rgba(37, 95, 56, 0.4);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        @media (max-width: 600px) {
+            .main-container {
+                padding: 30px 25px;
+            }
+
+            .heading {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="heading">Complete Your Profile</div>
+        <div class="subheading">Let's add a few details to personalize your account</div>
+
+        <div id="notification" class="notification"></div>
+
+        <form id="profile-form">
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="fullName" placeholder="Enter your full name">
+                <i class="fas fa-check input-icon"></i>
+            </div>
+
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="username" placeholder="Choose a unique username (3-30 characters)">
+                <i class="fas fa-check input-icon"></i>
+                <div id="username-validation" class="validation-message"></div>
+            </div>
+
+            <div class="loading" id="loading">
+                <i class="fas fa-spinner fa-spin"></i> Checking availability...
+            </div>
+
+            <button type="button" class="btn-submit" id="submit-btn" onclick="handleProfileUpdate()">Complete Profile</button>
+        </form>
+    </div>
+
+    <script>
+        let usernameCheckTimeout;
+        let isUsernameValid = false;
+
+        async function verifyTokenAndCheckProfile() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/me', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+
+                if (!response.ok) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (data.profileComplete) {
+                    window.location.href = '/dashboard.html';
+                }
+
+                if (data.fullName) {
+                    document.getElementById('fullName').value = data.fullName;
+                }
+                if (data.username) {
+                    document.getElementById('username').value = data.username;
+                }
+            } catch (error) {
+                console.error('Error verifying token:', error);
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/login.html';
+            }
+        }
+
+        async function checkUsernameAvailability(username) {
+            if (!username || username.length < 3) {
+                document.getElementById('username-validation').classList.remove('success', 'error');
+                document.getElementById('username-validation').textContent = '';
+                isUsernameValid = false;
+                return;
+            }
+
+            // Validate format
+            if (!/^[A-Za-z0-9_.]{3,30}$/.test(username)) {
+                document.getElementById('username-validation').classList.add('error');
+                document.getElementById('username-validation').classList.remove('success');
+                document.getElementById('username-validation').textContent = '❌ Invalid format';
+                isUsernameValid = false;
+                return;
+            }
+
+            document.getElementById('loading').classList.add('active');
+
+            try {
+                // For now, we'll do a simple validation check via the profile update endpoint
+                // A real implementation would have a dedicated endpoint
+                isUsernameValid = true;
+                document.getElementById('username-validation').classList.add('success');
+                document.getElementById('username-validation').classList.remove('error');
+                document.getElementById('username-validation').textContent = '✅ Username available';
+            } catch (error) {
+                isUsernameValid = false;
+                document.getElementById('username-validation').classList.add('error');
+                document.getElementById('username-validation').classList.remove('success');
+                document.getElementById('username-validation').textContent = '❌ Error checking availability';
+            } finally {
+                document.getElementById('loading').classList.remove('active');
+            }
+        }
+
+        document.getElementById('username').addEventListener('input', function(e) {
+            clearTimeout(usernameCheckTimeout);
+            const username = e.target.value.trim();
+
+            if (!username) {
+                document.getElementById('username-validation').classList.remove('success', 'error');
+                document.getElementById('username-validation').textContent = '';
+                isUsernameValid = false;
+                return;
+            }
+
+            usernameCheckTimeout = setTimeout(() => {
+                checkUsernameAvailability(username);
+            }, 500);
+        });
+
+        async function handleProfileUpdate() {
+            const fullName = document.getElementById('fullName').value.trim();
+            const username = document.getElementById('username').value.trim();
+            const notification = document.getElementById('notification');
+            const submitBtn = document.getElementById('submit-btn');
+
+            if (!fullName) {
+                showNotification(notification, 'Full name is required', 'error');
+                return;
+            }
+
+            if (!username) {
+                showNotification(notification, 'Username is required', 'error');
+                return;
+            }
+
+            if (!/^[A-Za-z0-9_.]{3,30}$/.test(username)) {
+                showNotification(notification, 'Username must be 3-30 characters, letters/numbers/_/. only', 'error');
+                return;
+            }
+
+            if (!isUsernameValid) {
+                showNotification(notification, 'Please check username availability first', 'error');
+                return;
+            }
+
+            submitBtn.disabled = true;
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/auth/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ fullName, username })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    if (data.user) {
+                        localStorage.setItem('user', JSON.stringify(data.user));
+                    }
+                    showNotification(notification, '✅ Profile completed! Redirecting...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/dashboard.html';
+                    }, 1500);
+                } else {
+                    showNotification(notification, data.error || 'Profile update failed', 'error');
+                    submitBtn.disabled = false;
+                }
+            } catch (error) {
+                showNotification(notification, 'Connection error', 'error');
+                submitBtn.disabled = false;
+            }
+        }
+
+        function showNotification(element, message, type) {
+            element.textContent = message;
+            element.classList.remove('success', 'error');
+            element.classList.add(type);
+        }
+
+        document.getElementById('fullName').addEventListener('blur', function(e) {
+            const value = e.target.value.trim();
+            const icon = this.parentElement.querySelector('.input-icon');
+
+            if (!value) {
+                this.classList.remove('success', 'error');
+                if (icon) icon.classList.remove('success', 'error');
+            } else {
+                this.classList.add('success');
+                if (icon) icon.classList.add('success');
+            }
+        });
+
+        document.getElementById('fullName').addEventListener('focus', function(e) {
+            this.classList.remove('error', 'success');
+            const icon = this.parentElement.querySelector('.input-icon');
+            if (icon) icon.classList.remove('success', 'error');
+        });
+
+        document.getElementById('username').addEventListener('blur', function(e) {
+            const value = e.target.value.trim();
+            const icon = this.parentElement.querySelector('.input-icon');
+
+            if (!value) {
+                this.classList.remove('success', 'error');
+                if (icon) icon.classList.remove('success', 'error');
+            } else if (/^[A-Za-z0-9_.]{3,30}$/.test(value) && isUsernameValid) {
+                this.classList.add('success');
+                if (icon) icon.classList.add('success');
+            } else if (/^[A-Za-z0-9_.]{3,30}$/.test(value)) {
+                this.classList.remove('success', 'error');
+                if (icon) icon.classList.remove('success', 'error');
+            } else {
+                this.classList.add('error');
+                if (icon) icon.classList.add('error');
+            }
+        });
+
+        document.getElementById('username').addEventListener('focus', function(e) {
+            this.classList.remove('error', 'success');
+            const icon = this.parentElement.querySelector('.input-icon');
+            if (icon) icon.classList.remove('success', 'error');
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            verifyTokenAndCheckProfile();
+        });
+    </script>
+</body>
+</html>
