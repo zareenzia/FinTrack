@@ -25,4 +25,23 @@ public interface TodoRepository extends JpaRepository<TodoEntity, Long> {
     List<TodoEntity> findOverdueTodos(@Param("date") LocalDate date);
 
     long countByStatusAndCompleted(String status, Boolean completed);
+    
+    List<TodoEntity> findByUserIdAndStatus(Long userId, String status);
+    List<TodoEntity> findByUserIdAndCompletedFalse(Long userId);
+    
+    @Query("SELECT t FROM TodoEntity t WHERE t.userId = :userId AND (LOWER(t.title) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(t.description) LIKE LOWER(CONCAT('%', :search, '%'))) ORDER BY t.dueDate ASC, t.priority DESC")
+    List<TodoEntity> searchByUserIdAndTitle(@Param("userId") Long userId, @Param("search") String search);
+    
+    @Query("SELECT t FROM TodoEntity t WHERE t.userId = :userId AND (LOWER(t.title) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(t.description) LIKE LOWER(CONCAT('%', :search, '%'))) ORDER BY t.dueDate ASC, t.priority DESC")
+    List<TodoEntity> searchByUserId(@Param("userId") Long userId, @Param("search") String search);
+    
+    @Query("SELECT t FROM TodoEntity t WHERE t.userId = :userId AND t.status != 'completed' ORDER BY t.dueDate ASC, t.priority DESC")
+    List<TodoEntity> findActiveTodosByUserId(@Param("userId") Long userId);
+    
+    @Query("SELECT t FROM TodoEntity t WHERE t.userId = :userId AND t.status != 'completed' AND t.dueDate = :date ORDER BY t.dueTime ASC, t.priority DESC")
+    List<TodoEntity> findTodaysTodosByUserId(@Param("userId") Long userId, @Param("date") LocalDate date);
+    
+    @Query("SELECT t FROM TodoEntity t WHERE t.userId = :userId AND t.status != 'completed' AND t.dueDate < :date ORDER BY t.dueDate ASC, t.priority DESC")
+    List<TodoEntity> findOverdueTodosByUserId(@Param("userId") Long userId, @Param("date") LocalDate date);
 }
+

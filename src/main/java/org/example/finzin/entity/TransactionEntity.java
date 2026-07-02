@@ -18,6 +18,9 @@ public class TransactionEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = true)
+    private Long userId;
+
     @Column(nullable = false)
     private Double amount;
 
@@ -40,7 +43,8 @@ public class TransactionEntity {
     public TransactionEntity() {
     }
 
-    public TransactionEntity(Double amount, String description, CategoryEntity category, String transactionType, LocalDateTime date, LocalDateTime createdAt) {
+    public TransactionEntity(Long userId, Double amount, String description, CategoryEntity category, String transactionType, LocalDateTime date, LocalDateTime createdAt) {
+        this.userId = userId;
         this.amount = amount;
         this.description = description;
         this.category = category;
@@ -55,6 +59,14 @@ public class TransactionEntity {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public Double getAmount() {
