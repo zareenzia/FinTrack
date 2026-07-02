@@ -20,4 +20,10 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
     
     @Query("SELECT CASE WHEN COUNT(u) > 0 THEN true ELSE false END FROM UserEntity u WHERE LOWER(u.email) = LOWER(?1)")
     boolean existsByEmailIgnoreCase(String email);
+    
+    @Query("SELECT u FROM UserEntity u WHERE LOWER(u.username) = LOWER(?1)")
+    Optional<UserEntity> findByUsernameIgnoreCase(String username);
+    
+    @Query("SELECT u FROM UserEntity u WHERE LOWER(u.email) = LOWER(?1)")
+    Optional<UserEntity> findByEmailIgnoreCase(String email);
 }
