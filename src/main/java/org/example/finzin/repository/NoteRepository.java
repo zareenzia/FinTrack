@@ -16,4 +16,16 @@ public interface NoteRepository extends JpaRepository<NoteEntity, Long> {
 
     @Query("SELECT n FROM NoteEntity n WHERE n.archived = false AND n.pinned = true ORDER BY n.updatedAt DESC")
     List<NoteEntity> findPinnedNotes();
+    
+    List<NoteEntity> findByUserIdAndArchived(Long userId, Boolean archived);
+    
+    @Query("SELECT n FROM NoteEntity n WHERE n.userId = :userId AND (LOWER(n.title) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(n.content) LIKE LOWER(CONCAT('%', :search, '%'))) ORDER BY n.pinned DESC, n.updatedAt DESC")
+    List<NoteEntity> searchByUserIdAndContent(@Param("userId") Long userId, @Param("search") String search);
+    
+    @Query("SELECT n FROM NoteEntity n WHERE n.userId = :userId AND n.pinned = true AND n.archived = false ORDER BY n.updatedAt DESC")
+    List<NoteEntity> findPinnedByUserId(@Param("userId") Long userId);
+    
+    @Query("SELECT n FROM NoteEntity n WHERE n.userId = :userId AND n.archived = false ORDER BY n.pinned DESC, n.updatedAt DESC")
+    List<NoteEntity> findByUserIdAndArchivedFalseOrderByPinnedDescUpdatedAtDesc(@Param("userId") Long userId);
 }
+

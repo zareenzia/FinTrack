@@ -15,6 +15,9 @@ public class AssetEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = true)
+    private Long userId;
+
     @Column(nullable = false)
     private String name;
 
@@ -33,7 +36,8 @@ public class AssetEntity {
     public AssetEntity() {
     }
 
-    public AssetEntity(String name, String type, String description, Double value, LocalDateTime createdAt) {
+    public AssetEntity(Long userId, String name, String type, String description, Double value, LocalDateTime createdAt) {
+        this.userId = userId;
         this.name = name;
         this.type = type;
         this.description = description;
@@ -47,6 +51,14 @@ public class AssetEntity {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public String getName() {

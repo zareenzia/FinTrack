@@ -1,5 +1,6 @@
 package org.example.finzin.web;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
@@ -7,28 +8,84 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class PageController {
 
     @GetMapping("/")
-    public String index() {
+    public String index(HttpServletRequest request) {
+        if (request.getAttribute("userId") != null) {
+            return "redirect:/dashboard";
+        }
         return "forward:/index.html";
     }
 
+    @GetMapping("/login")
+    public String login(HttpServletRequest request) {
+        if (request.getAttribute("userId") != null) {
+            return "redirect:/dashboard";
+        }
+        return "forward:/login.html";
+    }
+
+    @GetMapping("/signup")
+    public String signup(HttpServletRequest request) {
+        if (request.getAttribute("userId") != null) {
+            return "redirect:/dashboard";
+        }
+        return "forward:/signup.html";
+    }
+
+    // Protected routes - require authentication
     @GetMapping("/dashboard")
-    public String dashboard() {
+    public String dashboard(HttpServletRequest request) {
+        if (request.getAttribute("userId") == null) {
+            return "redirect:/login";
+        }
         return "forward:/dashboard.html";
     }
 
     @GetMapping("/transactions")
-    public String transactions() {
+    public String transactions(HttpServletRequest request) {
+        if (request.getAttribute("userId") == null) {
+            return "redirect:/login";
+        }
         return "forward:/transactions.html";
     }
 
+    @GetMapping("/categories")
+    public String categories(HttpServletRequest request) {
+        if (request.getAttribute("userId") == null) {
+            return "redirect:/login";
+        }
+        return "forward:/categories.html";
+    }
+
+    @GetMapping("/assets")
+    public String assets(HttpServletRequest request) {
+        if (request.getAttribute("userId") == null) {
+            return "redirect:/login";
+        }
+        return "forward:/assets.html";
+    }
+
     @GetMapping("/notes")
-    public String notes() {
+    public String notes(HttpServletRequest request) {
+        if (request.getAttribute("userId") == null) {
+            return "redirect:/login";
+        }
         return "forward:/notes.html";
     }
 
     @GetMapping("/todos")
-    public String todos() {
+    public String todos(HttpServletRequest request) {
+        if (request.getAttribute("userId") == null) {
+            return "redirect:/login";
+        }
         return "forward:/todos.html";
+    }
+
+    @GetMapping("/settings")
+    public String settings(HttpServletRequest request) {
+        if (request.getAttribute("userId") == null) {
+            return "redirect:/login";
+        }
+        return "forward:/settings.html";
     }
 }
 
