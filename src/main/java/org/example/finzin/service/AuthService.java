@@ -15,6 +15,8 @@ public class AuthService {
         Pattern.compile("^[A-Za-z0-9+_.-]+@(.+)$");
     private static final Pattern PASSWORD_PATTERN = 
         Pattern.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*])[A-Za-z\\d!@#$%^&*]{8,}$");
+    private static final Pattern USERNAME_PATTERN = 
+        Pattern.compile("^[A-Za-z0-9_.]{3,30}$");
 
     public AuthService(UserRepository userRepository, PasswordService passwordService) {
         this.userRepository = userRepository;
@@ -56,6 +58,67 @@ public class AuthService {
         return userRepository.save(user);
     }
 
+    public UserEntity registerSimplified(String email, String password) 
+            throws IllegalArgumentException {
+        
+        // Validate inputs
+        if (!EMAIL_PATTERN.matcher(email).matches()) {
+            throw new IllegalArgumentException("Invalid email format");
+        }
+        
+        if (!PASSWORD_PATTERN.matcher(password).matches()) {
+            throw new IllegalArgumentException("Password must be at least 8 characters with uppercase, lowercase, number, and special character");
+        }
+        
+        if (userRepository.existsByEmailIgnoreCase(email)) {
+            throw new IllegalArgumentException("Email already exists");
+        }
+        
+        // Create and save user with null fullName and username
+        UserEntity user = new UserEntity();
+        user.setFullName(null);
+        user.setUsername(null);
+        user.setEmail(email);
+        user.setPasswordHash(passwordService.hashPassword(password));
+        
+        return userRepository.save(user);
+    }
+
+    public UserEntity updateProfile(Long userId, String fullName, String username) 
+            throws IllegalArgumentException {
+        
+        // Validate inputs
+        if (username == null || username.isBlank()) {
+            throw new IllegalArgumentException("Username cannot be blank");
+        }
+        
+        if (fullName == null || fullName.isBlank()) {
+            throw new IllegalArgumentException("Full name cannot be blank");
+        }
+        
+        if (!USERNAME_PATTERN.matcher(username).matches()) {
+            throw new IllegalArgumentException("Username must be 3-30 characters, letters/numbers/_/. only");
+        }
+        
+        // Check username uniqueness (case-insensitive)
+        Optional<UserEntity> existingUser = userRepository.findByUsernameIgnoreCase(username);
+        if (existingUser.isPresent() && !existingUser.get().getId().equals(userId)) {
+            throw new IllegalArgumentException("Username already exists");
+        }
+        
+        // Get user and update
+        Optional<UserEntity> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            throw new IllegalArgumentException("User not found");
+        }
+        
+        UserEntity user = userOpt.get();
+        user.setFullName(fullName);
+        user.setUsername(username);
+        
+        return userRepository.save(user);
+    }
+
     public UserEntity login(String username, String password) throws IllegalArgumentException {
         Optional<UserEntity> user = userRepository.findByUsernameOrEmail(username, username);
         
@@ -71,19 +134,8 @@ public class AuthService {
         return userEntity;
     }
 
-    public UserEntity createDefaultLeahUser() {
-        Optional<UserEntity> existing = userRepository.findByUsername("leah");
-        
-        if (existing.isPresent()) {
-            return existing.get();
-        }
-        
-        UserEntity leah = new UserEntity();
-        leah.setFullName("Leah");
-        leah.setUsername("leah");
-        leah.setEmail("zareenzia801@gmail.com");
-        leah.setPasswordHash(passwordService.hashPassword("Zia@1234"));
-        
-        return userRepository.save(leah);
+    public UserEntity getUserById(Long userId) {
+        return userRepository.findById(userId).orElse(null);
     }
 }
+

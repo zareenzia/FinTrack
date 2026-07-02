@@ -24,7 +24,7 @@
 
         .main-container {
             width: 100%;
-            max-width: 1200px;
+            max-width: 1400px;
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 0;
@@ -32,7 +32,7 @@
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
             overflow: hidden;
-            min-height: 600px;
+            min-height: 700px;
         }
 
         /* Left Section - Image/Background */
@@ -41,7 +41,7 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 40px;
+            padding: 50px;
             position: relative;
             overflow: hidden;
         }
@@ -116,7 +116,7 @@
         /* Right Section - Form */
         .right-section {
             background: #18230F;
-            padding: 40px;
+            padding: 60px;
             display: flex;
             flex-direction: column;
             justify-content: flex-start;
@@ -125,25 +125,25 @@
 
 
         .heading {
-            font-size: 28px;
+            font-size: 36px;
             color: white;
             font-weight: 700;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
             margin-top: 0;
         }
 
         .tabs-section {
             display: flex;
             gap: 15px;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
         }
 
         .tab-btn {
-            padding: 12px 28px;
+            padding: 14px 32px;
             background: transparent;
             border: none;
             color: rgba(255, 255, 255, 0.6);
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -207,15 +207,15 @@
         }
 
         .form-group {
-            margin-bottom: 16px;
+            margin-bottom: 22px;
             position: relative;
         }
 
         label {
             display: block;
             color: rgba(255, 255, 255, 0.7);
-            font-size: 11px;
-            margin-bottom: 6px;
+            font-size: 12px;
+            margin-bottom: 8px;
             text-transform: uppercase;
             letter-spacing: 1px;
             font-weight: 700;
@@ -223,12 +223,12 @@
 
         input {
             width: 100%;
-            padding: 12px 14px;
+            padding: 15px 16px;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 8px;
             color: white;
-            font-size: 14px;
+            font-size: 15px;
             transition: all 0.3s ease;
         }
 
@@ -274,12 +274,12 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            margin: 18px 0 24px 0;
+            margin: 24px 0 32px 0;
         }
 
         input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
             cursor: pointer;
             accent-color: #255F38;
         }
@@ -287,7 +287,7 @@
         .checkbox-group label {
             margin: 0;
             color: rgba(255, 255, 255, 0.7);
-            font-size: 12px;
+            font-size: 13px;
             text-transform: none;
             letter-spacing: normal;
             font-weight: normal;
@@ -305,12 +305,12 @@
 
         button.btn-submit {
             width: 100%;
-            padding: 12px 24px;
+            padding: 16px 28px;
             background: #255F38;
             color: white;
             border: none;
             border-radius: 8px;
-            font-size: 13px;
+            font-size: 15px;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -330,9 +330,9 @@
 
         .footer-link {
             text-align: center;
-            margin-top: 16px;
+            margin-top: 20px;
             color: rgba(255, 255, 255, 0.6);
-            font-size: 12px;
+            font-size: 13px;
         }
 
         .footer-link a {
@@ -453,20 +453,8 @@
                     <div id="signup-notification" class="notification"></div>
 
                     <div class="form-group">
-                        <label>Full Name</label>
-                        <input type="text" id="signup-fullname" placeholder="Enter your full name">
-                        <i class="fas fa-check input-icon"></i>
-                    </div>
-
-                    <div class="form-group">
                         <label>Email</label>
                         <input type="email" id="signup-email" placeholder="Enter your email address">
-                        <i class="fas fa-check input-icon"></i>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Username</label>
-                        <input type="text" id="signup-username" placeholder="Choose a username">
                         <i class="fas fa-check input-icon"></i>
                     </div>
 
@@ -480,11 +468,6 @@
                         <label>Confirm Password</label>
                         <input type="password" id="signup-confirm-password" placeholder="Confirm your password">
                         <i class="fas fa-check input-icon"></i>
-                    </div>
-
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="agree-terms">
-                        <label for="agree-terms">I agree to the <a href="#">Terms and Conditions</a></label>
                     </div>
 
                     <button class="btn-submit" onclick="handleSignup()">Sign Up</button>
@@ -564,15 +547,12 @@
         }
 
         async function handleSignup() {
-            const fullName = document.getElementById('signup-fullname').value.trim();
             const email = document.getElementById('signup-email').value.trim();
-            const username = document.getElementById('signup-username').value.trim();
             const password = document.getElementById('signup-password').value;
             const confirmPassword = document.getElementById('signup-confirm-password').value;
-            const agreeTerms = document.getElementById('agree-terms').checked;
             const notification = document.getElementById('signup-notification');
 
-            if (!fullName || !email || !username || !password || !confirmPassword) {
+            if (!email || !password || !confirmPassword) {
                 showNotification(notification, 'Please fill in all fields', 'error');
                 return;
             }
@@ -582,16 +562,11 @@
                 return;
             }
 
-            if (!agreeTerms) {
-                showNotification(notification, 'Please agree to the terms', 'error');
-                return;
-            }
-
             try {
-                const response = await fetch('/api/auth/register', {
+                const response = await fetch('/api/auth/register-simple', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ fullName, username, email, password, confirmPassword })
+                    body: JSON.stringify({ email, password, confirmPassword })
                 });
 
                 const data = await response.json();
@@ -601,7 +576,7 @@
                     if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
                     showNotification(notification, '✅ Registration successful! Redirecting...', 'success');
                     setTimeout(() => {
-                        window.location.href = '/dashboard.html';
+                        window.location.href = '/profile.html';
                     }, 1000);
                 } else {
                     showNotification(notification, data.error || 'Registration failed', 'error');
