@@ -1,0 +1,642 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - FinTrack{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-container {
+        display: flex;
+        gap: 20px;
+        min-height: calc(100vh - 200px);
+    }
+    
+    .settings-sidebar {
+        width: 220px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px 0;
+        height: fit-content;
+        position: sticky;
+        top: 20px;
+    }
+    
+    .settings-sidebar .nav-link {
+        color: #333;
+        padding: 12px 20px;
+        border-left: 3px solid transparent;
+        margin: 5px 0;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 500;
+    }
+    
+    .settings-sidebar .nav-link:hover {
+        background: #e9ecef;
+        border-left-color: #007bff;
+        transform: translateX(5px);
+    }
+    
+    .settings-sidebar .nav-link.active {
+        background: #e9ecef;
+        border-left-color: #007bff;
+        color: #007bff;
+    }
+    
+    .settings-sidebar i {
+        width: 20px;
+        text-align: center;
+    }
+    
+    .settings-content {
+        flex: 1;
+        background: white;
+        border-radius: 8px;
+        padding: 30px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .settings-section {
+        display: none;
+    }
+    
+    .settings-section.active {
+        display: block;
+    }
+    
+    .settings-section h3 {
+        color: #333;
+        margin-bottom: 25px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #e9ecef;
+        font-weight: 600;
+    }
+    
+    .settings-section .form-label {
+        font-weight: 600;
+        color: #555;
+        margin-bottom: 8px;
+    }
+    
+    .theme-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 20px;
+        margin: 20px 0;
+    }
+    
+    .theme-card {
+        padding: 20px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+        background: white;
+    }
+    
+    .theme-card:hover {
+        border-color: #007bff;
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,123,255,0.2);
+    }
+    
+    .theme-card.active {
+        border-color: #007bff;
+        background: #f0f7ff;
+        box-shadow: 0 5px 15px rgba(0,123,255,0.3);
+    }
+    
+    .theme-preview {
+        width: 100%;
+        height: 80px;
+        border-radius: 4px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 12px;
+    }
+    
+    .theme-name {
+        font-weight: 600;
+        color: #333;
+        margin-top: 10px;
+    }
+    
+    .categories-list {
+        margin-top: 20px;
+        max-height: 500px;
+        overflow-y: auto;
+    }
+    
+    .category-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        transition: all 0.3s ease;
+    }
+    
+    .category-item:hover {
+        background: #e9ecef;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .category-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        flex: 1;
+    }
+    
+    .category-color {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: 2px solid #ddd;
+        cursor: pointer;
+    }
+    
+    .category-details h5 {
+        margin: 0;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .category-details p {
+        margin: 5px 0 0 0;
+        color: #999;
+        font-size: 12px;
+    }
+    
+    .category-actions {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .btn-icon {
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+    
+    .form-section {
+        margin-bottom: 30px;
+        padding-bottom: 30px;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .form-section:last-child {
+        border-bottom: none;
+    }
+    
+    .form-section h5 {
+        color: #555;
+        font-weight: 600;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .form-section h5 i {
+        color: #007bff;
+    }
+    
+    .add-category-form {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .toast-notification {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #28a745;
+        color: white;
+        padding: 15px 20px;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 1000;
+    }
+    
+    .toast-notification.error {
+        background: #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h2 class="mb-0"><i class="fas fa-cog"></i> Settings</h2>
+    </div>
+</div>
+
+<div class="settings-container">
+    <!-- Left Sidebar -->
+    <div class="settings-sidebar">
+        <div class="nav-link active" data-section="theme">
+            <i class="fas fa-palette"></i> Update Theme
+        </div>
+        <div class="nav-link" data-section="categories">
+            <i class="fas fa-tags"></i> Update Categories
+        </div>
+        <div class="nav-link" data-section="about">
+            <i class="fas fa-info-circle"></i> About
+        </div>
+    </div>
+
+    <!-- Settings Content -->
+    <div class="settings-content">
+        <!-- Theme Settings -->
+        <div class="settings-section active" id="theme">
+            <h3><i class="fas fa-palette"></i> Theme Settings</h3>
+            
+            <div class="form-section">
+                <h5><i class="fas fa-brush"></i> Choose Your Theme</h5>
+                <p class="text-muted mb-4">Select a theme that best suits your preference</p>
+                
+                <div class="theme-grid">
+                    <!-- Light Theme -->
+                    <div class="theme-card active" data-theme="light">
+                        <div class="theme-preview" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+                            <span>Light</span>
+                        </div>
+                        <div class="theme-name">Light</div>
+                    </div>
+                    
+                    <!-- Dark Theme -->
+                    <div class="theme-card" data-theme="dark">
+                        <div class="theme-preview" style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);">
+                            <span>Dark</span>
+                        </div>
+                        <div class="theme-name">Dark</div>
+                    </div>
+                    
+                    <!-- Blue Theme -->
+                    <div class="theme-card" data-theme="blue">
+                        <div class="theme-preview" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <span>Blue</span>
+                        </div>
+                        <div class="theme-name">Blue</div>
+                    </div>
+                    
+                    <!-- Green Theme -->
+                    <div class="theme-card" data-theme="green">
+                        <div class="theme-preview" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                            <span>Green</span>
+                        </div>
+                        <div class="theme-name">Green</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h5><i class="fas fa-check-circle"></i> Theme Applied</h5>
+                <p class="text-muted" id="current-theme">Current theme: Light</p>
+                <button class="btn btn-primary" onclick="resetTheme()">
+                    <i class="fas fa-redo"></i> Reset to Default
+                </button>
+            </div>
+        </div>
+
+        <!-- Categories Settings -->
+        <div class="settings-section" id="categories">
+            <h3><i class="fas fa-tags"></i> Update Categories</h3>
+            
+            <div class="form-section">
+                <h5><i class="fas fa-plus-circle"></i> Create New Category</h5>
+                <div class="add-category-form">
+                    <form id="categoryForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="catName" class="form-label">Category Name</label>
+                                <input type="text" class="form-control" id="catName" required placeholder="e.g., Groceries">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="catColor" class="form-label">Color</label>
+                                <input type="color" class="form-control form-control-color" id="catColor" value="#3498db">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="fas fa-plus"></i> Create Category
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h5><i class="fas fa-list"></i> Your Categories</h5>
+                <p class="text-muted mb-4">Manage and update your expense categories</p>
+                <div id="categoriesList" class="categories-list"></div>
+            </div>
+        </div>
+
+        <!-- About Section -->
+        <div class="settings-section" id="about">
+            <h3><i class="fas fa-info-circle"></i> About FinTrack</h3>
+            
+            <div class="form-section">
+                <h5>FinTrack - Financial Tracking Application</h5>
+                <p>Version <strong>1.0</strong></p>
+                <p class="text-muted">A modern, responsive financial tracking application designed to help you manage your finances efficiently.</p>
+            </div>
+
+            <div class="form-section">
+                <h5><i class="fas fa-star"></i> Features</h5>
+                <ul>
+                    <li>Track income and expenses</li>
+                    <li>Categorize transactions</li>
+                    <li>View financial analytics</li>
+                    <li>Monitor spending patterns</li>
+                    <li>Customizable themes</li>
+                </ul>
+            </div>
+
+            <div class="form-section">
+                <h5><i class="fas fa-code"></i> Technologies</h5>
+                <ul>
+                    <li>Backend: Flask, SQLAlchemy</li>
+                    <li>Frontend: Bootstrap 5, Chart.js</li>
+                    <li>Database: SQLite</li>
+                    <li>Icons: Font Awesome</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Theme functionality
+document.querySelectorAll('.theme-card').forEach(card => {
+    card.addEventListener('click', function() {
+        const theme = this.dataset.theme;
+        applyTheme(theme);
+    });
+});
+
+function applyTheme(theme) {
+    localStorage.setItem('fintrack-theme', theme);
+    document.querySelectorAll('.theme-card').forEach(card => {
+        card.classList.remove('active');
+    });
+    document.querySelector(`[data-theme="${theme}"]`).classList.add('active');
+    
+    // Update theme text
+    const themeDisplay = {
+        'light': 'Light (Default)',
+        'dark': 'Dark',
+        'blue': 'Blue',
+        'green': 'Green'
+    };
+    document.getElementById('current-theme').textContent = 'Current theme: ' + (themeDisplay[theme] || 'Light');
+    
+    // Apply theme CSS dynamically
+    applyThemeStyles(theme);
+    showNotification('Theme updated successfully!');
+}
+
+function applyThemeStyles(theme) {
+    let styles = '';
+    switch(theme) {
+        case 'dark':
+            styles = `
+                body { background: #1a1a1a; color: #ffffff; }
+                .navbar { background: #0d0d0d !important; }
+                .card { background: #2d2d2d; color: #ffffff; border-color: #444; }
+                .card-header { background: #1a1a1a !important; }
+                .table { color: #ffffff; }
+                .table thead { background: #3d3d3d; }
+                .form-control, .form-select { background: #3d3d3d; color: #ffffff; border-color: #555; }
+                .settings-sidebar { background: #2d2d2d; }
+                .settings-content { background: #2d2d2d; color: #ffffff; }
+                .settings-sidebar .nav-link { color: #ffffff; }
+                .form-label { color: #cccccc; }
+                .text-muted { color: #999999 !important; }
+            `;
+            break;
+        case 'blue':
+            styles = `
+                :root { --primary: #667eea; }
+                body { background: #f5f7ff; }
+                .navbar { background: #667eea !important; }
+                .btn-primary { background: #667eea; border-color: #667eea; }
+                .btn-primary:hover { background: #764ba2; border-color: #764ba2; }
+            `;
+            break;
+        case 'green':
+            styles = `
+                :root { --primary: #11998e; }
+                body { background: #f0f7f5; }
+                .navbar { background: #11998e !important; }
+                .btn-primary { background: #11998e; border-color: #11998e; }
+                .btn-primary:hover { background: #38ef7d; border-color: #38ef7d; }
+            `;
+            break;
+        default: // light
+            styles = '';
+    }
+    
+    let themeStyle = document.getElementById('theme-styles') || document.createElement('style');
+    themeStyle.id = 'theme-styles';
+    themeStyle.textContent = styles;
+    if (!document.getElementById('theme-styles')) {
+        document.head.appendChild(themeStyle);
+    }
+}
+
+function resetTheme() {
+    localStorage.removeItem('fintrack-theme');
+    document.querySelectorAll('.theme-card').forEach(card => {
+        card.classList.remove('active');
+    });
+    document.querySelector('[data-theme="light"]').classList.add('active');
+    document.getElementById('current-theme').textContent = 'Current theme: Light (Default)';
+    applyThemeStyles('light');
+    showNotification('Theme reset to default!');
+}
+
+// Sidebar navigation
+document.querySelectorAll('.settings-sidebar .nav-link').forEach(link => {
+    link.addEventListener('click', function() {
+        const section = this.dataset.section;
+        
+        // Update active states
+        document.querySelectorAll('.settings-sidebar .nav-link').forEach(l => {
+            l.classList.remove('active');
+        });
+        this.classList.add('active');
+        
+        // Update content
+        document.querySelectorAll('.settings-section').forEach(sec => {
+            sec.classList.remove('active');
+        });
+        document.getElementById(section).classList.add('active');
+    });
+});
+
+// Categories functionality
+document.addEventListener('DOMContentLoaded', function() {
+    loadCategories();
+    
+    document.getElementById('categoryForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const name = document.getElementById('catName').value;
+        const color = document.getElementById('catColor').value;
+        
+        try {
+            const response = await fetch('/api/categories', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, color, description: '' })
+            });
+            
+            if (response.ok) {
+                document.getElementById('categoryForm').reset();
+                document.getElementById('catColor').value = '#3498db';
+                loadCategories();
+                showNotification('Category created successfully!');
+            } else {
+                const error = await response.json();
+                showNotification(error.error || 'Error creating category', 'error');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showNotification('Error creating category', 'error');
+        }
+    });
+});
+
+async function loadCategories() {
+    try {
+        const response = await fetch('/api/categories');
+        const categories = await response.json();
+        
+        const list = document.getElementById('categoriesList');
+        if (categories.length === 0) {
+            list.innerHTML = '<p class="text-muted">No categories yet. Create one to get started!</p>';
+            return;
+        }
+        
+        list.innerHTML = categories.map(cat => `
+            <div class="category-item">
+                <div class="category-info">
+                    <div class="category-color" style="background: ${cat.color}; cursor: pointer;" onclick="editCategoryColor(${cat.id}, '${cat.color}')"></div>
+                    <div class="category-details">
+                        <h5>${cat.name}</h5>
+                        <p>${cat.description || 'No description'}</p>
+                    </div>
+                </div>
+                <div class="category-actions">
+                    <button class="btn btn-sm btn-warning btn-icon" onclick="editCategory(${cat.id}, '${cat.name}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger btn-icon" onclick="deleteCategory(${cat.id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading categories:', error);
+    }
+}
+
+async function deleteCategory(id) {
+    if (!confirm('Are you sure you want to delete this category?')) return;
+    
+    try {
+        const response = await fetch(`/api/categories/${id}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            loadCategories();
+            showNotification('Category deleted successfully!');
+        } else {
+            showNotification('Error deleting category', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Error deleting category', 'error');
+    }
+}
+
+function editCategory(id, name) {
+    const newName = prompt('Edit category name:', name);
+    if (newName && newName !== name) {
+        updateCategory(id, { name: newName });
+    }
+}
+
+function editCategoryColor(id, currentColor) {
+    const input = document.createElement('input');
+    input.type = 'color';
+    input.value = currentColor;
+    input.onchange = function() {
+        updateCategory(id, { color: this.value });
+    };
+    input.click();
+}
+
+async function updateCategory(id, data) {
+    try {
+        const response = await fetch(`/api/categories/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+            loadCategories();
+            showNotification('Category updated successfully!');
+        } else {
+            showNotification('Error updating category', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Error updating category', 'error');
+    }
+}
+
+function showNotification(message, type = 'success') {
+    const container = document.createElement('div');
+    container.className = `toast-notification ${type}`;
+    container.textContent = message;
+    document.body.appendChild(container);
+    
+    setTimeout(() => {
+        container.style.animation = 'fadeOut 0.3s ease-in-out';
+        setTimeout(() => container.remove(), 300);
+    }, 3000);
+}
+
+// Load stored theme on page load
+window.addEventListener('DOMContentLoaded', () => {
+    const savedTheme = localStorage.getItem('fintrack-theme') || 'light';
+    document.querySelector(`[data-theme="${savedTheme}"]`).classList.add('active');
+    applyThemeStyles(savedTheme);
+    document.getElementById('current-theme').textContent = `Current theme: ${savedTheme.charAt(0).toUpperCase() + savedTheme.slice(1)}`;
+});
+</script>
+
+<style>
+    @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+    }
+</style>
+{% endblock %}
