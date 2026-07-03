@@ -267,6 +267,43 @@ public class FinanceApiController {
         return ResponseEntity.status(HttpStatus.CREATED).body(toTransactionResponse(saved));
     }
 
+    @PutMapping("/transactions/{id}")
+    public ResponseEntity<?> updateTransaction(HttpServletRequest request, @PathVariable Long id, @RequestBody TransactionRequest body) {
+        Long userId = getUserId(request);
+        TransactionEntity entity = transactionRepository.findById(id).orElse(null);
+        if (entity == null || !entity.getUserId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Transaction not found"));
+        }
+
+        if (body == null
+                || body.description == null || body.description.isBlank()
+                || body.amount == null
+                || body.category_id == null
+                || body.transaction_type == null || body.transaction_type.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Missing required fields"));
+        }
+
+        CategoryEntity category = categoryRepository.findById(body.category_id).orElse(null);
+        if (category == null || !category.getUserId().equals(userId)) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid category"));
+        }
+
+        String normalizedType = body.transaction_type.toLowerCase(Locale.ROOT);
+        if (!normalizedType.equals("income") && !normalizedType.equals("expense") && !normalizedType.equals("savings")) {
+            return ResponseEntity.badRequest().body(Map.of("error", "transaction_type must be income, expense, or savings"));
+        }
+
+        entity.setDescription(body.description.trim());
+        entity.setAmount(body.amount);
+        entity.setCategory(category);
+        entity.setTransactionType(normalizedType);
+        if (body.date != null && !body.date.isBlank()) {
+            entity.setDate(parseDate(body.date));
+        }
+        TransactionEntity saved = transactionRepository.save(entity);
+        return ResponseEntity.ok(toTransactionResponse(saved));
+    }
+
     @DeleteMapping("/transactions/{id}")
     public ResponseEntity<?> deleteTransaction(HttpServletRequest request, @PathVariable Long id) {
         Long userId = getUserId(request);
