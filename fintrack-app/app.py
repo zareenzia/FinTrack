@@ -68,6 +68,10 @@ def dashboard():
 def transactions_page():
     return render_template('transactions.html')
 
+@app.route('/settings')
+def settings_page():
+    return render_template('settings.html')
+
 # API Routes - Categories
 @app.route('/api/categories', methods=['GET'])
 def get_categories():
