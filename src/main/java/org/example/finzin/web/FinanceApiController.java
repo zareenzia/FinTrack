@@ -59,9 +59,14 @@ public class FinanceApiController {
 
     // ============== CATEGORY ENDPOINTS ==============
     @GetMapping("/categories")
-    public List<Map<String, Object>> getCategories(HttpServletRequest request) {
+    public List<Map<String, Object>> getCategories(
+            HttpServletRequest request,
+            @RequestParam(required = false, name = "type") String type) {
         Long userId = getUserId(request);
-        return categoryRepository.findByUserId(userId).stream()
+        List<CategoryEntity> categories = (type != null && !type.isBlank())
+                ? categoryRepository.findByUserIdAndCategoryTypeOrGeneral(userId, type.toLowerCase(Locale.ROOT))
+                : categoryRepository.findByUserId(userId);
+        return categories.stream()
                 .sorted(Comparator.comparingLong(CategoryEntity::getId))
                 .map(this::toCategoryResponse)
                 .collect(Collectors.toList());
@@ -86,6 +91,9 @@ public class FinanceApiController {
                 body.color == null || body.color.isBlank() ? "#3498db" : body.color,
                 body.icon == null || body.icon.isBlank() ? "tag" : body.icon
         );
+        if (body.categoryType != null && !body.categoryType.isBlank()) {
+            entity.setCategoryType(body.categoryType.toLowerCase(Locale.ROOT));
+        }
         CategoryEntity saved = categoryRepository.save(entity);
         return ResponseEntity.status(HttpStatus.CREATED).body(toCategoryResponse(saved));
     }
@@ -117,6 +125,9 @@ public class FinanceApiController {
         }
         if (body.icon != null && !body.icon.isBlank()) {
             existing.setIcon(body.icon);
+        }
+        if (body.categoryType != null && !body.categoryType.isBlank()) {
+            existing.setCategoryType(body.categoryType.toLowerCase(Locale.ROOT));
         }
         CategoryEntity updated = categoryRepository.save(existing);
         return ResponseEntity.ok(toCategoryResponse(updated));
@@ -238,8 +249,8 @@ public class FinanceApiController {
         }
 
         String normalizedType = body.transaction_type.toLowerCase(Locale.ROOT);
-        if (!normalizedType.equals("income") && !normalizedType.equals("expense")) {
-            return ResponseEntity.badRequest().body(Map.of("error", "transaction_type must be income or expense"));
+        if (!normalizedType.equals("income") && !normalizedType.equals("expense") && !normalizedType.equals("savings")) {
+            return ResponseEntity.badRequest().body(Map.of("error", "transaction_type must be income, expense, or savings"));
         }
 
         LocalDateTime date = parseDate(body.date);
@@ -451,45 +462,35 @@ public class FinanceApiController {
     @GetMapping("/analytics/summary")
     public Map<String, Object> summary(HttpServletRequest request) {
         Long userId = getUserId(request);
-        double income = getTotalIncome(userId);
-        double expense = getTotalExpense(userId);
-        double savings = income - expense;
-        double totalAssets = getTotalAssets(userId);
-        double savingsRate = income == 0 ? 0 : (savings / income) * 100;
-        
+        double income       = getTotalIncome(userId);
+        double expense      = getTotalExpense(userId);
+        double savingsTx    = getTotalSavings(userId);
+        double balance      = income - expense - savingsTx;          // available balance
+        double totalAssets  = getTotalAssets(userId);
+        double savingsRate  = income == 0 ? 0 : (savingsTx / income) * 100;
+        double netWorth     = balance + savingsTx + totalAssets;
+
         return Map.of(
-                "total_income", income,
-                "total_expense", expense,
-                "balance", savings,
-                "total_savings", savings,
-                "savings_rate", savingsRate,
-                "total_assets", totalAssets,
-                "net_worth", savings + totalAssets,
+                "total_income",   income,
+                "total_expense",  expense,
+                "total_savings",  savingsTx,
+                "balance",        balance,
+                "savings_rate",   savingsRate,
+                "total_assets",   totalAssets,
+                "net_worth",      netWorth,
                 "transaction_count", transactionRepository.countByUserId(userId)
         );
     }
 
-    @GetMapping("/analytics/savings")
-    public Map<String, Object> savings(HttpServletRequest request) {
-        Long userId = getUserId(request);
-        double income = getTotalIncome(userId);
-        double expense = getTotalExpense(userId);
-        double totalSavings = income - expense;
-        double savingsRate = income == 0 ? 0 : (totalSavings / income) * 100;
-        return Map.of(
-                "total_income", income,
-                "total_expense", expense,
-                "total_savings", totalSavings,
-                "savings_rate", savingsRate
-        );
-    }
-
     @GetMapping("/analytics/category-breakdown")
-    public List<Map<String, Object>> categoryBreakdown(HttpServletRequest request) {
+    public List<Map<String, Object>> categoryBreakdown(
+            HttpServletRequest request,
+            @RequestParam(required = false, defaultValue = "expense") String type) {
         Long userId = getUserId(request);
+        String filterType = type.toLowerCase(Locale.ROOT);
         Map<Long, BreakdownAccumulator> grouped = new LinkedHashMap<>();
         transactionRepository.findByUserId(userId).stream()
-                .filter(t -> t.getTransactionType().equals("expense"))
+                .filter(t -> t.getTransactionType().equals(filterType))
                 .forEach(t -> {
                     BreakdownAccumulator acc = grouped.computeIfAbsent(t.getCategory().getId(), k -> new BreakdownAccumulator());
                     acc.total += t.getAmount();
@@ -499,14 +500,12 @@ public class FinanceApiController {
         List<Map<String, Object>> response = new ArrayList<>();
         for (Map.Entry<Long, BreakdownAccumulator> entry : grouped.entrySet()) {
             CategoryEntity category = categoryRepository.findById(entry.getKey()).orElse(null);
-            if (category == null) {
-                continue;
-            }
+            if (category == null) continue;
             response.add(Map.of(
                     "category", category.getName(),
-                    "color", category.getColor(),
-                    "total", entry.getValue().total,
-                    "count", entry.getValue().count
+                    "color",    category.getColor(),
+                    "total",    entry.getValue().total,
+                    "count",    entry.getValue().count
             ));
         }
         return response;
@@ -519,10 +518,10 @@ public class FinanceApiController {
         for (TransactionEntity t : transactionRepository.findByUserId(userId)) {
             YearMonth month = YearMonth.from(t.getDate());
             Totals totals = grouped.computeIfAbsent(month, m -> new Totals());
-            if (t.getTransactionType().equals("income")) {
-                totals.income += t.getAmount();
-            } else {
-                totals.expense += t.getAmount();
+            switch (t.getTransactionType()) {
+                case "income"  -> totals.income  += t.getAmount();
+                case "expense" -> totals.expense += t.getAmount();
+                case "savings" -> totals.savings += t.getAmount();
             }
         }
 
@@ -531,21 +530,23 @@ public class FinanceApiController {
                 .sorted(Map.Entry.comparingByKey())
                 .forEach(entry -> {
                     String month = entry.getKey().toString();
-                    response.add(Map.of("month", month, "type", "income", "total", entry.getValue().income));
+                    response.add(Map.of("month", month, "type", "income",  "total", entry.getValue().income));
                     response.add(Map.of("month", month, "type", "expense", "total", entry.getValue().expense));
+                    response.add(Map.of("month", month, "type", "savings", "total", entry.getValue().savings));
                 });
         return response;
     }
 
     // ============== HELPER METHODS ==============
     private Map<String, Object> toCategoryResponse(CategoryEntity entity) {
-        return Map.of(
-                "id", entity.getId(),
-                "name", entity.getName(),
-                "description", entity.getDescription(),
-                "color", entity.getColor(),
-                "icon", entity.getIcon()
-        );
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("id",           entity.getId());
+        map.put("name",         entity.getName());
+        map.put("description",  entity.getDescription());
+        map.put("color",        entity.getColor());
+        map.put("icon",         entity.getIcon());
+        map.put("categoryType", entity.getCategoryType() != null ? entity.getCategoryType() : "general");
+        return map;
     }
 
     private Map<String, Object> toAssetResponse(AssetEntity entity) {
@@ -580,6 +581,11 @@ public class FinanceApiController {
 
     private double getTotalExpense(Long userId) {
         Double sum = transactionRepository.sumByUserIdAndTransactionType(userId, "expense");
+        return sum == null ? 0 : sum;
+    }
+
+    private double getTotalSavings(Long userId) {
+        Double sum = transactionRepository.sumByUserIdAndTransactionType(userId, "savings");
         return sum == null ? 0 : sum;
     }
 
@@ -620,9 +626,10 @@ public class FinanceApiController {
     private static class Totals {
         private double income;
         private double expense;
+        private double savings;
     }
 
-    private record CategoryRequest(String name, String description, String color, String icon) {
+    private record CategoryRequest(String name, String description, String color, String icon, String categoryType) {
     }
 
     private record TransactionRequest(

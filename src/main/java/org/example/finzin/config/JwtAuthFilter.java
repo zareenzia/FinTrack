@@ -35,6 +35,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             requestURI.startsWith("/static/") ||
             requestURI.startsWith("/css/") ||
             requestURI.startsWith("/js/") ||
+            requestURI.startsWith("/user-uploads/") ||
             requestURI.startsWith("/data/")) {
             filterChain.doFilter(request, response);
             return;

@@ -26,6 +26,10 @@ public class CategoryEntity {
     @Column(nullable = false)
     private String icon;
 
+    /** null or "general" = compatible with any transaction type */
+    @Column(nullable = true)
+    private String categoryType;
+
     public CategoryEntity() {
     }
 
@@ -83,5 +87,13 @@ public class CategoryEntity {
 
     public void setIcon(String icon) {
         this.icon = icon;
+    }
+
+    public String getCategoryType() {
+        return categoryType;
+    }
+
+    public void setCategoryType(String categoryType) {
+        this.categoryType = categoryType;
     }
 }

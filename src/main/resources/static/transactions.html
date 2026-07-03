@@ -49,6 +49,7 @@
                             <select class="form-select" id="type" required>
                                 <option value="expense">Expense</option>
                                 <option value="income">Income</option>
+                                <option value="savings">Savings</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -218,6 +219,15 @@
                     <input type="text" class="form-control" id="newCategoryName" placeholder="Enter category name">
                 </div>
                 <div class="mb-3">
+                    <label for="newCategoryType" class="form-label">Category Type</label>
+                    <select class="form-select" id="newCategoryType">
+                        <option value="general">General (all types)</option>
+                        <option value="expense">Expense</option>
+                        <option value="savings">Savings</option>
+                        <option value="income">Income</option>
+                    </select>
+                </div>
+                <div class="mb-3">
                     <label for="newCategoryColor" class="form-label">Color</label>
                     <input type="color" class="form-control form-control-color" id="newCategoryColor" value="#3498db">
                 </div>
@@ -225,56 +235,6 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-success" id="createCategoryBtn">Create Category</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- User Profile Modal -->
-<div class="modal fade" id="userProfileModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-user"></i> User Profile</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center mb-4">
-                    <div class="position-relative d-inline-block">
-                        <img src="https://via.placeholder.com/120" id="profilePicture" class="rounded-circle border" style="width: 120px; height: 120px; object-fit: cover;">
-                        <button type="button" class="btn btn-sm btn-primary position-absolute bottom-0 end-0 rounded-circle" title="Change Picture" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-camera"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Full Name</label>
-                    <input type="text" class="form-control" id="userName" value="User Name" placeholder="Enter your full name">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Email</label>
-                    <input type="email" class="form-control" id="userEmail" value="user@example.com" placeholder="Enter your email" disabled>
-                </div>
-                <hr>
-                <h6 class="fw-bold mb-3"><i class="fas fa-lock"></i> Change Password</h6>
-                <div class="mb-3">
-                    <label class="form-label">Current Password</label>
-                    <input type="password" class="form-control" placeholder="Enter current password">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">New Password</label>
-                    <input type="password" class="form-control" placeholder="Enter new password">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Confirm Password</label>
-                    <input type="password" class="form-control" placeholder="Confirm new password">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary">
-                    <i class="fas fa-save"></i> Save Changes (Coming Soon)
-                </button>
             </div>
         </div>
     </div>
@@ -318,7 +278,7 @@
             });
         }
         
-        loadCategories();
+        loadCategories(document.getElementById('type').value);
         loadTransactions();
         loadAssets();
     });
@@ -329,9 +289,10 @@
         manageCategoriesModal.show();
     }
 
-    async function loadCategories() {
+    async function loadCategories(type) {
         try {
-            const response = await fetch('/api/categories');
+            const url = type ? `/api/categories?type=${encodeURIComponent(type)}` : '/api/categories';
+            const response = await fetch(url);
             const categories = await response.json();
             cachedCategories = categories;
 
@@ -347,6 +308,10 @@
             showTopNotification('Unable to load categories.', 'error');
         }
     }
+
+    document.getElementById('type').addEventListener('change', function () {
+        loadCategories(this.value);
+    });
 
     document.getElementById('transactionForm').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -368,6 +333,7 @@
             if (response.ok) {
                 document.getElementById('transactionForm').reset();
                 document.getElementById('date').valueAsDate = new Date();
+                loadCategories(document.getElementById('type').value);
                 loadTransactions();
                 showTopNotification('Transaction added.', 'success');
             } else {
@@ -421,17 +387,24 @@
                 return;
             }
 
-            list.innerHTML = transactions.map(tx => `
+            list.innerHTML = transactions.map(tx => {
+                const isSavings = tx.transaction_type === 'savings';
+                const isIncome  = tx.transaction_type === 'income';
+                const colorClass = isIncome ? 'text-success' : (isSavings ? 'text-primary' : 'text-danger');
+                const prefix     = isIncome ? '+' : (isSavings ? '⇒' : '-');
+                const badge      = isIncome ? 'bg-success' : (isSavings ? 'bg-primary' : 'bg-danger');
+                return `
             <div class="card mb-2">
                 <div class="card-body py-2">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h6 class="mb-1">${tx.description}</h6>
                             <small class="text-muted">${new Date(tx.date).toLocaleDateString()} • ${tx.category_name}</small>
+                            <span class="badge ${badge} ms-1" style="font-size:0.7rem">${tx.transaction_type.charAt(0).toUpperCase() + tx.transaction_type.slice(1)}</span>
                         </div>
                         <div class="text-end d-flex align-items-center gap-2">
-                            <div class="fw-bold ${tx.transaction_type === 'income' ? 'text-success' : 'text-danger'}">
-                                ${tx.transaction_type === 'income' ? '+' : '-'}$${Number(tx.amount).toFixed(2)}
+                            <div class="fw-bold ${colorClass}">
+                                ${prefix}$${Number(tx.amount).toFixed(2)}
                             </div>
                             <button class="btn btn-sm btn-link text-danger p-0" onclick="deleteTransaction(${tx.id})" title="Delete transaction" style="font-size: 1.2rem;">
                                 <i class="fas fa-trash-alt"></i>
@@ -440,7 +413,7 @@
                     </div>
                 </div>
             </div>
-        `).join('');
+        `}).join('');
         } catch (error) {
             showTopNotification('Unable to load transactions.', 'error');
         }
@@ -610,7 +583,7 @@
                 editCategoryModal.hide();
                 editCategoryId = null;
                 loadCategoriesForManagement();
-                loadCategories();
+                loadCategories(document.getElementById('type').value);
                 loadTransactions();
                 showTopNotification('Category updated successfully.', 'success');
             } else {
@@ -635,7 +608,7 @@
                 deleteCategoryModal.hide();
                 deleteCategoryId = null;
                 loadCategoriesForManagement();
-                loadCategories();
+                loadCategories(document.getElementById('type').value);
                 loadTransactions();
                 showTopNotification('Category deleted successfully.', 'success');
             } else {
@@ -650,12 +623,17 @@
     function openAddCategoryModal() {
         document.getElementById('newCategoryName').value = '';
         document.getElementById('newCategoryColor').value = '#3498db';
+        // Pre-select type matching the current transaction type
+        const currentType = document.getElementById('type').value || 'general';
+        const typeEl = document.getElementById('newCategoryType');
+        if (typeEl) typeEl.value = currentType;
         addCategoryModal.show();
     }
 
     async function createNewCategory() {
-        const name = document.getElementById('newCategoryName').value.trim();
+        const name  = document.getElementById('newCategoryName').value.trim();
         const color = document.getElementById('newCategoryColor').value;
+        const catType = document.getElementById('newCategoryType').value || 'general';
 
         if (!name) {
             showTopNotification('Category name cannot be empty.', 'error');
@@ -665,7 +643,8 @@
         const category = {
             name: name,
             color: color,
-            icon: 'tag'
+            icon: 'tag',
+            categoryType: catType
         };
 
         try {
@@ -677,7 +656,7 @@
             if (response.ok) {
                 addCategoryModal.hide();
                 loadCategoriesForManagement();
-                loadCategories();
+                loadCategories(document.getElementById('type').value);
                 showTopNotification('Category created successfully.', 'success');
             } else {
                 const errorData = await response.json().catch(() => null);
