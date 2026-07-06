@@ -1,0 +1,8 @@
+[build]
+builder = "nixpacks"
+buildCommand = "./gradlew bootJar -x test"
+
+[deploy]
+startCommand = "java -jar build/libs/finzin-0.0.1-SNAPSHOT.jar"
+healthcheckPath = "/"
+restartPolicyType = "on_failure"
