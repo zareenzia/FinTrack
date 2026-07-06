@@ -1,9 +1,18 @@
 (function () {
     'use strict';
 
-    const COLLAPSED_KEY  = 'sidebar_collapsed';
-    const THEME_KEY      = 'fintrack_theme';
-    const SETTINGS_KEY   = 'fintrack_settings';
+    function getUserStorageKey(baseKey) {
+        try {
+            var raw = localStorage.getItem('finzin_user') || localStorage.getItem('user');
+            var u = JSON.parse(raw);
+            if (u && u.id) return baseKey + '_' + u.id;
+        } catch(e) {}
+        return baseKey;
+    }
+
+    const COLLAPSED_KEY  = getUserStorageKey('sidebar_collapsed');
+    const THEME_KEY      = getUserStorageKey('fintrack_theme');
+    const SETTINGS_KEY   = getUserStorageKey('fintrack_settings');
 
     // ── Apply global settings (font-size, animations, color theme) immediately
     (function applyGlobalSettingsEarly() {
@@ -21,7 +30,7 @@
 
     // ── Apply saved color theme immediately (before first paint)
     (function applyColorThemeEarly() {
-        var ct = localStorage.getItem('fintrack_color_theme') || 'forest';
+        var ct = localStorage.getItem(getUserStorageKey('fintrack_color_theme')) || 'forest';
         if (ct !== 'forest') {
             document.documentElement.setAttribute('data-color-theme', ct);
         }

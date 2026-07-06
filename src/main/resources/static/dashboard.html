@@ -246,7 +246,14 @@
 </div>
 
 <script>
-    let allTransactions    = [];
+    function getUserStorageKey(baseKey) {
+        try {
+            var raw = localStorage.getItem('finzin_user') || localStorage.getItem('user');
+            var u = JSON.parse(raw);
+            if (u && u.id) return baseKey + '_' + u.id;
+        } catch(e) {}
+        return baseKey;
+    }
     let filteredTransactions = [];
     let currentPage        = 0;
     let pageSize           = parseInt(localStorage.getItem('tx_page_limit') || '5', 10);
@@ -267,7 +274,7 @@
     const CURRENCY_DEFAULTS = { currencySymbol:'৳', symbolPosition:'before', decimalPlaces:0 };
     function getCurrencySettings() {
         try {
-            var s = Object.assign({}, CURRENCY_DEFAULTS, JSON.parse(localStorage.getItem('fintrack_settings') || '{}'));
+            var s = Object.assign({}, CURRENCY_DEFAULTS, JSON.parse(localStorage.getItem(getUserStorageKey('fintrack_settings')) || '{}'));
             return {
                 symbol:   s.currencySymbol   || '৳',
                 position: s.symbolPosition   || 'before',
@@ -321,7 +328,7 @@
     /** Apply hide-values setting to all stat cards on load */
     function applyCardHideSetting() {
         try {
-            var s = JSON.parse(localStorage.getItem('fintrack_settings') || '{}');
+            var s = JSON.parse(localStorage.getItem(getUserStorageKey('fintrack_settings')) || '{}');
             if (s.hideValues) {
                 document.querySelectorAll('.stat-card').forEach(function(card) {
                     var amount = card.querySelector('.stat-card-amount');

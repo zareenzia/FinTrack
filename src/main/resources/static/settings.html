@@ -689,7 +689,15 @@
   <script src="/js/sidebar.js"></script>
   <script>
 // ============== Settings storage ==============
-const SETTINGS_KEY = 'fintrack_settings';
+function getUserStorageKey(baseKey) {
+  try {
+    var raw = localStorage.getItem('finzin_user') || localStorage.getItem('user');
+    var u = JSON.parse(raw);
+    if (u && u.id) return baseKey + '_' + u.id;
+  } catch(e) {}
+  return baseKey;
+}
+function SETTINGS_KEY()    { return getUserStorageKey('fintrack_settings'); }
 const DEFAULTS = {
   sidebar:'expand', layout:'comfortable',
   animations:true, fontSize:'medium', currencyInCharts:true,
@@ -699,12 +707,12 @@ const DEFAULTS = {
   hideValues:false
 };
 function getSettings() {
-  try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')); }
+  try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem(SETTINGS_KEY())||'{}')); }
   catch(e) { return Object.assign({}, DEFAULTS); }
 }
 function saveSettings(patch) {
   var s = Object.assign({}, getSettings(), patch);
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+  localStorage.setItem(SETTINGS_KEY(), JSON.stringify(s));
   return s;
 }
 
@@ -775,7 +783,8 @@ document.querySelectorAll('.settings-nav-item').forEach(function(item){
 });
 
 // ============== Color Theme ==============
-var COLOR_THEME_KEY = 'fintrack_color_theme';
+function COLOR_THEME_KEY() { return getUserStorageKey('fintrack_color_theme'); }
+function THEME_KEY()       { return getUserStorageKey('fintrack_theme'); }
 
 function applyColorTheme(key) {
   if (!key || key === 'forest') {
@@ -783,11 +792,11 @@ function applyColorTheme(key) {
   } else {
     document.documentElement.setAttribute('data-color-theme', key);
   }
-  localStorage.setItem(COLOR_THEME_KEY, key || 'forest');
+  localStorage.setItem(COLOR_THEME_KEY(), key || 'forest');
 }
 
 function syncThemeGrid() {
-  var current = localStorage.getItem(COLOR_THEME_KEY) || 'forest';
+  var current = localStorage.getItem(COLOR_THEME_KEY()) || 'forest';
   document.querySelectorAll('.theme-option').forEach(function(opt){
     opt.classList.toggle('active', opt.dataset.themeKey === current);
   });
@@ -805,7 +814,7 @@ function initThemeGrid() {
 
 // ============== Display Mode ==============
 function initDisplayMode() {
-  var saved = localStorage.getItem('fintrack_theme') || 'light';
+  var saved = localStorage.getItem(THEME_KEY()) || 'light';
   document.querySelectorAll('.display-mode-btn').forEach(function(btn){
     btn.classList.toggle('active', btn.dataset.mode === saved);
     btn.classList.toggle('btn-primary', btn.dataset.mode === saved);
@@ -823,7 +832,7 @@ function initDisplayMode() {
         mode = prefersDark ? 'dark' : 'light';
       }
       document.documentElement.setAttribute('data-theme', mode);
-      localStorage.setItem('fintrack_theme', mode);
+      localStorage.setItem(THEME_KEY(), mode);
     });
   });
 }
@@ -943,7 +952,7 @@ if (btnResetAppearance) {
     var patch = {};
     keys.forEach(function(k){ patch[k] = DEFAULTS[k]; });
     var s = saveSettings(patch);
-    localStorage.setItem('fintrack_theme', 'light');
+    localStorage.setItem(THEME_KEY(), 'light');
     document.documentElement.setAttribute('data-theme','light');
     document.documentElement.removeAttribute('data-theme-variant');
     applySettings(s);
@@ -1494,9 +1503,9 @@ document.addEventListener('DOMContentLoaded', function(){
   initCurrencyUI();
   var hideToggle = document.getElementById('toggleHideValues');
   if (hideToggle) hideToggle.checked = s.hideValues;
-  var theme = localStorage.getItem('fintrack_theme') || 'light';
+  var theme = localStorage.getItem(THEME_KEY()) || 'light';
   document.documentElement.setAttribute('data-theme', theme);
-  var colorTheme = localStorage.getItem(COLOR_THEME_KEY) || 'forest';
+  var colorTheme = localStorage.getItem(COLOR_THEME_KEY()) || 'forest';
   applyColorTheme(colorTheme);
 });
   </script>

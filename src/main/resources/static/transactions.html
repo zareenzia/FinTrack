@@ -211,7 +211,14 @@
 </div>
 
 <script>
-    let cachedCategories = [];
+    function getUserStorageKey(baseKey) {
+        try {
+            var raw = localStorage.getItem('finzin_user') || localStorage.getItem('user');
+            var u = JSON.parse(raw);
+            if (u && u.id) return baseKey + '_' + u.id;
+        } catch(e) {}
+        return baseKey;
+    }
     let cachedAssets = [];
     let editCategoryId = null;
     let deleteCategoryId = null;
@@ -224,7 +231,7 @@
     const CURRENCY_DEFAULTS = { currencySymbol:'৳', symbolPosition:'before', decimalPlaces:0 };
     function getCurrencySettings() {
         try {
-            var s = Object.assign({}, CURRENCY_DEFAULTS, JSON.parse(localStorage.getItem('fintrack_settings') || '{}'));
+            var s = Object.assign({}, CURRENCY_DEFAULTS, JSON.parse(localStorage.getItem(getUserStorageKey('fintrack_settings')) || '{}'));
             return { symbol: s.currencySymbol || '৳', position: s.symbolPosition || 'before', decimals: Number(s.decimalPlaces) >= 0 ? Number(s.decimalPlaces) : 0 };
         } catch(e) { return { symbol: '৳', position: 'before', decimals: 0 }; }
     }
