@@ -10,8 +10,9 @@
     <link rel="icon" type="image/png" href="/images/logo.png">
     <style>
         .progress-card {
-            background: linear-gradient(135deg, var(--accent-color) 0%, #1a6644 100%);
-            color: white;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-body);
             border-radius: 12px;
             padding: 24px;
             margin-bottom: 24px;
@@ -28,7 +29,7 @@
 
         .progress-bar-custom {
             height: 12px;
-            background: rgba(255, 255, 255, 0.3);
+            background: var(--border-color);
             border-radius: 10px;
             overflow: hidden;
             margin: 16px 0;
@@ -36,14 +37,14 @@
 
         .progress-fill {
             height: 100%;
-            background: white;
+            background: var(--accent-color);
             border-radius: 10px;
             transition: width 0.3s ease;
         }
 
         .todo-item {
-            background: white;
-            border: 2px solid #e0e0e0;
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
             border-radius: 12px;
             padding: 16px;
             margin-bottom: 12px;

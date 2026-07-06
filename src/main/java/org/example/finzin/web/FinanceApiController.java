@@ -66,9 +66,18 @@ public class FinanceApiController {
         List<CategoryEntity> categories = (type != null && !type.isBlank())
                 ? categoryRepository.findByUserIdAndCategoryTypeOrGeneral(userId, type.toLowerCase(Locale.ROOT))
                 : categoryRepository.findByUserId(userId);
+
+        // Build transaction-count map in a single pass
+        Map<Long, Long> txCounts = transactionRepository.findByUserId(userId).stream()
+                .collect(Collectors.groupingBy(t -> t.getCategory().getId(), Collectors.counting()));
+
         return categories.stream()
                 .sorted(Comparator.comparingLong(CategoryEntity::getId))
-                .map(this::toCategoryResponse)
+                .map(cat -> {
+                    Map<String, Object> resp = new LinkedHashMap<>(toCategoryResponse(cat));
+                    resp.put("transactionCount", txCounts.getOrDefault(cat.getId(), 0L));
+                    return resp;
+                })
                 .collect(Collectors.toList());
     }
 

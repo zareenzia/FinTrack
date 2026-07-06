@@ -1,14 +1,44 @@
 (function () {
     'use strict';
 
-    const COLLAPSED_KEY = 'sidebar_collapsed';
-    const THEME_KEY = 'fintrack_theme';
+    const COLLAPSED_KEY  = 'sidebar_collapsed';
+    const THEME_KEY      = 'fintrack_theme';
+    const SETTINGS_KEY   = 'fintrack_settings';
+
+    // ── Apply global settings (font-size, animations, color theme) immediately
+    (function applyGlobalSettingsEarly() {
+        try {
+            var s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+            var sizes = { small: '13px', medium: '15px', large: '17px' };
+            if (s.fontSize && sizes[s.fontSize]) {
+                document.documentElement.style.fontSize = sizes[s.fontSize];
+            }
+            if (s.animations === false) {
+                document.documentElement.classList.add('reduce-motion');
+            }
+        } catch (e) { /* silently ignore */ }
+    })();
+
+    // ── Apply saved color theme immediately (before first paint)
+    (function applyColorThemeEarly() {
+        var ct = localStorage.getItem('fintrack_color_theme') || 'forest';
+        if (ct !== 'forest') {
+            document.documentElement.setAttribute('data-color-theme', ct);
+        }
+    })();
 
     // Apply theme immediately on script load to prevent flash of wrong theme
     (function applyThemeEarly() {
-        const saved = localStorage.getItem(THEME_KEY);
-        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const theme = saved || (prefersDark ? 'dark' : 'light');
+        var s = {};
+        try { s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); } catch(e){}
+        var saved = localStorage.getItem(THEME_KEY) || s.theme;
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var theme;
+        if (s.displayMode === 'system') {
+            theme = prefersDark ? 'dark' : 'light';
+        } else {
+            theme = saved || (prefersDark ? 'dark' : 'light');
+        }
         document.documentElement.setAttribute('data-theme', theme);
     })();
 
@@ -90,7 +120,7 @@
         aside.innerHTML = `
             <div class="sidebar-header">
                 <div class="sidebar-brand">
-                    <i class="fas fa-wallet sidebar-icon"></i>
+                    <img src="/images/logo.png" alt="FinTrack" class="sidebar-brand-logo">
                     <span class="sidebar-label">FinTrack</span>
                 </div>
                 <button class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Toggle sidebar">
@@ -115,14 +145,14 @@
                     <i class="fas fa-tasks sidebar-icon"></i>
                     <span class="sidebar-label">To-Do</span>
                 </a>
-                <a href="/settings" class="sidebar-item" data-path="settings" title="Settings">
-                    <i class="fas fa-cog sidebar-icon"></i>
-                    <span class="sidebar-label">Settings</span>
-                </a>
                 <button class="sidebar-item" id="calcSidebarBtn" title="Calculator" style="background:none;border:none;width:100%;text-align:left;">
                     <i class="fas fa-calculator sidebar-icon"></i>
                     <span class="sidebar-label">Calculator</span>
                 </button>
+                <a href="/settings" class="sidebar-item" data-path="settings" title="Settings">
+                    <i class="fas fa-cog sidebar-icon"></i>
+                    <span class="sidebar-label">Settings</span>
+                </a>
             </nav>
 
             <div class="sidebar-spacer"></div>
@@ -479,6 +509,7 @@
         document.getElementById('sidebarToggleBtn').addEventListener('click', toggleSidebar);
         document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
         document.getElementById('sidebarProfileBtn').addEventListener('click', openProfileModal);
+
         document.getElementById('sidebarLogoutBtn').addEventListener('click', function (e) {
             e.preventDefault();
             if (typeof logout === 'function') {

@@ -19,119 +19,89 @@
         </div>
     </div>
 
-    <div class="row mb-4">
+    <div class="row mb-4 g-4">
+        <!-- Add New Transaction -->
         <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-success text-white">
-                    <h6 class="mb-0"><i class="fas fa-plus"></i> Add New Transaction</h6>
+            <div class="card h-100">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Add New Transaction</h6>
                 </div>
                 <div class="card-body">
                     <form id="transactionForm">
-                        <div class="mb-3">
+                        <div class="mb-2">
                             <label for="description" class="form-label">Description</label>
-                            <input type="text" class="form-control" id="description" required placeholder="e.g., Grocery shopping">
+                            <input type="text" class="form-control form-control-sm" id="description" required placeholder="e.g., Grocery shopping">
                         </div>
-                        <div class="mb-3">
+                        <div class="mb-2">
                             <label for="amount" class="form-label">Amount</label>
-                            <div class="input-group">
-                                <span class="input-group-text">$</span>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">৳</span>
                                 <input type="number" class="form-control" id="amount" step="0.01" required placeholder="0.00">
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="category" class="form-label">Category</label>
-                            <select class="form-select" id="category" required>
-                                <option value="">Select or create a category</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="type" class="form-label">Type</label>
-                            <select class="form-select" id="type" required>
-                                <option value="expense">Expense</option>
-                                <option value="income">Income</option>
-                                <option value="savings">Savings</option>
-                            </select>
+                        <div class="row g-2 mb-2">
+                            <div class="col-7">
+                                <label for="category" class="form-label">Category</label>
+                                <select class="form-select form-select-sm" id="category" required>
+                                    <option value="">Select category</option>
+                                </select>
+                            </div>
+                            <div class="col-5">
+                                <label for="type" class="form-label">Type</label>
+                                <select class="form-select form-select-sm" id="type" required>
+                                    <option value="expense">Expense</option>
+                                    <option value="income">Income</option>
+                                    <option value="savings">Savings</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="mb-3">
                             <label for="date" class="form-label">Date</label>
-                            <input type="date" class="form-control" id="date" required>
+                            <input type="date" class="form-control form-control-sm" id="date" required>
                         </div>
-                        <button type="submit" class="btn btn-success w-100">
-                            <i class="fas fa-save"></i> Add Transaction
+                        <button type="submit" class="btn btn-primary w-100 btn-sm" style="padding:8px;">
+                            <i class="fas fa-save me-1"></i> Add Transaction
                         </button>
                     </form>
                 </div>
             </div>
+        </div>
 
-            <div class="card mt-4">
-                <div class="card-header bg-secondary text-white">
-                    <h6 class="mb-0"><i class="fas fa-building"></i> Assets</h6>
+        <!-- Assets -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-building me-2"></i>Assets</h6>
                 </div>
                 <div class="card-body">
                     <form id="assetForm" class="mb-3">
-                        <div class="mb-2">
-                            <label for="assetName" class="form-label">Asset Name</label>
-                            <input type="text" class="form-control" id="assetName" required placeholder="e.g., Savings Account">
+                        <div class="row g-2 mb-2">
+                            <div class="col-7">
+                                <label for="assetName" class="form-label">Asset Name</label>
+                                <input type="text" class="form-control form-control-sm" id="assetName" required placeholder="e.g., Savings Account">
+                            </div>
+                            <div class="col-5">
+                                <label for="assetType" class="form-label">Type</label>
+                                <input type="text" class="form-control form-control-sm" id="assetType" placeholder="Cash, Property…">
+                            </div>
                         </div>
-                        <div class="mb-2">
-                            <label for="assetType" class="form-label">Type</label>
-                            <input type="text" class="form-control" id="assetType" placeholder="e.g., Cash, Property, Investment">
-                        </div>
-                        <div class="mb-2">
+                        <div class="mb-3">
                             <label for="assetValue" class="form-label">Current Value</label>
-                            <div class="input-group">
-                                <span class="input-group-text">$</span>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">৳</span>
                                 <input type="number" class="form-control" id="assetValue" step="0.01" min="0" required placeholder="0.00">
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-secondary w-100">
-                            <i class="fas fa-plus"></i> Add Asset
+                        <button type="submit" class="btn btn-primary btn-sm w-100" style="padding:8px;">
+                            <i class="fas fa-plus me-1"></i> Add Asset
                         </button>
                     </form>
-                    <div class="d-flex justify-content-between mb-2">
-                        <strong>Total Asset Value</strong>
-                        <strong id="total-asset-value">$0.00</strong>
+                    <div class="d-flex justify-content-between align-items-center mb-2 px-1" style="font-size:0.85rem;">
+                        <span style="font-weight:600;">Total Asset Value</span>
+                        <span id="total-asset-value" style="font-weight:700;color:var(--accent-color);">$0.00</span>
                     </div>
                     <div id="assetList"></div>
                 </div>
-            </div>
-        </div>
-
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#transactionsCollapse" aria-expanded="false" aria-controls="transactionsCollapse">
-                    <h6 class="mb-0"><i class="fas fa-list"></i> All Transactions</h6>
-                    <i class="fas fa-chevron-down" id="transactionsChevron"></i>
-                </div>
-                <div class="collapse" id="transactionsCollapse">
-                    <div class="card-body" style="max-height: 600px; overflow-y: auto;">
-                        <div id="transactionsList"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<footer class="footer mt-5 py-3 bg-light text-center">
-    <div class="container">
-        <span class="text-muted">© 2024 FinTrack - Personal Financial Tracker</span>
-    </div>
-</footer>
-
-<div class="modal fade" id="deleteTransactionModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Delete Transaction</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                Do you want to delete this transaction?
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
-                <button type="button" class="btn btn-danger" id="confirmDeleteTransactionBtn">Yes, Delete</button>
             </div>
         </div>
     </div>
@@ -243,44 +213,47 @@
 <script>
     let cachedCategories = [];
     let cachedAssets = [];
-    let deleteTransactionId = null;
     let editCategoryId = null;
     let deleteCategoryId = null;
-    let deleteTransactionModal = null;
     let manageCategoriesModal = null;
     let editCategoryModal = null;
     let deleteCategoryModal = null;
     let addCategoryModal = null;
     document.getElementById('date').valueAsDate = new Date();
 
+    const CURRENCY_DEFAULTS = { currencySymbol:'৳', symbolPosition:'before', decimalPlaces:0 };
+    function getCurrencySettings() {
+        try {
+            var s = Object.assign({}, CURRENCY_DEFAULTS, JSON.parse(localStorage.getItem('fintrack_settings') || '{}'));
+            return { symbol: s.currencySymbol || '৳', position: s.symbolPosition || 'before', decimals: Number(s.decimalPlaces) >= 0 ? Number(s.decimalPlaces) : 0 };
+        } catch(e) { return { symbol: '৳', position: 'before', decimals: 0 }; }
+    }
+    function formatAmount(value) {
+        var c = getCurrencySettings();
+        var num = Number(value).toFixed(c.decimals);
+        return c.position === 'before' ? c.symbol + num : num + '\u00a0' + c.symbol;
+    }
+    function applyCurrencySymbolToInputs() {
+        var sym = getCurrencySettings().symbol;
+        document.querySelectorAll('.input-group-text').forEach(function(el) {
+            if (el.textContent.trim() === '$' || el.textContent.trim() === '৳') el.textContent = sym;
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
-        deleteTransactionModal = new bootstrap.Modal(document.getElementById('deleteTransactionModal'));
         manageCategoriesModal = new bootstrap.Modal(document.getElementById('manageCategoriesModal'));
         editCategoryModal = new bootstrap.Modal(document.getElementById('editCategoryModal'));
         deleteCategoryModal = new bootstrap.Modal(document.getElementById('deleteCategoryModal'));
         addCategoryModal = new bootstrap.Modal(document.getElementById('addCategoryModal'));
         
-        document.getElementById('confirmDeleteTransactionBtn').addEventListener('click', confirmDeleteTransaction);
         document.getElementById('saveCategoryChangesBtn').addEventListener('click', saveCategoryChanges);
         document.getElementById('confirmDeleteCategoryBtn').addEventListener('click', confirmDeleteCategory);
         document.getElementById('addNewCategoryBtn').addEventListener('click', openAddCategoryModal);
         document.getElementById('createCategoryBtn').addEventListener('click', createNewCategory);
         
-        // Handle chevron rotation for collapse/expand
-        const transactionsCollapse = document.getElementById('transactionsCollapse');
-        const chevron = document.getElementById('transactionsChevron');
-        if (transactionsCollapse) {
-            transactionsCollapse.addEventListener('show.bs.collapse', function () {
-                chevron.style.transform = 'rotate(180deg)';
-            });
-            transactionsCollapse.addEventListener('hide.bs.collapse', function () {
-                chevron.style.transform = 'rotate(0deg)';
-            });
-        }
-        
         loadCategories(document.getElementById('type').value);
-        loadTransactions();
         loadAssets();
+        applyCurrencySymbolToInputs();
     });
 
     function openCategoryManagementModal(e) {
@@ -334,7 +307,6 @@
                 document.getElementById('transactionForm').reset();
                 document.getElementById('date').valueAsDate = new Date();
                 loadCategories(document.getElementById('type').value);
-                loadTransactions();
                 showTopNotification('Transaction added.', 'success');
             } else {
                 showTopNotification('Failed to add transaction.', 'error');
@@ -377,78 +349,13 @@
         }
     });
 
-    async function loadTransactions() {
-        try {
-            const response = await fetch('/api/transactions');
-            const transactions = await response.json();
-            const list = document.getElementById('transactionsList');
-            if (!transactions.length) {
-                list.innerHTML = '<p class="text-muted">No transactions yet</p>';
-                return;
-            }
-
-            list.innerHTML = transactions.map(tx => {
-                const isSavings = tx.transaction_type === 'savings';
-                const isIncome  = tx.transaction_type === 'income';
-                const colorClass = isIncome ? 'text-success' : (isSavings ? 'text-primary' : 'text-danger');
-                const prefix     = isIncome ? '+' : (isSavings ? '⇒' : '-');
-                const badge      = isIncome ? 'bg-success' : (isSavings ? 'bg-primary' : 'bg-danger');
-                return `
-            <div class="card mb-2">
-                <div class="card-body py-2">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="mb-1">${tx.description}</h6>
-                            <small class="text-muted">${new Date(tx.date).toLocaleDateString()} • ${tx.category_name}</small>
-                            <span class="badge ${badge} ms-1" style="font-size:0.7rem">${tx.transaction_type.charAt(0).toUpperCase() + tx.transaction_type.slice(1)}</span>
-                        </div>
-                        <div class="text-end d-flex align-items-center gap-2">
-                            <div class="fw-bold ${colorClass}">
-                                ${prefix}$${Number(tx.amount).toFixed(2)}
-                            </div>
-                            <button class="btn btn-sm btn-link text-danger p-0" onclick="deleteTransaction(${tx.id})" title="Delete transaction" style="font-size: 1.2rem;">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `}).join('');
-        } catch (error) {
-            showTopNotification('Unable to load transactions.', 'error');
-        }
-    }
-
-    async function deleteTransaction(id) {
-        deleteTransactionId = id;
-        deleteTransactionModal.show();
-    }
-
-    async function confirmDeleteTransaction() {
-        if (deleteTransactionId === null) return;
-        try {
-            const response = await fetch(`/api/transactions/${deleteTransactionId}`, {method: 'DELETE'});
-            if (response.ok) {
-                deleteTransactionModal.hide();
-                deleteTransactionId = null;
-                loadTransactions();
-                showTopNotification('Transaction deleted successfully.', 'success');
-            } else {
-                const errorData = await response.json().catch(() => null);
-                showTopNotification(errorData?.error || 'Error deleting transaction.', 'error');
-            }
-        } catch (error) {
-            showTopNotification('Unable to delete transaction right now.', 'error');
-        }
-    }
-
     async function loadAssets() {
         try {
             const response = await fetch('/api/assets');
             const assets = await response.json();
             cachedAssets = assets;
             const total = assets.reduce((sum, a) => sum + Number(a.value || 0), 0);
-            document.getElementById('total-asset-value').textContent = '$' + total.toFixed(2);
+            document.getElementById('total-asset-value').textContent = formatAmount(total);
 
             const list = document.getElementById('assetList');
             if (!assets.length) {
@@ -464,7 +371,7 @@
                             <small class="text-muted">${asset.type || 'General'}</small>
                         </div>
                         <div class="text-end">
-                            <div class="fw-bold text-secondary">$${Number(asset.value).toFixed(2)}</div>
+                            <div class="fw-bold text-secondary">${formatAmount(asset.value)}</div>
                             <button class="btn btn-sm btn-danger" onclick="deleteAsset(${asset.id})">Delete</button>
                         </div>
                     </div>
@@ -584,7 +491,6 @@
                 editCategoryId = null;
                 loadCategoriesForManagement();
                 loadCategories(document.getElementById('type').value);
-                loadTransactions();
                 showTopNotification('Category updated successfully.', 'success');
             } else {
                 const errorData = await response.json().catch(() => null);
@@ -609,7 +515,6 @@
                 deleteCategoryId = null;
                 loadCategoriesForManagement();
                 loadCategories(document.getElementById('type').value);
-                loadTransactions();
                 showTopNotification('Category deleted successfully.', 'success');
             } else {
                 const errorData = await response.json().catch(() => null);
