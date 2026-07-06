@@ -1,6 +1,6 @@
 [build]
 builder = "railpack"
-buildCommand = "./gradlew bootJar -x test"
+buildCommand = "sh gradlew bootJar -x test"
 
 [deploy]
 startCommand = "java -jar build/libs/finzin-0.0.1-SNAPSHOT.jar"
