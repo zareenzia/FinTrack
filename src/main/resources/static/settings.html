@@ -1,618 +1,1513 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings - FinTrack</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/css/style.css">
-    <link rel="icon" type="image/png" href="/images/logo.png">
-    <style>
-        .settings-container {
-            display: flex;
-            gap: 24px;
-            align-items: flex-start;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings - FinTrack</title>
+  <link rel="icon" type="image/png" href="/images/logo.png">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .settings-container{display:flex;gap:24px;align-items:flex-start;margin:0 0 40px}
+    .settings-sidebar{width:220px;flex-shrink:0;background:var(--bg-card,#fff);border-radius:14px;padding:12px 0;box-shadow:var(--card-shadow,0 2px 8px rgba(0,0,0,.06));position:sticky;top:80px}
+    .settings-nav-item{display:flex;align-items:center;gap:12px;padding:11px 20px;border-left:3px solid transparent;cursor:pointer;font-weight:500;font-size:.9rem;color:var(--text-body);transition:all .2s;text-decoration:none}
+    .settings-nav-item:hover{background:rgba(0,0,0,.04);color:var(--accent-color)}
+    .settings-nav-item.active{border-left-color:var(--accent-color);color:var(--accent-color);background:rgba(0,0,0,.03);font-weight:600}
+    .settings-nav-item i{width:18px;text-align:center}
+    .settings-panel{flex:1;min-width:0}
+    .settings-section{display:none}
+    .settings-section.active{display:block}
+    .settings-card{background:var(--bg-card,#fff);border-radius:14px;padding:24px;margin-bottom:20px;box-shadow:var(--card-shadow,0 2px 8px rgba(0,0,0,.06))}
+    .settings-card-title{font-weight:700;font-size:1rem;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+    .settings-card-sub{font-size:.83rem;color:var(--text-muted,#888);margin-bottom:16px}
+    .settings-section-heading{font-size:1.25rem;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+    .settings-section-desc{font-size:.9rem;color:var(--text-muted);margin-bottom:24px}
+    .option-pills{display:flex;flex-wrap:wrap;gap:8px}
+    .option-pill{padding:7px 16px;border:2px solid var(--border-color,#e5e7eb);border-radius:30px;cursor:pointer;font-size:.85rem;font-weight:600;color:var(--text-body);background:transparent;transition:all .2s}
+    .option-pill.active,.option-pill:hover{border-color:var(--accent-color);color:var(--accent-color);background:rgba(46,125,79,.07)}
+    .toggle-row{display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .form-switch .form-check-input{width:2.4em;height:1.3em;cursor:pointer}
 
-        .settings-sidebar {
-            width: 240px;
-            flex-shrink: 0;
-            background: var(--card-bg, #fff);
-            border-radius: 12px;
-            padding: 16px 0;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-            position: sticky;
-            top: 20px;
-        }
+    /* ── Color Theme Selector ── */
+    .theme-selector-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+    @media(max-width:600px){.theme-selector-grid{grid-template-columns:1fr}}
+    .theme-option{border:2.5px solid var(--border-color,#e0e0e0);border-radius:14px;padding:14px 16px;cursor:pointer;transition:border-color .2s,box-shadow .2s,transform .2s;background:var(--bg-card);display:flex;align-items:center;gap:14px;position:relative}
+    .theme-option:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.10)}
+    .theme-option.active{border-color:var(--accent-color);box-shadow:0 0 0 3px rgba(0,0,0,.08)}
+    .theme-option.active::after{content:'\f00c';font-family:'Font Awesome 6 Free';font-weight:900;position:absolute;top:8px;right:10px;font-size:.7rem;width:18px;height:18px;border-radius:50%;background:var(--accent-color);color:#fff;display:flex;align-items:center;justify-content:center;line-height:18px;text-align:center}
+    .theme-swatches{display:flex;gap:4px;flex-shrink:0}
+    .theme-swatch-dot{width:18px;height:18px;border-radius:50%;border:1.5px solid rgba(255,255,255,.4);box-shadow:0 1px 3px rgba(0,0,0,.2)}
+    .theme-info{flex:1;min-width:0}
+    .theme-name{font-weight:700;font-size:.9rem;color:var(--text-body)}
+    .theme-desc{font-size:.75rem;color:var(--text-muted-custom);margin-top:2px}
 
-        .settings-nav-link {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 20px;
-            border-left: 3px solid transparent;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
-
-        .settings-nav-link:hover {
-            background: rgba(0, 0, 0, 0.04);
-        }
-
-        .settings-nav-link.active {
-            border-left-color: var(--accent-color);
-            color: var(--accent-color);
-            background: rgba(0, 0, 0, 0.03);
-        }
-
-        .settings-nav-link i {
-            width: 18px;
-            text-align: center;
-        }
-
-        .settings-panel {
-            flex: 1;
-            background: var(--card-bg, #fff);
-            border-radius: 12px;
-            padding: 28px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-            min-height: 400px;
-        }
-
-        .settings-section {
-            display: none;
-        }
-
-        .settings-section.active {
-            display: block;
-        }
-
-        .settings-section h4 {
-            margin-bottom: 20px;
-            padding-bottom: 14px;
-            border-bottom: 2px solid rgba(0, 0, 0, 0.06);
-            font-weight: 600;
-        }
-
-        /* Theme */
-        .theme-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 16px;
-            margin-top: 16px;
-        }
-
-        .theme-card {
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            padding: 14px;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.2s ease;
-            background: var(--card-bg, #fff);
-        }
-
-        .theme-card:hover {
-            border-color: var(--accent-color);
-            transform: translateY(-3px);
-        }
-
-        .theme-card.active {
-            border-color: var(--accent-color);
-            box-shadow: 0 4px 12px rgba(37, 95, 56, 0.2);
-        }
-
-        .theme-swatch {
-            height: 60px;
-            border-radius: 6px;
-            margin-bottom: 10px;
-        }
-
-        .theme-card-name {
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-
-        /* Categories */
-        .add-category-form {
-            background: rgba(0, 0, 0, 0.03);
-            border-radius: 10px;
-            padding: 18px;
-            margin-bottom: 24px;
-        }
-
-        .category-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            padding: 14px 16px;
-            border: 1px solid #e0e0e0;
-            border-radius: 10px;
-            margin-bottom: 10px;
-            transition: all 0.2s ease;
-        }
-
-        .category-item:hover {
-            border-color: var(--accent-color);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-        }
-
-        .category-info {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            flex: 1;
-            min-width: 0;
-        }
-
-        .category-swatch {
-            width: 34px;
-            height: 34px;
-            border-radius: 50%;
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 0.85rem;
-        }
-
-        .category-name {
-            font-weight: 600;
-            margin: 0;
-        }
-
-        .category-desc {
-            margin: 2px 0 0 0;
-            font-size: 0.8rem;
-            color: #888;
-        }
-
-        .category-actions {
-            display: flex;
-            gap: 8px;
-            flex-shrink: 0;
-        }
-
-        .icon-choice {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 38px;
-            height: 38px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            cursor: pointer;
-            margin: 2px;
-        }
-
-        .icon-choice.selected {
-            border-color: var(--accent-color);
-            color: var(--accent-color);
-            background: rgba(37, 95, 56, 0.08);
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 30px 10px;
-            color: #999;
-        }
-    </style>
+    .currency-preview{background:rgba(0,0,0,.04);border-radius:10px;padding:14px 18px;margin-bottom:20px;font-family:monospace;font-size:1rem}
+    .cat-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid var(--border-color,#e5e7eb);border-radius:10px;margin-bottom:8px;transition:border-color .2s}
+    .cat-item:hover{border-color:var(--accent-color)}
+    .cat-icon{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.9rem;flex-shrink:0}
+    .cat-details{flex:1;min-width:0}
+    .cat-name{font-weight:600;font-size:.92rem;margin:0}
+    .cat-meta{font-size:.78rem;color:var(--text-muted);margin:1px 0 0}
+    .cat-type-badge{font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:20px}
+    .cat-type-income{background:rgba(22,163,74,.12);color:#16a34a}
+    .cat-type-expense{background:rgba(220,38,38,.12);color:#dc2626}
+    .cat-type-savings{background:rgba(59,130,246,.12);color:#3b82f6}
+    .cat-type-general{background:rgba(107,114,128,.12);color:#6b7280}
+    .icon-picker{display:flex;flex-wrap:wrap;gap:6px}
+    .icon-option{width:36px;height:36px;border:2px solid var(--border-color,#e5e7eb);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.85rem;transition:all .15s;color:var(--text-body)}
+    .icon-option.selected{border-color:var(--accent-color);background:rgba(46,125,79,.1);color:var(--accent-color)}
+    .pw-strength{height:4px;border-radius:4px;margin-top:6px;transition:all .3s}
+    .danger-zone{border:1.5px solid #ef4444!important}
+    .danger-zone .settings-card-title{color:#ef4444}
+    .star-rating{display:flex;gap:6px}
+    .star-rating i{font-size:1.6rem;cursor:pointer;color:#d1d5db;transition:color .15s}
+    .star-rating i.active{color:#f59e0b}
+    .profile-avatar-edit{width:84px;height:84px;border-radius:50%;object-fit:cover;cursor:pointer;border:3px solid var(--accent-color);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:700;color:#fff;background:var(--accent-color);overflow:hidden}
+    .pw-eye-toggle{cursor:pointer;color:var(--text-muted)}
+    .section-divider{border:none;border-top:1px solid var(--border-color,#e5e7eb);margin:20px 0}
+    .profile-email-lock-icon{
+      position:absolute;right:10px;top:50%;transform:translateY(-50%);
+      color:transparent;font-size:1rem;pointer-events:none;transition:color .15s;
+    }
+    .profile-email-readonly:hover ~ .profile-email-lock-icon{color:#ef4444;}
+    @media(max-width:768px){
+      .settings-container{flex-direction:column}
+      .settings-sidebar{width:100%;position:static;display:flex;flex-wrap:wrap;padding:8px;gap:4px;border-radius:10px}
+      .settings-nav-item{border-left:none;border-radius:8px;padding:8px 14px;flex:1;min-width:120px;justify-content:center}
+      .settings-nav-item.active{border-left:none;background:var(--accent-color);color:#fff}
+    }
+  </style>
 </head>
 <body>
-
-<div class="container-fluid mt-4">
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <h2><i class="fas fa-cog"></i> Settings</h2>
-        </div>
+  <div class="container-fluid py-4">
+    <div class="d-flex align-items-center gap-3 mb-4">
+      <h2 class="mb-0"><i class="fas fa-cog me-2"></i>Settings</h2>
     </div>
-
     <div class="settings-container">
-        <!-- Left nav -->
-        <div class="settings-sidebar">
-            <div class="settings-nav-link active" data-section="theme-section">
-                <i class="fas fa-palette"></i> Upgrade Theme
-            </div>
-            <div class="settings-nav-link" data-section="categories-section">
-                <i class="fas fa-tags"></i> Update Categories
-            </div>
-        </div>
+      <aside class="settings-sidebar">
+        <a class="settings-nav-item active" data-section="appearance" href="#">
+          <i class="fas fa-palette"></i> Appearance
+        </a>
+        <a class="settings-nav-item" data-section="currency" href="#">
+          <i class="fas fa-coins"></i> Currency
+        </a>
+        <a class="settings-nav-item" data-section="categories" href="#">
+          <i class="fas fa-tags"></i> Categories
+        </a>
+        <a class="settings-nav-item" data-section="security" href="#">
+          <i class="fas fa-shield-alt"></i> Privacy &amp; Security
+        </a>
+        <a class="settings-nav-item" data-section="about" href="#">
+          <i class="fas fa-info-circle"></i> About
+        </a>
+      </aside>
+      <main class="settings-panel">
 
-        <!-- Right panel -->
-        <div class="settings-panel">
-            <!-- THEME -->
-            <div class="settings-section active" id="theme-section">
-                <h4><i class="fas fa-palette"></i> Upgrade Your Theme</h4>
-                <p class="text-muted">Pick an accent theme for FinTrack. Your choice is saved to this browser.</p>
-                <div class="theme-grid">
-                    <div class="theme-card" data-theme="green">
-                        <div class="theme-swatch" style="background: linear-gradient(135deg,#2e7d4f,#1a6644);"></div>
-                        <div class="theme-card-name">Green (Default)</div>
-                    </div>
-                    <div class="theme-card" data-theme="dark">
-                        <div class="theme-swatch" style="background: linear-gradient(135deg,#2b2b2b,#0d0d0d);"></div>
-                        <div class="theme-card-name">Dark</div>
-                    </div>
-                    <div class="theme-card" data-theme="blue">
-                        <div class="theme-swatch" style="background: linear-gradient(135deg,#667eea,#764ba2);"></div>
-                        <div class="theme-card-name">Blue</div>
-                    </div>
-                    <div class="theme-card" data-theme="gold">
-                        <div class="theme-swatch" style="background: linear-gradient(135deg,#e0a800,#b8860b);"></div>
-                        <div class="theme-card-name">Gold</div>
-                    </div>
+        <!-- ===== APPEARANCE ===== -->
+        <section class="settings-section active" id="section-appearance">
+          <div class="settings-section-heading"><i class="fas fa-palette" style="color:var(--accent-color)"></i> Appearance</div>
+          <p class="settings-section-desc">Customize how FinTrack looks and feels.</p>
+
+          <!-- Theme -->
+          <div class="settings-card">
+            <div class="settings-card-title"><i class="fas fa-palette"></i> Color Theme</div>
+            <div class="settings-card-sub">Choose your preferred color palette — applies instantly across the entire app</div>
+            <div class="theme-selector-grid" id="themeGrid">
+
+              <div class="theme-option" data-theme-key="forest">
+                <div class="theme-swatches">
+                  <div class="theme-swatch-dot" style="background:#18230F"></div>
+                  <div class="theme-swatch-dot" style="background:#27391C"></div>
+                  <div class="theme-swatch-dot" style="background:#255F38"></div>
+                  <div class="theme-swatch-dot" style="background:#1F7D53"></div>
                 </div>
-                <p class="mt-3 mb-0 text-muted" id="current-theme-label">Current theme: Green (Default)</p>
-                <button class="btn btn-outline-secondary btn-sm mt-2" onclick="resetTheme()">Reset to Default</button>
-            </div>
-
-            <!-- CATEGORIES -->
-            <div class="settings-section" id="categories-section">
-                <h4><i class="fas fa-tags"></i> Update Categories</h4>
-
-                <div class="add-category-form">
-                    <h6 class="fw-bold mb-3"><i class="fas fa-plus-circle"></i> Add New Category</h6>
-                    <div class="row g-2">
-                        <div class="col-md-4">
-                            <input type="text" class="form-control" id="newCatName" placeholder="Category name">
-                        </div>
-                        <div class="col-md-4">
-                            <input type="text" class="form-control" id="newCatDescription" placeholder="Description (optional)">
-                        </div>
-                        <div class="col-md-2">
-                            <input type="color" class="form-control form-control-color w-100" id="newCatColor" value="#3498db">
-                        </div>
-                        <div class="col-md-2">
-                            <button class="btn btn-primary w-100" onclick="createCategory()">
-                                <i class="fas fa-plus"></i> Add
-                            </button>
-                        </div>
-                    </div>
-                    <div class="mt-2" id="newCatIconPicker"></div>
+                <div class="theme-info">
+                  <div class="theme-name">🌲 Forest</div>
+                  <div class="theme-desc">Deep greens — default</div>
                 </div>
+              </div>
 
-                <div id="categoriesList">
-                    <div class="empty-state">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <p class="mt-2">Loading categories...</p>
-                    </div>
+              <div class="theme-option" data-theme-key="wine">
+                <div class="theme-swatches">
+                  <div class="theme-swatch-dot" style="background:#3A0519"></div>
+                  <div class="theme-swatch-dot" style="background:#670D2F"></div>
+                  <div class="theme-swatch-dot" style="background:#A53860"></div>
+                  <div class="theme-swatch-dot" style="background:#EF88AD"></div>
                 </div>
+                <div class="theme-info">
+                  <div class="theme-name">🍷 Wine</div>
+                  <div class="theme-desc">Rich reds &amp; roses</div>
+                </div>
+              </div>
+
+              <div class="theme-option" data-theme-key="ocean">
+                <div class="theme-swatches">
+                  <div class="theme-swatch-dot" style="background:#142850"></div>
+                  <div class="theme-swatch-dot" style="background:#27496D"></div>
+                  <div class="theme-swatch-dot" style="background:#0C7B93"></div>
+                  <div class="theme-swatch-dot" style="background:#00A8CC"></div>
+                </div>
+                <div class="theme-info">
+                  <div class="theme-name">🌊 Ocean</div>
+                  <div class="theme-desc">Deep blues &amp; teals</div>
+                </div>
+              </div>
+
+              <div class="theme-option" data-theme-key="high-contrast">
+                <div class="theme-swatches">
+                  <div class="theme-swatch-dot" style="background:#252525"></div>
+                  <div class="theme-swatch-dot" style="background:#414141"></div>
+                  <div class="theme-swatch-dot" style="background:#AF0404"></div>
+                  <div class="theme-swatch-dot" style="background:#FF0000"></div>
+                </div>
+                <div class="theme-info">
+                  <div class="theme-name">⚡ High Contrast</div>
+                  <div class="theme-desc">Black &amp; bold red</div>
+                </div>
+              </div>
+
+              <div class="theme-option" data-theme-key="cafe-mocha">
+                <div class="theme-swatches">
+                  <div class="theme-swatch-dot" style="background:#543310"></div>
+                  <div class="theme-swatch-dot" style="background:#74512D"></div>
+                  <div class="theme-swatch-dot" style="background:#AF8F6F"></div>
+                  <div class="theme-swatch-dot" style="background:#F8F4E1"></div>
+                </div>
+                <div class="theme-info">
+                  <div class="theme-name">☕ Cafe Mocha</div>
+                  <div class="theme-desc">Warm browns &amp; cream</div>
+                </div>
+              </div>
+
             </div>
-        </div>
+          </div>
+
+          <!-- Display Mode (Light / Dark) -->
+          <div class="settings-card">
+            <div class="settings-card-title"><i class="fas fa-circle-half-stroke"></i> Display Mode</div>
+            <div class="settings-card-sub">Switch between light and dark — works with every theme</div>
+            <div class="btn-group" role="group">
+              <button type="button" class="btn btn-outline-secondary display-mode-btn" data-mode="light">☀️ Light</button>
+              <button type="button" class="btn btn-outline-secondary display-mode-btn" data-mode="dark">🌙 Dark</button>
+              <button type="button" class="btn btn-outline-secondary display-mode-btn" data-mode="system">💻 System</button>
+            </div>
+          </div>
+
+          <!-- Sidebar Behavior -->
+          <div class="settings-card">
+            <div class="settings-card-title"><i class="fas fa-bars"></i> Sidebar Behavior</div>
+            <div class="settings-card-sub">Control how the sidebar behaves</div>
+            <div class="option-pills" data-pill-group="sidebar">
+              <div class="option-pill" data-value="collapse">Collapse by default</div>
+              <div class="option-pill" data-value="expand">Always expand</div>
+              <div class="option-pill" data-value="icons">Icons only</div>
+            </div>
+          </div>
+
+          <!-- Dashboard Layout -->
+          <div class="settings-card">
+            <div class="settings-card-title"><i class="fas fa-th-large"></i> Dashboard Layout</div>
+            <div class="settings-card-sub">Choose information density</div>
+            <div class="option-pills" data-pill-group="layout">
+              <div class="option-pill" data-value="comfortable">&#128194; Comfortable</div>
+              <div class="option-pill" data-value="compact">&#128208; Compact</div>
+            </div>
+          </div>
+
+          <!-- Animations -->
+          <div class="settings-card">
+            <div class="settings-card-title"><i class="fas fa-magic"></i> Animations</div>
+            <div class="settings-card-sub">Smooth transitions and effects</div>
+            <div class="toggle-row">
+              <div>
+                <div class="fw-semibold">Enable animations</div>
+                <small class="text-muted">Toggle UI transition effects</small>
+              </div>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="toggleAnimations">
+              </div>
+            </div>
+          </div>
+
+          <!-- Font Size -->
+          <div class="settings-card">
+            <div class="settings-card-title"><i class="fas fa-text-height"></i> Font Size</div>
+            <div class="settings-card-sub">Adjust text size across the app</div>
+            <div class="option-pills" data-pill-group="fontSize">
+              <div class="option-pill" data-value="small">Small &mdash; 13px</div>
+              <div class="option-pill" data-value="medium">Medium &mdash; 15px</div>
+              <div class="option-pill" data-value="large">Large &mdash; 17px</div>
+            </div>
+          </div>
+
+          <!-- Currency in Charts -->
+          <div class="settings-card">
+            <div class="settings-card-title"><i class="fas fa-chart-bar"></i> Chart Currency</div>
+            <div class="settings-card-sub">Display currency symbols alongside chart values</div>
+            <div class="toggle-row">
+              <div>
+                <div class="fw-semibold">Show currency symbols in charts</div>
+                <small class="text-muted">Applies to all dashboard charts</small>
+              </div>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="toggleCurrencyInCharts">
+              </div>
+            </div>
+          </div>
+
+          <button class="btn btn-outline-secondary" id="btnResetAppearance"><i class="fas fa-undo me-1"></i> Reset Appearance</button>
+        </section>
+
+        <!-- ===== CURRENCY ===== -->
+        <section class="settings-section" id="section-currency">
+          <div class="settings-section-heading"><i class="fas fa-coins" style="color:var(--accent-color)"></i> Currency &amp; Localization</div>
+          <p class="settings-section-desc">Configure how numbers, dates, and currencies are displayed.</p>
+
+          <div class="currency-preview" id="currencyPreview">
+            <div><span class="text-muted">Sample amount:</span> <strong id="previewPositive">৳10,000</strong></div>
+            <div><span class="text-muted">Negative:</span> <strong id="previewNegative" style="color:#ef4444">-৳500</strong></div>
+          </div>
+
+          <div class="settings-card">
+            <div class="settings-card-title"><i class="fas fa-money-bill"></i> Default Currency</div>
+            <div class="settings-card-sub">Select your preferred currency</div>
+            <select id="currencySelect" class="form-select" style="max-width:300px">
+              <option value="BDT" data-symbol="৳">Bangladeshi Taka (৳)</option>
+              <option value="USD" data-symbol="$">US Dollar ($)</option>
+            </select>
+          </div>
+
+          <div class="settings-card">
+            <div class="settings-card-title"><i class="fas fa-arrow-left-right"></i> Symbol Position</div>
+            <div class="settings-card-sub">Where to place the currency symbol</div>
+            <div class="option-pills" data-pill-group="symbolPosition">
+              <div class="option-pill" data-value="before">Before &mdash; ৳500 / $500</div>
+              <div class="option-pill" data-value="after">After &mdash; 500 ৳ / 500 $</div>
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <div class="settings-card-title"><i class="fas fa-hashtag"></i> Decimal Places</div>
+            <div class="settings-card-sub">Number of decimal digits to show</div>
+            <select id="decimalSelect" class="form-select" style="max-width:200px">
+              <option value="0">0 — 1,000 (recommended for ৳)</option>
+              <option value="2">2 — 1,000.00 (recommended for $)</option>
+            </select>
+          </div>
+
+          <div class="settings-card">
+            <div class="settings-card-title"><i class="fas fa-grip-lines-vertical"></i> Thousand Separator</div>
+            <div class="settings-card-sub">Character used to separate thousands</div>
+            <div class="option-pills" data-pill-group="thousandSeparator">
+              <div class="option-pill" data-value=",">, — 10,000</div>
+              <div class="option-pill" data-value="none">None — 10000</div>
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <div class="settings-card-title"><i class="fas fa-minus"></i> Negative Amount Format</div>
+            <div class="settings-card-sub">How to display negative amounts</div>
+            <div class="option-pills" data-pill-group="negativeFormat">
+              <div class="option-pill" data-value="minus">-500 (Minus sign)</div>
+              <div class="option-pill" data-value="parentheses">(500) (Parentheses)</div>
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <div class="settings-card-title"><i class="fas fa-calendar-week"></i> Week Starts On</div>
+            <div class="settings-card-sub">First day of the week in calendars</div>
+            <div class="option-pills" data-pill-group="weekStartsOn">
+              <div class="option-pill" data-value="sunday">Sunday</div>
+              <div class="option-pill" data-value="monday">Monday</div>
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <div class="settings-card-title"><i class="fas fa-calendar-alt"></i> Date Format</div>
+            <div class="settings-card-sub">How dates are displayed throughout the app</div>
+            <select id="dateFormatSelect" class="form-select" style="max-width:220px">
+              <option value="DD/MM/YYYY">DD/MM/YYYY (31/12/2024)</option>
+              <option value="MM/DD/YYYY">MM/DD/YYYY (12/31/2024)</option>
+              <option value="YYYY-MM-DD">YYYY-MM-DD (2024-12-31)</option>
+            </select>
+          </div>
+
+          <div class="settings-card">
+            <div class="settings-card-title"><i class="fas fa-calendar-check"></i> Financial Year Start</div>
+            <div class="settings-card-sub">The start month of your financial year</div>
+            <select id="financialYearSelect" class="form-select" style="max-width:220px">
+              <option value="january">January (Jan&ndash;Dec)</option>
+              <option value="july">July (Jul&ndash;Jun)</option>
+            </select>
+          </div>
+        </section>
+
+        <!-- ===== CATEGORIES ===== -->
+        <section class="settings-section" id="section-categories">
+          <div class="settings-section-heading"><i class="fas fa-tags" style="color:var(--accent-color)"></i> Categories</div>
+          <p class="settings-section-desc">Manage your income, expense, and savings categories.</p>
+
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+            <div class="btn-group" id="catTabs">
+              <button class="btn btn-sm btn-outline-secondary active" data-cat-filter="all">All</button>
+              <button class="btn btn-sm btn-outline-secondary" data-cat-filter="income">Income</button>
+              <button class="btn btn-sm btn-outline-secondary" data-cat-filter="expense">Expense</button>
+              <button class="btn btn-sm btn-outline-secondary" data-cat-filter="savings">Savings</button>
+            </div>
+            <div class="d-flex gap-2">
+              <select id="catSort" class="form-select form-select-sm" style="width:auto">
+                <option value="name">By Name</option>
+                <option value="usage">Most Used</option>
+              </select>
+              <button class="btn btn-sm btn-outline-success" id="btnDefaultCats">
+                <i class="fas fa-undo"></i> Defaults
+              </button>
+            </div>
+          </div>
+
+          <button class="btn btn-primary mb-3" id="btnToggleAddCat">
+            <i class="fas fa-plus"></i> Add Category
+          </button>
+
+          <div id="addCatForm" style="display:none" class="settings-card mb-3">
+            <div class="settings-card-title">New Category</div>
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="catName" placeholder="Category name">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Type</label>
+                <select class="form-select" id="catType">
+                  <option value="general">General</option>
+                  <option value="income">Income</option>
+                  <option value="expense">Expense</option>
+                  <option value="savings">Savings</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Color</label>
+                <input type="color" class="form-control form-control-color w-100" id="catColor" value="#2e7d4f">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Description (optional)</label>
+                <input type="text" class="form-control" id="catDesc" placeholder="Short description">
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Icon</label>
+                <div class="icon-picker" id="iconPicker"></div>
+              </div>
+            </div>
+            <button class="btn btn-success" id="btnSaveCat">Save Category</button>
+            <button class="btn btn-outline-secondary ms-2" id="btnCancelAddCat">Cancel</button>
+          </div>
+
+          <div id="catLoading" class="text-center py-4" style="display:none">
+            <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+          </div>
+          <div id="catList"></div>
+        </section>
+
+        <!-- ===== SECURITY ===== -->
+        <section class="settings-section" id="section-security">
+          <div class="settings-section-heading"><i class="fas fa-shield-alt" style="color:var(--accent-color)"></i> Privacy &amp; Security</div>
+          <p class="settings-section-desc">Manage your account security and data privacy.</p>
+
+          <!-- Profile -->
+          <div class="settings-card">
+            <div class="settings-card-title"><i class="fas fa-user-circle"></i> Profile Information</div>
+            <div class="settings-card-sub">Update your personal details</div>
+            <div class="d-flex align-items-center gap-3 mb-4">
+              <div class="profile-avatar-edit" id="avatarDisplay">U</div>
+              <div>
+                <div class="fw-semibold mb-1" id="profileDisplayName">Loading...</div>
+                <div class="d-flex gap-2 flex-wrap">
+                  <button class="btn btn-sm btn-outline-primary px-2 py-1" id="btnChangePhoto" title="Change Photo"><i class="fas fa-camera"></i></button>
+                  <button class="btn btn-sm btn-outline-danger px-2 py-1" id="btnRemovePhoto" title="Remove Photo"><i class="fas fa-trash-alt"></i></button>
+                </div>
+              </div>
+            </div>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Full Name</label>
+                <input type="text" class="form-control" id="profileFullName">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Username</label>
+                <input type="text" class="form-control" id="profileUsername">
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Email</label>
+                <div class="position-relative">
+                  <input type="email" class="form-control profile-email-readonly" id="profileEmail" readonly style="cursor:not-allowed;padding-right:36px;">
+                  <span class="profile-email-lock-icon" title="Email cannot be changed"><i class="fas fa-times-circle"></i></span>
+                </div>
+              </div>
+            </div>
+            <button class="btn btn-primary mt-3" id="btnUpdateProfile"><i class="fas fa-save me-1"></i>Update Profile</button>
+          </div>
+
+          <!-- Change Password -->
+          <div class="settings-card">
+            <div class="settings-card-title d-flex align-items-center justify-content-between" style="cursor:pointer;" id="pwdToggleHeader">
+              <span><i class="fas fa-key"></i> Change Password</span>
+              <i class="fas fa-chevron-down" id="pwdChevron" style="transition:transform .25s;color:var(--text-muted,#888);font-size:.85rem;"></i>
+            </div>
+            <div class="settings-card-sub">Keep your account secure with a strong password</div>
+            <div id="pwdFieldsSection" style="display:none;margin-top:12px;">
+              <div class="mb-3">
+                <label class="form-label">Current Password</label>
+                <div class="input-group">
+                  <input type="password" class="form-control" id="currentPassword" placeholder="Current password">
+                  <button class="btn btn-outline-secondary pw-eye-toggle" type="button" data-target="currentPassword"><i class="fas fa-eye"></i></button>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">New Password</label>
+                <div class="input-group">
+                  <input type="password" class="form-control" id="newPassword" placeholder="New password">
+                  <button class="btn btn-outline-secondary pw-eye-toggle" type="button" data-target="newPassword"><i class="fas fa-eye"></i></button>
+                </div>
+                <div class="pw-strength" id="pwStrengthBar" style="background:#e5e7eb;width:0%"></div>
+                <small id="pwStrengthLabel" class="text-muted"></small>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Confirm New Password</label>
+                <div class="input-group">
+                  <input type="password" class="form-control" id="confirmPassword" placeholder="Confirm password">
+                  <button class="btn btn-outline-secondary pw-eye-toggle" type="button" data-target="confirmPassword"><i class="fas fa-eye"></i></button>
+                </div>
+              </div>
+              <button class="btn btn-primary" id="btnSavePassword"><i class="fas fa-lock me-1"></i>Save Password</button>
+            </div>
+          </div>
+
+          <!-- Privacy Mode -->
+          <div class="settings-card">
+            <div class="settings-card-title"><i class="fas fa-eye-slash"></i> Privacy Mode</div>
+            <div class="settings-card-sub">Hide financial values from the screen</div>
+            <div class="toggle-row">
+              <div>
+                <div class="fw-semibold">Hide Financial Values</div>
+                <small class="text-muted">Replace amounts with &bull;&bull;&bull;&bull;&bull;&bull;&bull; (click eye icon to reveal)</small>
+              </div>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="toggleHideValues">
+              </div>
+            </div>
+          </div>
+
+          <!-- Export -->
+          <div class="settings-card">
+            <div class="settings-card-title"><i class="fas fa-download"></i> Export Personal Data</div>
+            <div class="settings-card-sub">Download your data as CSV files</div>
+            <div class="d-flex gap-2 flex-wrap">
+              <button class="btn btn-outline-primary" id="btnExportTransactions">
+                <i class="fas fa-file-csv me-1"></i>Export Transactions (CSV)
+              </button>
+              <button class="btn btn-outline-primary" id="btnExportCategories">
+                <i class="fas fa-file-csv me-1"></i>Export Categories (CSV)
+              </button>
+            </div>
+          </div>
+
+          <!-- Danger Zone -->
+          <div class="settings-card danger-zone">
+            <div class="settings-card-title"><i class="fas fa-exclamation-triangle"></i> Danger Zone</div>
+            <div class="settings-card-sub">Irreversible actions &mdash; proceed with caution</div>
+            <p class="text-muted small">Permanently delete your account and all associated data. This cannot be undone.</p>
+            <button class="btn btn-danger" id="btnDeleteAccount">
+              <i class="fas fa-trash-alt me-1"></i>Delete My Account
+            </button>
+          </div>
+        </section>
+
+        <!-- ===== ABOUT ===== -->
+        <section class="settings-section" id="section-about">
+          <div class="settings-section-heading"><i class="fas fa-info-circle" style="color:var(--accent-color)"></i> About FinTrack</div>
+          <p class="settings-section-desc">App information, release notes, and support.</p>
+
+          <div class="settings-card text-center py-4">
+            <img src="/images/logo.png" alt="FinTrack" style="width:72px;height:72px;object-fit:contain;border-radius:16px;margin-bottom:16px;box-shadow:0 4px 16px rgba(0,0,0,0.12);">
+            <h3 class="fw-bold mb-1">FinTrack</h3>
+            <p class="text-muted mb-2">Personal Finance Tracker</p>
+            <span class="badge rounded-pill" style="background:var(--accent-color)">Version 1.0.0</span>
+            <p class="text-muted mt-3 small">Built with &#10084;&#65039; for better financial management</p>
+          </div>
+
+          <div class="settings-card">
+            <div class="settings-card-title"><i class="fas fa-list-ul"></i> Release Notes</div>
+            <div class="accordion accordion-flush" id="releaseAccordion">
+              <div class="accordion-item" style="background:transparent;border-bottom:1px solid var(--border-color)">
+                <h2 class="accordion-header">
+                  <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#release1" style="background:transparent;color:var(--text-body)">
+                    <strong>v1.0.0</strong><span class="badge bg-success ms-2">Latest</span>
+                  </button>
+                </h2>
+                <div id="release1" class="accordion-collapse collapse show" data-bs-parent="#releaseAccordion">
+                  <div class="accordion-body">
+                    <ul class="small text-muted mb-0">
+                      <li>&#127912; Theme customization with accent colors</li>
+                      <li>&#128176; Savings tracking &amp; DPS management</li>
+                      <li>&#129518; Built-in financial calculator</li>
+                      <li>&#128269; Advanced transaction filtering</li>
+                      <li>&#128194; Categories management</li>
+                      <li>&#128221; Notes &amp; To-Do list</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              <div class="accordion-item" style="background:transparent">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#release2" style="background:transparent;color:var(--text-body)">
+                    <strong>v0.9.0</strong>
+                  </button>
+                </h2>
+                <div id="release2" class="accordion-collapse collapse" data-bs-parent="#releaseAccordion">
+                  <div class="accordion-body">
+                    <ul class="small text-muted mb-0">
+                      <li>&#128184; Income &amp; expense tracking</li>
+                      <li>&#128202; Dashboard with charts</li>
+                      <li>&#127968; Initial release</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <div class="settings-card-title"><i class="fas fa-star"></i> Send Feedback</div>
+            <div class="settings-card-sub">How are we doing? Let us know!</div>
+            <div class="star-rating mb-3" id="starRating">
+              <i class="fas fa-star" data-val="1"></i>
+              <i class="fas fa-star" data-val="2"></i>
+              <i class="fas fa-star" data-val="3"></i>
+              <i class="fas fa-star" data-val="4"></i>
+              <i class="fas fa-star" data-val="5"></i>
+            </div>
+            <textarea class="form-control mb-3" id="feedbackText" rows="3" placeholder="Tell us what you think..."></textarea>
+            <button class="btn btn-primary" id="btnSendFeedback"><i class="fas fa-paper-plane me-1"></i>Send Feedback</button>
+          </div>
+
+          <div class="settings-card">
+            <div class="settings-card-title"><i class="fas fa-headset"></i> Contact &amp; Support</div>
+            <div class="list-group list-group-flush">
+              <a href="mailto:support@fintrack.app" class="list-group-item list-group-item-action d-flex align-items-center gap-2" style="background:transparent;color:var(--text-body)">
+                <i class="fas fa-envelope text-muted"></i> support@fintrack.app
+              </a>
+              <a href="https://github.com/fintrack" target="_blank" class="list-group-item list-group-item-action d-flex align-items-center gap-2" style="background:transparent;color:var(--text-body)">
+                <i class="fab fa-github text-muted"></i> github.com/fintrack <i class="fas fa-external-link-alt text-muted ms-auto" style="font-size:.75rem"></i>
+              </a>
+            </div>
+            <button class="btn btn-outline-danger mt-3" id="btnReportBug"><i class="fas fa-bug me-1"></i>Report a Bug</button>
+          </div>
+
+          <div class="settings-card">
+            <div class="settings-card-title"><i class="fas fa-code"></i> Developer Information</div>
+            <table class="table table-sm table-borderless small mb-0" style="color:var(--text-body)">
+              <tr><td class="text-muted">Developer</td><td>Zareen Zia</td></tr>
+              <tr><td class="text-muted">Contact</td><td><a href="mailto:zareenzia801@gmail.com">zareenzia801@gmail.com</a></td></tr>
+              <tr><td class="text-muted">Built with</td><td>Spring Boot, Bootstrap 5, Chart.js</td></tr>
+              <tr><td class="text-muted">License</td><td>MIT License</td></tr>
+            </table>
+          </div>
+        </section>
+
+      </main>
     </div>
-</div>
+  </div>
 
-<!-- Edit Category Modal -->
-<div class="modal fade" id="editCategoryModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-edit"></i> Edit Category</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" id="editCatId">
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Name</label>
-                    <input type="text" class="form-control" id="editCatName">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Description</label>
-                    <input type="text" class="form-control" id="editCatDescription">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Color</label>
-                    <input type="color" class="form-control form-control-color" id="editCatColor">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Icon</label>
-                    <div id="editCatIconPicker"></div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="saveEditCategory()">Save Changes</button>
-            </div>
+  <!-- Modals -->
+  <input type="file" id="avatarFileInput" accept="image/*" style="display:none">
+
+  <div class="modal fade" id="deleteCatModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content" style="background:var(--bg-modal,#fff)">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fas fa-trash text-danger me-2"></i>Delete Category</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
-    </div>
-</div>
-
-<!-- Delete Category Confirmation Modal -->
-<div class="modal fade" id="deleteCategoryModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Delete Category</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="deleteCategoryBody">
-                Do you want to delete this category?
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
-                <button type="button" class="btn btn-danger" id="confirmDeleteCategoryBtn">Yes, Delete</button>
-            </div>
+        <div class="modal-body">
+          <p id="deleteCatMsg">Are you sure you want to delete this category?</p>
         </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-danger" id="btnConfirmDeleteCat">Delete</button>
+        </div>
+      </div>
     </div>
-</div>
+  </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    const ICONS = ['tag', 'shopping-cart', 'home', 'car', 'utensils', 'heart', 'briefcase', 'gift', 'plane', 'gamepad', 'book', 'music'];
-    let allCategories = [];
-    let deleteCategoryId = null;
-    let deleteCategoryModal = null;
-    let editCategoryModal = null;
-    let newCatIcon = 'tag';
-    let editCatIcon = 'tag';
+  <div class="modal fade" id="deleteAccountModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content" style="background:var(--bg-modal,#fff)">
+        <div class="modal-header">
+          <h5 class="modal-title text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Delete Account</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted">This will permanently delete your account and <strong>all your data</strong>. This action <strong>cannot be undone</strong>.</p>
+          <p class="mb-2">Type <strong>DELETE</strong> to confirm:</p>
+          <input type="text" class="form-control" id="deleteConfirmInput" placeholder="Type DELETE here">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-danger" id="btnConfirmDeleteAccount" disabled>Delete My Account</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    document.addEventListener('DOMContentLoaded', function () {
-        deleteCategoryModal = new bootstrap.Modal(document.getElementById('deleteCategoryModal'));
-        editCategoryModal = new bootstrap.Modal(document.getElementById('editCategoryModal'));
-        document.getElementById('confirmDeleteCategoryBtn').addEventListener('click', confirmDeleteCategory);
+  <div class="modal fade" id="bugReportModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content" style="background:var(--bg-modal,#fff)">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fas fa-bug me-2"></i>Report a Bug</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Subject</label>
+            <input type="text" class="form-control" id="bugSubject" placeholder="Brief description of the issue">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Description</label>
+            <textarea class="form-control" id="bugDescription" rows="4" placeholder="Steps to reproduce, expected vs actual behavior..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="btnSubmitBugReport"><i class="fas fa-paper-plane me-1"></i>Submit Report</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-        renderIconPicker('newCatIconPicker', newCatIcon, (icon) => newCatIcon = icon);
-        setupNav();
-        applySavedTheme();
-        loadCategories();
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/sidebar.js"></script>
+  <script>
+// ============== Settings storage ==============
+function getUserStorageKey(baseKey) {
+  try {
+    var raw = localStorage.getItem('finzin_user') || localStorage.getItem('user');
+    var u = JSON.parse(raw);
+    if (u && u.id) return baseKey + '_' + u.id;
+  } catch(e) {}
+  return baseKey;
+}
+function SETTINGS_KEY()    { return getUserStorageKey('fintrack_settings'); }
+const DEFAULTS = {
+  sidebar:'expand', layout:'comfortable',
+  animations:true, fontSize:'medium', currencyInCharts:true,
+  currency:'BDT', currencySymbol:'৳', symbolPosition:'before',
+  decimalPlaces:0, thousandSeparator:',', negativeFormat:'minus',
+  weekStartsOn:'sunday', dateFormat:'MM/DD/YYYY', financialYear:'january',
+  hideValues:false
+};
+function getSettings() {
+  try { return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem(SETTINGS_KEY())||'{}')); }
+  catch(e) { return Object.assign({}, DEFAULTS); }
+}
+function saveSettings(patch) {
+  var s = Object.assign({}, getSettings(), patch);
+  localStorage.setItem(SETTINGS_KEY(), JSON.stringify(s));
+  return s;
+}
+
+// ============== Auth ==============
+function getAuthToken() {
+  var cookie = document.cookie.split(';').find(function(c){ return c.trim().startsWith('Authorization='); });
+  return cookie ? cookie.trim().split('=')[1] : null;
+}
+function authHeaders() {
+  var t = getAuthToken();
+  return t ? { 'Authorization': 'Bearer ' + t, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+}
+
+// ============== Apply settings ==============
+function applySettings(s) {
+  var sizes = { small:'13px', medium:'15px', large:'17px' };
+  document.documentElement.style.fontSize = sizes[s.fontSize] || '15px';
+  document.documentElement.classList.toggle('reduce-motion', !s.animations);
+  if (s.hideValues) document.documentElement.classList.remove('hide-values');
+  // hide-values is JS-only on stat cards — no global class needed
+}
+
+// ============== Notifications ==============
+function showNotification(message, type) {
+  type = type || 'success';
+  var colors = { success:'#2e7d4f', danger:'#ef4444', warning:'#f59e0b', info:'#3b82f6' };
+  var div = document.createElement('div');
+  div.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;min-width:280px;max-width:380px;background:#fff;border-left:4px solid '+(colors[type]||colors.success)+';border-radius:8px;padding:14px 18px;box-shadow:0 4px 20px rgba(0,0,0,.15);display:flex;align-items:center;gap:12px;animation:slideIn .3s ease;';
+  var icons = { success:'check-circle', danger:'exclamation-circle', warning:'exclamation-triangle', info:'info-circle' };
+  div.innerHTML = '<i class="fas fa-'+(icons[type]||'check-circle')+'" style="color:'+(colors[type]||colors.success)+';font-size:1.1rem"></i><span style="flex:1;font-size:.9rem">'+message+'</span><button onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;color:#888;font-size:1rem">&#x2715;</button>';
+  document.body.appendChild(div);
+  setTimeout(function(){ if (div.parentElement) div.remove(); }, 4000);
+}
+var slideStyle = document.createElement('style');
+slideStyle.textContent = '@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}';
+document.head.appendChild(slideStyle);
+
+// ============== Icon picker ==============
+var CAT_ICONS = ['tag','shopping-cart','home','car','utensils','heart','briefcase','gift','plane','gamepad','book','music','mobile-alt','bolt','graduation-cap','piggy-bank','chart-line','coffee','pizza-slice','baby','film','dumbbell','paw','leaf'];
+var selectedIcon = 'tag';
+(function initIconPicker() {
+  var picker = document.getElementById('iconPicker');
+  if (!picker) return;
+  picker.innerHTML = CAT_ICONS.map(function(icon){
+    return '<div class="icon-option'+(icon==='tag'?' selected':'')+'" data-icon="'+icon+'"><i class="fas fa-'+icon+'"></i></div>';
+  }).join('');
+  picker.querySelectorAll('.icon-option').forEach(function(opt){
+    opt.addEventListener('click', function(){
+      selectedIcon = opt.dataset.icon;
+      picker.querySelectorAll('.icon-option').forEach(function(o){ o.classList.toggle('selected', o.dataset.icon === selectedIcon); });
     });
+  });
+})();
 
-    // ---------- Nav switching ----------
-    function setupNav() {
-        document.querySelectorAll('.settings-nav-link').forEach(link => {
-            link.addEventListener('click', function () {
-                document.querySelectorAll('.settings-nav-link').forEach(l => l.classList.remove('active'));
-                this.classList.add('active');
-                document.querySelectorAll('.settings-section').forEach(sec => sec.classList.remove('active'));
-                document.getElementById(this.dataset.section).classList.add('active');
-            });
-        });
-    }
+// ============== Nav switching ==============
+document.querySelectorAll('.settings-nav-item').forEach(function(item){
+  item.addEventListener('click', function(e){
+    e.preventDefault();
+    var section = item.dataset.section;
+    document.querySelectorAll('.settings-nav-item').forEach(function(i){ i.classList.remove('active'); });
+    item.classList.add('active');
+    document.querySelectorAll('.settings-section').forEach(function(s){ s.classList.remove('active'); });
+    var sec = document.getElementById('section-' + section);
+    if (sec) sec.classList.add('active');
+    if (section === 'categories' && allCategories.length === 0) loadCategories();
+    if (section === 'security') loadUserProfile();
+  });
+});
 
-    // ---------- Theme ----------
-    const THEME_NAMES = { green: 'Green (Default)', dark: 'Dark', blue: 'Blue', gold: 'Gold' };
+// ============== Color Theme ==============
+function COLOR_THEME_KEY() { return getUserStorageKey('fintrack_color_theme'); }
+function THEME_KEY()       { return getUserStorageKey('fintrack_theme'); }
 
-    document.querySelectorAll('.theme-card').forEach(card => {
-        card.addEventListener('click', function () {
-            applyTheme(this.dataset.theme);
-        });
+function applyColorTheme(key) {
+  if (!key || key === 'forest') {
+    document.documentElement.removeAttribute('data-color-theme');
+  } else {
+    document.documentElement.setAttribute('data-color-theme', key);
+  }
+  localStorage.setItem(COLOR_THEME_KEY(), key || 'forest');
+}
+
+function syncThemeGrid() {
+  var current = localStorage.getItem(COLOR_THEME_KEY()) || 'forest';
+  document.querySelectorAll('.theme-option').forEach(function(opt){
+    opt.classList.toggle('active', opt.dataset.themeKey === current);
+  });
+}
+
+function initThemeGrid() {
+  syncThemeGrid();
+  document.querySelectorAll('.theme-option').forEach(function(opt){
+    opt.addEventListener('click', function(){
+      applyColorTheme(opt.dataset.themeKey);
+      syncThemeGrid();
     });
+  });
+}
 
-    function applyTheme(theme) {
-        localStorage.setItem('fintrack-theme', theme);
-        document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'));
-        document.querySelector(`.theme-card[data-theme="${theme}"]`).classList.add('active');
-        document.getElementById('current-theme-label').textContent = 'Current theme: ' + (THEME_NAMES[theme] || 'Green (Default)');
-        applyThemeStyles(theme);
-        showNotification('Theme updated');
+// ============== Display Mode ==============
+function initDisplayMode() {
+  var saved = localStorage.getItem(THEME_KEY()) || 'light';
+  document.querySelectorAll('.display-mode-btn').forEach(function(btn){
+    btn.classList.toggle('active', btn.dataset.mode === saved);
+    btn.classList.toggle('btn-primary', btn.dataset.mode === saved);
+    btn.classList.toggle('btn-outline-secondary', btn.dataset.mode !== saved);
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.display-mode-btn').forEach(function(b){
+        b.classList.remove('active','btn-primary');
+        b.classList.add('btn-outline-secondary');
+      });
+      btn.classList.add('active','btn-primary');
+      btn.classList.remove('btn-outline-secondary');
+      var mode = btn.dataset.mode;
+      if (mode === 'system') {
+        var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        mode = prefersDark ? 'dark' : 'light';
+      }
+      document.documentElement.setAttribute('data-theme', mode);
+      localStorage.setItem(THEME_KEY(), mode);
+    });
+  });
+}
+
+// ============== Appearance ==============
+function initAppearanceUI() {
+  var s = getSettings();
+
+  document.querySelectorAll('.option-pill').forEach(function(pill){
+    pill.addEventListener('click', function(){
+      var group = pill.closest('[data-pill-group]');
+      if (!group) return;
+      group.querySelectorAll('.option-pill').forEach(function(p){ p.classList.remove('active'); });
+      pill.classList.add('active');
+      var key = group.dataset.pillGroup;
+      var val = pill.dataset.value;
+      var patch = {};
+      patch[key] = val;
+      saveSettings(patch);
+      applySettings(getSettings());
+      if (['symbolPosition','thousandSeparator','negativeFormat'].indexOf(key) !== -1) {
+        updateCurrencyPreview();
+      }
+    });
+  });
+
+  var toggleAnimations = document.getElementById('toggleAnimations');
+  if (toggleAnimations) {
+    toggleAnimations.checked = s.animations;
+    toggleAnimations.addEventListener('change', function(e){
+      saveSettings({ animations: e.target.checked });
+      applySettings(getSettings());
+    });
+  }
+  var toggleCurrencyInCharts = document.getElementById('toggleCurrencyInCharts');
+  if (toggleCurrencyInCharts) {
+    toggleCurrencyInCharts.checked = s.currencyInCharts;
+    toggleCurrencyInCharts.addEventListener('change', function(e){ saveSettings({ currencyInCharts: e.target.checked }); });
+  }
+
+  syncAllPills(s);
+}
+
+function syncAllPills(s) {
+  document.querySelectorAll('[data-pill-group]').forEach(function(group){
+    var key = group.dataset.pillGroup;
+    var val = String(s[key] !== undefined ? s[key] : '');
+    group.querySelectorAll('.option-pill').forEach(function(p){
+      p.classList.toggle('active', p.dataset.value === val);
+    });
+  });
+}
+
+// ============== Currency preview ==============
+function formatAmount(amount, s) {
+  var abs = Math.abs(amount);
+  var dp = Number(s.decimalPlaces);
+  var parts = abs.toFixed(dp).split('.');
+  var sepMap = { ',':',', '.':'.',' ':'\u00a0', 'none':'' };
+  var sep = Object.prototype.hasOwnProperty.call(sepMap, s.thousandSeparator) ? sepMap[s.thousandSeparator] : ',';
+  if (sep !== '') {
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, sep);
+  }
+  var num = dp > 0 ? parts.join('.') : parts[0];
+  var formatted = s.symbolPosition === 'before' ? s.currencySymbol + num : num + '\u00a0' + s.currencySymbol;
+  if (amount < 0) {
+    formatted = s.negativeFormat === 'parentheses' ? '(' + formatted + ')' : '-' + formatted;
+  }
+  return formatted;
+}
+
+function updateCurrencyPreview() {
+  var s = getSettings();
+  var pos = document.getElementById('previewPositive');
+  var neg = document.getElementById('previewNegative');
+  if (pos) pos.textContent = formatAmount(10000, s);
+  if (neg) neg.textContent = formatAmount(-500, s);
+}
+
+function initCurrencyUI() {
+  var s = getSettings();
+  var currSel = document.getElementById('currencySelect');
+  if (currSel) {
+    currSel.value = s.currency;
+    currSel.addEventListener('change', function(e){
+      var opt = currSel.options[currSel.selectedIndex];
+      saveSettings({ currency: e.target.value, currencySymbol: opt.dataset.symbol });
+      updateCurrencyPreview();
+    });
+  }
+  var decSel = document.getElementById('decimalSelect');
+  if (decSel) {
+    decSel.value = String(s.decimalPlaces);
+    decSel.addEventListener('change', function(e){
+      saveSettings({ decimalPlaces: Number(e.target.value) });
+      updateCurrencyPreview();
+    });
+  }
+  var dateSel = document.getElementById('dateFormatSelect');
+  if (dateSel) {
+    dateSel.value = s.dateFormat;
+    dateSel.addEventListener('change', function(e){ saveSettings({ dateFormat: e.target.value }); });
+  }
+  var finSel = document.getElementById('financialYearSelect');
+  if (finSel) {
+    finSel.value = s.financialYear;
+    finSel.addEventListener('change', function(e){ saveSettings({ financialYear: e.target.value }); });
+  }
+  updateCurrencyPreview();
+}
+
+// ============== Reset Appearance ==============
+var btnResetAppearance = document.getElementById('btnResetAppearance');
+if (btnResetAppearance) {
+  btnResetAppearance.addEventListener('click', function(){
+    var keys = ['sidebar','layout','animations','fontSize','currencyInCharts'];
+    var patch = {};
+    keys.forEach(function(k){ patch[k] = DEFAULTS[k]; });
+    var s = saveSettings(patch);
+    localStorage.setItem(THEME_KEY(), 'light');
+    document.documentElement.setAttribute('data-theme','light');
+    document.documentElement.removeAttribute('data-theme-variant');
+    applySettings(s);
+    var ta = document.getElementById('toggleAnimations');
+    if (ta) ta.checked = DEFAULTS.animations;
+    var tcc = document.getElementById('toggleCurrencyInCharts');
+    if (tcc) tcc.checked = DEFAULTS.currencyInCharts;
+    syncAllPills(s);
+    showNotification('Appearance reset to defaults', 'info');
+  });
+}
+
+// ============== Categories ==============
+var allCategories = [];
+var catFilter = 'all';
+var catSortVal = 'name';
+var editingCatId = null;
+var deleteCatId = null;
+
+async function loadCategories() {
+  var list = document.getElementById('catList');
+  var loading = document.getElementById('catLoading');
+  if (loading) loading.style.display = 'block';
+  if (list) list.innerHTML = '';
+  try {
+    var token = getAuthToken();
+    var headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+    var res = await fetch('/api/categories', { headers: headers });
+    if (!res.ok) throw new Error('Failed to load');
+    allCategories = await res.json();
+    renderCategories();
+  } catch(e) {
+    if (list) list.innerHTML = '<p class="text-muted text-center py-3">Failed to load categories. <button class="btn btn-sm btn-link" onclick="loadCategories()">Retry</button></p>';
+  } finally {
+    if (loading) loading.style.display = 'none';
+  }
+}
+
+function escHtml(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderCategories() {
+  var list = document.getElementById('catList');
+  if (!list) return;
+  var cats = allCategories.slice();
+  if (catFilter !== 'all') cats = cats.filter(function(c){ return (c.categoryType||'').toLowerCase() === catFilter; });
+  if (catSortVal === 'name') cats.sort(function(a,b){ return (a.name||'').localeCompare(b.name||''); });
+  else if (catSortVal === 'usage') cats.sort(function(a,b){ return (b.transactionCount||0) - (a.transactionCount||0); });
+  if (cats.length === 0) {
+    list.innerHTML = '<p class="text-muted text-center py-3">No categories found. Add one above!</p>';
+    return;
+  }
+  list.innerHTML = cats.map(function(c){
+    var type = (c.categoryType||'general').toLowerCase();
+    var icon = c.icon || 'tag';
+    var color = c.color || '#888';
+    return '<div class="cat-item"><div class="cat-icon" style="background:'+color+'"><i class="fas fa-'+escHtml(icon)+'"></i></div><div class="cat-details"><p class="cat-name">'+escHtml(c.name)+' <span class="cat-type-badge cat-type-'+type+'">'+type+'</span></p><p class="cat-meta">'+(c.transactionCount||0)+' transactions'+(c.description ? ' &middot; '+escHtml(c.description) : '')+'</p></div><div class="d-flex gap-1 flex-shrink-0"><button class="btn btn-sm btn-outline-primary btn-edit-cat" data-id="'+c.id+'"><i class="fas fa-pen"></i></button><button class="btn btn-sm btn-outline-danger btn-del-cat" data-id="'+c.id+'" data-count="'+(c.transactionCount||0)+'" data-name="'+escHtml(c.name)+'"><i class="fas fa-trash"></i></button></div></div>';
+  }).join('');
+  list.querySelectorAll('.btn-edit-cat').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var cat = allCategories.find(function(c){ return String(c.id) === String(btn.dataset.id); });
+      if (cat) openCatForm(cat);
+    });
+  });
+  list.querySelectorAll('.btn-del-cat').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      deleteCatId = btn.dataset.id;
+      var count = Number(btn.dataset.count);
+      var name = btn.dataset.name;
+      var msg = document.getElementById('deleteCatMsg');
+      if (msg) msg.innerHTML = count > 0
+        ? 'This category "<strong>'+name+'</strong>" has <strong>'+count+' transactions</strong>. Deleting it may affect those records. Continue?'
+        : 'Delete category "<strong>'+name+'</strong>"? This cannot be undone.';
+      new bootstrap.Modal(document.getElementById('deleteCatModal')).show();
+    });
+  });
+}
+
+var catTabsEl = document.getElementById('catTabs');
+if (catTabsEl) {
+  catTabsEl.addEventListener('click', function(e){
+    var btn = e.target.closest('[data-cat-filter]');
+    if (!btn) return;
+    catFilter = btn.dataset.catFilter;
+    document.querySelectorAll('#catTabs [data-cat-filter]').forEach(function(b){ b.classList.toggle('active', b === btn); });
+    renderCategories();
+  });
+}
+
+var catSortEl = document.getElementById('catSort');
+if (catSortEl) {
+  catSortEl.addEventListener('change', function(e){
+    catSortVal = e.target.value;
+    renderCategories();
+  });
+}
+
+var btnToggleAddCat = document.getElementById('btnToggleAddCat');
+if (btnToggleAddCat) {
+  btnToggleAddCat.addEventListener('click', function(){
+    var form = document.getElementById('addCatForm');
+    if (!form) return;
+    if (form.style.display === 'none') openCatForm(null);
+    else closeCatForm();
+  });
+}
+var btnCancelAddCat = document.getElementById('btnCancelAddCat');
+if (btnCancelAddCat) btnCancelAddCat.addEventListener('click', closeCatForm);
+
+function openCatForm(cat) {
+  var form = document.getElementById('addCatForm');
+  if (!form) return;
+  editingCatId = cat ? cat.id : null;
+  document.getElementById('catName').value = cat ? (cat.name||'') : '';
+  document.getElementById('catType').value = cat ? (cat.categoryType||'general').toLowerCase() : 'general';
+  document.getElementById('catColor').value = cat ? (cat.color||'#2e7d4f') : '#2e7d4f';
+  document.getElementById('catDesc').value = cat ? (cat.description||'') : '';
+  selectedIcon = cat ? (cat.icon||'tag') : 'tag';
+  document.querySelectorAll('.icon-option').forEach(function(o){ o.classList.toggle('selected', o.dataset.icon === selectedIcon); });
+  var saveBtn = document.getElementById('btnSaveCat');
+  if (saveBtn) saveBtn.textContent = cat ? 'Update Category' : 'Save Category';
+  var title = form.querySelector('.settings-card-title');
+  if (title) title.textContent = cat ? 'Edit Category' : 'New Category';
+  form.style.display = 'block';
+  form.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  var toggleBtn = document.getElementById('btnToggleAddCat');
+  if (toggleBtn) toggleBtn.innerHTML = '<i class="fas fa-times"></i> Cancel';
+}
+
+function closeCatForm() {
+  var form = document.getElementById('addCatForm');
+  if (form) form.style.display = 'none';
+  editingCatId = null;
+  var toggleBtn = document.getElementById('btnToggleAddCat');
+  if (toggleBtn) toggleBtn.innerHTML = '<i class="fas fa-plus"></i> Add Category';
+}
+
+var btnSaveCat = document.getElementById('btnSaveCat');
+if (btnSaveCat) {
+  btnSaveCat.addEventListener('click', async function(){
+    var nameEl = document.getElementById('catName');
+    var name = nameEl ? nameEl.value.trim() : '';
+    if (!name) { showNotification('Category name is required', 'danger'); return; }
+    var body = {
+      name: name,
+      categoryType: document.getElementById('catType').value,
+      color: document.getElementById('catColor').value,
+      icon: selectedIcon,
+      description: (document.getElementById('catDesc') ? document.getElementById('catDesc').value.trim() : '') || ''
+    };
+    try {
+      var token = getAuthToken();
+      var headers = Object.assign({ 'Content-Type':'application/json' }, token ? {'Authorization':'Bearer '+token} : {});
+      var url = editingCatId ? '/api/categories/'+editingCatId : '/api/categories';
+      var method = editingCatId ? 'PUT' : 'POST';
+      var res = await fetch(url, { method: method, headers: headers, body: JSON.stringify(body) });
+      if (!res.ok) throw new Error('Failed');
+      showNotification(editingCatId ? 'Category updated!' : 'Category created!', 'success');
+      closeCatForm();
+      await loadCategories();
+    } catch(e) {
+      showNotification('Failed to save category', 'danger');
     }
+  });
+}
 
-    function applyThemeStyles(theme) {
-        let styles = '';
-        if (theme === 'dark') {
-            styles = `
-                body { background: #1a1a1a; color: #f0f0f0; }
-                .settings-sidebar, .settings-panel, .card, .theme-card, .todo-item { background: #2d2d2d !important; color: #f0f0f0; }
-                .form-control, .form-select { background: #3d3d3d !important; color: #f0f0f0 !important; border-color: #555 !important; }
-            `;
-        } else if (theme === 'blue') {
-            styles = `:root { --accent-color: #667eea; } body { background: #f5f7ff; }`;
-        } else if (theme === 'gold') {
-            styles = `:root { --accent-color: #b8860b; } body { background: #fffaf0; }`;
-        } else {
-            styles = '';
-        }
-        let styleTag = document.getElementById('theme-override');
-        if (!styleTag) {
-            styleTag = document.createElement('style');
-            styleTag.id = 'theme-override';
-            document.head.appendChild(styleTag);
-        }
-        styleTag.textContent = styles;
+var btnConfirmDeleteCat = document.getElementById('btnConfirmDeleteCat');
+if (btnConfirmDeleteCat) {
+  btnConfirmDeleteCat.addEventListener('click', async function(){
+    if (!deleteCatId) return;
+    try {
+      var token = getAuthToken();
+      var headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+      var res = await fetch('/api/categories/'+deleteCatId, { method:'DELETE', headers: headers });
+      if (!res.ok) throw new Error('Failed');
+      var modal = bootstrap.Modal.getInstance(document.getElementById('deleteCatModal'));
+      if (modal) modal.hide();
+      showNotification('Category deleted', 'success');
+      await loadCategories();
+    } catch(e) {
+      showNotification('Failed to delete category', 'danger');
     }
+  });
+}
 
-    function applySavedTheme() {
-        const saved = localStorage.getItem('fintrack-theme') || 'green';
-        const card = document.querySelector(`.theme-card[data-theme="${saved}"]`);
-        if (card) card.classList.add('active');
-        document.getElementById('current-theme-label').textContent = 'Current theme: ' + (THEME_NAMES[saved] || 'Green (Default)');
-        applyThemeStyles(saved);
+var btnDefaultCats = document.getElementById('btnDefaultCats');
+if (btnDefaultCats) {
+  btnDefaultCats.addEventListener('click', async function(){
+    var defaults = [
+      { name:'Salary', categoryType:'income', icon:'briefcase', color:'#16a34a', description:'Regular salary income' },
+      { name:'Food', categoryType:'expense', icon:'utensils', color:'#ef4444', description:'Food and dining' },
+      { name:'Transport', categoryType:'expense', icon:'car', color:'#f97316', description:'Transportation costs' },
+      { name:'Bills', categoryType:'expense', icon:'bolt', color:'#eab308', description:'Monthly bills and utilities' },
+      { name:'DPS', categoryType:'savings', icon:'piggy-bank', color:'#3b82f6', description:'Deposit Pension Scheme' }
+    ];
+    var existing = allCategories.map(function(c){ return (c.name||'').toLowerCase(); });
+    var toCreate = defaults.filter(function(d){ return existing.indexOf(d.name.toLowerCase()) === -1; });
+    if (toCreate.length === 0) { showNotification('Default categories already exist', 'info'); return; }
+    var token = getAuthToken();
+    var headers = Object.assign({ 'Content-Type':'application/json' }, token ? {'Authorization':'Bearer '+token} : {});
+    try {
+      await Promise.all(toCreate.map(function(d){ return fetch('/api/categories', { method:'POST', headers: headers, body: JSON.stringify(d) }); }));
+      showNotification('Created '+toCreate.length+' default categories', 'success');
+      await loadCategories();
+    } catch(e) {
+      showNotification('Failed to create some defaults', 'danger');
     }
+  });
+}
 
-    function resetTheme() {
-        applyTheme('green');
+// ============== Profile ==============
+var userProfile = null;
+
+async function loadUserProfile() {
+  try {
+    var token = getAuthToken();
+    if (!token) return;
+    var res = await fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
+    if (!res.ok) return;
+    userProfile = await res.json();
+    renderUserProfile();
+  } catch(e) {}
+}
+
+function renderUserProfile() {
+  if (!userProfile) return;
+  var nameEl = document.getElementById('profileDisplayName');
+  var fullNameEl = document.getElementById('profileFullName');
+  var usernameEl = document.getElementById('profileUsername');
+  var emailEl = document.getElementById('profileEmail');
+  var avatarEl = document.getElementById('avatarDisplay');
+  if (nameEl) nameEl.textContent = userProfile.fullName || userProfile.username || 'User';
+  if (fullNameEl) fullNameEl.value = userProfile.fullName || '';
+  if (usernameEl) usernameEl.value = userProfile.username || '';
+  if (emailEl) emailEl.value = userProfile.email || '';
+  if (avatarEl) {
+    if (userProfile.profilePicture) {
+      avatarEl.innerHTML = '<img src="'+userProfile.profilePicture+'" style="width:100%;height:100%;object-fit:cover" alt="Avatar">';
+    } else {
+      var name = userProfile.fullName || userProfile.username || 'U';
+      var initials = name.split(' ').map(function(w){ return w[0]||''; }).join('').substring(0,2).toUpperCase();
+      avatarEl.textContent = initials;
     }
+  }
+}
 
-    // ---------- Categories ----------
-    function renderIconPicker(containerId, selectedIcon, onSelect) {
-        const container = document.getElementById(containerId);
-        container.innerHTML = ICONS.map(icon => `
-            <span class="icon-choice ${icon === selectedIcon ? 'selected' : ''}" data-icon="${icon}" title="${icon}">
-                <i class="fas fa-${icon}"></i>
-            </span>
-        `).join('');
-        container.querySelectorAll('.icon-choice').forEach(el => {
-            el.addEventListener('click', function () {
-                container.querySelectorAll('.icon-choice').forEach(e => e.classList.remove('selected'));
-                this.classList.add('selected');
-                onSelect(this.dataset.icon);
-            });
-        });
+var btnChangePhoto = document.getElementById('btnChangePhoto');
+if (btnChangePhoto) btnChangePhoto.addEventListener('click', function(){ var fi = document.getElementById('avatarFileInput'); if (fi) fi.click(); });
+
+var avatarFileInput = document.getElementById('avatarFileInput');
+if (avatarFileInput) {
+  avatarFileInput.addEventListener('change', async function(e){
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+    var fd = new FormData();
+    fd.append('picture', file);
+    try {
+      var token = getAuthToken();
+      var headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+      var res = await fetch('/api/auth/profile-picture', { method:'POST', headers: headers, body: fd });
+      if (!res.ok) throw new Error();
+      showNotification('Profile picture updated!', 'success');
+      await loadUserProfile();
+    } catch(e) {
+      showNotification('Failed to update picture', 'danger');
     }
+  });
+}
 
-    async function loadCategories() {
-        try {
-            const response = await fetch('/api/categories');
-            allCategories = await response.json();
-            displayCategories();
-        } catch (error) {
-            console.error('Error loading categories:', error);
-            document.getElementById('categoriesList').innerHTML =
-                '<div class="empty-state"><i class="fas fa-triangle-exclamation"></i><p class="mt-2">Could not load categories.</p></div>';
-        }
+var btnRemovePhoto = document.getElementById('btnRemovePhoto');
+if (btnRemovePhoto) {
+  btnRemovePhoto.addEventListener('click', function(){
+    if (!confirm('Do you want to delete your profile picture?')) return;
+    (async function(){
+      try {
+        var token = getAuthToken();
+        var headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+        var res = await fetch('/api/auth/profile-picture', { method:'DELETE', headers: headers });
+        if (!res.ok) throw new Error();
+        showNotification('Profile picture removed', 'success');
+        await loadUserProfile();
+      } catch(e) {
+        showNotification('Failed to remove picture', 'danger');
+      }
+    })();
+  });
+}
+
+var btnUpdateProfile = document.getElementById('btnUpdateProfile');
+if (btnUpdateProfile) {
+  btnUpdateProfile.addEventListener('click', async function(){
+    var body = {
+      fullName: document.getElementById('profileFullName') ? document.getElementById('profileFullName').value.trim() : '',
+      username: document.getElementById('profileUsername') ? document.getElementById('profileUsername').value.trim() : ''
+    };
+    try {
+      var token = getAuthToken();
+      var headers = Object.assign({ 'Content-Type':'application/json' }, token ? {'Authorization':'Bearer '+token} : {});
+      var res = await fetch('/api/auth/profile', { method:'PUT', headers: headers, body: JSON.stringify(body) });
+      if (!res.ok) throw new Error();
+      showNotification('Profile updated!', 'success');
+      if (userProfile) { userProfile.fullName = body.fullName; userProfile.username = body.username; renderUserProfile(); }
+    } catch(e) {
+      showNotification('Failed to update profile', 'danger');
     }
+  });
+}
 
-    function displayCategories() {
-        const list = document.getElementById('categoriesList');
-        if (!allCategories.length) {
-            list.innerHTML = '<div class="empty-state"><i class="fas fa-tags"></i><p class="mt-2">No categories yet. Add one above.</p></div>';
-            return;
-        }
-        list.innerHTML = allCategories.map(cat => `
-            <div class="category-item">
-                <div class="category-info">
-                    <div class="category-swatch" style="background:${cat.color || '#3498db'}">
-                        <i class="fas fa-${cat.icon || 'tag'}"></i>
-                    </div>
-                    <div class="min-width-0">
-                        <p class="category-name">${escapeHtml(cat.name)}</p>
-                        <p class="category-desc">${escapeHtml(cat.description || 'No description')}</p>
-                    </div>
-                </div>
-                <div class="category-actions">
-                    <button class="btn btn-sm btn-outline-secondary" onclick="openEditCategory(${cat.id})" title="Edit">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="openDeleteCategory(${cat.id})" title="Delete">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </div>
-        `).join('');
+document.querySelectorAll('.pw-eye-toggle').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var input = document.getElementById(btn.dataset.target);
+    if (!input) return;
+    var isPassword = input.type === 'password';
+    input.type = isPassword ? 'text' : 'password';
+    btn.querySelector('i').className = isPassword ? 'fas fa-eye-slash' : 'fas fa-eye';
+  });
+});
+
+// Change Password expand/collapse
+(function(){
+  var header  = document.getElementById('pwdToggleHeader');
+  var section = document.getElementById('pwdFieldsSection');
+  var chevron = document.getElementById('pwdChevron');
+  if (!header || !section) return;
+  header.addEventListener('click', function(){
+    var isOpen = section.style.display !== 'none';
+    section.style.display = isOpen ? 'none' : 'block';
+    chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+  });
+})();
+
+var newPasswordEl = document.getElementById('newPassword');
+if (newPasswordEl) {
+  newPasswordEl.addEventListener('input', function(e){
+    var pw = e.target.value;
+    var score = 0;
+    if (pw.length >= 8) score++;
+    if (/[A-Z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+    var bar = document.getElementById('pwStrengthBar');
+    var label = document.getElementById('pwStrengthLabel');
+    var levels = [
+      { w:'0%', c:'#e5e7eb', t:'' },
+      { w:'25%', c:'#ef4444', t:'Weak' },
+      { w:'50%', c:'#f97316', t:'Fair' },
+      { w:'75%', c:'#f59e0b', t:'Strong' },
+      { w:'100%', c:'#22c55e', t:'Very Strong' }
+    ];
+    var lvl = levels[score] || levels[0];
+    if (bar) { bar.style.width = lvl.w; bar.style.background = lvl.c; }
+    if (label) { label.textContent = lvl.t; label.style.color = lvl.c; }
+  });
+}
+
+var btnSavePassword = document.getElementById('btnSavePassword');
+if (btnSavePassword) {
+  btnSavePassword.addEventListener('click', async function(){
+    var current = document.getElementById('currentPassword') ? document.getElementById('currentPassword').value : '';
+    var newPw = document.getElementById('newPassword') ? document.getElementById('newPassword').value : '';
+    var confirm = document.getElementById('confirmPassword') ? document.getElementById('confirmPassword').value : '';
+    if (!current || !newPw || !confirm) { showNotification('Please fill in all password fields', 'warning'); return; }
+    if (newPw !== confirm) { showNotification('New passwords do not match', 'danger'); return; }
+    if (newPw.length < 6) { showNotification('Password must be at least 6 characters', 'warning'); return; }
+    try {
+      var token = getAuthToken();
+      var headers = Object.assign({ 'Content-Type':'application/json' }, token ? {'Authorization':'Bearer '+token} : {});
+      var res = await fetch('/api/auth/change-password', {
+        method:'POST', headers: headers,
+        body: JSON.stringify({ currentPassword: current, newPassword: newPw, confirmPassword: confirm })
+      });
+      if (!res.ok) {
+        var err = await res.json().catch(function(){ return {}; });
+        throw new Error(err.message || 'Failed to change password');
+      }
+      showNotification('Password changed successfully!', 'success');
+      document.getElementById('currentPassword').value = '';
+      document.getElementById('newPassword').value = '';
+      document.getElementById('confirmPassword').value = '';
+      var bar = document.getElementById('pwStrengthBar');
+      if (bar) { bar.style.width = '0%'; bar.style.background = '#e5e7eb'; }
+      var lbl = document.getElementById('pwStrengthLabel');
+      if (lbl) lbl.textContent = '';
+    } catch(e) {
+      showNotification(e.message || 'Failed to change password', 'danger');
     }
+  });
+}
 
-    async function createCategory() {
-        const name = document.getElementById('newCatName').value.trim();
-        const description = document.getElementById('newCatDescription').value.trim();
-        const color = document.getElementById('newCatColor').value;
+var toggleHideValues = document.getElementById('toggleHideValues');
+if (toggleHideValues) {
+  toggleHideValues.addEventListener('change', function(e){
+    saveSettings({ hideValues: e.target.checked });
+  });
+}
 
-        if (!name) {
-            showNotification('Category name is required', 'error');
-            return;
-        }
+function downloadCSV(filename, csvContent) {
+  var blob = new Blob([csvContent], { type:'text/csv;charset=utf-8;' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
-        try {
-            const response = await fetch('/api/categories', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, description, color, icon: newCatIcon })
-            });
-
-            if (response.ok) {
-                document.getElementById('newCatName').value = '';
-                document.getElementById('newCatDescription').value = '';
-                document.getElementById('newCatColor').value = '#3498db';
-                newCatIcon = 'tag';
-                renderIconPicker('newCatIconPicker', newCatIcon, (icon) => newCatIcon = icon);
-                loadCategories();
-                showNotification('Category created');
-            } else {
-                const error = await response.json();
-                showNotification(error.error || 'Error creating category', 'error');
-            }
-        } catch (error) {
-            console.error('Error creating category:', error);
-            showNotification('Error creating category', 'error');
-        }
+var btnExportTransactions = document.getElementById('btnExportTransactions');
+if (btnExportTransactions) {
+  btnExportTransactions.addEventListener('click', async function(){
+    try {
+      var token = getAuthToken();
+      var headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+      var res = await fetch('/api/transactions?limit=10000', { headers: headers });
+      if (!res.ok) throw new Error();
+      var data = await res.json();
+      var rows = data.content || data || [];
+      var header = 'Date,Description,Amount,Type,Category,Notes\n';
+      var csv = header + rows.map(function(t){
+        return [t.date||'', '"'+(t.description||'').replace(/"/g,'""')+'"', t.amount||0, t.type||'',
+          '"'+(((t.category && t.category.name)||'')).replace(/"/g,'""')+'"', '"'+(t.notes||'').replace(/"/g,'""')+'"'].join(',');
+      }).join('\n');
+      downloadCSV('fintrack-transactions.csv', csv);
+      showNotification('Transactions exported!', 'success');
+    } catch(e) {
+      showNotification('Export failed', 'danger');
     }
+  });
+}
 
-    function openEditCategory(id) {
-        const cat = allCategories.find(c => c.id === id);
-        if (!cat) return;
-
-        document.getElementById('editCatId').value = cat.id;
-        document.getElementById('editCatName').value = cat.name;
-        document.getElementById('editCatDescription').value = cat.description || '';
-        document.getElementById('editCatColor').value = cat.color || '#3498db';
-        editCatIcon = cat.icon || 'tag';
-        renderIconPicker('editCatIconPicker', editCatIcon, (icon) => editCatIcon = icon);
-
-        editCategoryModal.show();
+var btnExportCategories = document.getElementById('btnExportCategories');
+if (btnExportCategories) {
+  btnExportCategories.addEventListener('click', async function(){
+    try {
+      var token = getAuthToken();
+      var headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+      var res = await fetch('/api/categories', { headers: headers });
+      if (!res.ok) throw new Error();
+      var data = await res.json();
+      var header = 'Name,Type,Color,Icon,Description\n';
+      var csv = header + data.map(function(c){
+        return ['"'+(c.name||'').replace(/"/g,'""')+'"', c.categoryType||'', c.color||'', c.icon||'',
+          '"'+(c.description||'').replace(/"/g,'""')+'"'].join(',');
+      }).join('\n');
+      downloadCSV('fintrack-categories.csv', csv);
+      showNotification('Categories exported!', 'success');
+    } catch(e) {
+      showNotification('Export failed', 'danger');
     }
+  });
+}
 
-    async function saveEditCategory() {
-        const id = document.getElementById('editCatId').value;
-        const name = document.getElementById('editCatName').value.trim();
-        const description = document.getElementById('editCatDescription').value.trim();
-        const color = document.getElementById('editCatColor').value;
+var btnDeleteAccount = document.getElementById('btnDeleteAccount');
+if (btnDeleteAccount) {
+  btnDeleteAccount.addEventListener('click', function(){
+    var input = document.getElementById('deleteConfirmInput');
+    if (input) input.value = '';
+    var btn = document.getElementById('btnConfirmDeleteAccount');
+    if (btn) btn.disabled = true;
+    new bootstrap.Modal(document.getElementById('deleteAccountModal')).show();
+  });
+}
 
-        if (!name) {
-            showNotification('Category name is required', 'error');
-            return;
-        }
+var deleteConfirmInput = document.getElementById('deleteConfirmInput');
+if (deleteConfirmInput) {
+  deleteConfirmInput.addEventListener('input', function(e){
+    var btn = document.getElementById('btnConfirmDeleteAccount');
+    if (btn) btn.disabled = e.target.value !== 'DELETE';
+  });
+}
 
-        try {
-            const response = await fetch(`/api/categories/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, description, color, icon: editCatIcon })
-            });
+var btnConfirmDeleteAccount = document.getElementById('btnConfirmDeleteAccount');
+if (btnConfirmDeleteAccount) {
+  btnConfirmDeleteAccount.addEventListener('click', function(){
+    showNotification('Account deletion initiated. You will be redirected...', 'warning');
+    var modal = bootstrap.Modal.getInstance(document.getElementById('deleteAccountModal'));
+    if (modal) modal.hide();
+    setTimeout(function(){ window.location.href = '/login.html'; }, 2000);
+  });
+}
 
-            if (response.ok) {
-                editCategoryModal.hide();
-                loadCategories();
-                showNotification('Category updated');
-            } else {
-                const error = await response.json();
-                showNotification(error.error || 'Error updating category', 'error');
-            }
-        } catch (error) {
-            console.error('Error updating category:', error);
-            showNotification('Error updating category', 'error');
-        }
-    }
+// ============== Star rating ==============
+var feedbackRating = 0;
+var starRatingEl = document.getElementById('starRating');
+if (starRatingEl) {
+  var stars = starRatingEl.querySelectorAll('i');
+  stars.forEach(function(star, idx){
+    star.addEventListener('mouseenter', function(){
+      stars.forEach(function(s, i){ s.classList.toggle('active', i <= idx); });
+    });
+    star.addEventListener('click', function(){
+      feedbackRating = idx + 1;
+      stars.forEach(function(s, i){ s.classList.toggle('active', i < feedbackRating); });
+    });
+  });
+  starRatingEl.addEventListener('mouseleave', function(){
+    stars.forEach(function(s, i){ s.classList.toggle('active', i < feedbackRating); });
+  });
+}
 
-    function openDeleteCategory(id) {
-        const cat = allCategories.find(c => c.id === id);
-        if (!cat) return;
-        deleteCategoryId = id;
-        document.getElementById('deleteCategoryBody').textContent =
-            `Do you want to delete "${cat.name}"? Transactions using this category may be affected.`;
-        deleteCategoryModal.show();
-    }
+var btnSendFeedback = document.getElementById('btnSendFeedback');
+if (btnSendFeedback) {
+  btnSendFeedback.addEventListener('click', function(){
+    if (!feedbackRating) { showNotification('Please select a star rating', 'warning'); return; }
+    showNotification('Thank you for your feedback! \u2b50', 'success');
+    feedbackRating = 0;
+    document.querySelectorAll('#starRating i').forEach(function(s){ s.classList.remove('active'); });
+    var fb = document.getElementById('feedbackText');
+    if (fb) fb.value = '';
+  });
+}
 
-    async function confirmDeleteCategory() {
-        if (deleteCategoryId === null) return;
-        try {
-            const response = await fetch(`/api/categories/${deleteCategoryId}`, { method: 'DELETE' });
-            if (response.ok) {
-                deleteCategoryModal.hide();
-                deleteCategoryId = null;
-                loadCategories();
-                showNotification('Category deleted');
-            } else {
-                showNotification('Error deleting category', 'error');
-            }
-        } catch (error) {
-            console.error('Error deleting category:', error);
-            showNotification('Error deleting category', 'error');
-        }
-    }
+var btnReportBug = document.getElementById('btnReportBug');
+if (btnReportBug) {
+  btnReportBug.addEventListener('click', function(){
+    new bootstrap.Modal(document.getElementById('bugReportModal')).show();
+  });
+}
 
-    // ---------- Shared helpers ----------
-    function showNotification(message, type = 'success') {
-        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-        const alertHTML = `
-            <div class="alert ${alertClass} alert-dismissible fade show" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        `;
-        const div = document.createElement('div');
-        div.innerHTML = alertHTML;
-        document.body.appendChild(div.firstElementChild);
-        setTimeout(() => div.firstElementChild?.remove(), 4000);
-    }
+var btnSubmitBugReport = document.getElementById('btnSubmitBugReport');
+if (btnSubmitBugReport) {
+  btnSubmitBugReport.addEventListener('click', function(){
+    var subject = document.getElementById('bugSubject') ? document.getElementById('bugSubject').value.trim() : '';
+    var desc = document.getElementById('bugDescription') ? document.getElementById('bugDescription').value.trim() : '';
+    if (!subject || !desc) { showNotification('Please fill in all fields', 'warning'); return; }
 
-    function escapeHtml(text) {
-        const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-        return text ? text.replace(/[&<>"']/g, m => map[m]) : '';
-    }
-</script>
-<script src="/js/sidebar.js"></script>
+    var mailtoLink = 'mailto:zareenzia801@gmail.com'
+      + '?subject=' + encodeURIComponent('[FinTrack Bug] ' + subject)
+      + '&body=' + encodeURIComponent('Bug Description:\n\n' + desc + '\n\n---\nSent from FinTrack Settings');
+    window.location.href = mailtoLink;
+
+    var modal = bootstrap.Modal.getInstance(document.getElementById('bugReportModal'));
+    if (modal) modal.hide();
+    showNotification('Opening your mail client\u2026 \uD83D\uDC1B', 'success');
+    if (document.getElementById('bugSubject')) document.getElementById('bugSubject').value = '';
+    if (document.getElementById('bugDescription')) document.getElementById('bugDescription').value = '';
+  });
+}
+
+// ============== Init ==============
+document.addEventListener('DOMContentLoaded', function(){
+  var s = getSettings();
+  applySettings(s);
+  initAppearanceUI();
+  initThemeGrid();
+  initDisplayMode();
+  initCurrencyUI();
+  var hideToggle = document.getElementById('toggleHideValues');
+  if (hideToggle) hideToggle.checked = s.hideValues;
+  var theme = localStorage.getItem(THEME_KEY()) || 'light';
+  document.documentElement.setAttribute('data-theme', theme);
+  var colorTheme = localStorage.getItem(COLOR_THEME_KEY()) || 'forest';
+  applyColorTheme(colorTheme);
+});
+  </script>
 </body>
 </html>

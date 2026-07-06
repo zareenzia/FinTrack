@@ -263,6 +263,30 @@
             pointer-events: none;
         }
 
+        /* shift check icon left when eye toggle is present */
+        .form-group.has-toggle .input-icon {
+            right: 40px;
+        }
+
+        .pwd-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(8px);
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            padding: 0 4px;
+            font-size: 15px;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+
+        .pwd-toggle:hover {
+            color: rgba(255, 255, 255, 0.85);
+        }
+
         .input-icon.success {
             color: #255F38;
         }
@@ -383,7 +407,7 @@
         <!-- Left Section -->
         <div class="left-section">
             <div class="logo-left">
-                <i class="fas fa-wallet"></i>FinTrack
+                <img src="/images/logo.png" alt="FinTrack" style="width:36px;height:36px;object-fit:contain;border-radius:8px;vertical-align:middle;margin-right:8px;">FinTrack
             </div>
 
             <div class="stats-box">
@@ -428,13 +452,12 @@
                     <div class="form-group">
                         <label>Email or Username</label>
                         <input type="text" id="login-username" placeholder="Enter your email or username">
-                        <i class="fas fa-check input-icon"></i>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group has-toggle">
                         <label>Password</label>
                         <input type="password" id="login-password" placeholder="Enter your password">
-                        <i class="fas fa-check input-icon"></i>
+                        <button type="button" class="pwd-toggle" onclick="togglePwd('login-password', this)" tabindex="-1" aria-label="Show/hide password"><i class="fas fa-eye"></i></button>
                     </div>
 
                     <div class="checkbox-group">
@@ -456,19 +479,18 @@
                     <div class="form-group">
                         <label>Email</label>
                         <input type="email" id="signup-email" placeholder="Enter your email address">
-                        <i class="fas fa-check input-icon"></i>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group has-toggle">
                         <label>Password</label>
                         <input type="password" id="signup-password" placeholder="Create a strong password">
-                        <i class="fas fa-check input-icon"></i>
+                        <button type="button" class="pwd-toggle" onclick="togglePwd('signup-password', this)" tabindex="-1" aria-label="Show/hide password"><i class="fas fa-eye"></i></button>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group has-toggle">
                         <label>Confirm Password</label>
                         <input type="password" id="signup-confirm-password" placeholder="Confirm your password">
-                        <i class="fas fa-check input-icon"></i>
+                        <button type="button" class="pwd-toggle" onclick="togglePwd('signup-confirm-password', this)" tabindex="-1" aria-label="Show/hide password"><i class="fas fa-eye"></i></button>
                     </div>
 
                     <button class="btn-submit" onclick="handleSignup()">Sign Up</button>
@@ -502,6 +524,18 @@
             clearForm();
         }
 
+        function togglePwd(inputId, btn) {
+            var input = document.getElementById(inputId);
+            var icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+
         function clearForm() {
             document.querySelectorAll('input[type="text"], input[type="email"], input[type="password"]').forEach(input => {
                 input.value = '';
@@ -516,11 +550,19 @@
         async function handleLogin() {
             const usernameOrEmail = document.getElementById('login-username').value.trim();
             const password = document.getElementById('login-password').value;
+            const rememberMe = document.getElementById('remember-me').checked;
             const notification = document.getElementById('login-notification');
 
             if (!usernameOrEmail || !password) {
                 showNotification(notification, 'Please fill in all fields', 'error');
                 return;
+            }
+
+            // Save or clear remembered credentials
+            if (rememberMe) {
+                localStorage.setItem('fintrack_remember', JSON.stringify({ username: usernameOrEmail, password }));
+            } else {
+                localStorage.removeItem('fintrack_remember');
             }
 
             try {
@@ -602,6 +644,31 @@
                     if (icon) icon.classList.remove('success', 'error');
                 });
             });
+
+            // Enter key triggers login/signup
+            document.getElementById('login-username').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); document.getElementById('login-password').focus(); }
+            });
+            document.getElementById('login-password').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); handleLogin(); }
+            });
+            document.getElementById('signup-email').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); document.getElementById('signup-password').focus(); }
+            });
+            document.getElementById('signup-password').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); document.getElementById('signup-confirm-password').focus(); }
+            });
+            document.getElementById('signup-confirm-password').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); handleSignup(); }
+            });
+
+            // Remember Me — restore saved credentials
+            const saved = JSON.parse(localStorage.getItem('fintrack_remember') || 'null');
+            if (saved && saved.username) {
+                document.getElementById('login-username').value = saved.username;
+                document.getElementById('login-password').value = saved.password || '';
+                document.getElementById('remember-me').checked = true;
+            }
         });
 
         function validateInput(e) {

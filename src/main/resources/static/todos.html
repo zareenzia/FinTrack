@@ -10,8 +10,9 @@
     <link rel="icon" type="image/png" href="/images/logo.png">
     <style>
         .progress-card {
-            background: linear-gradient(135deg, var(--accent-color) 0%, #1a6644 100%);
-            color: white;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-body);
             border-radius: 12px;
             padding: 24px;
             margin-bottom: 24px;
@@ -28,7 +29,7 @@
 
         .progress-bar-custom {
             height: 12px;
-            background: rgba(255, 255, 255, 0.3);
+            background: var(--border-color);
             border-radius: 10px;
             overflow: hidden;
             margin: 16px 0;
@@ -36,14 +37,14 @@
 
         .progress-fill {
             height: 100%;
-            background: white;
+            background: var(--accent-color);
             border-radius: 10px;
             transition: width 0.3s ease;
         }
 
         .todo-item {
-            background: white;
-            border: 2px solid #e0e0e0;
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
             border-radius: 12px;
             padding: 16px;
             margin-bottom: 12px;
@@ -325,43 +326,6 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
                 <button type="button" class="btn btn-danger" id="confirmDeleteTodoBtn">Yes, Delete</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- User Profile Modal -->
-<div class="modal fade" id="userProfileModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-user"></i> User Profile</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center mb-4">
-                    <div class="position-relative d-inline-block">
-                        <img src="https://via.placeholder.com/120" id="profilePicture" class="rounded-circle border" style="width: 120px; height: 120px; object-fit: cover;">
-                        <button type="button" class="btn btn-sm btn-primary position-absolute bottom-0 end-0 rounded-circle" title="Change Picture" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-camera"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Full Name</label>
-                    <input type="text" class="form-control" id="userName" value="User Name" placeholder="Enter your full name">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Email</label>
-                    <input type="email" class="form-control" id="userEmail" value="user@example.com" placeholder="Enter your email">
-                </div>
-                <hr>
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Change Password</label>
-                    <input type="password" class="form-control mb-2" placeholder="Current Password">
-                    <input type="password" class="form-control mb-2" placeholder="New Password">
-                    <input type="password" class="form-control" placeholder="Confirm Password">
-                </div>
             </div>
         </div>
     </div>

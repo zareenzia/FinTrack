@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -13,58 +13,112 @@
 
 <div class="container-fluid mt-4">
     <div class="row mb-4">
-        <div class="col-md-2 mb-3">
-            <div class="card stat-card">
+        <div class="col-xl-2 col-md-4 mb-3">
+            <div class="card stat-card stat-card--income">
                 <div class="card-body">
-                    <h6 class="card-title">Total Income</h6>
-                    <h3 class="stat-card-amount" id="total-income">$0.00</h3>
+                    <div class="sc-top">
+                        <div class="sc-icon-circle"><i class="fas fa-arrow-trend-up"></i></div>
+                        <div class="sc-title-block">
+                            <div class="sc-title">Total Income</div>
+                            <div class="sc-subtitle"><i class="fas fa-arrow-up sc-trend-up"></i> This month</div>
+                        </div>
+                        <button class="sc-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
+                    </div>
+                    <hr class="sc-divider">
+                    <div class="sc-bottom">
+                        <h3 class="stat-card-amount" id="total-income">...</h3>
+                    </div>
                 </div>
-                <i class="fas fa-arrow-up stat-card-icon"></i>
             </div>
         </div>
-        <div class="col-md-2 mb-3">
-            <div class="card stat-card">
+        <div class="col-xl-2 col-md-4 mb-3">
+            <div class="card stat-card stat-card--expense">
                 <div class="card-body">
-                    <h6 class="card-title">Total Expense</h6>
-                    <h3 class="stat-card-amount" id="total-expense">$0.00</h3>
+                    <div class="sc-top">
+                        <div class="sc-icon-circle"><i class="fas fa-arrow-trend-down"></i></div>
+                        <div class="sc-title-block">
+                            <div class="sc-title">Total Expense</div>
+                            <div class="sc-subtitle"><i class="fas fa-arrow-down sc-trend-down"></i> This month</div>
+                        </div>
+                        <button class="sc-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
+                    </div>
+                    <hr class="sc-divider">
+                    <div class="sc-bottom">
+                        <h3 class="stat-card-amount" id="total-expense">...</h3>
+                    </div>
                 </div>
-                <i class="fas fa-arrow-down stat-card-icon"></i>
             </div>
         </div>
-        <div class="col-md-2 mb-3">
-            <div class="card stat-card">
+        <div class="col-xl-2 col-md-4 mb-3">
+            <div class="card stat-card stat-card--savings">
                 <div class="card-body">
-                    <h6 class="card-title">Balance</h6>
-                    <h3 class="stat-card-amount" id="balance">$0.00</h3>
+                    <div class="sc-top">
+                        <div class="sc-icon-circle"><i class="fas fa-piggy-bank"></i></div>
+                        <div class="sc-title-block">
+                            <div class="sc-title">Total Savings</div>
+                            <div class="sc-subtitle"><i class="fas fa-shield-halved sc-trend-up"></i> Protected</div>
+                        </div>
+                        <button class="sc-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
+                    </div>
+                    <hr class="sc-divider">
+                    <div class="sc-bottom">
+                        <h3 class="stat-card-amount" id="total-savings">...</h3>
+                    </div>
                 </div>
-                <i class="fas fa-wallet stat-card-icon"></i>
             </div>
         </div>
-        <div class="col-md-2 mb-3">
-            <div class="card stat-card">
+        <div class="col-xl-2 col-md-4 mb-3">
+            <div class="card stat-card stat-card--balance">
                 <div class="card-body">
-                    <h6 class="card-title">Savings Rate</h6>
-                    <h3 class="stat-card-amount" id="savings-rate">0.00%</h3>
+                    <div class="sc-top">
+                        <div class="sc-icon-circle"><i class="fas fa-wallet"></i></div>
+                        <div class="sc-title-block">
+                            <div class="sc-title">Available Balance</div>
+                            <div class="sc-subtitle"><i class="fas fa-circle-check sc-trend-up"></i> Current</div>
+                        </div>
+                        <button class="sc-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
+                    </div>
+                    <hr class="sc-divider">
+                    <div class="sc-bottom">
+                        <h3 class="stat-card-amount" id="balance">...</h3>
+                    </div>
                 </div>
-                <i class="fas fa-piggy-bank stat-card-icon"></i>
             </div>
         </div>
-        <div class="col-md-2 mb-3">
-            <div class="card stat-card">
+        <div class="col-xl-2 col-md-4 mb-3">
+            <div class="card stat-card stat-card--assets">
                 <div class="card-body">
-                    <h6 class="card-title">Assets Value</h6>
-                    <h3 class="stat-card-amount" id="total-assets">$0.00</h3>
+                    <div class="sc-top">
+                        <div class="sc-icon-circle"><i class="fas fa-chart-line"></i></div>
+                        <div class="sc-title-block">
+                            <div class="sc-title">Assets Value</div>
+                            <div class="sc-subtitle"><i class="fas fa-gem sc-trend-up"></i> Portfolio</div>
+                        </div>
+                        <button class="sc-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
+                    </div>
+                    <hr class="sc-divider">
+                    <div class="sc-bottom">
+                        <h3 class="stat-card-amount" id="total-assets">...</h3>
+                    </div>
                 </div>
-                <i class="fas fa-chart-line stat-card-icon"></i>
             </div>
         </div>
-        <div class="col-md-2 mb-3">
-            <div class="card stat-card">
+        <div class="col-xl-2 col-md-4 mb-3">
+            <div class="card stat-card stat-card--networth">
                 <div class="card-body">
-                    <h6 class="card-title">Net Worth</h6>
-                    <h3 class="stat-card-amount" id="net-worth">$0.00</h3>
+                    <div class="sc-top">
+                        <div class="sc-icon-circle"><i class="fas fa-crown"></i></div>
+                        <div class="sc-title-block">
+                            <div class="sc-title">Net Worth</div>
+                            <div class="sc-subtitle"><i class="fas fa-star sc-trend-up"></i> Total value</div>
+                        </div>
+                        <button class="sc-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
+                    </div>
+                    <hr class="sc-divider">
+                    <div class="sc-bottom">
+                        <h3 class="stat-card-amount" id="net-worth">...</h3>
+                    </div>
                 </div>
-                <i class="fas fa-calculator stat-card-icon"></i>
             </div>
         </div>
     </div>
@@ -72,15 +126,17 @@
     <div class="row mb-4">
        <div class="col-md-4">
             <div class="card">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0"><i class="fas fa-pie-chart"></i> Expense by Category</h6>
-                    <div class="btn-group btn-group-sm" role="group">
-                        <button type="button" class="btn btn-outline-light active" id="categoryPieBtn" onclick="switchCategoryChart('pie')" title="Pie Chart">
-                            <i class="fas fa-chart-pie"></i>
-                        </button>
-                        <button type="button" class="btn btn-outline-light" id="categoryBarBtn" onclick="switchCategoryChart('bar')" title="Bar Chart">
-                            <i class="fas fa-bars"></i>
-                        </button>
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center flex-wrap gap-1">
+                    <h6 class="mb-0" id="categoryChartTitle"><i class="fas fa-pie-chart"></i> Expense by Category</h6>
+                    <div class="d-flex gap-1 flex-wrap">
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-outline-light active" id="categoryPieBtn" onclick="switchCategoryChart('pie')" title="Pie Chart">
+                                <i class="fas fa-chart-pie"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-light" id="categoryBarBtn" onclick="switchCategoryChart('bar')" title="Bar Chart">
+                                <i class="fas fa-bars"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body">
@@ -123,7 +179,7 @@
         <div class="col-md-12">
             <div class="card tx-card">
                 <div class="card-header tx-card-header">
-                    <div class="d-flex align-items-center gap-2">
+                    <div class="d-flex align-items-center gap-2 flex-shrink-0">
                         <div class="tx-header-icon">
                             <i class="fas fa-receipt"></i>
                         </div>
@@ -133,6 +189,21 @@
                         </div>
                     </div>
                     <div class="tx-header-actions">
+                        <select class="tx-filter-select" id="txCategoryFilter" title="Filter by category">
+                            <option value="">All Categories</option>
+                        </select>
+                        <select class="tx-filter-select" id="txTypeFilter" title="Filter by type">
+                            <option value="">All Types</option>
+                            <option value="income">Income</option>
+                            <option value="expense">Expense</option>
+                            <option value="savings">Savings</option>
+                        </select>                        <select class="tx-filter-select" id="txLimitSelect" title="Transactions to show">
+                            <option value="5">Show 5</option>
+                            <option value="10">Show 10</option>
+                            <option value="20">Show 20</option>
+                            <option value="50">Show 50</option>
+                            <option value="100">Show 100</option>
+                        </select>
                         <a href="/transactions" class="btn btn-sm tx-view-all-btn">
                             <i class="fas fa-external-link-alt"></i> View All
                         </a>
@@ -174,82 +245,60 @@
     </div>
 </div>
 
-<!-- User Profile Modal -->
-<div class="modal fade" id="userProfileModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-user"></i> User Profile</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center mb-4">
-                    <div class="position-relative d-inline-block">
-                        <img src="https://via.placeholder.com/120" id="profilePicture" class="rounded-circle border" style="width: 120px; height: 120px; object-fit: cover;">
-                        <button type="button" class="btn btn-sm btn-primary position-absolute bottom-0 end-0 rounded-circle" title="Change Picture" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-camera"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Full Name</label>
-                    <input type="text" class="form-control" id="userName" value="User Name" placeholder="Enter your full name">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Email</label>
-                    <input type="email" class="form-control" id="userEmail" value="user@example.com" placeholder="Enter your email" disabled>
-                </div>
-                <hr>
-                <h6 class="fw-bold mb-3"><i class="fas fa-lock"></i> Change Password</h6>
-                <div class="mb-3">
-                    <label class="form-label">Current Password</label>
-                    <input type="password" class="form-control" placeholder="Enter current password">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">New Password</label>
-                    <input type="password" class="form-control" placeholder="Enter new password">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Confirm Password</label>
-                    <input type="password" class="form-control" placeholder="Confirm new password">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary">
-                    <i class="fas fa-save"></i> Save Changes (Coming Soon)
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<footer class="footer mt-5 py-3 bg-light text-center">
-    <div class="container">
-        <span class="text-muted">© 2024 FinTrack - Personal Financial Tracker</span>
-    </div>
-</footer>
-
 <script>
-    let allTransactions = [];
-    let currentPage = 0;
-    const pageSize = 5;
-    let categoryChartData = [];
-    let monthlyChartData = [];
-    let categoryChartType = 'pie';
-    let monthlyChartType = 'line';
+    function getUserStorageKey(baseKey) {
+        try {
+            var raw = localStorage.getItem('finzin_user') || localStorage.getItem('user');
+            var u = JSON.parse(raw);
+            if (u && u.id) return baseKey + '_' + u.id;
+        } catch(e) {}
+        return baseKey;
+    }
+    let filteredTransactions = [];
+    let currentPage        = 0;
+    let pageSize           = parseInt(localStorage.getItem('tx_page_limit') || '5', 10);
+    let txFilterCategory   = '';
+    let txFilterType       = '';
+    let txDeleteId         = null;
+    let txDeleteModal      = null;
+    let txEditId           = null;
+    let txEditModal        = null;
+
+    let categoryChartData    = [];
+    let monthlyChartData     = [];
+    let categoryChartType    = 'pie';
+    let monthlyChartType     = 'line';
+    let categoryBreakdownType = 'expense';   // 'expense' | 'savings'
+
+    /** Read currency settings from localStorage — defaults match settings.html DEFAULTS */
+    const CURRENCY_DEFAULTS = { currencySymbol:'৳', symbolPosition:'before', decimalPlaces:0 };
+    function getCurrencySettings() {
+        try {
+            var s = Object.assign({}, CURRENCY_DEFAULTS, JSON.parse(localStorage.getItem(getUserStorageKey('fintrack_settings')) || '{}'));
+            return {
+                symbol:   s.currencySymbol   || '৳',
+                position: s.symbolPosition   || 'before',
+                decimals: Number(s.decimalPlaces) >= 0 ? Number(s.decimalPlaces) : 0
+            };
+        } catch(e) { return { symbol: '৳', position: 'before', decimals: 0 }; }
+    }
+
+    /** Format a number as a currency string using saved settings */
+    function formatAmount(value) {
+        var c = getCurrencySettings();
+        var num = Number(value).toFixed(c.decimals);
+        return c.position === 'before' ? c.symbol + num : num + '\u00a0' + c.symbol;
+    }
     let categoryChartInstance = null;
-    let monthlyChartInstance = null;
-    let categoryColorMap = {};
+    let monthlyChartInstance  = null;
+    let categoryColorMap      = {};
 
     /** Shrink .stat-card-amount font until text fits on one line */
     function fitStatAmounts() {
         document.querySelectorAll('.stat-card-amount').forEach(function (el) {
-            // Reset to CSS-defined size first
             el.style.fontSize = '';
             const cardBody = el.closest('.card-body');
             if (!cardBody) return;
-            // Available width = card body minus icon space (right side)
             const maxW = cardBody.clientWidth - 48;
             let fs = parseFloat(window.getComputedStyle(el).fontSize);
             let safety = 0;
@@ -260,34 +309,126 @@
         });
     }
 
+    /** Toggle individual card value visibility — JS text swap only */
+    function toggleCardValues(btn) {
+        var amount = btn.closest('.stat-card').querySelector('.stat-card-amount');
+        var icon   = btn.querySelector('i');
+        if (amount.dataset.hidden === 'true') {
+            amount.textContent    = amount.dataset.realValue || amount.textContent;
+            amount.dataset.hidden = 'false';
+            icon.className = 'fas fa-eye';
+        } else {
+            amount.dataset.realValue = amount.textContent;
+            amount.textContent    = '•••••••';
+            amount.dataset.hidden = 'true';
+            icon.className = 'fas fa-eye-slash';
+        }
+    }
+
+    /** Apply hide-values setting to all stat cards on load */
+    function applyCardHideSetting() {
+        try {
+            var s = JSON.parse(localStorage.getItem(getUserStorageKey('fintrack_settings')) || '{}');
+            if (s.hideValues) {
+                document.querySelectorAll('.stat-card').forEach(function(card) {
+                    var amount = card.querySelector('.stat-card-amount');
+                    var btn    = card.querySelector('.sc-eye-btn i');
+                    if (amount && amount.dataset.hidden !== 'true') {
+                        amount.dataset.realValue = amount.textContent;
+                        amount.textContent    = '•••••••';
+                        amount.dataset.hidden = 'true';
+                        if (btn) btn.className = 'fas fa-eye-slash';
+                    }
+                });
+            }
+        } catch(e) {}
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
+        // Initialise delete modal
+        txDeleteModal = new bootstrap.Modal(document.getElementById('dashboardDeleteTxModal'));
+        document.getElementById('dashboardConfirmDeleteTxBtn').addEventListener('click', confirmDeleteTransaction);
+
+        // Initialise edit modal
+        txEditModal = new bootstrap.Modal(document.getElementById('dashboardEditTxModal'));
+        document.getElementById('dashboardSaveEditTxBtn').addEventListener('click', saveEditTransaction);
+
+        // When type changes in the edit modal, reload categories
+        document.getElementById('editTxType').addEventListener('change', function () {
+            loadEditCategories(this.value);
+        });
+
+        // Restore saved limit and wire filter controls
+        const savedLimit = localStorage.getItem('tx_page_limit') || '5';
+        pageSize = parseInt(savedLimit, 10);
+        const limitEl = document.getElementById('txLimitSelect');
+        if (limitEl) {
+            limitEl.value = savedLimit;
+            limitEl.addEventListener('change', function () {
+                pageSize = parseInt(this.value, 10);
+                localStorage.setItem('tx_page_limit', this.value);
+                currentPage = 0;
+                applyFiltersAndDisplay();
+            });
+        }
+
+        const catEl = document.getElementById('txCategoryFilter');
+        if (catEl) {
+            catEl.addEventListener('change', function () {
+                txFilterCategory = this.value;
+                currentPage = 0;
+                applyFiltersAndDisplay();
+            });
+        }
+
+        const typeEl = document.getElementById('txTypeFilter');
+        if (typeEl) {
+            typeEl.addEventListener('change', function () {
+                txFilterType = this.value;
+                currentPage = 0;
+                applyFiltersAndDisplay();
+            });
+        }
+
         loadDashboard();
     });
 
-    // Re-fit on window resize
     window.addEventListener('resize', fitStatAmounts);
 
     async function loadDashboard() {
         try {
             const summary = await fetch('/api/analytics/summary').then(r => r.json());
-            document.getElementById('total-income').textContent = '$' + Number(summary.total_income).toFixed(2);
-            document.getElementById('total-expense').textContent = '$' + Number(summary.total_expense).toFixed(2);
-            document.getElementById('balance').textContent = '$' + Number(summary.balance).toFixed(2);
-            document.getElementById('savings-rate').textContent = Number(summary.savings_rate || 0).toFixed(2) + '%';
-            document.getElementById('total-assets').textContent = '$' + Number(summary.total_assets || 0).toFixed(2);
-            document.getElementById('net-worth').textContent = '$' + Number(summary.net_worth || 0).toFixed(2);
-
-            // Shrink font to fit single line after content is set
+            document.getElementById('total-income').textContent    = formatAmount(summary.total_income);
+            document.getElementById('total-expense').textContent   = formatAmount(summary.total_expense);
+            document.getElementById('total-savings').textContent   = formatAmount(summary.total_savings || 0);
+            document.getElementById('balance').textContent         = formatAmount(summary.balance);
+            document.getElementById('total-assets').textContent    = formatAmount(summary.total_assets || 0);
+            document.getElementById('net-worth').textContent       = formatAmount(summary.net_worth || 0);
             fitStatAmounts();
+            applyCardHideSetting();
 
-            // Fetch categories and build color map
             const categories = await fetch('/api/categories').then(r => r.json());
             categoryColorMap = {};
             categories.forEach(cat => {
                 categoryColorMap[cat.name] = cat.color || '#6c757d';
             });
 
-            const breakdown = await fetch('/api/analytics/category-breakdown').then(r => r.json());
+            // Populate category filter dropdown
+            const catFilter = document.getElementById('txCategoryFilter');
+            if (catFilter) {
+                // Preserve current selection
+                const prevCat = catFilter.value;
+                catFilter.innerHTML = '<option value="">All Categories</option>';
+                categories.forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value       = cat.name;
+                    opt.textContent = cat.name;
+                    catFilter.appendChild(opt);
+                });
+                catFilter.value = prevCat;
+            }
+
+            const breakdown = await fetch('/api/analytics/category-breakdown?type=' + categoryBreakdownType).then(r => r.json());
             categoryChartData = breakdown;
             drawCategoryChart(breakdown);
 
@@ -298,59 +439,72 @@
             const transactions = await fetch('/api/transactions?limit=1000').then(r => r.json());
             allTransactions = transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
             currentPage = 0;
-            displayTransactionPage();
+            applyFiltersAndDisplay();
         } catch (error) {
             console.error('Error loading dashboard:', error);
         }
     }
 
+    /* ── Filter logic ────────────────────────────────────────────────────── */
+    function applyFiltersAndDisplay() {
+        filteredTransactions = allTransactions.filter(function (tx) {
+            const catOk  = !txFilterCategory || tx.category_name === txFilterCategory;
+            const typeOk = !txFilterType     || tx.transaction_type === txFilterType;
+            return catOk && typeOk;
+        });
+        displayTransactionPage();
+    }
+
+    /* ── Render one page ─────────────────────────────────────────────────── */
     function displayTransactionPage() {
         const start = currentPage * pageSize;
-        const end = start + pageSize;
-        const pageTransactions = allTransactions.slice(start, end);
-        const totalPages = Math.ceil(allTransactions.length / pageSize);
+        const end   = start + pageSize;
+        const pageTransactions = filteredTransactions.slice(start, end);
+        const totalPages = Math.ceil(filteredTransactions.length / pageSize);
 
-        // Map transaction type to icon
-        const typeIcon = { income: 'fa-arrow-up', expense: 'fa-arrow-down' };
+        const typeIcon  = { income: 'fa-arrow-up', expense: 'fa-arrow-down', savings: 'fa-piggy-bank' };
         const txTypeIcon = (type) => `<i class="fas ${typeIcon[type] || 'fa-circle'}"></i>`;
 
-        // Category icon guessing based on common names
         function getCatIcon(name) {
             if (!name) return 'fa-tag';
             const n = name.toLowerCase();
-            if (n.includes('food') || n.includes('restaurant') || n.includes('eat')) return 'fa-utensils';
-            if (n.includes('transport') || n.includes('car') || n.includes('fuel') || n.includes('gas')) return 'fa-car';
-            if (n.includes('shop') || n.includes('cloth') || n.includes('fashion')) return 'fa-shopping-bag';
-            if (n.includes('health') || n.includes('medical') || n.includes('doctor')) return 'fa-heartbeat';
-            if (n.includes('entertain') || n.includes('movie') || n.includes('game')) return 'fa-film';
-            if (n.includes('salary') || n.includes('income') || n.includes('wage')) return 'fa-briefcase';
-            if (n.includes('rent') || n.includes('house') || n.includes('home')) return 'fa-home';
-            if (n.includes('edu') || n.includes('school') || n.includes('book')) return 'fa-graduation-cap';
-            if (n.includes('invest') || n.includes('stock') || n.includes('dividend')) return 'fa-chart-line';
-            if (n.includes('travel') || n.includes('hotel') || n.includes('flight')) return 'fa-plane';
-            if (n.includes('phone') || n.includes('mobile') || n.includes('internet')) return 'fa-mobile-alt';
-            if (n.includes('electric') || n.includes('bill') || n.includes('utility')) return 'fa-bolt';
+            if (n.includes('food') || n.includes('restaurant') || n.includes('eat'))        return 'fa-utensils';
+            if (n.includes('transport') || n.includes('car') || n.includes('fuel'))        return 'fa-car';
+            if (n.includes('shop') || n.includes('cloth') || n.includes('fashion'))        return 'fa-shopping-bag';
+            if (n.includes('health') || n.includes('medical') || n.includes('doctor'))     return 'fa-heartbeat';
+            if (n.includes('entertain') || n.includes('movie') || n.includes('game'))      return 'fa-film';
+            if (n.includes('salary') || n.includes('income') || n.includes('wage'))        return 'fa-briefcase';
+            if (n.includes('rent') || n.includes('house') || n.includes('home'))           return 'fa-home';
+            if (n.includes('edu') || n.includes('school') || n.includes('book'))           return 'fa-graduation-cap';
+            if (n.includes('invest') || n.includes('stock') || n.includes('dividend'))     return 'fa-chart-line';
+            if (n.includes('travel') || n.includes('hotel') || n.includes('flight'))       return 'fa-plane';
+            if (n.includes('phone') || n.includes('mobile') || n.includes('internet'))     return 'fa-mobile-alt';
+            if (n.includes('electric') || n.includes('bill') || n.includes('utility'))     return 'fa-bolt';
             return 'fa-tag';
         }
 
         const container = document.getElementById('recent-tx-body');
 
-        if (pageTransactions.length === 0) {
+        if (filteredTransactions.length === 0) {
+            const hasFilters = txFilterCategory || txFilterType;
             container.innerHTML = `
                 <div class="tx-empty">
-                    <i class="fas fa-inbox"></i>
-                    <p>No transactions yet</p>
-                    <a href="/transactions" class="btn btn-sm btn-primary mt-2"><i class="fas fa-plus"></i> Add Transaction</a>
+                    <i class="fas fa-search"></i>
+                    <p>${hasFilters ? 'No transactions match the current filters.' : 'No transactions yet.'}</p>
+                    ${!hasFilters ? '<a href="/transactions" class="btn btn-sm btn-primary mt-2"><i class="fas fa-plus"></i> Add Transaction</a>' : ''}
                 </div>`;
         } else {
             container.innerHTML = pageTransactions.map((tx, idx) => {
-                const catColor = categoryColorMap[tx.category_name] || '#6c757d';
-                const isIncome = tx.transaction_type === 'income';
-                const dateObj = new Date(tx.date);
-                const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
-                const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                const yearStr = dateObj.getFullYear();
-                const catIcon = getCatIcon(tx.category_name);
+                const catColor  = categoryColorMap[tx.category_name] || '#6c757d';
+                const isIncome  = tx.transaction_type === 'income';
+                const isSavings = tx.transaction_type === 'savings';
+                const txClass   = isIncome ? 'income' : (isSavings ? 'savings' : 'expense');
+                const dateObj   = new Date(tx.date);
+                const dayName   = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+                const dateStr   = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const yearStr   = dateObj.getFullYear();
+                const catIcon   = getCatIcon(tx.category_name);
+                const amtPrefix = isIncome ? '+' : (isSavings ? '⇒' : '−');
                 return `
                 <div class="tx-row" style="animation-delay: ${idx * 40}ms">
                     <div class="tx-col-date">
@@ -361,7 +515,7 @@
                         </div>
                     </div>
                     <div class="tx-col-desc">
-                        <div class="tx-type-dot ${isIncome ? 'dot-income' : 'dot-expense'}">
+                        <div class="tx-type-dot dot-${txClass}">
                             ${txTypeIcon(tx.transaction_type)}
                         </div>
                         <div class="tx-desc-text">
@@ -375,17 +529,20 @@
                         </span>
                     </div>
                     <div class="tx-col-type">
-                        <span class="tx-type-badge ${isIncome ? 'type-income' : 'type-expense'}">
+                        <span class="tx-type-badge type-${txClass}">
                             ${txTypeIcon(tx.transaction_type)}
                             ${tx.transaction_type.charAt(0).toUpperCase() + tx.transaction_type.slice(1)}
                         </span>
                     </div>
                     <div class="tx-col-amount">
-                        <span class="tx-amount ${isIncome ? 'amount-income' : 'amount-expense'}">
-                            ${isIncome ? '+' : '−'}$${Number(tx.amount).toFixed(2)}
+                        <span class="tx-amount amount-${txClass}">
+                            ${amtPrefix}${formatAmount(tx.amount)}
                         </span>
                     </div>
                     <div class="tx-col-action">
+                        <button class="tx-edit-btn" onclick="editTransaction(${tx.id})" title="Edit">
+                            <i class="fas fa-pen"></i>
+                        </button>
                         <button class="tx-delete-btn" onclick="deleteTransaction(${tx.id})" title="Delete">
                             <i class="fas fa-trash-alt"></i>
                         </button>
@@ -394,12 +551,20 @@
             }).join('');
         }
 
-        // Page info
-        const shown = Math.min(end, allTransactions.length);
-        document.getElementById('tx-page-info').innerHTML =
-            `<i class="fas fa-list-ul"></i> Showing <strong>${start + 1}–${shown}</strong> of <strong>${allTransactions.length}</strong>`;
+        // Sub-heading: show filtered count vs total
+        const totalLabel = allTransactions.length;
+        const filteredLabel = filteredTransactions.length;
+        const hasFilters = txFilterCategory || txFilterType;
         document.getElementById('tx-total-count').textContent =
-            allTransactions.length + ' transaction' + (allTransactions.length !== 1 ? 's' : '');
+            hasFilters
+                ? `${filteredLabel} of ${totalLabel} transaction${totalLabel !== 1 ? 's' : ''}`
+                : `${totalLabel} transaction${totalLabel !== 1 ? 's' : ''}`;
+
+        // Page info
+        const shown = Math.min(end, filteredTransactions.length);
+        const from  = filteredTransactions.length === 0 ? 0 : start + 1;
+        document.getElementById('tx-page-info').innerHTML =
+            `<i class="fas fa-list-ul"></i> Showing <strong>${from}–${shown}</strong> of <strong>${filteredTransactions.length}</strong>`;
 
         // Page number buttons
         const numbersEl = document.getElementById('tx-page-numbers');
@@ -420,35 +585,112 @@
         document.getElementById('tx-last-btn').disabled  = currentPage >= totalPages - 1;
     }
 
-    function goToPage(page) {
-        currentPage = page;
-        displayTransactionPage();
+    function goToPage(page)      { currentPage = page; displayTransactionPage(); }
+    function goToFirstPage()     { currentPage = 0; displayTransactionPage(); }
+    function goToLastPage()      { currentPage = Math.max(0, Math.ceil(filteredTransactions.length / pageSize) - 1); displayTransactionPage(); }
+    function nextTransactionPage()     { if (currentPage < Math.ceil(filteredTransactions.length / pageSize) - 1) { currentPage++; displayTransactionPage(); } }
+    function previousTransactionPage() { if (currentPage > 0) { currentPage--; displayTransactionPage(); } }
+
+    /* ── Edit transaction ────────────────────────────────────────────────── */
+    function editTransaction(id) {
+        const tx = allTransactions.find(t => t.id === id);
+        if (!tx) return;
+        txEditId = id;
+        document.getElementById('editTxId').value          = id;
+        document.getElementById('editTxDescription').value = tx.description;
+        document.getElementById('editTxAmount').value      = Number(tx.amount).toFixed(2);
+        document.getElementById('editTxType').value        = tx.transaction_type;
+        loadEditCategories(tx.transaction_type, tx.category_id);
+        txEditModal.show();
     }
 
-    function goToFirstPage() {
-        currentPage = 0;
-        displayTransactionPage();
-    }
-
-    function goToLastPage() {
-        currentPage = Math.max(0, Math.ceil(allTransactions.length / pageSize) - 1);
-        displayTransactionPage();
-    }
-
-    function nextTransactionPage() {
-        const totalPages = Math.ceil(allTransactions.length / pageSize);
-        if (currentPage < totalPages - 1) {
-            currentPage++;
-            displayTransactionPage();
+    async function loadEditCategories(type, selectedId) {
+        const sel = document.getElementById('editTxCategory');
+        sel.innerHTML = '<option value="">Loading…</option>';
+        try {
+            const url = type ? `/api/categories?type=${encodeURIComponent(type)}` : '/api/categories';
+            const cats = await fetch(url).then(r => r.json());
+            sel.innerHTML = cats.length
+                ? cats.map(c => `<option value="${c.id}"${c.id === selectedId ? ' selected' : ''}>${c.name}</option>`).join('')
+                : '<option value="">No categories found</option>';
+            if (selectedId && !cats.find(c => c.id === selectedId)) {
+                // Selected category not in filtered list — fetch all and add it
+                const all = await fetch('/api/categories').then(r => r.json());
+                const cat = all.find(c => c.id === selectedId);
+                if (cat) {
+                    const opt = document.createElement('option');
+                    opt.value = cat.id; opt.textContent = cat.name; opt.selected = true;
+                    sel.insertBefore(opt, sel.firstChild);
+                }
+            }
+        } catch (e) {
+            sel.innerHTML = '<option value="">Error loading</option>';
         }
     }
 
-    function previousTransactionPage() {
-        if (currentPage > 0) {
-            currentPage--;
-            displayTransactionPage();
+    async function saveEditTransaction() {
+        const id          = parseInt(document.getElementById('editTxId').value, 10);
+        const description = document.getElementById('editTxDescription').value.trim();
+        const amount      = parseFloat(document.getElementById('editTxAmount').value);
+        const type        = document.getElementById('editTxType').value;
+        const categoryId  = parseInt(document.getElementById('editTxCategory').value, 10);
+
+        if (!description || isNaN(amount) || amount <= 0 || !categoryId) {
+            showNotification('Please fill all fields correctly.', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/transactions/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    description,
+                    amount,
+                    transaction_type: type,
+                    category_id: categoryId
+                })
+            });
+            if (response.ok) {
+                txEditModal.hide();
+                txEditId = null;
+                showNotification('Transaction updated successfully', 'success');
+                loadDashboard();
+            } else {
+                const err = await response.json().catch(() => ({}));
+                showNotification(err.error || 'Failed to update transaction', 'error');
+            }
+        } catch (e) {
+            showNotification('Error updating transaction', 'error');
         }
     }
+
+    /* ── Delete transaction — custom modal ───────────────────────────────── */
+    function deleteTransaction(id) {
+        txDeleteId = id;
+        txDeleteModal.show();
+    }
+
+    async function confirmDeleteTransaction() {
+        if (txDeleteId === null) return;
+        const id = txDeleteId;
+        txDeleteId = null;
+        txDeleteModal.hide();
+        try {
+            const response = await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
+            if (response.ok) {
+                showNotification('Transaction deleted successfully', 'success');
+                loadDashboard();
+            } else {
+                showNotification('Failed to delete transaction', 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting transaction:', error);
+            showNotification('Error deleting transaction', 'error');
+        }
+    }
+
+    /* ── Charts ──────────────────────────────────────────────────────────── */
 
     function drawCategoryChart(data) {
         const ctx = document.getElementById('categoryChart').getContext('2d');
@@ -499,7 +741,7 @@
                             beginAtZero: true,
                             ticks: {
                                 callback: function(value) {
-                                    return '$' + value;
+                                    return getCurrencySettings().symbol + value;
                                 }
                             }
                         }
@@ -526,120 +768,77 @@
         drawCategoryChart(categoryChartData);
     }
 
+    async function switchCategoryBreakdown(type) {
+        categoryBreakdownType = type;
+        try {
+            const data = await fetch('/api/analytics/category-breakdown?type=expense').then(r => r.json());
+            categoryChartData = data;
+            drawCategoryChart(data);
+        } catch (e) { console.error(e); }
+    }
+
     function drawMonthlyChart(data) {
-        // Fiscal year: July 2026 - June 2027
         const fiscalYear = ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
         const monthMap = {
             '07': 'Jul', '08': 'Aug', '09': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Dec',
             '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May', '06': 'Jun'
         };
 
-        // Initialize all fiscal months with 0 values
         const months = {};
-        fiscalYear.forEach(month => {
-            months[month] = { income: 0, expense: 0 };
-        });
+        fiscalYear.forEach(m => { months[m] = { income: 0, expense: 0, savings: 0 }; });
 
-        // Populate with actual data
         data.forEach(d => {
             if (d.month) {
-                const monthNum = d.month.toString().padStart(2, '0').slice(-2);
-                const monthLabel = monthMap[monthNum];
+                const monthNum = d.month.toString().padStart(7, '0').slice(-2);  // last 2 chars of YYYY-MM
+                const mm = d.month.split('-')[1];
+                const monthLabel = monthMap[mm];
                 if (monthLabel && months[monthLabel]) {
-                    if (d.type === 'income') months[monthLabel].income = Number(d.total);
-                    else months[monthLabel].expense = Number(d.total);
+                    if (d.type === 'income')  months[monthLabel].income  = Number(d.total);
+                    if (d.type === 'expense') months[monthLabel].expense = Number(d.total);
+                    if (d.type === 'savings') months[monthLabel].savings = Number(d.total);
                 }
             }
         });
 
         const ctx = document.getElementById('monthlyChart').getContext('2d');
-        if (monthlyChartInstance) {
-            monthlyChartInstance.destroy();
+        if (monthlyChartInstance) monthlyChartInstance.destroy();
+
+        const commonOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'top' } },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { callback: v => getCurrencySettings().symbol + v }
+                }
+            }
+        };
+
+        const incomeDataset  = { label: 'Income',  data: fiscalYear.map(m => months[m].income),  borderColor: '#28a745', backgroundColor: 'rgba(40,167,69,0.1)',  tension: 0.4, fill: true };
+        const expenseDataset = { label: 'Expense', data: fiscalYear.map(m => months[m].expense), borderColor: '#dc3545', backgroundColor: 'rgba(220,53,69,0.1)',   tension: 0.4, fill: true };
+        const savingsDataset = { label: 'Savings', data: fiscalYear.map(m => months[m].savings), borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)',  tension: 0.4, fill: true };
+
+        if (monthlyChartType === 'bar') {
+            incomeDataset.backgroundColor  = '#28a745';
+            incomeDataset.borderRadius     = 6;
+            incomeDataset.borderSkipped    = false;
+            delete incomeDataset.borderColor; delete incomeDataset.tension; delete incomeDataset.fill;
+            expenseDataset.backgroundColor = '#dc3545';
+            expenseDataset.borderRadius    = 6;
+            expenseDataset.borderSkipped   = false;
+            delete expenseDataset.borderColor; delete expenseDataset.tension; delete expenseDataset.fill;
+            savingsDataset.backgroundColor = '#3b82f6';
+            savingsDataset.borderRadius    = 6;
+            savingsDataset.borderSkipped   = false;
+            delete savingsDataset.borderColor; delete savingsDataset.tension; delete savingsDataset.fill;
         }
 
-        if (monthlyChartType === 'line') {
-            monthlyChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: fiscalYear,
-                    datasets: [
-                        {
-                            label: 'Income',
-                            data: fiscalYear.map(m => months[m].income),
-                            borderColor: '#28a745',
-                            backgroundColor: 'rgba(40, 167, 69, 0.1)',
-                            tension: 0.4,
-                            fill: true
-                        },
-                        {
-                            label: 'Expense',
-                            data: fiscalYear.map(m => months[m].expense),
-                            borderColor: '#dc3545',
-                            backgroundColor: 'rgba(220, 53, 69, 0.1)',
-                            tension: 0.4,
-                            fill: true
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'top' }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return '$' + value;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        } else if (monthlyChartType === 'bar') {
-            monthlyChartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: fiscalYear,
-                    datasets: [
-                        {
-                            label: 'Income',
-                            data: fiscalYear.map(m => months[m].income),
-                            backgroundColor: '#28a745',
-                            borderRadius: 6,
-                            borderSkipped: false
-                        },
-                        {
-                            label: 'Expense',
-                            data: fiscalYear.map(m => months[m].expense),
-                            backgroundColor: '#dc3545',
-                            borderRadius: 6,
-                            borderSkipped: false
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'top' }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return '$' + value;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
+        monthlyChartInstance = new Chart(ctx, {
+            type: monthlyChartType === 'bar' ? 'bar' : 'line',
+            data: { labels: fiscalYear, datasets: [incomeDataset, expenseDataset, savingsDataset] },
+            options: commonOptions
+        });
     }
 
     function switchMonthlyChart(type) {
@@ -647,24 +846,6 @@
         document.getElementById('monthlyLineBtn').classList.toggle('active', type === 'line');
         document.getElementById('monthlyBarBtn').classList.toggle('active', type === 'bar');
         drawMonthlyChart(monthlyChartData);
-    }
-
-    async function deleteTransaction(id) {
-        if (!confirm('Are you sure you want to delete this transaction?')) {
-            return;
-        }
-        try {
-            const response = await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
-            if (response.ok) {
-                showNotification('Transaction deleted successfully', 'success');
-                loadDashboard();
-            } else {
-                showNotification('Failed to delete transaction', 'error');
-            }
-        } catch (error) {
-            console.error('Error deleting transaction:', error);
-            showNotification('Error deleting transaction', 'error');
-        }
     }
 
     function showNotification(message, type = 'success') {
@@ -683,6 +864,73 @@
         }, 5000);
     }
 </script>
+<!-- Edit Transaction Modal -->
+<div class="modal fade" id="dashboardEditTxModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:460px">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-pen me-2"></i>Edit Transaction</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editTxId">
+                <div class="mb-3">
+                    <label for="editTxDescription" class="form-label">Description</label>
+                    <input type="text" class="form-control" id="editTxDescription" placeholder="e.g., Grocery shopping" required>
+                </div>
+                <div class="mb-3">
+                    <label for="editTxAmount" class="form-label">Amount</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" class="form-control" id="editTxAmount" step="0.01" min="0.01" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="editTxType" class="form-label">Type</label>
+                    <select class="form-select" id="editTxType">
+                        <option value="expense">Expense</option>
+                        <option value="income">Income</option>
+                        <option value="savings">Savings</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="editTxCategory" class="form-label">Category</label>
+                    <select class="form-select" id="editTxCategory" required>
+                        <option value="">Loading…</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="dashboardSaveEditTxBtn">
+                    <i class="fas fa-save me-1"></i>Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Transaction Confirmation Modal -->
+<div class="modal fade" id="dashboardDeleteTxModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:420px">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-trash-alt me-2"></i>Delete Transaction</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-4">
+                <p class="mb-0">Are you sure you want to delete this transaction? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="dashboardConfirmDeleteTxBtn">
+                    <i class="fas fa-trash-alt me-1"></i>Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
 <script src="/js/sidebar.js"></script>
