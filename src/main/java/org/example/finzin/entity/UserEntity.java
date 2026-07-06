@@ -31,6 +31,9 @@ public class UserEntity {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column(nullable = true)
+    private String profilePicture;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -97,5 +100,13 @@ public class UserEntity {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getProfilePicture() {
+        return profilePicture;
+    }
+
+    public void setProfilePicture(String profilePicture) {
+        this.profilePicture = profilePicture;
     }
 }

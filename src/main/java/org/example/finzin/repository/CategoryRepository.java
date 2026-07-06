@@ -18,5 +18,9 @@ public interface CategoryRepository extends JpaRepository<CategoryEntity, Long> 
     
     @Query("SELECT c FROM CategoryEntity c WHERE c.userId = :userId AND (LOWER(c.name) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(c.description) LIKE LOWER(CONCAT('%', :search, '%')))")
     List<CategoryEntity> searchByUserId(@Param("userId") Long userId, @Param("search") String search);
+
+    /** Returns categories whose categoryType matches the given type, OR is null/"general" (usable for any type). */
+    @Query("SELECT c FROM CategoryEntity c WHERE c.userId = :userId AND (c.categoryType = :type OR c.categoryType = 'general' OR c.categoryType IS NULL)")
+    List<CategoryEntity> findByUserIdAndCategoryTypeOrGeneral(@Param("userId") Long userId, @Param("type") String type);
 }
 
