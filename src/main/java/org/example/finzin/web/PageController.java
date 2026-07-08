@@ -48,22 +48,6 @@ public class PageController {
         return "forward:/transactions.html";
     }
 
-    @GetMapping("/categories")
-    public String categories(HttpServletRequest request) {
-        if (request.getAttribute("userId") == null) {
-            return "redirect:/login";
-        }
-        return "forward:/categories.html";
-    }
-
-    @GetMapping("/assets")
-    public String assets(HttpServletRequest request) {
-        if (request.getAttribute("userId") == null) {
-            return "redirect:/login";
-        }
-        return "forward:/assets.html";
-    }
-
     @GetMapping("/notes")
     public String notes(HttpServletRequest request) {
         if (request.getAttribute("userId") == null) {

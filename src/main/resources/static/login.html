@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FinTrack - Login</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="/images/logo.png">
     <style>
         * {
@@ -14,7 +15,7 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
             background: linear-gradient(135deg, #18230F 0%, #27391C 100%);
             min-height: 100vh;
             display: flex;
@@ -131,6 +132,7 @@
             font-weight: 700;
             margin-bottom: 40px;
             margin-top: 0;
+            letter-spacing: -0.02em;
         }
 
         .tabs-section {
@@ -161,6 +163,11 @@
 
         .tab-btn:hover:not(.active) {
             color: rgba(255, 255, 255, 0.9);
+            background: rgba(37, 95, 56, 0.12);
+            box-shadow: 0 0 14px rgba(37, 95, 56, 0.18);
+        }
+        .tab-btn:active {
+            transform: scale(0.97);
         }
 
         .form-wrapper {
@@ -175,14 +182,16 @@
             right: 0;
             width: 100%;
             opacity: 1;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
+            transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
             visibility: visible;
+            transform: translateX(0);
         }
 
         .form-section.hidden {
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
+            transform: translateX(8px);
         }
 
         .notification {
@@ -241,7 +250,7 @@
             outline: none;
             background: rgba(37, 95, 56, 0.08);
             border-color: #255F38;
-            box-shadow: 0 0 10px rgba(37, 95, 56, 0.2);
+            box-shadow: 0 0 0 3px rgba(37, 95, 56, 0.25), 0 0 12px rgba(37, 95, 56, 0.15);
         }
 
         input.error {
@@ -346,11 +355,11 @@
         button.btn-submit:hover {
             background: #1F7D53;
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(37, 95, 56, 0.3);
+            box-shadow: 0 10px 24px rgba(37, 95, 56, 0.4), 0 0 0 1px rgba(37, 95, 56, 0.3);
         }
 
         button.btn-submit:active {
-            transform: translateY(0);
+            transform: scale(0.97) !important;
         }
 
         .footer-link {
@@ -436,6 +445,57 @@
                 font-size: 11px;
             }
         }
+        /* Background glow blob */
+        body::before {
+            content: '';
+            position: fixed;
+            width: 700px;
+            height: 700px;
+            background: radial-gradient(circle, rgba(31, 125, 83, 0.13) 0%, rgba(37, 95, 56, 0.06) 40%, transparent 70%);
+            border-radius: 50%;
+            bottom: -200px;
+            right: -200px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        /* Noise grain overlay */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 0;
+        }
+        /* SVG chart + stat-card animations */
+        @keyframes chartDraw {
+            from { stroke-dashoffset: 600; }
+            to   { stroke-dashoffset: 0; }
+        }
+        @keyframes chartFadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+        @keyframes statSlideUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .stat-item:nth-child(1) { animation: statSlideUp 0.5s ease-out 1.6s both; }
+        .stat-item:nth-child(2) { animation: statSlideUp 0.5s ease-out 1.7s both; }
+        .portfolio-chart { z-index: 1; padding: 16px 0 24px; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        .portfolio-chart .chart-label { font-size: 11px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+        .chart-line { animation: chartDraw 1.5s ease-out forwards; }
+        .chart-fill { animation: chartFadeIn 1.5s ease-out 0.3s both; }
+        .portfolio-chart circle { animation: chartFadeIn 0.4s ease-out 1.4s both; }
+        @keyframes notifSlideDown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .notification.success,
+        .notification.error {
+            animation: notifSlideDown 0.3s ease-out forwards;
+        }
     </style>
 </head>
 <body>
@@ -444,6 +504,28 @@
         <div class="left-section">
             <div class="logo-left">
                 <img src="/images/logo.png" alt="FinTrack" style="width:36px;height:36px;object-fit:contain;border-radius:8px;vertical-align:middle;margin-right:8px;">FinTrack
+            </div>
+
+            <!-- Portfolio trend chart -->
+            <div class="portfolio-chart" aria-hidden="true">
+                <div class="chart-label">Portfolio Performance</div>
+                <svg viewBox="0 0 260 80" xmlns="http://www.w3.org/2000/svg" style="width:100%;overflow:visible;">
+                    <defs>
+                        <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#255F38" stop-opacity="0.35"/>
+                            <stop offset="100%" stop-color="#255F38" stop-opacity="0"/>
+                        </linearGradient>
+                        <clipPath id="chartClip">
+                            <rect x="0" y="0" width="260" height="80"/>
+                        </clipPath>
+                    </defs>
+                    <path class="chart-fill" d="M0,60 L30,52 L60,45 L90,48 L120,35 L150,28 L180,22 L210,15 L240,10 L260,8 L260,80 L0,80 Z"
+                          fill="url(#chartGrad)" clip-path="url(#chartClip)" opacity="0"/>
+                    <path class="chart-line" d="M0,60 L30,52 L60,45 L90,48 L120,35 L150,28 L180,22 L210,15 L240,10 L260,8"
+                          fill="none" stroke="#255F38" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                          stroke-dasharray="600" stroke-dashoffset="600"/>
+                    <circle cx="260" cy="8" r="4" fill="#1F7D53" opacity="0"/>
+                </svg>
             </div>
 
             <div class="stats-box">
@@ -601,6 +683,11 @@
                 localStorage.removeItem('fintrack_remember');
             }
 
+            const _loginBtn = document.querySelector('#login-form .btn-submit');
+            const _loginBtnText = _loginBtn.textContent;
+            _loginBtn.disabled = true;
+            _loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:6px;"></i>Logging in...';
+
             try {
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
@@ -622,6 +709,9 @@
                 }
             } catch (error) {
                 showNotification(notification, 'Connection error', 'error');
+            } finally {
+                _loginBtn.disabled = false;
+                _loginBtn.textContent = _loginBtnText;
             }
         }
 
@@ -640,6 +730,11 @@
                 showNotification(notification, 'Passwords do not match', 'error');
                 return;
             }
+
+            const _signupBtn = document.querySelector('#signup-form .btn-submit');
+            const _signupBtnText = _signupBtn.textContent;
+            _signupBtn.disabled = true;
+            _signupBtn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:6px;"></i>Signing up...';
 
             try {
                 const response = await fetch('/api/auth/register-simple', {
@@ -662,6 +757,9 @@
                 }
             } catch (error) {
                 showNotification(notification, 'Connection error', 'error');
+            } finally {
+                _signupBtn.disabled = false;
+                _signupBtn.textContent = _signupBtnText;
             }
         }
 
