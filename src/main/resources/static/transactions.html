@@ -8,6 +8,9 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
     <link rel="icon" type="image/png" href="/images/logo.png">
+    <style>
+        .amount-calc-btn:hover { background: var(--surface-color) !important; border-color: var(--surface-color) !important; }
+    </style>
 </head>
 <body>
 <div id="toastContainer" class="notification-toast-container" aria-live="polite" aria-atomic="true"></div>
@@ -37,6 +40,9 @@
                             <div class="input-group input-group-sm">
                                 <span class="input-group-text">৳</span>
                                 <input type="number" class="form-control" id="amount" step="0.01" required placeholder="0.00">
+                                <button type="button" class="input-group-text amount-calc-btn" id="amountCalcBtn" title="Open Calculator" onclick="if(window.openCalcForInput) window.openCalcForInput('amount'); else if(window.openCalc) window.openCalc();" style="cursor:pointer; background:var(--accent-color); border-color:var(--accent-color); color:#fff; transition:background 0.2s;">
+                                    <i class="fas fa-calculator" style="font-size:0.8rem;"></i>
+                                </button>
                             </div>
                         </div>
                         <div class="row g-2 mb-2">
