@@ -719,22 +719,36 @@ public class FinanceApiController {
     }
 
     private Map<String, Object> toNoteResponse(NoteEntity entity) {
-        String preview = entity.getContent() != null && entity.getContent().length() > 100 ?
-                entity.getContent().substring(0, 100) + "..." :
-                (entity.getContent() != null ? entity.getContent() : "");
+        String plain = stripNoteHtml(entity.getContent());
+        String preview = plain.length() > 150 ? plain.substring(0, 150) + "…" : plain;
 
         return Map.of(
                 "id", entity.getId(),
                 "title", entity.getTitle(),
                 "content", entity.getContent() != null ? entity.getContent() : "",
                 "preview", preview,
-                "color", entity.getColor() != null ? entity.getColor() : "#FFE082",
+                "color", entity.getColor() != null ? entity.getColor() : "#FEF3C7",
                 "tags", entity.getTags() != null ? entity.getTags() : "",
                 "pinned", entity.getPinned() != null ? entity.getPinned() : false,
                 "archived", entity.getArchived() != null ? entity.getArchived() : false,
                 "created_at", entity.getCreatedAt().toString(),
                 "updated_at", entity.getUpdatedAt().toString()
         );
+    }
+
+    /** Strip HTML tags and decode common entities for plain-text preview. */
+    private String stripNoteHtml(String html) {
+        if (html == null || html.isBlank()) return "";
+        return html
+                .replaceAll("<[^>]*>", " ")          // remove all tags
+                .replaceAll("&nbsp;", " ")
+                .replaceAll("&amp;", "&")
+                .replaceAll("&lt;", "<")
+                .replaceAll("&gt;", ">")
+                .replaceAll("&quot;", "\"")
+                .replaceAll("&#039;", "'")
+                .replaceAll("\\s{2,}", " ")           // collapse whitespace
+                .trim();
     }
 
     private Map<String, Object> toTodoResponse(TodoEntity entity) {

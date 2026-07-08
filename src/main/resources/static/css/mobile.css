@@ -1,0 +1,343 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   FinTrack — Mobile & Responsive Styles
+   Breakpoints:
+     ≤ 767px  : phones (portrait + landscape)
+     ≤ 480px  : small phones (portrait)
+     768–1023px: tablets
+   All colours via CSS variables — no hardcoded values.
+═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Desktop defaults for chart containers (replaces removed inline heights) ── */
+.chart-row-category {
+    height: 380px;
+}
+
+.chart-body-monthly {
+    height: 420px;
+}
+
+/* ───────────────────────────────────────────────
+   GLOBAL — applies to all pages ≤ 767px
+─────────────────────────────────────────────── */
+@media (max-width: 767px) {
+
+    /* Tighten container padding */
+    .container-fluid {
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+    }
+
+    /* Page heading */
+    body.has-sidebar h2.mb-4 {
+        font-size: 1.25rem;
+        margin-top: 4px;
+    }
+
+    /* Cards */
+    .card {
+        border-radius: 12px !important;
+    }
+
+    /* Bootstrap modal: full-screen on phone */
+    .modal-dialog:not(.modal-sm):not(.modal-xl) {
+        margin: 0.5rem auto;
+        max-width: calc(100vw - 16px);
+    }
+
+    /* Tables inside cards: allow horizontal scroll */
+    .card-body .table-responsive,
+    .card-body table {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* ───────────────────────────────────────────────
+   DASHBOARD — stat cards: 2 per row on mobile
+─────────────────────────────────────────────── */
+@media (max-width: 767px) {
+
+    /* Make stat cards 2-column on phone */
+    .col-xl-2.col-md-4.mb-3 {
+        flex: 0 0 50% !important;
+        max-width: 50% !important;
+        width: 50% !important;
+    }
+
+    /* Stat card tweaks */
+    .stat-card {
+        min-height: 120px !important;
+    }
+
+    .sc-icon-circle {
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 1rem !important;
+    }
+
+    .sc-title { font-size: 0.75rem !important; }
+    .sc-subtitle { font-size: 0.68rem !important; }
+    .stat-card-amount { font-size: 1.1rem !important; }
+
+    /* Chart row — allow height to be auto on mobile */
+    #categoryChart,
+    #monthlyChart {
+        max-height: 220px !important;
+    }
+
+    /* Override inline height on chart card bodies using our new classes */
+    .chart-body-monthly {
+        height: auto !important;
+        min-height: 0 !important;
+        padding-bottom: 12px !important;
+    }
+
+    /* Category chart row */
+    .chart-row-category {
+        height: auto !important;
+        flex-direction: column !important;
+    }
+
+    /* Legend above chart on mobile */
+    #categoryLegendContainer {
+        max-width: 100% !important;
+        flex: 0 0 100% !important;
+        margin-bottom: 8px;
+    }
+
+    /* Recent transactions header — wrap filters */
+    .tx-card-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+        padding: 12px 14px !important;
+    }
+
+    .tx-header-actions {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+        width: 100% !important;
+    }
+
+    .tx-filter-select {
+        flex: 1 1 calc(50% - 3px) !important;
+        min-width: 100px !important;
+        font-size: 0.78rem !important;
+        padding: 4px 6px !important;
+    }
+
+    .tx-view-all-btn {
+        flex: 1 1 100% !important;
+        text-align: center !important;
+    }
+}
+
+/* ───────────────────────────────────────────────
+   TRANSACTIONS PAGE
+─────────────────────────────────────────────── */
+@media (max-width: 767px) {
+
+    /* Stack form and list vertically */
+    .transactions-layout {
+        flex-direction: column;
+    }
+
+    /* Amount input group */
+    .input-group.input-group-sm .form-control {
+        font-size: 0.875rem;
+    }
+
+    /* Filter row in transactions */
+    .tx-filters-row {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    /* Pagination: smaller buttons */
+    .tx-pagination {
+        padding: 10px 8px !important;
+        gap: 4px !important;
+    }
+
+    .tx-page-btn,
+    .tx-page-num {
+        min-width: 28px !important;
+        height: 28px !important;
+        font-size: 0.75rem !important;
+    }
+}
+
+/* ───────────────────────────────────────────────
+   NOTES PAGE
+─────────────────────────────────────────────── */
+@media (max-width: 767px) {
+
+    /* Notes grid: 1 column */
+    #notesGrid.row > [class*="col-"] {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
+
+    .note-card {
+        min-height: 120px;
+    }
+}
+
+/* ───────────────────────────────────────────────
+   TODOS PAGE
+─────────────────────────────────────────────── */
+@media (max-width: 767px) {
+
+    .progress-card {
+        padding: 16px !important;
+    }
+
+    .todo-item {
+        padding: 12px !important;
+    }
+
+    /* Todo action buttons: stack on very small */
+    .todo-actions {
+        flex-wrap: wrap;
+    }
+}
+
+/* ───────────────────────────────────────────────
+   SETTINGS PAGE — extra mobile polish
+─────────────────────────────────────────────── */
+@media (max-width: 767px) {
+
+    /* Settings content padding */
+    .settings-panel .settings-card {
+        padding: 16px !important;
+    }
+
+    /* Theme selector: 1 column on very small phones */
+    .theme-selector-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Option pills: wrap */
+    .option-pills {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .option-pill {
+        padding: 6px 12px;
+        font-size: 0.82rem;
+    }
+}
+
+/* ───────────────────────────────────────────────
+   CALCULATOR POPUP — mobile sizing
+─────────────────────────────────────────────── */
+@media (max-width: 480px) {
+
+    .calc-popup {
+        width: calc(100vw - 16px) !important;
+        right: 8px !important;
+        bottom: 8px !important;
+        left: 8px !important;
+        max-width: 100% !important;
+    }
+}
+
+@media (max-width: 767px) and (min-width: 481px) {
+
+    .calc-popup {
+        width: 300px !important;
+        right: 12px !important;
+        bottom: 12px !important;
+    }
+}
+
+/* ───────────────────────────────────────────────
+   PROFILE MODAL — mobile full width
+─────────────────────────────────────────────── */
+@media (max-width: 576px) {
+
+    .profile-modal-dialog {
+        max-width: calc(100vw - 16px) !important;
+        margin: 8px auto !important;
+    }
+
+    .profile-banner {
+        height: 80px !important;
+    }
+}
+
+/* ───────────────────────────────────────────────
+   TABLET (768px – 1023px) — minor tweaks
+─────────────────────────────────────────────── */
+@media (min-width: 768px) and (max-width: 1023px) {
+
+    /* Stat cards: 3 per row on tablet */
+    .col-xl-2.col-md-4.mb-3 {
+        flex: 0 0 33.333% !important;
+        max-width: 33.333% !important;
+    }
+
+    /* Chart heights: slightly reduced */
+    .chart-body-monthly {
+        height: 320px !important;
+    }
+
+    .chart-row-category {
+        height: 300px !important;
+    }
+
+    #categoryChart, #monthlyChart {
+        max-height: 260px;
+    }
+}
+
+/* ───────────────────────────────────────────────
+   SMALL PHONE — extra tightening (≤ 400px)
+─────────────────────────────────────────────── */
+@media (max-width: 400px) {
+
+    /* Stat cards: remain 2-col but slimmer */
+    .stat-card {
+        min-height: 100px !important;
+    }
+
+    .stat-card .card-body {
+        padding: 12px !important;
+    }
+
+    .sc-divider { margin: 6px 0 !important; }
+
+    .stat-card-amount {
+        font-size: 1rem !important;
+    }
+
+    /* Heading */
+    body.has-sidebar h2.mb-4 {
+        font-size: 1.1rem;
+    }
+
+    /* Tab buttons in login */
+    .tab-btn {
+        padding: 8px 12px !important;
+        font-size: 11px !important;
+    }
+}
+
+/* ───────────────────────────────────────────────
+   MOBILE HAMBURGER — ensure not covered
+─────────────────────────────────────────────── */
+@media (max-width: 767px) {
+
+    /* Prevent mobile hamburger from overlapping page title */
+    .sidebar-mobile-toggle {
+        top: 10px !important;
+        left: 10px !important;
+    }
+
+    /* Push main content down enough for hamburger */
+    #main-content {
+        padding-top: 60px !important;
+    }
+}

@@ -397,6 +397,13 @@
             link.href = '/css/calculator.css';
             document.head.appendChild(link);
         }
+        // Load mobile CSS (global, idempotent)
+        if (!document.querySelector('link[href="/css/mobile.css"]')) {
+            var mlink = document.createElement('link');
+            mlink.rel = 'stylesheet';
+            mlink.href = '/css/mobile.css';
+            document.head.appendChild(mlink);
+        }
 
         // Inject popup HTML (idempotent)
         if (document.getElementById('calcPopup')) return;
