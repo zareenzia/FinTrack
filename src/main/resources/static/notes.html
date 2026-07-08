@@ -513,6 +513,15 @@ function initQuill() {
     // Update toolbar active state when selection or content changes
     quill.on('selection-change', refreshToolbar);
     quill.on('text-change', refreshToolbar);
+
+    // Prevent Quill from stealing focus when user clicks the Title or Tags inputs
+    ['noteTitle', 'noteTags'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('mousedown', function () { if (quill) quill.blur(); });
+            el.addEventListener('focus',     function () { if (quill) quill.blur(); });
+        }
+    });
 }
 
 function applyFormat(fmt, val) {
@@ -639,7 +648,11 @@ function openCreateNoteModal() {
         quill.history.clear();
     }
     new bootstrap.Modal(document.getElementById('noteModal')).show();
-    setTimeout(function () { quill && quill.focus(); }, 350);
+    // Focus title field when modal finishes opening (not the Quill editor)
+    document.getElementById('noteModal').addEventListener('shown.bs.modal', function titleFocusCreate() {
+        document.getElementById('noteTitle').focus();
+        this.removeEventListener('shown.bs.modal', titleFocusCreate);
+    });
 }
 
 async function editNote(id) {
@@ -663,7 +676,11 @@ async function editNote(id) {
     }
 
     new bootstrap.Modal(document.getElementById('noteModal')).show();
-    setTimeout(function () { quill && quill.focus(); }, 350);
+    // Focus title field when modal finishes opening (not the Quill editor)
+    document.getElementById('noteModal').addEventListener('shown.bs.modal', function titleFocusEdit() {
+        document.getElementById('noteTitle').focus();
+        this.removeEventListener('shown.bs.modal', titleFocusEdit);
+    });
 }
 
 /* ═══════════════════════════════════════════════════════════════
