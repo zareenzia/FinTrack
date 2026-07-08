@@ -1427,26 +1427,106 @@ canvas {
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
-    .jumbotron h1 {
-        font-size: 2.5rem;
-    }
 
-    .btn-group {
+    /* ─ General ──────────────────────────────────────── */
+    .jumbotron h1 { font-size: 2.5rem; }
+    .card-body { padding: 16px; }
+    .card { border-radius: 12px; }
+    h2 { font-size: 1.4rem !important; }
+    .container-fluid { padding-left: 12px !important; padding-right: 12px !important; }
+
+    /* btn-group: don't stack (sidebar.js uses btn-groups in headers) */
+    .card-header .btn-group {
+        flex-direction: row;
+        gap: 0;
+    }
+    .card-header .btn-group .btn {
+        width: auto;
+    }
+    /* Stack btn-groups only outside card headers */
+    .btn-group:not(.card-header .btn-group):not(.btn-group-sm) {
         display: flex;
         flex-direction: column;
         gap: 10px;
     }
-
-    .btn-group .btn {
+    .btn-group:not(.card-header .btn-group):not(.btn-group-sm) .btn {
         width: 100%;
     }
 
-    .card-body {
-        padding: 16px;
+    /* ─ Sidebar layout: full-width content ───────────── */
+    body.has-sidebar {
+        flex-direction: column;
+        overflow-x: hidden;
+        padding-left: 0 !important;
     }
 
-    .card {
-        border-radius: 12px;
+    #main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* ─ Dashboard: stat cards 2-per-row ─────────────── */
+    .row > .col-xl-2.col-md-4.mb-3 {
+        flex: 0 0 auto;
+        width: 50%;
+    }
+
+    /* ─ Dashboard: chart containers — remove fixed heights ─ */
+    .card-body > .row[style],
+    .card-body > [style*="height"] {
+        height: auto !important;
+        min-height: 0 !important;
+    }
+    .card-body[style*="height"],
+    .card-body[style*="420px"] {
+        height: auto !important;
+        min-height: 0 !important;
+    }
+    /* category chart inner row must stack its legend + canvas */
+    #categoryLegendContainer {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: 0 0 100%;
+        margin-bottom: 8px;
+    }
+    #categoryChart { max-height: 220px !important; }
+    #monthlyChart  { max-height: 250px !important; height: 250px !important; }
+
+    /* ─ Settings: horizontal scrollable nav tabs ─────── */
+    .settings-sidebar {
+        overflow-x: auto !important;
+        flex-wrap: nowrap !important;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .settings-sidebar::-webkit-scrollbar { display: none; }
+    .settings-nav-item {
+        flex-shrink: 0 !important;
+        min-width: 0 !important;
+        white-space: nowrap;
+        flex: 0 0 auto !important;
+        justify-content: center;
+        padding: 8px 14px !important;
+        border-left: none !important;
+        border-radius: 8px !important;
+    }
+    .settings-nav-item.active {
+        border-left: none !important;
+        background: var(--accent-color) !important;
+        color: #fff !important;
+    }
+
+    /* ─ Transactions: stat cards at top ─────────────── */
+    .col-md-6:has(.card) {
+        width: 100%;
+    }
+
+    /* ─ Notification toast: full width ──────────────── */
+    .notification-toast-container {
+        width: 96vw;
+        left: 2vw;
+        transform: none;
     }
 }
 
