@@ -457,6 +457,7 @@
                 '</div>' +
                 '<div class="calc-footer">' +
                   '<button class="calc-copy-btn" id="calcCopyBtn"><i class="fas fa-copy"></i> Copy Result</button>' +
+                  '<button class="calc-done-btn calc-hidden" id="calcDoneBtn"><i class="fas fa-check"></i> Done</button>' +
                   '<span class="calc-sci-badge" title="Coming soon"><i class="fas fa-flask" style="margin-right:4px"></i>Sci (soon)</span>' +
                 '</div>' +
               '</div>' +

@@ -499,8 +499,7 @@ body.has-sidebar {
 .sidebar-nav {
     flex: 1;
     padding: 10px 8px;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden;
 }
 
 .sidebar-item {
@@ -584,7 +583,7 @@ body.has-sidebar {
 
 /* Spacer pushes bottom items down */
 .sidebar-spacer {
-    flex: 1;
+    display: none;
 }
 
 /* Bottom section */
@@ -592,6 +591,7 @@ body.has-sidebar {
     padding: 8px;
     border-top: 1px solid var(--border-color);
     flex-shrink: 0;
+    margin-top: auto;
 }
 
 .sidebar-logout {

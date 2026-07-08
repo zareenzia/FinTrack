@@ -25,6 +25,7 @@
         isMinimized:     false,
         isPinned:        false,
         historyOpen:     false,
+        targetInputId:   null,   // input element id to fill on Done
     };
 
     /* ── DOM helpers ───────────────────────────────────────────────────────── */
@@ -72,6 +73,10 @@
         // Copy
         $('calcCopyBtn').addEventListener('click', copyResult);
 
+        // Done — fill target input and close
+        var doneBtn = $('calcDoneBtn');
+        if (doneBtn) doneBtn.addEventListener('click', doneCalc);
+
         // Global keyboard handler
         document.addEventListener('keydown', handleKeyboard);
 
@@ -102,6 +107,8 @@
 
     function closeCalc() {
         state.isOpen = false;
+        state.targetInputId = null;
+        updateDoneBtn();
         $('calcPopup').classList.add('calc-hidden');
     }
 
@@ -563,11 +570,51 @@
     }
 
     /* ════════════════════════════════════════════════════════════════════════
+       DONE — fill target input and close
+    ════════════════════════════════════════════════════════════════════════ */
+    function doneCalc() {
+        var raw = state.display.replace(/,/g, '');
+        if (raw === 'Error' || raw === 'Overflow') return;
+        var num = parseFloat(raw);
+        if (isNaN(num)) return;
+
+        if (state.targetInputId) {
+            var el = document.getElementById(state.targetInputId);
+            if (el) {
+                el.value = num;
+                // Fire change/input events so any listeners pick it up
+                el.dispatchEvent(new Event('input',  { bubbles: true }));
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+                el.focus();
+            }
+        }
+        // Clear target and close
+        state.targetInputId = null;
+        updateDoneBtn();
+        closeCalc();
+    }
+
+    function updateDoneBtn() {
+        var btn = $('calcDoneBtn');
+        if (!btn) return;
+        if (state.targetInputId) {
+            btn.classList.remove('calc-hidden');
+        } else {
+            btn.classList.add('calc-hidden');
+        }
+    }
+
+    /* ════════════════════════════════════════════════════════════════════════
        PUBLIC API — exposed on window for sidebar.js to call
     ════════════════════════════════════════════════════════════════════════ */
-    window.toggleCalc = toggleCalc;
-    window.openCalc   = openCalc;
-    window.closeCalc  = closeCalc;
+    window.toggleCalc        = toggleCalc;
+    window.openCalc          = openCalc;
+    window.closeCalc         = closeCalc;
+    window.openCalcForInput  = function (inputId) {
+        state.targetInputId = inputId;
+        updateDoneBtn();
+        openCalc();
+    };
 
     /* Init runs after the popup HTML exists in the DOM */
     if (document.readyState === 'loading') {
