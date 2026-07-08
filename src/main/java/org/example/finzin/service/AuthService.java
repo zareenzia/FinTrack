@@ -74,10 +74,28 @@ public class AuthService {
             throw new IllegalArgumentException("Email already exists");
         }
         
-        // Create and save user with null fullName and username
+        // Derive fullName and username from email (part before @)
+        String localPart = email.contains("@") ? email.substring(0, email.indexOf('@')) : email;
+        // Make username unique by appending a random suffix if needed
+        String baseUsername = localPart.replaceAll("[^a-zA-Z0-9_]", "").toLowerCase();
+        if (baseUsername.isEmpty()) baseUsername = "user";
+        String username = baseUsername;
+        int attempt = 0;
+        while (userRepository.existsByUsernameIgnoreCase(username)) {
+            attempt++;
+            username = baseUsername + attempt;
+        }
+        // Full name: capitalize each word segment split by dots/underscores/hyphens
+        String fullName = java.util.Arrays.stream(localPart.split("[._\\-]"))
+            .filter(s -> !s.isEmpty())
+            .map(s -> Character.toUpperCase(s.charAt(0)) + s.substring(1).toLowerCase())
+            .collect(java.util.stream.Collectors.joining(" "));
+        if (fullName.isBlank()) fullName = username;
+
+        // Create and save user
         UserEntity user = new UserEntity();
-        user.setFullName(null);
-        user.setUsername(null);
+        user.setFullName(fullName);
+        user.setUsername(username);
         user.setEmail(email);
         user.setPasswordHash(passwordService.hashPassword(password));
         
