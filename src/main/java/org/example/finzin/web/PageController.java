@@ -71,5 +71,13 @@ public class PageController {
         }
         return "forward:/settings.html";
     }
+
+    @GetMapping("/assets")
+    public String assets(HttpServletRequest request) {
+        if (request.getAttribute("userId") == null) {
+            return "redirect:/login";
+        }
+        return "forward:/assets.html";
+    }
 }
 
