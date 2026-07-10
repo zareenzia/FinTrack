@@ -11,6 +11,7 @@ import org.example.finzin.repository.CategoryRepository;
 import org.example.finzin.repository.NoteRepository;
 import org.example.finzin.repository.TodoRepository;
 import org.example.finzin.repository.TransactionRepository;
+import org.example.finzin.service.gold.GoldAssetService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -43,13 +44,15 @@ public class FinanceApiController {
     private final AssetRepository assetRepository;
     private final NoteRepository noteRepository;
     private final TodoRepository todoRepository;
+    private final GoldAssetService goldAssetService;
 
-    public FinanceApiController(CategoryRepository categoryRepository, TransactionRepository transactionRepository, AssetRepository assetRepository, NoteRepository noteRepository, TodoRepository todoRepository) {
+    public FinanceApiController(CategoryRepository categoryRepository, TransactionRepository transactionRepository, AssetRepository assetRepository, NoteRepository noteRepository, TodoRepository todoRepository, GoldAssetService goldAssetService) {
         this.categoryRepository = categoryRepository;
         this.transactionRepository = transactionRepository;
         this.assetRepository = assetRepository;
         this.noteRepository = noteRepository;
         this.todoRepository = todoRepository;
+        this.goldAssetService = goldAssetService;
     }
     
     private Long getUserId(HttpServletRequest request) {
@@ -637,7 +640,9 @@ public class FinanceApiController {
 
     private double getTotalAssets(Long userId) {
         Double sum = assetRepository.sumValuesByUserId(userId);
-        return sum == null ? 0 : sum;
+        double regularAssets = sum == null ? 0 : sum;
+        double goldAssets = goldAssetService.getTotalGoldValueForUser(userId);
+        return regularAssets + goldAssets;
     }
 
     private LocalDateTime parseDate(String dateString) {

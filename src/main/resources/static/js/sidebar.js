@@ -154,6 +154,10 @@
                     <i class="fas fa-tasks sidebar-icon"></i>
                     <span class="sidebar-label">To-Do</span>
                 </a>
+                <a href="/assets" class="sidebar-item" data-path="assets" title="Assets">
+                    <i class="fas fa-coins sidebar-icon"></i>
+                    <span class="sidebar-label">Assets</span>
+                </a>
                 <button class="sidebar-item" id="calcSidebarBtn" title="Calculator" style="background:none;border:none;width:100%;text-align:left;">
                     <i class="fas fa-calculator sidebar-icon"></i>
                     <span class="sidebar-label">Calculator</span>
