@@ -78,6 +78,57 @@
       .settings-nav-item{border-left:none;border-radius:8px;padding:8px 14px;flex:1;min-width:120px;justify-content:center}
       .settings-nav-item.active{border-left:none;background:var(--accent-color);color:#fff}
     }
+    /* ── Account Configuration section ── */
+    .acct-table { border-collapse: separate; border-spacing: 0; }
+    .acct-table thead th { background: var(--color-primary,#255F38); color: #f0f0e8; font-weight: 600; font-size: 0.82rem; padding: 10px 14px; white-space: nowrap; border: none; }
+    .acct-table tbody tr { transition: background 0.15s ease; }
+    .acct-table tbody tr:nth-child(even) { background: var(--bg-table-stripe,rgba(0,0,0,.02)); }
+    .acct-table tbody tr:hover { background: var(--bg-table-hover,rgba(0,0,0,.04)); }
+    .acct-table td { padding: 10px 14px; border-bottom: 1px solid var(--border-color); vertical-align: middle; font-size: 0.88rem; }
+    .acct-icon { width: 34px; height: 34px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+    .acct-icon-bank   { background: rgba(59,130,246,0.15); color: #2563eb; }
+    .acct-icon-card   { background: rgba(139,92,246,0.15); color: #7c3aed; }
+    .acct-icon-credit { background: rgba(220,38,38,0.15);  color: #dc2626; }
+    .acct-icon-mfs    { background: rgba(16,185,129,0.15); color: #059669; }
+    .acct-icon-cash   { background: rgba(245,158,11,0.15); color: #d97706; }
+    .balance-positive { color: #16a34a; font-weight: 700; }
+    .balance-negative { color: #dc2626; font-weight: 700; }
+    .balance-credit   { color: #dc2626; font-weight: 700; }
+    [data-theme="dark"] .balance-positive { color: #4ade80; }
+    [data-theme="dark"] .balance-negative { color: #f87171; }
+    .status-badge-active   { background: rgba(22,163,74,0.12);  color: #15803d; border: 1px solid rgba(22,163,74,0.3);  font-size: 0.75rem; padding: 2px 8px; border-radius: 12px; font-weight: 600; }
+    .status-badge-inactive { background: rgba(107,114,128,0.12);color: #6b7280; border: 1px solid rgba(107,114,128,0.3);font-size: 0.75rem; padding: 2px 8px; border-radius: 12px; font-weight: 600; }
+    [data-theme="dark"] .status-badge-active { color: #4ade80; }
+    #section-account-config .filter-bar { display: flex; flex-wrap: nowrap; gap: 6px; align-items: center; }
+    #section-account-config .filter-bar .form-control,
+    #section-account-config .filter-bar .form-select { font-size: 0.82rem; padding: 5px 8px; height: auto; width: auto; }
+    #section-account-config .filter-bar #acctSearch { width: 160px; }
+    #section-account-config .filter-bar #acctTypeFilter,
+    #section-account-config .filter-bar #acctStatusFilter { width: 120px; }
+    /* Compact sidebar stat cards */
+    #section-account-config .stat-card .card-body { padding: 14px 16px; }
+    #section-account-config .stat-card .sc-top { margin-bottom: 0; }
+    #section-account-config .stat-card .sc-divider { margin: 10px 0; }
+    #section-account-config .stat-card .stat-card-amount { font-size: 1.3rem; margin: 0; }
+    /* Combined summary card */
+    .acct-summary-list { list-style: none; margin: 0; padding: 0; }
+    .acct-summary-item { border-bottom: 1px solid var(--border-color); padding: 0; }
+    .acct-summary-item:last-child { border-bottom: none; }
+    .acct-summary-group { flex-direction: column; align-items: stretch; }
+    .acct-summary-total { background: var(--bg-table-stripe, rgba(0,0,0,.025)); }
+    .acct-summary-row { display: flex; align-items: center; gap: 12px; padding: 13px 16px; }
+    .acct-summary-icon { width: 34px; height: 34px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.95rem; flex-shrink: 0; }
+    .acct-summary-label { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+    .acct-summary-title { font-size: 0.83rem; font-weight: 600; color: var(--text-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .acct-summary-sub { font-size: 0.72rem; color: var(--text-muted-custom, #888); }
+    .acct-summary-amount { font-size: 0.9rem; font-weight: 700; white-space: nowrap; color: var(--color-primary, #255F38); }
+    /* Per-account breakdown rows */
+    .acct-breakdown-list { padding: 0 12px 8px 62px; display: flex; flex-direction: column; gap: 3px; }
+    .acct-breakdown-list:empty { display: none; }
+    .acct-breakdown-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.76rem; color: var(--text-muted-custom, #888); }
+    .acct-breakdown-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+    .acct-breakdown-bal { font-weight: 600; white-space: nowrap; margin-left: 8px; color: var(--color-primary, #255F38); }
+    .acct-breakdown-bal.bal-credit { color: #dc2626; }
   </style>
 </head>
 <body>
@@ -95,6 +146,9 @@
         </a>
         <a class="settings-nav-item" data-section="categories" href="#">
           <i class="fas fa-tags"></i> Categories
+        </a>
+        <a class="settings-nav-item" data-section="account-config" href="#">
+          <i class="fas fa-wallet"></i> Account Configuration
         </a>
         <a class="settings-nav-item" data-section="security" href="#">
           <i class="fas fa-shield-alt"></i> Privacy &amp; Security
@@ -576,6 +630,131 @@
           </div>
         </section>
 
+        <!-- ===== ACCOUNT CONFIGURATION ===== -->
+        <section class="settings-section" id="section-account-config">
+          <div class="d-flex align-items-center justify-content-between mb-1">
+            <div class="settings-section-heading mb-0"><i class="fas fa-wallet" style="color:var(--accent-color)"></i> Account Configuration</div>
+            <button class="btn btn-sm btn-primary" onclick="openAddModal()" title="Add Account"><i class="fas fa-plus"></i></button>
+          </div>
+          <p class="settings-section-desc">Manage all your financial accounts and track their balances in real time.</p>
+
+          <!-- Two-column layout: summary left, table right -->
+          <div class="row g-3 align-items-start">
+
+            <!-- LEFT: Combined Summary Card -->
+            <div class="col-12 col-lg-3">
+              <div class="card acct-summary-card h-100">
+                <div class="card-header">
+                  <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Balance Summary</h6>
+                </div>
+                <div class="card-body p-0">
+                  <ul class="acct-summary-list">
+                    <li class="acct-summary-item acct-summary-group">
+                      <div class="acct-summary-row">
+                        <span class="acct-summary-icon acct-icon-bank"><i class="fas fa-university"></i></span>
+                        <span class="acct-summary-label">
+                          <span class="acct-summary-title">Bank Balance</span>
+                          <span class="acct-summary-sub">Bank + Debit</span>
+                        </span>
+                        <span class="acct-summary-amount" id="summaryBank">…</span>
+                      </div>
+                      <div class="acct-breakdown-list" id="summaryBankSubs"></div>
+                    </li>
+                    <li class="acct-summary-item acct-summary-group">
+                      <div class="acct-summary-row">
+                        <span class="acct-summary-icon acct-icon-mfs"><i class="fas fa-mobile-alt"></i></span>
+                        <span class="acct-summary-label">
+                          <span class="acct-summary-title">MFS Balance</span>
+                          <span class="acct-summary-sub">bKash, Nagad…</span>
+                        </span>
+                        <span class="acct-summary-amount" id="summaryMfs">…</span>
+                      </div>
+                      <div class="acct-breakdown-list" id="summaryMfsSubs"></div>
+                    </li>
+                    <li class="acct-summary-item acct-summary-group">
+                      <div class="acct-summary-row">
+                        <span class="acct-summary-icon acct-icon-cash"><i class="fas fa-money-bill-wave"></i></span>
+                        <span class="acct-summary-label">
+                          <span class="acct-summary-title">Cash</span>
+                          <span class="acct-summary-sub">Physical cash</span>
+                        </span>
+                        <span class="acct-summary-amount" id="summaryCash">…</span>
+                      </div>
+                      <div class="acct-breakdown-list" id="summaryCashSubs"></div>
+                    </li>
+                    <li class="acct-summary-item acct-summary-group">
+                      <div class="acct-summary-row">
+                        <span class="acct-summary-icon acct-icon-credit"><i class="fas fa-credit-card"></i></span>
+                        <span class="acct-summary-label">
+                          <span class="acct-summary-title">Credit Outstanding</span>
+                          <span class="acct-summary-sub">Credit cards</span>
+                        </span>
+                        <span class="acct-summary-amount balance-credit" id="summaryCreditOutstanding">…</span>
+                      </div>
+                      <div class="acct-breakdown-list" id="summaryCreditSubs"></div>
+                    </li>
+                    <li class="acct-summary-item acct-summary-total">
+                      <div class="acct-summary-row">
+                        <span class="acct-summary-icon acct-icon-card"><i class="fas fa-coins"></i></span>
+                        <span class="acct-summary-label">
+                          <span class="acct-summary-title">Total Available</span>
+                          <span class="acct-summary-sub">Bank + MFS + Cash</span>
+                        </span>
+                        <span class="acct-summary-amount balance-positive fw-bold" id="summaryAvailable">…</span>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <!-- RIGHT: Account Table -->
+            <div class="col-12 col-lg-9">
+              <div class="card">
+                <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+                  <h6 class="mb-0"><i class="fas fa-list me-2"></i>All Accounts</h6>
+                  <div class="filter-bar">
+                    <input type="text" class="form-control" id="acctSearch" placeholder="Search…" oninput="renderTable()">
+                    <select class="form-select" id="acctTypeFilter" onchange="renderTable()">
+                      <option value="">All Types</option>
+                      <option value="BANK">Bank</option>
+                      <option value="DEBIT_CARD">Debit Card</option>
+                      <option value="CREDIT_CARD">Credit Card</option>
+                      <option value="MFS">MFS</option>
+                      <option value="CASH">Cash</option>
+                    </select>
+                    <select class="form-select" id="acctStatusFilter" onchange="renderTable()">
+                      <option value="">All Status</option>
+                      <option value="ACTIVE">Active</option>
+                      <option value="INACTIVE">Inactive</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="card-body p-0">
+                  <div class="table-responsive">
+                    <table class="table table-sm acct-table mb-0">
+                      <thead>
+                        <tr>
+                          <th>Account</th>
+                          <th>Type</th>
+                          <th>Provider / Bank</th>
+                          <th>Balance</th>
+                          <th>Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody id="accountTableBody">
+                        <tr><td colspan="6" class="text-center text-muted py-4">Loading…</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- end two-column row -->
+        </section>
+
         <!-- ===== ABOUT ===== -->
         <section class="settings-section" id="section-about">
           <div class="settings-section-heading"><i class="fas fa-info-circle" style="color:var(--accent-color)"></i> About FinTrack</div>
@@ -675,6 +854,148 @@
   <!-- Modals -->
   <input type="file" id="avatarFileInput" accept="image/*" style="display:none">
 
+  <!-- ── Add / Edit Financial Account Modal ── -->
+  <div class="modal fade" id="accountModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:520px">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="accountModalTitle"><i class="fas fa-wallet me-2"></i>Add Account</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="editAccountId">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Account Type <span class="text-danger">*</span></label>
+            <select class="form-select" id="acctType" onchange="onAccountTypeChange()">
+              <option value="">Select type…</option>
+              <option value="BANK">🏦 Bank Account</option>
+              <option value="DEBIT_CARD">💳 Debit Card</option>
+              <option value="CREDIT_CARD">💳 Credit Card</option>
+              <option value="MFS">📱 Mobile Financial Service (MFS)</option>
+              <option value="CASH">💵 Cash</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Account Nickname <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="acctNickname" placeholder="e.g., DBBL Salary, bKash Personal">
+          </div>
+          <div class="mb-3 field-bank field-debit field-credit" style="display:none">
+            <label class="form-label">Bank Name</label>
+            <select class="form-select" id="acctBankName">
+              <option value="">Select bank…</option>
+              <option value="DBBL">Dutch-Bangla Bank (DBBL)</option>
+              <option value="Brac">BRAC Bank</option>
+              <option value="City">City Bank</option>
+              <option value="SCB">Standard Chartered Bank (SCB)</option>
+              <option value="EBL">Eastern Bank (EBL)</option>
+              <option value="Islami">Islami Bank</option>
+              <option value="Sonali">Sonali Bank</option>
+              <option value="AB">AB Bank</option>
+              <option value="Prime">Prime Bank</option>
+              <option value="Mutual Trust">Mutual Trust Bank</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="mb-3 field-bank field-debit field-credit field-mfs" style="display:none">
+            <label class="form-label">Account / Card Number <small class="text-muted">(optional, last 4 digits)</small></label>
+            <input type="text" class="form-control" id="acctNumber" placeholder="e.g., ****1234" maxlength="20">
+          </div>
+          <div class="mb-3 field-debit field-credit" style="display:none">
+            <label class="form-label">Card Network</label>
+            <select class="form-select" id="acctCardType">
+              <option value="">Select…</option>
+              <option value="VISA">Visa</option>
+              <option value="MASTERCARD">Mastercard</option>
+              <option value="AMEX">American Express</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+          <div class="mb-3 field-debit" style="display:none">
+            <label class="form-label">Linked Bank Account <small class="text-muted">(optional)</small></label>
+            <select class="form-select" id="acctLinkedAccount"><option value="">-- None --</option></select>
+          </div>
+          <div class="mb-3 field-bank" style="display:none">
+            <label class="form-label">Account Subtype</label>
+            <select class="form-select" id="acctProviderBank">
+              <option value="Savings">Savings</option>
+              <option value="Current">Current</option>
+              <option value="Salary">Salary</option>
+              <option value="Student">Student</option>
+            </select>
+          </div>
+          <div class="mb-3 field-mfs" style="display:none">
+            <label class="form-label">MFS Provider</label>
+            <select class="form-select" id="acctProviderMfs">
+              <option value="bKash">bKash</option>
+              <option value="Nagad">Nagad</option>
+              <option value="Rocket">Rocket</option>
+              <option value="Upay">Upay</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="mb-3 field-mfs" style="display:none">
+            <label class="form-label">Mobile Number <small class="text-muted">(optional)</small></label>
+            <input type="text" class="form-control" id="acctMobile" placeholder="01XXXXXXXXX">
+          </div>
+          <div class="row g-2 mb-3 field-credit" style="display:none">
+            <div class="col-4">
+              <label class="form-label">Credit Limit</label>
+              <div class="input-group input-group-sm"><span class="input-group-text">৳</span>
+                <input type="number" class="form-control" id="acctCreditLimit" min="0" step="1000" placeholder="0">
+              </div>
+            </div>
+            <div class="col-4">
+              <label class="form-label">Statement Day</label>
+              <input type="number" class="form-control form-control-sm" id="acctStatementDay" min="1" max="31" placeholder="e.g. 25">
+            </div>
+            <div class="col-4">
+              <label class="form-label">Due Day</label>
+              <input type="number" class="form-control form-control-sm" id="acctDueDay" min="1" max="31" placeholder="e.g. 10">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold" id="openingBalanceLabel">Opening Balance</label>
+            <div class="input-group"><span class="input-group-text">৳</span>
+              <input type="number" class="form-control" id="acctOpeningBalance" min="0" step="0.01" value="0" placeholder="0.00">
+            </div>
+            <div class="form-text" id="openingBalanceHint">Starting balance for this account.</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Status</label>
+            <select class="form-select" id="acctStatus">
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" title="Cancel"><i class="fas fa-times"></i></button>
+          <button type="button" class="btn btn-primary" id="saveAccountBtn" onclick="saveAccount()" title="Save"><i class="fas fa-check"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Delete Financial Account Confirmation Modal ── -->
+  <div class="modal fade" id="deleteFinAccountModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:420px">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title text-danger"><i class="fas fa-trash-alt me-2"></i>Delete Account</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body py-3">
+          <p>Are you sure you want to delete <strong id="deleteAccountName"></strong>?</p>
+          <p class="text-muted small">This cannot be undone. Accounts with transactions cannot be deleted.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" title="Cancel"><i class="fas fa-times"></i></button>
+          <button type="button" class="btn btn-danger" onclick="confirmDelete()" title="Delete"><i class="fas fa-trash-alt"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="modal fade" id="deleteCatModal" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content" style="background:var(--bg-modal,#fff)">
@@ -740,6 +1061,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="/js/sidebar.js"></script>
+  <script src="/js/accounts.js"></script>
   <script>
 // ============== Settings storage ==============
 function getUserStorageKey(baseKey) {
@@ -832,6 +1154,7 @@ document.querySelectorAll('.settings-nav-item').forEach(function(item){
     if (sec) sec.classList.add('active');
     if (section === 'categories' && allCategories.length === 0) loadCategories();
     if (section === 'security') loadUserProfile();
+    if (section === 'account-config') { if (typeof loadAll === 'function') loadAll(); }
   });
 });
 

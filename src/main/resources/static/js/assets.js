@@ -20,6 +20,7 @@
     let summary      = null;
     let currentPage  = 1;
     let syncPollTimer = null;
+    let sellDiscountPct = 17;   // default sell deduction %
 
     // ── Init ──────────────────────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', function () {
@@ -239,6 +240,12 @@
         }
     }
 
+    window.setSellDiscount = function (val) {
+        const n = parseFloat(val);
+        sellDiscountPct = (!isNaN(n) && n >= 0 && n <= 100) ? n : 17;
+        renderTable();
+    };
+
     window.renderTable = function () {
         const query   = (document.getElementById('searchInput')?.value || '').toLowerCase();
         const purity  = document.getElementById('filterPurity')?.value || '';
@@ -272,7 +279,24 @@
         }
 
         renderPagination(total, pages);
+        renderSummaryFoot(filtered);
     };
+
+    function formatVoriBreakdown(grams) {
+        const totalVori = grams * VORI_PER_GRAM;
+        const vori  = Math.floor(totalVori);
+        const remAna = (totalVori - vori) * 16;
+        const ana   = Math.floor(remAna);
+        const remRati = (remAna - ana) * 6;
+        const rati  = Math.floor(remRati);
+        const point = Math.round((remRati - rati) * 5);
+        const parts = [];
+        if (vori > 0) parts.push(`${vori} vori`);
+        parts.push(`${ana} ana`);
+        parts.push(`${rati} roti`);
+        parts.push(`${point} point`);
+        return parts.join(' ');
+    }
 
     function renderAssetRow(a) {
         const gain     = (a.gainLoss   || 0);
@@ -284,8 +308,11 @@
             : '<span class="text-muted">—</span>';
 
         const conv = a.weightConversions || convertAll(a.weight, a.weightUnit);
-        const weightDisplay = `${a.weight} ${a.weightUnit.charAt(0) + a.weightUnit.slice(1).toLowerCase()}
-            <small class="d-block text-muted">${conv.GRAM?.toFixed(3)} g / ${conv.VORI?.toFixed(4)} Vori</small>`;
+        const grams = conv.GRAM || 0;
+        const unitLabel = a.weightUnit.charAt(0) + a.weightUnit.slice(1).toLowerCase();
+        const weightDisplay = `${a.weight} ${unitLabel}<small class="d-block text-muted">${formatVoriBreakdown(grams)}</small>`;
+
+        const sellPrice = a.currentValue ? a.currentValue * (1 - sellDiscountPct / 100) : null;
 
         return `<tr>
             <td>
@@ -303,7 +330,7 @@
             <td class="fw-semibold">${a.currentValue ? '৳' + fmt(a.currentValue) : '<span class="text-muted">—</span>'}</td>
             <td>${a.purchasePrice ? '৳' + fmt(a.purchasePrice) : '<span class="text-muted">—</span>'}</td>
             <td>${gainHtml}</td>
-            <td style="font-size:0.8rem;color:var(--text-muted-custom);">${a.updatedAt ? fmtDate(a.updatedAt) : '—'}</td>
+            <td class="fw-semibold">${sellPrice ? '৳' + fmt(sellPrice) : '<span class="text-muted">—</span>'}</td>
             <td>
                 <div class="d-flex gap-1">
                     <button class="btn btn-xs btn-outline-primary" title="Edit" onclick="openEditModal(${a.id})" style="padding:3px 7px;font-size:0.78rem;">
@@ -314,6 +341,34 @@
                     </button>
                 </div>
             </td>
+        </tr>`;
+    }
+
+    function renderSummaryFoot(assets) {
+        const tfoot = document.getElementById('assetTableFoot');
+        if (!tfoot) return;
+        if (!assets || assets.length === 0) { tfoot.innerHTML = ''; return; }
+
+        let totalCurrentValue = 0, totalPurchasePrice = 0, totalGain = 0, totalSellPrice = 0;
+        let hasCurrentValue = false, hasPurchase = false;
+
+        for (const a of assets) {
+            if (a.currentValue) { totalCurrentValue += a.currentValue; hasCurrentValue = true; }
+            if (a.purchasePrice) { totalPurchasePrice += a.purchasePrice; hasPurchase = true; }
+            if (a.gainLoss) totalGain += a.gainLoss;
+            if (a.currentValue) totalSellPrice += a.currentValue * (1 - sellDiscountPct / 100);
+        }
+
+        const gainCls  = totalGain >= 0 ? 'gain-positive' : 'gain-negative';
+        const gainSign = totalGain >= 0 ? '+' : '';
+
+        tfoot.innerHTML = `<tr>
+            <td colspan="4" style="color:var(--text-muted-custom);font-size:0.78rem;">Totals (${assets.length} asset${assets.length !== 1 ? 's' : ''})</td>
+            <td>${hasCurrentValue ? '৳' + fmt(totalCurrentValue) : '<span class="text-muted">—</span>'}</td>
+            <td>${hasPurchase ? '৳' + fmt(totalPurchasePrice) : '<span class="text-muted">—</span>'}</td>
+            <td><span class="${gainCls}">${hasPurchase ? gainSign + '৳' + fmt(Math.abs(totalGain)) : '<span class="text-muted">—</span>'}</span></td>
+            <td>${hasCurrentValue ? '৳' + fmt(totalSellPrice) : '<span class="text-muted">—</span>'}</td>
+            <td></td>
         </tr>`;
     }
 

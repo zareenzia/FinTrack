@@ -176,6 +176,20 @@
         </div>
     </div>
 
+    <!-- Account Balances Widget -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <h6 class="mb-0"><i class="fas fa-wallet me-2"></i>Account Balances</h6>
+                </div>
+                <div class="card-body" id="accountBalancesWidget">
+                    <span class="text-muted small">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
         <div class="col-md-12">
             <div class="card tx-card">
@@ -345,6 +359,39 @@
         } catch(e) {}
     }
 
+    function escHtml(s) {
+        return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function fmt(v) {
+        return Number(v||0).toLocaleString('en-BD', {minimumFractionDigits:0, maximumFractionDigits:2});
+    }
+    function accountIcon(type) {
+        var m = {BANK:'🏦',DEBIT_CARD:'💳',CREDIT_CARD:'💳',MFS:'📱',CASH:'💵'};
+        return m[type] || '💰';
+    }
+    async function loadAccountBalances() {
+        try {
+            var token = localStorage.getItem('token');
+            var resp = await fetch('/api/accounts', { headers: { 'Authorization': 'Bearer ' + (token || '') } });
+            if (!resp.ok) return;
+            var accounts = await resp.json();
+            var widget = document.getElementById('accountBalancesWidget');
+            if (!widget) return;
+            if (!accounts || accounts.length === 0) {
+                widget.innerHTML = '<span class="text-muted small">No accounts configured. <a href="/settings">Configure accounts →</a></span>';
+                return;
+            }
+            var html = accounts.map(function(a) {
+                return '<div class="d-inline-flex align-items-center gap-2 me-4 mb-2">' +
+                    '<span style="font-size:1.1rem;">' + accountIcon(a.accountType) + '</span>' +
+                    '<span style="font-size:0.88rem;">' + escHtml(a.accountNickname) + '</span>' +
+                    '<span style="font-weight:700;font-size:0.9rem;color:' + (a.accountType==='CREDIT_CARD'?'#dc2626':'var(--accent-color)') + ';">৳' + fmt(a.currentBalance) + '</span>' +
+                    '</div>';
+            }).join('');
+            widget.innerHTML = '<div class="d-flex flex-wrap">' + html + '</div>';
+        } catch(e) { console.error('loadAccountBalances error:', e); }
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         // Initialise delete modal
         txDeleteModal = new bootstrap.Modal(document.getElementById('dashboardDeleteTxModal'));
@@ -392,6 +439,7 @@
         }
 
         loadDashboard();
+        loadAccountBalances();
     });
 
     window.addEventListener('resize', fitStatAmounts);

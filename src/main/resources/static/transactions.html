@@ -11,6 +11,10 @@
     <link rel="icon" type="image/png" href="/images/logo.png">
     <style>
         .amount-calc-btn:hover { background: var(--surface-color) !important; border-color: var(--surface-color) !important; }
+        /* Transfer flow layout */
+        .transfer-flow { display: flex; align-items: flex-end; gap: 8px; }
+        .transfer-flow-field { flex: 1; min-width: 0; }
+        .transfer-flow-arrow { flex-shrink: 0; padding-bottom: 6px; color: var(--accent-color); font-size: 1.1rem; }
     </style>
 </head>
 <body>
@@ -25,35 +29,35 @@
 
     <div class="row mb-4 g-4">
         <!-- Add New Transaction -->
-        <div class="col-md-6">
+        <div class="col-md-7">
             <div class="card h-100">
                 <div class="card-header">
                     <h6 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Add New Transaction</h6>
                 </div>
                 <div class="card-body">
                     <form id="transactionForm">
-                        <div class="mb-2">
-                            <label for="description" class="form-label">Description</label>
-                            <input type="text" class="form-control form-control-sm" id="description" required placeholder="e.g., Grocery shopping">
-                        </div>
-                        <div class="mb-2">
-                            <label for="amount" class="form-label">Amount</label>
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text">৳</span>
-                                <input type="number" class="form-control" id="amount" step="0.01" required placeholder="0.00">
-                                <button type="button" class="input-group-text amount-calc-btn" id="amountCalcBtn" title="Open Calculator" onclick="if(window.openCalcForInput) window.openCalcForInput('amount'); else if(window.openCalc) window.openCalc();" style="cursor:pointer; background:var(--accent-color); border-color:var(--accent-color); color:#fff; transition:background 0.2s;">
-                                    <i class="fas fa-calculator" style="font-size:0.8rem;"></i>
-                                </button>
+                        <div class="row g-3">
+                            <div class="col-md-6 mb-2">
+                                <label for="description" class="form-label">Description</label>
+                                <input type="text" class="form-control form-control-sm" id="description" required placeholder="e.g., Grocery shopping">
                             </div>
-                        </div>
-                        <div class="row g-2 mb-2">
-                            <div class="col-7">
+                            <div class="col-md-6 mb-2">
+                                <label for="amount" class="form-label">Amount</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">৳</span>
+                                    <input type="number" class="form-control" id="amount" step="0.01" required placeholder="0.00">
+                                    <button type="button" class="input-group-text amount-calc-btn" id="amountCalcBtn" title="Open Calculator" onclick="if(window.openCalcForInput) window.openCalcForInput('amount'); else if(window.openCalc) window.openCalc();" style="cursor:pointer; background:var(--accent-color); border-color:var(--accent-color); color:#fff; transition:background 0.2s;">
+                                        <i class="fas fa-calculator" style="font-size:0.8rem;"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-2">
                                 <label for="category" class="form-label">Category</label>
                                 <select class="form-select form-select-sm" id="category" required>
                                     <option value="">Select category</option>
                                 </select>
                             </div>
-                            <div class="col-5">
+                            <div class="col-md-4 mb-2">
                                 <label for="type" class="form-label">Type</label>
                                 <select class="form-select form-select-sm" id="type" required>
                                     <option value="expense">Expense</option>
@@ -61,53 +65,83 @@
                                     <option value="savings">Savings</option>
                                 </select>
                             </div>
+                            <div class="col-md-4 mb-2">
+                                <label for="date" class="form-label">Date</label>
+                                <input type="date" class="form-control form-control-sm" id="date" required>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <label for="sourceAccount" class="form-label">Account <small class="text-muted">(optional)</small></label>
+                                <select class="form-select form-select-sm" id="sourceAccount">
+                                    <option value="">-- No account --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-2 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary w-100 btn-sm" style="padding:8px;">
+                                    <i class="fas fa-save me-1"></i> Add Transaction
+                                </button>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="date" class="form-label">Date</label>
-                            <input type="date" class="form-control form-control-sm" id="date" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100 btn-sm" style="padding:8px;">
-                            <i class="fas fa-save me-1"></i> Add Transaction
-                        </button>
                     </form>
                 </div>
             </div>
         </div>
 
-        <!-- Assets -->
-        <div class="col-md-6">
+        <!-- Log Cash Transfer -->
+        <div class="col-md-5">
             <div class="card h-100">
                 <div class="card-header">
-                    <h6 class="mb-0"><i class="fas fa-building me-2"></i>Assets</h6>
+                    <h6 class="mb-0"><i class="fas fa-random me-2"></i>Log Cash Transfer</h6>
                 </div>
-                <div class="card-body">
-                    <form id="assetForm" class="mb-3">
-                        <div class="row g-2 mb-2">
-                            <div class="col-7">
-                                <label for="assetName" class="form-label">Asset Name</label>
-                                <input type="text" class="form-control form-control-sm" id="assetName" required placeholder="e.g., Savings Account">
+                <div class="card-body d-flex flex-column">
+                    <p class="text-muted small mb-3">Move money between any of your accounts — bank, MFS, cash wallet, or credit card. Balances update instantly.</p>
+                    <form id="transferForm" class="flex-grow-1 d-flex flex-column">
+                        <!-- From → To visual flow -->
+                        <div class="transfer-flow mb-3">
+                            <div class="transfer-flow-field">
+                                <label class="form-label fw-semibold"><i class="fas fa-arrow-up-from-bracket me-1 text-danger"></i>From Account</label>
+                                <select class="form-select form-select-sm" id="transferFrom" required>
+                                    <option value="">Select source…</option>
+                                </select>
                             </div>
-                            <div class="col-5">
-                                <label for="assetType" class="form-label">Type</label>
-                                <input type="text" class="form-control form-control-sm" id="assetType" placeholder="Cash, Property…">
+                            <div class="transfer-flow-arrow">
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                            <div class="transfer-flow-field">
+                                <label class="form-label fw-semibold"><i class="fas fa-arrow-down-to-bracket me-1 text-success"></i>To Account</label>
+                                <select class="form-select form-select-sm" id="transferTo" required>
+                                    <option value="">Select destination…</option>
+                                </select>
                             </div>
                         </div>
+
                         <div class="mb-3">
-                            <label for="assetValue" class="form-label">Current Value</label>
+                            <label class="form-label fw-semibold">Amount</label>
                             <div class="input-group input-group-sm">
                                 <span class="input-group-text">৳</span>
-                                <input type="number" class="form-control" id="assetValue" step="0.01" min="0" required placeholder="0.00">
+                                <input type="number" class="form-control" id="transferAmount" step="0.01" min="0.01" required placeholder="0.00">
+                                <button type="button" class="input-group-text amount-calc-btn" title="Open Calculator" onclick="if(window.openCalcForInput) window.openCalcForInput('transferAmount'); else if(window.openCalc) window.openCalc();" style="cursor:pointer; background:var(--accent-color); border-color:var(--accent-color); color:#fff;">
+                                    <i class="fas fa-calculator" style="font-size:0.8rem;"></i>
+                                </button>
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-primary btn-sm w-100" style="padding:8px;">
-                            <i class="fas fa-plus me-1"></i> Add Asset
-                        </button>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label">Date</label>
+                                <input type="date" class="form-control form-control-sm" id="transferDate" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Note <small class="text-muted">(optional)</small></label>
+                                <input type="text" class="form-control form-control-sm" id="transferNote" placeholder="e.g., Salary split">
+                            </div>
+                        </div>
+
+                        <div class="mt-auto">
+                            <button type="submit" class="btn btn-success w-100 btn-sm" style="padding:8px;">
+                                <i class="fas fa-exchange-alt me-1"></i> Log Transfer
+                            </button>
+                        </div>
                     </form>
-                    <div class="d-flex justify-content-between align-items-center mb-2 px-1" style="font-size:0.85rem;">
-                        <span style="font-weight:600;">Total Asset Value</span>
-                        <span id="total-asset-value" style="font-weight:700;color:var(--accent-color);">$0.00</span>
-                    </div>
-                    <div id="assetList"></div>
                 </div>
             </div>
         </div>
@@ -226,7 +260,6 @@
         } catch(e) {}
         return baseKey;
     }
-    let cachedAssets = [];
     let editCategoryId = null;
     let deleteCategoryId = null;
     let manageCategoriesModal = null;
@@ -266,8 +299,9 @@
         document.getElementById('createCategoryBtn').addEventListener('click', createNewCategory);
         
         loadCategories(document.getElementById('type').value);
-        loadAssets();
+        loadAccountsIntoSelect();
         applyCurrencySymbolToInputs();
+        document.getElementById('transferDate').valueAsDate = new Date();
     });
 
     function openCategoryManagementModal(e) {
@@ -302,12 +336,15 @@
 
     document.getElementById('transactionForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const srcAcctEl = document.getElementById('sourceAccount');
         const transaction = {
             description: document.getElementById('description').value,
             amount: parseFloat(document.getElementById('amount').value),
             category_id: parseInt(document.getElementById('category').value, 10),
             transaction_type: document.getElementById('type').value,
-            date: document.getElementById('date').value
+            date: document.getElementById('date').value,
+            sourceAccountId: srcAcctEl && srcAcctEl.value ? parseInt(srcAcctEl.value, 10) : null,
+            destinationAccountId: null
         };
 
         try {
@@ -330,85 +367,52 @@
         }
     });
 
-    document.getElementById('assetForm').addEventListener('submit', async (e) => {
+    document.getElementById('transferForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const asset = {
-            name: document.getElementById('assetName').value.trim(),
-            type: document.getElementById('assetType').value.trim(),
-            value: parseFloat(document.getElementById('assetValue').value),
-            description: ''
+        const fromId = document.getElementById('transferFrom').value;
+        const toId   = document.getElementById('transferTo').value;
+        const amount = parseFloat(document.getElementById('transferAmount').value);
+        const note   = document.getElementById('transferNote').value.trim();
+        const date   = document.getElementById('transferDate').value;
+
+        if (!fromId || !toId) {
+            showTopNotification('Please select both From and To accounts.', 'error'); return;
+        }
+        if (fromId === toId) {
+            showTopNotification('Source and destination accounts must be different.', 'error'); return;
+        }
+        if (!amount || amount <= 0) {
+            showTopNotification('Enter a valid amount.', 'error'); return;
+        }
+
+        const payload = {
+            description: note || 'Transfer',
+            amount: amount,
+            category_id: null,
+            transaction_type: 'transfer',
+            date: date,
+            sourceAccountId: parseInt(fromId, 10),
+            destinationAccountId: parseInt(toId, 10)
         };
 
-        if (!asset.name || Number.isNaN(asset.value)) {
-            showTopNotification('Asset name and value are required.', 'error');
-            return;
-        }
-
         try {
-            const response = await fetch('/api/assets', {
+            const response = await fetch('/api/transactions', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(asset)
+                body: JSON.stringify(payload)
             });
             if (response.ok) {
-                document.getElementById('assetForm').reset();
-                loadAssets();
-                showTopNotification('Asset added successfully.', 'success');
+                document.getElementById('transferForm').reset();
+                document.getElementById('transferDate').valueAsDate = new Date();
+                showTopNotification('Transfer logged successfully.', 'success');
             } else {
-                const errorData = await response.json().catch(() => null);
-                showTopNotification(errorData?.error || 'Failed to add asset.', 'error');
+                const err = await response.json().catch(() => null);
+                showTopNotification((err && err.error) || 'Failed to log transfer.', 'error');
             }
         } catch (error) {
-            showTopNotification('Unable to add asset right now.', 'error');
+            showTopNotification('Unable to log transfer right now.', 'error');
         }
     });
-
-    async function loadAssets() {
-        try {
-            const response = await fetch('/api/assets');
-            const assets = await response.json();
-            cachedAssets = assets;
-            const total = assets.reduce((sum, a) => sum + Number(a.value || 0), 0);
-            document.getElementById('total-asset-value').textContent = formatAmount(total);
-
-            const list = document.getElementById('assetList');
-            if (!assets.length) {
-                list.innerHTML = '<p class="text-muted mb-0">No assets added yet</p>';
-                return;
-            }
-
-            list.innerHTML = assets.map(asset => `
-                <div class="card mb-2">
-                    <div class="card-body py-2 d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="mb-1">${asset.name}</h6>
-                            <small class="text-muted">${asset.type || 'General'}</small>
-                        </div>
-                        <div class="text-end">
-                            <div class="fw-bold text-secondary">${formatAmount(asset.value)}</div>
-                            <button class="btn btn-sm btn-danger" onclick="deleteAsset(${asset.id})">Delete</button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        } catch (error) {
-            showTopNotification('Unable to load assets.', 'error');
-        }
-    }
-
-    async function deleteAsset(id) {
-        try {
-            const response = await fetch(`/api/assets/${id}`, {method: 'DELETE'});
-            if (response.ok) {
-                loadAssets();
-                showTopNotification('Asset deleted successfully.', 'success');
-            } else {
-                showTopNotification('Failed to delete asset.', 'error');
-            }
-        } catch (error) {
-            showTopNotification('Unable to delete asset right now.', 'error');
-        }
-    }
 
     function showTopNotification(message, type = 'success') {
         const container = document.getElementById('toastContainer');
@@ -584,6 +588,22 @@
         } catch (error) {
             showTopNotification('Unable to create category right now.', 'error');
         }
+    }
+    async function loadAccountsIntoSelect() {
+        try {
+            const resp = await fetch('/api/accounts');
+            if (!resp.ok) return;
+            const accounts = await resp.json();
+        const label = a => a.accountNickname + (a.bankName ? ' (' + a.bankName + ')' : a.provider ? ' (' + a.provider + ')' : '');
+        const srcSel  = document.getElementById('sourceAccount');
+        const fromSel = document.getElementById('transferFrom');
+        const toSel   = document.getElementById('transferTo');
+        const srcOpts = '<option value="">-- No account --</option>' + accounts.map(a => `<option value="${a.id}">${label(a)}</option>`).join('');
+        const txOpts  = '<option value="">Select…</option>' + accounts.map(a => `<option value="${a.id}">${label(a)}</option>`).join('');
+        if (srcSel)  srcSel.innerHTML  = srcOpts;
+        if (fromSel) fromSel.innerHTML = txOpts;
+        if (toSel)   toSel.innerHTML   = txOpts;
+        } catch(e) { console.warn('Could not load accounts for select:', e); }
     }
 
 </script>
