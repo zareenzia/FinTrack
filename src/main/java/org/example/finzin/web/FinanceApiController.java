@@ -12,6 +12,8 @@ import org.example.finzin.repository.NoteRepository;
 import org.example.finzin.repository.TodoRepository;
 import org.example.finzin.repository.TransactionRepository;
 import org.example.finzin.service.gold.GoldAssetService;
+import org.example.finzin.entity.AccountEntity;
+import org.example.finzin.repository.AccountRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -45,14 +47,16 @@ public class FinanceApiController {
     private final NoteRepository noteRepository;
     private final TodoRepository todoRepository;
     private final GoldAssetService goldAssetService;
+    private final AccountRepository accountRepository;
 
-    public FinanceApiController(CategoryRepository categoryRepository, TransactionRepository transactionRepository, AssetRepository assetRepository, NoteRepository noteRepository, TodoRepository todoRepository, GoldAssetService goldAssetService) {
+    public FinanceApiController(CategoryRepository categoryRepository, TransactionRepository transactionRepository, AssetRepository assetRepository, NoteRepository noteRepository, TodoRepository todoRepository, GoldAssetService goldAssetService, AccountRepository accountRepository) {
         this.categoryRepository = categoryRepository;
         this.transactionRepository = transactionRepository;
         this.assetRepository = assetRepository;
         this.noteRepository = noteRepository;
         this.todoRepository = todoRepository;
         this.goldAssetService = goldAssetService;
+        this.accountRepository = accountRepository;
     }
     
     private Long getUserId(HttpServletRequest request) {
@@ -70,8 +74,9 @@ public class FinanceApiController {
                 ? categoryRepository.findByUserIdAndCategoryTypeOrGeneral(userId, type.toLowerCase(Locale.ROOT))
                 : categoryRepository.findByUserId(userId);
 
-        // Build transaction-count map in a single pass
+        // Build transaction-count map — skip transfer transactions that have no category
         Map<Long, Long> txCounts = transactionRepository.findByUserId(userId).stream()
+                .filter(t -> t.getCategory() != null)
                 .collect(Collectors.groupingBy(t -> t.getCategory().getId(), Collectors.counting()));
 
         return categories.stream()
@@ -233,7 +238,7 @@ public class FinanceApiController {
         List<TransactionEntity> transactions = transactionRepository.findByUserId(userId);
         
         return transactions.stream()
-                .filter(t -> categoryIdFilter == null || t.getCategory().getId().equals(categoryIdFilter))
+                .filter(t -> categoryIdFilter == null || (t.getCategory() != null && t.getCategory().getId().equals(categoryIdFilter)))
                 .filter(t -> type == null || type.isBlank() || t.getTransactionType().equalsIgnoreCase(type))
                 .sorted(Comparator.comparing(TransactionEntity::getDate).reversed())
                 .limit(limit)
@@ -249,20 +254,25 @@ public class FinanceApiController {
                 || body.description == null
                 || body.description.isBlank()
                 || body.amount == null
-                || body.category_id == null
                 || body.transaction_type == null
                 || body.transaction_type.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Missing required fields"));
         }
 
-        CategoryEntity category = categoryRepository.findById(body.category_id).orElse(null);
-        if (category == null || !category.getUserId().equals(userId)) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Invalid category"));
+        String normalizedType = body.transaction_type.toLowerCase(Locale.ROOT);
+        if (!normalizedType.equals("income") && !normalizedType.equals("expense") && !normalizedType.equals("savings") && !normalizedType.equals("transfer")) {
+            return ResponseEntity.badRequest().body(Map.of("error", "transaction_type must be income, expense, savings, or transfer"));
         }
 
-        String normalizedType = body.transaction_type.toLowerCase(Locale.ROOT);
-        if (!normalizedType.equals("income") && !normalizedType.equals("expense") && !normalizedType.equals("savings")) {
-            return ResponseEntity.badRequest().body(Map.of("error", "transaction_type must be income, expense, or savings"));
+        CategoryEntity category = null;
+        if (!normalizedType.equals("transfer")) {
+            if (body.category_id == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Missing required fields"));
+            }
+            category = categoryRepository.findById(body.category_id).orElse(null);
+            if (category == null || !category.getUserId().equals(userId)) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Invalid category"));
+            }
         }
 
         LocalDateTime date = parseDate(body.date);
@@ -275,7 +285,10 @@ public class FinanceApiController {
                 date,
                 LocalDateTime.now()
         );
+        entity.setSourceAccountId(body.sourceAccountId());
+        entity.setDestinationAccountId(body.destinationAccountId());
         TransactionEntity saved = transactionRepository.save(entity);
+        applyBalanceChange(userId, body.sourceAccountId(), body.destinationAccountId(), normalizedType, body.amount(), false);
         return ResponseEntity.status(HttpStatus.CREATED).body(toTransactionResponse(saved));
     }
 
@@ -301,10 +314,12 @@ public class FinanceApiController {
         }
 
         String normalizedType = body.transaction_type.toLowerCase(Locale.ROOT);
-        if (!normalizedType.equals("income") && !normalizedType.equals("expense") && !normalizedType.equals("savings")) {
-            return ResponseEntity.badRequest().body(Map.of("error", "transaction_type must be income, expense, or savings"));
+        if (!normalizedType.equals("income") && !normalizedType.equals("expense") && !normalizedType.equals("savings") && !normalizedType.equals("transfer")) {
+            return ResponseEntity.badRequest().body(Map.of("error", "transaction_type must be income, expense, savings, or transfer"));
         }
 
+        // Reverse old balance before updating entity
+        applyBalanceChange(userId, entity.getSourceAccountId(), entity.getDestinationAccountId(), entity.getTransactionType(), entity.getAmount(), true);
         entity.setDescription(body.description.trim());
         entity.setAmount(body.amount);
         entity.setCategory(category);
@@ -312,7 +327,10 @@ public class FinanceApiController {
         if (body.date != null && !body.date.isBlank()) {
             entity.setDate(parseDate(body.date));
         }
+        entity.setSourceAccountId(body.sourceAccountId());
+        entity.setDestinationAccountId(body.destinationAccountId());
         TransactionEntity saved = transactionRepository.save(entity);
+        applyBalanceChange(userId, body.sourceAccountId(), body.destinationAccountId(), normalizedType, body.amount(), false);
         return ResponseEntity.ok(toTransactionResponse(saved));
     }
 
@@ -323,6 +341,7 @@ public class FinanceApiController {
         if (entity == null || !entity.getUserId().equals(userId)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Transaction not found"));
         }
+        applyBalanceChange(userId, entity.getSourceAccountId(), entity.getDestinationAccountId(), entity.getTransactionType(), entity.getAmount(), true);
         transactionRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
@@ -610,16 +629,18 @@ public class FinanceApiController {
     }
 
     private Map<String, Object> toTransactionResponse(TransactionEntity entity) {
-        return Map.of(
-                "id", entity.getId(),
-                "amount", entity.getAmount(),
-                "description", entity.getDescription(),
-                "category_id", entity.getCategory().getId(),
-                "category_name", entity.getCategory().getName(),
-                "transaction_type", entity.getTransactionType(),
-                "date", entity.getDate().toString(),
-                "created_at", entity.getCreatedAt().toString()
-        );
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("id", entity.getId());
+        map.put("amount", entity.getAmount());
+        map.put("description", entity.getDescription());
+        map.put("category_id",   entity.getCategory() != null ? entity.getCategory().getId()   : null);
+        map.put("category_name", entity.getCategory() != null ? entity.getCategory().getName() : "Transfer");
+        map.put("transaction_type", entity.getTransactionType());
+        map.put("date", entity.getDate().toString());
+        map.put("created_at", entity.getCreatedAt().toString());
+        map.put("sourceAccountId", entity.getSourceAccountId());
+        map.put("destinationAccountId", entity.getDestinationAccountId());
+        return map;
     }
 
 
@@ -643,6 +664,28 @@ public class FinanceApiController {
         double regularAssets = sum == null ? 0 : sum;
         double goldAssets = goldAssetService.getTotalGoldValueForUser(userId);
         return regularAssets + goldAssets;
+    }
+
+    private void applyBalanceChange(Long userId, Long sourceAccountId, Long destinationAccountId, String type, double amount, boolean reverse) {
+        double multiplier = reverse ? -1 : 1;
+        if (sourceAccountId != null) {
+            AccountEntity account = accountRepository.findById(sourceAccountId).orElse(null);
+            if (account != null && account.getUserId().equals(userId)) {
+                switch (type) {
+                    case "income"  -> account.setCurrentBalance(account.getCurrentBalance() + multiplier * amount);
+                    case "expense", "savings" -> account.setCurrentBalance(account.getCurrentBalance() - multiplier * amount);
+                    case "transfer" -> account.setCurrentBalance(account.getCurrentBalance() - multiplier * amount);
+                }
+                accountRepository.save(account);
+            }
+        }
+        if ("transfer".equals(type) && destinationAccountId != null) {
+            AccountEntity dest = accountRepository.findById(destinationAccountId).orElse(null);
+            if (dest != null && dest.getUserId().equals(userId)) {
+                dest.setCurrentBalance(dest.getCurrentBalance() + multiplier * amount);
+                accountRepository.save(dest);
+            }
+        }
     }
 
     private LocalDateTime parseDate(String dateString) {
@@ -688,7 +731,9 @@ public class FinanceApiController {
             String description,
             Long category_id,
             String transaction_type,
-            String date
+            String date,
+            Long sourceAccountId,
+            Long destinationAccountId
     ) {
     }
 

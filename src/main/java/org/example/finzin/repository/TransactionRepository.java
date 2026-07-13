@@ -24,5 +24,7 @@ public interface TransactionRepository extends JpaRepository<TransactionEntity, 
     
     @Query("SELECT SUM(t.amount) FROM TransactionEntity t WHERE t.userId = :userId AND t.transactionType = :type")
     Double sumByUserIdAndType(@Param("userId") Long userId, @Param("type") String type);
+
+    boolean existsBySourceAccountIdOrDestinationAccountId(Long sourceAccountId, Long destinationAccountId);
 }
 

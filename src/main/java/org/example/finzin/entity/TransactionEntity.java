@@ -28,7 +28,7 @@ public class TransactionEntity {
     private String description;
 
     @ManyToOne
-    @JoinColumn(name = "category_id", nullable = false, foreignKey = @ForeignKey(name = "fk_transaction_category"))
+    @JoinColumn(name = "category_id", nullable = true, foreignKey = @ForeignKey(name = "fk_transaction_category"))
     private CategoryEntity category;
 
     @Column(nullable = false)
@@ -115,5 +115,27 @@ public class TransactionEntity {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    @Column(nullable = true)
+    private Long sourceAccountId;
+
+    @Column(nullable = true)
+    private Long destinationAccountId;
+
+    public Long getSourceAccountId() {
+        return sourceAccountId;
+    }
+
+    public void setSourceAccountId(Long sourceAccountId) {
+        this.sourceAccountId = sourceAccountId;
+    }
+
+    public Long getDestinationAccountId() {
+        return destinationAccountId;
+    }
+
+    public void setDestinationAccountId(Long destinationAccountId) {
+        this.destinationAccountId = destinationAccountId;
     }
 }
