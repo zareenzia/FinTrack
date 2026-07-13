@@ -52,7 +52,7 @@
     .compact-pref-row:last-child{border-bottom:none}
     .compact-pref-label{font-size:.84rem;font-weight:500;color:var(--text-body);white-space:nowrap;display:flex;align-items:center;gap:7px}
     .compact-pref-select{max-width:155px;font-size:.82rem;padding:4px 8px}
-    .cat-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid var(--border-color,#e5e7eb);border-radius:10px;margin-bottom:8px;transition:border-color .2s}
+    .cat-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--border-color,#e5e7eb);border-radius:10px;margin-bottom:6px;transition:border-color .2s}
     .cat-item:hover{border-color:var(--accent-color)}
     .cat-icon{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.9rem;flex-shrink:0}
     .cat-details{flex:1;min-width:0}
@@ -416,59 +416,49 @@
           <div class="settings-section-heading"><i class="fas fa-tags" style="color:var(--accent-color)"></i> Categories</div>
           <p class="settings-section-desc">Manage your income, expense, and savings categories.</p>
 
-          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-            <div class="btn-group" id="catTabs">
-              <button class="btn btn-sm btn-outline-secondary active" data-cat-filter="all">All</button>
-              <button class="btn btn-sm btn-outline-secondary" data-cat-filter="income">Income</button>
-              <button class="btn btn-sm btn-outline-secondary" data-cat-filter="expense">Expense</button>
-              <button class="btn btn-sm btn-outline-secondary" data-cat-filter="savings">Savings</button>
+          <div class="d-flex align-items-center gap-2 flex-wrap mb-3">
+            <div class="btn-group btn-group-sm" id="catTabs">
+              <button class="btn btn-outline-secondary active" data-cat-filter="all"><i class="fas fa-layer-group me-1"></i>All</button>
+              <button class="btn btn-outline-secondary" data-cat-filter="income"><i class="fas fa-arrow-circle-down me-1"></i>Income</button>
+              <button class="btn btn-outline-secondary" data-cat-filter="expense"><i class="fas fa-arrow-circle-up me-1"></i>Expense</button>
+              <button class="btn btn-outline-secondary" data-cat-filter="savings"><i class="fas fa-piggy-bank me-1"></i>Savings</button>
             </div>
-            <div class="d-flex gap-2">
-              <select id="catSort" class="form-select form-select-sm" style="width:auto">
-                <option value="name">By Name</option>
-                <option value="usage">Most Used</option>
-              </select>
-              <button class="btn btn-sm btn-outline-success" id="btnDefaultCats">
-                <i class="fas fa-undo"></i> Defaults
-              </button>
-            </div>
+            <select id="catSort" class="form-select form-select-sm" style="width:auto">
+              <option value="name"><i class="fas fa-sort-alpha-down"></i> A–Z</option>
+              <option value="usage">Most Used</option>
+            </select>
+            <button class="btn btn-sm btn-primary ms-auto" id="btnToggleAddCat" title="Add category"><i class="fas fa-plus"></i></button>
+            <button class="btn btn-sm btn-outline-secondary" id="btnDefaultCats" title="Restore defaults"><i class="fas fa-undo"></i></button>
           </div>
 
-          <button class="btn btn-primary mb-3" id="btnToggleAddCat">
-            <i class="fas fa-plus"></i> Add Category
-          </button>
-
           <div id="addCatForm" style="display:none" class="settings-card mb-3">
-            <div class="settings-card-title">New Category</div>
-            <div class="row g-3 mb-3">
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Name <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="catName" placeholder="Category name">
+            <div class="settings-card-title mb-2"><i class="fas fa-tag"></i> <span id="catFormTitle">New Category</span></div>
+            <div class="row g-2 mb-2">
+              <div class="col-7">
+                <input type="text" class="form-control form-control-sm" id="catName" placeholder="Name *">
               </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Type</label>
-                <select class="form-select" id="catType">
+              <div class="col-5">
+                <select class="form-select form-select-sm" id="catType">
                   <option value="general">General</option>
                   <option value="income">Income</option>
                   <option value="expense">Expense</option>
                   <option value="savings">Savings</option>
                 </select>
               </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Color</label>
-                <input type="color" class="form-control form-control-color w-100" id="catColor" value="#2e7d4f">
+              <div class="col-4">
+                <input type="color" class="form-control form-control-color w-100" id="catColor" value="#2e7d4f" title="Color" style="height:31px">
               </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Description (optional)</label>
-                <input type="text" class="form-control" id="catDesc" placeholder="Short description">
+              <div class="col-8">
+                <input type="text" class="form-control form-control-sm" id="catDesc" placeholder="Description (optional)">
               </div>
               <div class="col-12">
-                <label class="form-label fw-semibold">Icon</label>
                 <div class="icon-picker" id="iconPicker"></div>
               </div>
             </div>
-            <button class="btn btn-success" id="btnSaveCat">Save Category</button>
-            <button class="btn btn-outline-secondary ms-2" id="btnCancelAddCat">Cancel</button>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-success" id="btnSaveCat"><i class="fas fa-check me-1"></i>Save</button>
+              <button class="btn btn-sm btn-outline-secondary" id="btnCancelAddCat"><i class="fas fa-times me-1"></i>Cancel</button>
+            </div>
           </div>
 
           <div id="catLoading" class="text-center py-4" style="display:none">
@@ -484,70 +474,69 @@
 
           <!-- Profile -->
           <div class="settings-card">
-            <div class="settings-card-title"><i class="fas fa-user-circle"></i> Profile Information</div>
-            <div class="settings-card-sub">Update your personal details</div>
-            <div class="d-flex align-items-center gap-3 mb-4">
-              <div class="profile-avatar-edit" id="avatarDisplay">U</div>
-              <div>
-                <div class="fw-semibold mb-1" id="profileDisplayName">Loading...</div>
-                <div class="d-flex gap-2 flex-wrap">
-                  <button class="btn btn-sm btn-outline-primary px-2 py-1" id="btnChangePhoto" title="Change Photo"><i class="fas fa-camera"></i></button>
-                  <button class="btn btn-sm btn-outline-danger px-2 py-1" id="btnRemovePhoto" title="Remove Photo"><i class="fas fa-trash-alt"></i></button>
+            <div class="d-flex align-items-center gap-3">
+              <div class="profile-avatar-edit" id="avatarDisplay" style="width:56px;height:56px;font-size:1.2rem;flex-shrink:0">U</div>
+              <div class="flex-grow-1 min-width-0">
+                <div class="fw-semibold small mb-1" id="profileDisplayName">Loading...</div>
+                <div class="d-flex gap-1">
+                  <button class="btn btn-sm btn-outline-primary py-0 px-2" id="btnChangePhoto" title="Change photo"><i class="fas fa-camera"></i></button>
+                  <button class="btn btn-sm btn-outline-danger py-0 px-2" id="btnRemovePhoto" title="Remove photo"><i class="fas fa-trash-alt"></i></button>
                 </div>
               </div>
+              <button class="btn btn-sm btn-primary ms-auto" id="btnUpdateProfile" title="Save profile"><i class="fas fa-save"></i></button>
             </div>
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Full Name</label>
-                <input type="text" class="form-control" id="profileFullName">
+            <hr class="my-3">
+            <div class="row g-2">
+              <div class="col-6">
+                <input type="text" class="form-control form-control-sm" id="profileFullName" placeholder="Full Name">
               </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Username</label>
-                <input type="text" class="form-control" id="profileUsername">
+              <div class="col-6">
+                <input type="text" class="form-control form-control-sm" id="profileUsername" placeholder="Username">
               </div>
               <div class="col-12">
-                <label class="form-label fw-semibold">Email</label>
                 <div class="position-relative">
-                  <input type="email" class="form-control profile-email-readonly" id="profileEmail" readonly style="cursor:not-allowed;padding-right:36px;">
+                  <input type="email" class="form-control form-control-sm profile-email-readonly" id="profileEmail" readonly style="cursor:not-allowed;padding-right:32px;">
                   <span class="profile-email-lock-icon" title="Email cannot be changed"><i class="fas fa-times-circle"></i></span>
                 </div>
               </div>
             </div>
-            <button class="btn btn-primary mt-3" id="btnUpdateProfile"><i class="fas fa-save me-1"></i>Update Profile</button>
           </div>
 
           <!-- Change Password -->
           <div class="settings-card">
-            <div class="settings-card-title d-flex align-items-center justify-content-between" style="cursor:pointer;" id="pwdToggleHeader">
-              <span><i class="fas fa-key"></i> Change Password</span>
+            <div class="d-flex align-items-center justify-content-between" id="pwdToggleHeader" style="cursor:pointer;">
+              <span class="compact-pref-label"><i class="fas fa-key"></i> Change Password</span>
               <i class="fas fa-chevron-down" id="pwdChevron" style="transition:transform .25s;color:var(--text-muted,#888);font-size:.85rem;"></i>
             </div>
-            <div class="settings-card-sub">Keep your account secure with a strong password</div>
             <div id="pwdFieldsSection" style="display:none;margin-top:12px;">
-              <div class="mb-3">
-                <label class="form-label">Current Password</label>
-                <div class="input-group">
-                  <input type="password" class="form-control" id="currentPassword" placeholder="Current password">
-                  <button class="btn btn-outline-secondary pw-eye-toggle" type="button" data-target="currentPassword"><i class="fas fa-eye"></i></button>
+              <div class="row g-2">
+                <div class="col-12">
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                    <input type="password" class="form-control" id="currentPassword" placeholder="Current password">
+                    <button class="btn btn-outline-secondary pw-eye-toggle" type="button" data-target="currentPassword"><i class="fas fa-eye"></i></button>
+                  </div>
+                </div>
+                <div class="col-12">
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text"><i class="fas fa-key"></i></span>
+                    <input type="password" class="form-control" id="newPassword" placeholder="New password">
+                    <button class="btn btn-outline-secondary pw-eye-toggle" type="button" data-target="newPassword"><i class="fas fa-eye"></i></button>
+                  </div>
+                  <div class="pw-strength mt-1" id="pwStrengthBar" style="background:#e5e7eb;width:0%"></div>
+                  <small id="pwStrengthLabel" class="text-muted"></small>
+                </div>
+                <div class="col-12">
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text"><i class="fas fa-check-circle"></i></span>
+                    <input type="password" class="form-control" id="confirmPassword" placeholder="Confirm password">
+                    <button class="btn btn-outline-secondary pw-eye-toggle" type="button" data-target="confirmPassword"><i class="fas fa-eye"></i></button>
+                  </div>
+                </div>
+                <div class="col-12 mt-1">
+                  <button class="btn btn-sm btn-primary" id="btnSavePassword"><i class="fas fa-lock me-1"></i>Save</button>
                 </div>
               </div>
-              <div class="mb-3">
-                <label class="form-label">New Password</label>
-                <div class="input-group">
-                  <input type="password" class="form-control" id="newPassword" placeholder="New password">
-                  <button class="btn btn-outline-secondary pw-eye-toggle" type="button" data-target="newPassword"><i class="fas fa-eye"></i></button>
-                </div>
-                <div class="pw-strength" id="pwStrengthBar" style="background:#e5e7eb;width:0%"></div>
-                <small id="pwStrengthLabel" class="text-muted"></small>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Confirm New Password</label>
-                <div class="input-group">
-                  <input type="password" class="form-control" id="confirmPassword" placeholder="Confirm password">
-                  <button class="btn btn-outline-secondary pw-eye-toggle" type="button" data-target="confirmPassword"><i class="fas fa-eye"></i></button>
-                </div>
-              </div>
-              <button class="btn btn-primary" id="btnSavePassword"><i class="fas fa-lock me-1"></i>Save Password</button>
             </div>
           </div>
 
@@ -713,14 +702,36 @@
           <div class="settings-section-heading"><i class="fas fa-info-circle" style="color:var(--accent-color)"></i> About FinTrack</div>
           <p class="settings-section-desc">App information, release notes, and support.</p>
 
-          <div class="settings-card text-center py-4">
-            <img src="/images/logo.png" alt="FinTrack" style="width:72px;height:72px;object-fit:contain;border-radius:16px;margin-bottom:16px;box-shadow:0 4px 16px rgba(0,0,0,0.12);">
-            <h3 class="fw-bold mb-1">FinTrack</h3>
-            <p class="text-muted mb-2">Personal Finance Tracker</p>
-            <span class="badge rounded-pill" style="background:var(--accent-color)">Version 1.0.0</span>
-            <p class="text-muted mt-3 small">Built with &#10084;&#65039; for better financial management</p>
+          <!-- App Info + Developer -->
+          <div class="settings-card">
+            <div class="d-flex align-items-center gap-3 mb-3">
+              <img src="/images/logo.png" alt="FinTrack" style="width:52px;height:52px;object-fit:contain;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.12);flex-shrink:0">
+              <div>
+                <h5 class="fw-bold mb-0">FinTrack <span class="badge rounded-pill ms-1" style="background:var(--accent-color);font-size:.68rem;vertical-align:middle">v1.0.0</span></h5>
+                <p class="text-muted mb-0 small">Personal Finance Tracker &mdash; Built with &#10084;&#65039; for better financial management</p>
+              </div>
+            </div>
+            <div class="compact-prefs-grid">
+              <div class="compact-pref-row">
+                <span class="compact-pref-label"><i class="fas fa-code"></i> Developer</span>
+                <span class="small">Zareen Zia</span>
+              </div>
+              <div class="compact-pref-row">
+                <span class="compact-pref-label"><i class="fas fa-envelope"></i> Contact</span>
+                <a href="mailto:zareenzia801@gmail.com" class="small">zareenzia801@gmail.com</a>
+              </div>
+              <div class="compact-pref-row">
+                <span class="compact-pref-label"><i class="fas fa-layer-group"></i> Built with</span>
+                <span class="small text-muted">Spring Boot, Bootstrap 5, Chart.js</span>
+              </div>
+              <div class="compact-pref-row">
+                <span class="compact-pref-label"><i class="fas fa-file-contract"></i> License</span>
+                <span class="small text-muted">MIT License</span>
+              </div>
+            </div>
           </div>
 
+          <!-- Release Notes -->
           <div class="settings-card">
             <div class="settings-card-title"><i class="fas fa-list-ul"></i> Release Notes</div>
             <div class="accordion accordion-flush" id="releaseAccordion">
@@ -762,41 +773,23 @@
             </div>
           </div>
 
+          <!-- Feedback & Support -->
           <div class="settings-card">
-            <div class="settings-card-title"><i class="fas fa-star"></i> Send Feedback</div>
-            <div class="settings-card-sub">How are we doing? Let us know!</div>
-            <div class="star-rating mb-3" id="starRating">
+            <div class="settings-card-title"><i class="fas fa-star"></i> Feedback &amp; Support</div>
+            <div class="star-rating mb-2" id="starRating">
               <i class="fas fa-star" data-val="1"></i>
               <i class="fas fa-star" data-val="2"></i>
               <i class="fas fa-star" data-val="3"></i>
               <i class="fas fa-star" data-val="4"></i>
               <i class="fas fa-star" data-val="5"></i>
             </div>
-            <textarea class="form-control mb-3" id="feedbackText" rows="3" placeholder="Tell us what you think..."></textarea>
-            <button class="btn btn-primary" id="btnSendFeedback"><i class="fas fa-paper-plane me-1"></i>Send Feedback</button>
-          </div>
-
-          <div class="settings-card">
-            <div class="settings-card-title"><i class="fas fa-headset"></i> Contact &amp; Support</div>
-            <div class="list-group list-group-flush">
-              <a href="mailto:support@fintrack.app" class="list-group-item list-group-item-action d-flex align-items-center gap-2" style="background:transparent;color:var(--text-body)">
-                <i class="fas fa-envelope text-muted"></i> support@fintrack.app
-              </a>
-              <a href="https://github.com/fintrack" target="_blank" class="list-group-item list-group-item-action d-flex align-items-center gap-2" style="background:transparent;color:var(--text-body)">
-                <i class="fab fa-github text-muted"></i> github.com/fintrack <i class="fas fa-external-link-alt text-muted ms-auto" style="font-size:.75rem"></i>
-              </a>
+            <textarea class="form-control mb-3" id="feedbackText" rows="2" placeholder="Tell us what you think..."></textarea>
+            <div class="d-flex gap-2 flex-wrap align-items-center">
+              <button class="btn btn-sm btn-primary" id="btnSendFeedback"><i class="fas fa-paper-plane me-1"></i>Send Feedback</button>
+              <a href="mailto:support@fintrack.app" class="btn btn-sm btn-outline-secondary"><i class="fas fa-envelope me-1"></i>support@fintrack.app</a>
+              <a href="https://github.com/fintrack" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="fab fa-github me-1"></i>GitHub <i class="fas fa-external-link-alt ms-1" style="font-size:.7rem"></i></a>
+              <button class="btn btn-sm btn-outline-danger" id="btnReportBug"><i class="fas fa-bug me-1"></i>Report a Bug</button>
             </div>
-            <button class="btn btn-outline-danger mt-3" id="btnReportBug"><i class="fas fa-bug me-1"></i>Report a Bug</button>
-          </div>
-
-          <div class="settings-card">
-            <div class="settings-card-title"><i class="fas fa-code"></i> Developer Information</div>
-            <table class="table table-sm table-borderless small mb-0" style="color:var(--text-body)">
-              <tr><td class="text-muted">Developer</td><td>Zareen Zia</td></tr>
-              <tr><td class="text-muted">Contact</td><td><a href="mailto:zareenzia801@gmail.com">zareenzia801@gmail.com</a></td></tr>
-              <tr><td class="text-muted">Built with</td><td>Spring Boot, Bootstrap 5, Chart.js</td></tr>
-              <tr><td class="text-muted">License</td><td>MIT License</td></tr>
-            </table>
           </div>
         </section>
 
@@ -1378,7 +1371,9 @@ function renderCategories() {
     var type = (c.categoryType||'general').toLowerCase();
     var icon = c.icon || 'tag';
     var color = c.color || '#888';
-    return '<div class="cat-item"><div class="cat-icon" style="background:'+color+'"><i class="fas fa-'+escHtml(icon)+'"></i></div><div class="cat-details"><p class="cat-name">'+escHtml(c.name)+' <span class="cat-type-badge cat-type-'+type+'">'+type+'</span></p><p class="cat-meta">'+(c.transactionCount||0)+' transactions'+(c.description ? ' &middot; '+escHtml(c.description) : '')+'</p></div><div class="d-flex gap-1 flex-shrink-0"><button class="btn btn-sm btn-outline-primary btn-edit-cat" data-id="'+c.id+'"><i class="fas fa-pen"></i></button><button class="btn btn-sm btn-outline-danger btn-del-cat" data-id="'+c.id+'" data-count="'+(c.transactionCount||0)+'" data-name="'+escHtml(c.name)+'"><i class="fas fa-trash"></i></button></div></div>';
+    var typeIcons = {income:'arrow-circle-down',expense:'arrow-circle-up',savings:'piggy-bank',general:'tag'};
+    var txCount = c.transactionCount||0;
+    return '<div class="cat-item"><div class="cat-icon" style="background:'+color+';width:32px;height:32px;font-size:.8rem;flex-shrink:0"><i class="fas fa-'+escHtml(icon)+'"></i></div><div class="cat-details" style="flex:1;min-width:0"><p class="cat-name mb-0" style="font-size:.88rem">'+escHtml(c.name)+'<span class="cat-type-badge cat-type-'+type+' ms-1"><i class="fas fa-'+typeIcons[type]+' me-1"></i>'+type+'</span></p>'+(c.description?'<p class="cat-meta mb-0" style="font-size:.75rem">'+escHtml(c.description)+'</p>':'')+'</div><span class="text-muted me-2" style="font-size:.75rem;white-space:nowrap"><i class="fas fa-exchange-alt me-1"></i>'+txCount+'</span><div class="d-flex gap-1 flex-shrink-0"><button class="btn btn-sm btn-outline-primary py-0 px-2 btn-edit-cat" data-id="'+c.id+'" title="Edit"><i class="fas fa-pen"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-2 btn-del-cat" data-id="'+c.id+'" data-count="'+txCount+'" data-name="'+escHtml(c.name)+'" title="Delete"><i class="fas fa-trash"></i></button></div></div>';
   }).join('');
   list.querySelectorAll('.btn-edit-cat').forEach(function(btn){
     btn.addEventListener('click', function(){
@@ -1442,13 +1437,13 @@ function openCatForm(cat) {
   selectedIcon = cat ? (cat.icon||'tag') : 'tag';
   document.querySelectorAll('.icon-option').forEach(function(o){ o.classList.toggle('selected', o.dataset.icon === selectedIcon); });
   var saveBtn = document.getElementById('btnSaveCat');
-  if (saveBtn) saveBtn.textContent = cat ? 'Update Category' : 'Save Category';
-  var title = form.querySelector('.settings-card-title');
-  if (title) title.textContent = cat ? 'Edit Category' : 'New Category';
+  if (saveBtn) saveBtn.innerHTML = cat ? '<i class="fas fa-check me-1"></i>Update' : '<i class="fas fa-check me-1"></i>Save';
+  var titleEl = document.getElementById('catFormTitle');
+  if (titleEl) titleEl.textContent = cat ? 'Edit Category' : 'New Category';
   form.style.display = 'block';
   form.scrollIntoView({ behavior:'smooth', block:'nearest' });
   var toggleBtn = document.getElementById('btnToggleAddCat');
-  if (toggleBtn) toggleBtn.innerHTML = '<i class="fas fa-times"></i> Cancel';
+  if (toggleBtn) toggleBtn.innerHTML = '<i class="fas fa-times"></i>';
 }
 
 function closeCatForm() {
@@ -1456,7 +1451,7 @@ function closeCatForm() {
   if (form) form.style.display = 'none';
   editingCatId = null;
   var toggleBtn = document.getElementById('btnToggleAddCat');
-  if (toggleBtn) toggleBtn.innerHTML = '<i class="fas fa-plus"></i> Add Category';
+  if (toggleBtn) toggleBtn.innerHTML = '<i class="fas fa-plus"></i>';
 }
 
 var btnSaveCat = document.getElementById('btnSaveCat');
