@@ -63,8 +63,8 @@
     .cat-type-expense{background:rgba(220,38,38,.12);color:#dc2626}
     .cat-type-savings{background:rgba(59,130,246,.12);color:#3b82f6}
     .cat-type-general{background:rgba(107,114,128,.12);color:#6b7280}
-    .icon-picker{display:flex;flex-wrap:wrap;gap:6px}
-    .icon-option{width:36px;height:36px;border:2px solid var(--border-color,#e5e7eb);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.85rem;transition:all .15s;color:var(--text-body)}
+    .icon-picker{display:flex;flex-wrap:wrap;gap:4px}
+    .icon-option{width:28px;height:28px;border:1.5px solid var(--border-color,#e5e7eb);border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.75rem;transition:all .15s;color:var(--text-body)}
     .icon-option.selected{border-color:var(--accent-color);background:rgba(46,125,79,.1);color:var(--accent-color)}
     .pw-strength{height:4px;border-radius:4px;margin-top:6px;transition:all .3s}
     .danger-zone{border:1.5px solid #ef4444!important}
@@ -431,13 +431,16 @@
             <button class="btn btn-sm btn-outline-secondary" id="btnDefaultCats" title="Restore defaults"><i class="fas fa-undo"></i></button>
           </div>
 
-          <div id="addCatForm" style="display:none" class="settings-card mb-3">
-            <div class="settings-card-title mb-2"><i class="fas fa-tag"></i> <span id="catFormTitle">New Category</span></div>
+          <div id="addCatForm" style="display:none" class="settings-card mb-3" style="padding:14px 16px">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="compact-pref-label"><i class="fas fa-tag"></i> <span id="catFormTitle">New Category</span></span>
+              <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="btnCancelAddCat" title="Cancel"><i class="fas fa-times"></i></button>
+            </div>
             <div class="row g-2 mb-2">
-              <div class="col-7">
+              <div class="col-5">
                 <input type="text" class="form-control form-control-sm" id="catName" placeholder="Name *">
               </div>
-              <div class="col-5">
+              <div class="col-4">
                 <select class="form-select form-select-sm" id="catType">
                   <option value="general">General</option>
                   <option value="income">Income</option>
@@ -445,20 +448,17 @@
                   <option value="savings">Savings</option>
                 </select>
               </div>
-              <div class="col-4">
+              <div class="col-3">
                 <input type="color" class="form-control form-control-color w-100" id="catColor" value="#2e7d4f" title="Color" style="height:31px">
               </div>
-              <div class="col-8">
+              <div class="col-12">
                 <input type="text" class="form-control form-control-sm" id="catDesc" placeholder="Description (optional)">
               </div>
               <div class="col-12">
                 <div class="icon-picker" id="iconPicker"></div>
               </div>
             </div>
-            <div class="d-flex gap-2">
-              <button class="btn btn-sm btn-success" id="btnSaveCat"><i class="fas fa-check me-1"></i>Save</button>
-              <button class="btn btn-sm btn-outline-secondary" id="btnCancelAddCat"><i class="fas fa-times me-1"></i>Cancel</button>
-            </div>
+            <button class="btn btn-sm btn-success" id="btnSaveCat"><i class="fas fa-check me-1"></i>Save</button>
           </div>
 
           <div id="catLoading" class="text-center py-4" style="display:none">
