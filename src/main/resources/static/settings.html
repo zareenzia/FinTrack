@@ -290,17 +290,6 @@
             </div>
           </div>
 
-          <!-- Sidebar Behavior -->
-          <div class="settings-card">
-            <div class="settings-card-title"><i class="fas fa-bars"></i> Sidebar Behavior</div>
-            <div class="settings-card-sub">Control how the sidebar behaves</div>
-            <div class="option-pills" data-pill-group="sidebar">
-              <div class="option-pill" data-value="collapse">Collapse by default</div>
-              <div class="option-pill" data-value="expand">Always expand</div>
-              <div class="option-pill" data-value="icons">Icons only</div>
-            </div>
-          </div>
-
           <!-- Compact Display Preferences -->
           <div class="settings-card">
             <div class="settings-card-title"><i class="fas fa-sliders"></i> Display Preferences</div>
@@ -1313,7 +1302,7 @@ function initCurrencyUI() {
 var btnResetAppearance = document.getElementById('btnResetAppearance');
 if (btnResetAppearance) {
   btnResetAppearance.addEventListener('click', function(){
-    var keys = ['sidebar','layout','animations','fontSize','currencyInCharts'];
+    var keys = ['layout','animations','fontSize','currencyInCharts'];
     var patch = {};
     keys.forEach(function(k){ patch[k] = DEFAULTS[k]; });
     var s = saveSettings(patch);
