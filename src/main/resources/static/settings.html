@@ -10,13 +10,17 @@
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/mobile.css">
   <style>
-    .settings-container{display:flex;gap:24px;align-items:flex-start;margin:0 0 40px}
-    .settings-sidebar{width:220px;flex-shrink:0;background:var(--bg-card,#fff);border-radius:14px;padding:12px 0;box-shadow:var(--card-shadow,0 2px 8px rgba(0,0,0,.06));position:sticky;top:80px}
+    html,body{height:100%;overflow:hidden;margin:0}
+    .settings-layout{display:flex;height:100vh;overflow:hidden;background:linear-gradient(135deg,var(--bg-body-1,#f0f4f0) 0%,var(--bg-body-2,#e8f1e8) 100%)}
+    .settings-left-panel{width:240px;flex-shrink:0;display:flex;flex-direction:column;background:var(--bg-card,#fff);box-shadow:2px 0 8px rgba(0,0,0,.07);overflow:hidden;z-index:10}
+    .settings-left-header{padding:28px 20px 18px;border-bottom:1px solid var(--border-color,#e5e7eb)}
+    .settings-left-header h2{font-size:1.25rem;font-weight:700;margin:0}
+    .settings-sidebar{flex:1;overflow-y:auto;padding:12px 0}
     .settings-nav-item{display:flex;align-items:center;gap:12px;padding:11px 20px;border-left:3px solid transparent;cursor:pointer;font-weight:500;font-size:.9rem;color:var(--text-body);transition:all .2s;text-decoration:none}
     .settings-nav-item:hover{background:rgba(0,0,0,.04);color:var(--accent-color)}
     .settings-nav-item.active{border-left-color:var(--accent-color);color:var(--accent-color);background:rgba(0,0,0,.03);font-weight:600}
     .settings-nav-item i{width:18px;text-align:center}
-    .settings-panel{flex:1;min-width:0}
+    .settings-panel{flex:1;min-width:0;overflow-y:auto;height:100vh;padding:32px;background:transparent}
     .settings-section{display:none}
     .settings-section.active{display:block}
     .settings-card{background:var(--bg-card,#fff);border-radius:14px;padding:24px;margin-bottom:20px;box-shadow:var(--card-shadow,0 2px 8px rgba(0,0,0,.06))}
@@ -43,7 +47,11 @@
     .theme-name{font-weight:700;font-size:.9rem;color:var(--text-body)}
     .theme-desc{font-size:.75rem;color:var(--text-muted-custom);margin-top:2px}
 
-    .currency-preview{background:rgba(0,0,0,.04);border-radius:10px;padding:14px 18px;margin-bottom:20px;font-family:monospace;font-size:1rem}
+    .compact-prefs-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 24px}
+    .compact-pref-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--border-color,#e5e7eb)}
+    .compact-pref-row:last-child{border-bottom:none}
+    .compact-pref-label{font-size:.84rem;font-weight:500;color:var(--text-body);white-space:nowrap;display:flex;align-items:center;gap:7px}
+    .compact-pref-select{max-width:155px;font-size:.82rem;padding:4px 8px}
     .cat-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid var(--border-color,#e5e7eb);border-radius:10px;margin-bottom:8px;transition:border-color .2s}
     .cat-item:hover{border-color:var(--accent-color)}
     .cat-icon{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.9rem;flex-shrink:0}
@@ -73,10 +81,13 @@
     }
     .profile-email-readonly:hover ~ .profile-email-lock-icon{color:#ef4444;}
     @media(max-width:768px){
-      .settings-container{flex-direction:column}
-      .settings-sidebar{width:100%;position:static;display:flex;flex-wrap:wrap;padding:8px;gap:4px;border-radius:10px}
+      .settings-layout{flex-direction:column;height:auto;overflow:auto}
+      .settings-left-panel{width:100%;flex-direction:row;flex-wrap:wrap;box-shadow:none;border-bottom:1px solid var(--border-color,#e5e7eb)}
+      .settings-left-header{padding:16px 16px 12px;border-bottom:none;width:100%}
+      .settings-sidebar{display:flex;flex-wrap:wrap;padding:8px;gap:4px;overflow-y:visible}
       .settings-nav-item{border-left:none;border-radius:8px;padding:8px 14px;flex:1;min-width:120px;justify-content:center}
       .settings-nav-item.active{border-left:none;background:var(--accent-color);color:#fff}
+      .settings-panel{height:auto;padding:20px 16px}
     }
     /* ── Account Configuration section ── */
     .acct-table { border-collapse: separate; border-spacing: 0; }
@@ -132,11 +143,11 @@
   </style>
 </head>
 <body>
-  <div class="container-fluid py-4">
-    <div class="d-flex align-items-center gap-3 mb-4">
-      <h2 class="mb-0"><i class="fas fa-cog me-2"></i>Settings</h2>
-    </div>
-    <div class="settings-container">
+  <div class="settings-layout">
+    <div class="settings-left-panel">
+      <div class="settings-left-header">
+        <h2 class="mb-0"><i class="fas fa-cog me-2"></i>Settings</h2>
+      </div>
       <aside class="settings-sidebar">
         <a class="settings-nav-item active" data-section="appearance" href="#">
           <i class="fas fa-palette"></i> Appearance
@@ -157,7 +168,8 @@
           <i class="fas fa-info-circle"></i> About
         </a>
       </aside>
-      <main class="settings-panel">
+    </div>
+    <main class="settings-panel">
 
         <!-- ===== APPEARANCE ===== -->
         <section class="settings-section active" id="section-appearance">
@@ -209,18 +221,6 @@
                 </div>
               </div>
 
-              <div class="theme-option" data-theme-key="high-contrast">
-                <div class="theme-swatches">
-                  <div class="theme-swatch-dot" style="background:#252525"></div>
-                  <div class="theme-swatch-dot" style="background:#414141"></div>
-                  <div class="theme-swatch-dot" style="background:#AF0404"></div>
-                  <div class="theme-swatch-dot" style="background:#FF0000"></div>
-                </div>
-                <div class="theme-info">
-                  <div class="theme-name">⚡ High Contrast</div>
-                  <div class="theme-desc">Black &amp; bold red</div>
-                </div>
-              </div>
 
               <div class="theme-option" data-theme-key="cafe-mocha">
                 <div class="theme-swatches">
@@ -290,17 +290,6 @@
             </div>
           </div>
 
-          <!-- Display Mode (Light / Dark) -->
-          <div class="settings-card">
-            <div class="settings-card-title"><i class="fas fa-circle-half-stroke"></i> Display Mode</div>
-            <div class="settings-card-sub">Switch between light and dark — works with every theme</div>
-            <div class="btn-group" role="group">
-              <button type="button" class="btn btn-outline-secondary display-mode-btn" data-mode="light">☀️ Light</button>
-              <button type="button" class="btn btn-outline-secondary display-mode-btn" data-mode="dark">🌙 Dark</button>
-              <button type="button" class="btn btn-outline-secondary display-mode-btn" data-mode="system">💻 System</button>
-            </div>
-          </div>
-
           <!-- Sidebar Behavior -->
           <div class="settings-card">
             <div class="settings-card-title"><i class="fas fa-bars"></i> Sidebar Behavior</div>
@@ -312,53 +301,38 @@
             </div>
           </div>
 
-          <!-- Dashboard Layout -->
+          <!-- Compact Display Preferences -->
           <div class="settings-card">
-            <div class="settings-card-title"><i class="fas fa-th-large"></i> Dashboard Layout</div>
-            <div class="settings-card-sub">Choose information density</div>
-            <div class="option-pills" data-pill-group="layout">
-              <div class="option-pill" data-value="comfortable">&#128194; Comfortable</div>
-              <div class="option-pill" data-value="compact">&#128208; Compact</div>
-            </div>
-          </div>
-
-          <!-- Animations -->
-          <div class="settings-card">
-            <div class="settings-card-title"><i class="fas fa-magic"></i> Animations</div>
-            <div class="settings-card-sub">Smooth transitions and effects</div>
-            <div class="toggle-row">
-              <div>
-                <div class="fw-semibold">Enable animations</div>
-                <small class="text-muted">Toggle UI transition effects</small>
+            <div class="settings-card-title"><i class="fas fa-sliders"></i> Display Preferences</div>
+            <div class="compact-prefs-grid mt-2">
+              <div class="compact-pref-row">
+                <label class="compact-pref-label" for="selectLayout"><i class="fas fa-th-large"></i> Dashboard Layout</label>
+                <select id="selectLayout" class="form-select compact-pref-select">
+                  <option value="comfortable">📁 Comfortable</option>
+                  <option value="compact">📐 Compact</option>
+                </select>
               </div>
-              <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" id="toggleAnimations">
+              <div class="compact-pref-row">
+                <label class="compact-pref-label" for="selectAnimations"><i class="fas fa-magic"></i> Animations</label>
+                <select id="selectAnimations" class="form-select compact-pref-select">
+                  <option value="true">✨ Enabled</option>
+                  <option value="false">⏹ Disabled</option>
+                </select>
               </div>
-            </div>
-          </div>
-
-          <!-- Font Size -->
-          <div class="settings-card">
-            <div class="settings-card-title"><i class="fas fa-text-height"></i> Font Size</div>
-            <div class="settings-card-sub">Adjust text size across the app</div>
-            <div class="option-pills" data-pill-group="fontSize">
-              <div class="option-pill" data-value="small">Small &mdash; 13px</div>
-              <div class="option-pill" data-value="medium">Medium &mdash; 15px</div>
-              <div class="option-pill" data-value="large">Large &mdash; 17px</div>
-            </div>
-          </div>
-
-          <!-- Currency in Charts -->
-          <div class="settings-card">
-            <div class="settings-card-title"><i class="fas fa-chart-bar"></i> Chart Currency</div>
-            <div class="settings-card-sub">Display currency symbols alongside chart values</div>
-            <div class="toggle-row">
-              <div>
-                <div class="fw-semibold">Show currency symbols in charts</div>
-                <small class="text-muted">Applies to all dashboard charts</small>
+              <div class="compact-pref-row">
+                <label class="compact-pref-label" for="selectFontSize"><i class="fas fa-text-height"></i> Font Size</label>
+                <select id="selectFontSize" class="form-select compact-pref-select">
+                  <option value="small">Small — 13px</option>
+                  <option value="medium">Medium — 15px</option>
+                  <option value="large">Large — 17px</option>
+                </select>
               </div>
-              <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" id="toggleCurrencyInCharts">
+              <div class="compact-pref-row">
+                <label class="compact-pref-label" for="selectChartCurrency"><i class="fas fa-chart-bar"></i> Chart Currency</label>
+                <select id="selectChartCurrency" class="form-select compact-pref-select">
+                  <option value="true">Show symbols</option>
+                  <option value="false">Hide symbols</option>
+                </select>
               </div>
             </div>
           </div>
@@ -848,7 +822,6 @@
         </section>
 
       </main>
-    </div>
   </div>
 
   <!-- Modals -->
@@ -1235,18 +1208,34 @@ function initAppearanceUI() {
     });
   });
 
-  var toggleAnimations = document.getElementById('toggleAnimations');
-  if (toggleAnimations) {
-    toggleAnimations.checked = s.animations;
-    toggleAnimations.addEventListener('change', function(e){
-      saveSettings({ animations: e.target.checked });
+  var selectAnimations = document.getElementById('selectAnimations');
+  if (selectAnimations) {
+    selectAnimations.value = String(s.animations !== false);
+    selectAnimations.addEventListener('change', function(e){
+      saveSettings({ animations: e.target.value === 'true' });
       applySettings(getSettings());
     });
   }
-  var toggleCurrencyInCharts = document.getElementById('toggleCurrencyInCharts');
-  if (toggleCurrencyInCharts) {
-    toggleCurrencyInCharts.checked = s.currencyInCharts;
-    toggleCurrencyInCharts.addEventListener('change', function(e){ saveSettings({ currencyInCharts: e.target.checked }); });
+  var selectCurrencyInCharts = document.getElementById('selectChartCurrency');
+  if (selectCurrencyInCharts) {
+    selectCurrencyInCharts.value = String(s.currencyInCharts !== false);
+    selectCurrencyInCharts.addEventListener('change', function(e){ saveSettings({ currencyInCharts: e.target.value === 'true' }); });
+  }
+  var selectFontSize = document.getElementById('selectFontSize');
+  if (selectFontSize) {
+    selectFontSize.value = s.fontSize || 'medium';
+    selectFontSize.addEventListener('change', function(e){
+      saveSettings({ fontSize: e.target.value });
+      applySettings(getSettings());
+    });
+  }
+  var selectLayout = document.getElementById('selectLayout');
+  if (selectLayout) {
+    selectLayout.value = s.layout || 'comfortable';
+    selectLayout.addEventListener('change', function(e){
+      saveSettings({ layout: e.target.value });
+      applySettings(getSettings());
+    });
   }
 
   syncAllPills(s);
@@ -1332,10 +1321,14 @@ if (btnResetAppearance) {
     document.documentElement.setAttribute('data-theme','light');
     document.documentElement.removeAttribute('data-theme-variant');
     applySettings(s);
-    var ta = document.getElementById('toggleAnimations');
-    if (ta) ta.checked = DEFAULTS.animations;
-    var tcc = document.getElementById('toggleCurrencyInCharts');
-    if (tcc) tcc.checked = DEFAULTS.currencyInCharts;
+    var sa = document.getElementById('selectAnimations');
+    if (sa) sa.value = String(DEFAULTS.animations !== false);
+    var scc = document.getElementById('selectChartCurrency');
+    if (scc) scc.value = String(DEFAULTS.currencyInCharts !== false);
+    var sfs = document.getElementById('selectFontSize');
+    if (sfs) sfs.value = DEFAULTS.fontSize || 'medium';
+    var sl = document.getElementById('selectLayout');
+    if (sl) sl.value = DEFAULTS.layout || 'comfortable';
     syncAllPills(s);
     showNotification('Appearance reset to defaults', 'info');
   });
