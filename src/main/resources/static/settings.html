@@ -339,77 +339,75 @@
             <div><span class="text-muted">Negative:</span> <strong id="previewNegative" style="color:#ef4444">-৳500</strong></div>
           </div>
 
+          <!-- Currency Settings -->
           <div class="settings-card">
-            <div class="settings-card-title"><i class="fas fa-money-bill"></i> Default Currency</div>
-            <div class="settings-card-sub">Select your preferred currency</div>
-            <select id="currencySelect" class="form-select" style="max-width:300px">
-              <option value="BDT" data-symbol="৳">Bangladeshi Taka (৳)</option>
-              <option value="USD" data-symbol="$">US Dollar ($)</option>
-            </select>
-          </div>
-
-          <div class="settings-card">
-            <div class="settings-card-title"><i class="fas fa-arrow-left-right"></i> Symbol Position</div>
-            <div class="settings-card-sub">Where to place the currency symbol</div>
-            <div class="option-pills" data-pill-group="symbolPosition">
-              <div class="option-pill" data-value="before">Before &mdash; ৳500 / $500</div>
-              <div class="option-pill" data-value="after">After &mdash; 500 ৳ / 500 $</div>
+            <div class="settings-card-title"><i class="fas fa-coins"></i> Currency Settings</div>
+            <div class="compact-prefs-grid mt-2">
+              <div class="compact-pref-row">
+                <label class="compact-pref-label" for="currencySelect"><i class="fas fa-money-bill"></i> Currency</label>
+                <select id="currencySelect" class="form-select compact-pref-select">
+                  <option value="BDT" data-symbol="৳">Taka (৳ BDT)</option>
+                  <option value="USD" data-symbol="$">Dollar ($ USD)</option>
+                </select>
+              </div>
+              <div class="compact-pref-row">
+                <label class="compact-pref-label" for="symbolPositionSelect"><i class="fas fa-arrow-left-right"></i> Symbol Position</label>
+                <select id="symbolPositionSelect" class="form-select compact-pref-select">
+                  <option value="before">Before — ৳500</option>
+                  <option value="after">After — 500 ৳</option>
+                </select>
+              </div>
+              <div class="compact-pref-row">
+                <label class="compact-pref-label" for="decimalSelect"><i class="fas fa-hashtag"></i> Decimal Places</label>
+                <select id="decimalSelect" class="form-select compact-pref-select">
+                  <option value="0">0 — 1,000</option>
+                  <option value="2">2 — 1,000.00</option>
+                </select>
+              </div>
+              <div class="compact-pref-row">
+                <label class="compact-pref-label" for="thousandSeparatorSelect"><i class="fas fa-grip-lines-vertical"></i> Thousands</label>
+                <select id="thousandSeparatorSelect" class="form-select compact-pref-select">
+                  <option value=",">, — 10,000</option>
+                  <option value="none">None — 10000</option>
+                </select>
+              </div>
+              <div class="compact-pref-row">
+                <label class="compact-pref-label" for="negativeFormatSelect"><i class="fas fa-minus"></i> Negative Format</label>
+                <select id="negativeFormatSelect" class="form-select compact-pref-select">
+                  <option value="minus">-500 (Minus)</option>
+                  <option value="parentheses">(500) (Brackets)</option>
+                </select>
+              </div>
             </div>
           </div>
 
+          <!-- Date & Region -->
           <div class="settings-card">
-            <div class="settings-card-title"><i class="fas fa-hashtag"></i> Decimal Places</div>
-            <div class="settings-card-sub">Number of decimal digits to show</div>
-            <select id="decimalSelect" class="form-select" style="max-width:200px">
-              <option value="0">0 — 1,000 (recommended for ৳)</option>
-              <option value="2">2 — 1,000.00 (recommended for $)</option>
-            </select>
-          </div>
-
-          <div class="settings-card">
-            <div class="settings-card-title"><i class="fas fa-grip-lines-vertical"></i> Thousand Separator</div>
-            <div class="settings-card-sub">Character used to separate thousands</div>
-            <div class="option-pills" data-pill-group="thousandSeparator">
-              <div class="option-pill" data-value=",">, — 10,000</div>
-              <div class="option-pill" data-value="none">None — 10000</div>
+            <div class="settings-card-title"><i class="fas fa-calendar-alt"></i> Date &amp; Region</div>
+            <div class="compact-prefs-grid mt-2">
+              <div class="compact-pref-row">
+                <label class="compact-pref-label" for="dateFormatSelect"><i class="fas fa-calendar-alt"></i> Date Format</label>
+                <select id="dateFormatSelect" class="form-select compact-pref-select">
+                  <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                  <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                  <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                </select>
+              </div>
+              <div class="compact-pref-row">
+                <label class="compact-pref-label" for="weekStartsOnSelect"><i class="fas fa-calendar-week"></i> Week Starts</label>
+                <select id="weekStartsOnSelect" class="form-select compact-pref-select">
+                  <option value="sunday">Sunday</option>
+                  <option value="monday">Monday</option>
+                </select>
+              </div>
+              <div class="compact-pref-row">
+                <label class="compact-pref-label" for="financialYearSelect"><i class="fas fa-calendar-check"></i> Financial Year</label>
+                <select id="financialYearSelect" class="form-select compact-pref-select">
+                  <option value="january">January (Jan–Dec)</option>
+                  <option value="july">July (Jul–Jun)</option>
+                </select>
+              </div>
             </div>
-          </div>
-
-          <div class="settings-card">
-            <div class="settings-card-title"><i class="fas fa-minus"></i> Negative Amount Format</div>
-            <div class="settings-card-sub">How to display negative amounts</div>
-            <div class="option-pills" data-pill-group="negativeFormat">
-              <div class="option-pill" data-value="minus">-500 (Minus sign)</div>
-              <div class="option-pill" data-value="parentheses">(500) (Parentheses)</div>
-            </div>
-          </div>
-
-          <div class="settings-card">
-            <div class="settings-card-title"><i class="fas fa-calendar-week"></i> Week Starts On</div>
-            <div class="settings-card-sub">First day of the week in calendars</div>
-            <div class="option-pills" data-pill-group="weekStartsOn">
-              <div class="option-pill" data-value="sunday">Sunday</div>
-              <div class="option-pill" data-value="monday">Monday</div>
-            </div>
-          </div>
-
-          <div class="settings-card">
-            <div class="settings-card-title"><i class="fas fa-calendar-alt"></i> Date Format</div>
-            <div class="settings-card-sub">How dates are displayed throughout the app</div>
-            <select id="dateFormatSelect" class="form-select" style="max-width:220px">
-              <option value="DD/MM/YYYY">DD/MM/YYYY (31/12/2024)</option>
-              <option value="MM/DD/YYYY">MM/DD/YYYY (12/31/2024)</option>
-              <option value="YYYY-MM-DD">YYYY-MM-DD (2024-12-31)</option>
-            </select>
-          </div>
-
-          <div class="settings-card">
-            <div class="settings-card-title"><i class="fas fa-calendar-check"></i> Financial Year Start</div>
-            <div class="settings-card-sub">The start month of your financial year</div>
-            <select id="financialYearSelect" class="form-select" style="max-width:220px">
-              <option value="january">January (Jan&ndash;Dec)</option>
-              <option value="july">July (Jul&ndash;Jun)</option>
-            </select>
           </div>
         </section>
 
@@ -553,32 +551,24 @@
             </div>
           </div>
 
-          <!-- Privacy Mode -->
+          <!-- Privacy & Data -->
           <div class="settings-card">
-            <div class="settings-card-title"><i class="fas fa-eye-slash"></i> Privacy Mode</div>
-            <div class="settings-card-sub">Hide financial values from the screen</div>
-            <div class="toggle-row">
-              <div>
-                <div class="fw-semibold">Hide Financial Values</div>
-                <small class="text-muted">Replace amounts with &bull;&bull;&bull;&bull;&bull;&bull;&bull; (click eye icon to reveal)</small>
+            <div class="settings-card-title"><i class="fas fa-user-shield"></i> Privacy &amp; Data</div>
+            <div class="compact-prefs-grid mt-2">
+              <div class="compact-pref-row">
+                <label class="compact-pref-label" for="toggleHideValues"><i class="fas fa-eye-slash"></i> Financial Values</label>
+                <select id="toggleHideValues" class="form-select compact-pref-select">
+                  <option value="false">👁 Show values</option>
+                  <option value="true">🔒 Hide values</option>
+                </select>
               </div>
-              <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" id="toggleHideValues">
+              <div class="compact-pref-row">
+                <label class="compact-pref-label"><i class="fas fa-download"></i> Export Data</label>
+                <div class="d-flex gap-2">
+                  <button class="btn btn-sm btn-outline-primary" id="btnExportTransactions" title="Export Transactions"><i class="fas fa-file-csv me-1"></i>Transactions</button>
+                  <button class="btn btn-sm btn-outline-primary" id="btnExportCategories" title="Export Categories"><i class="fas fa-file-csv me-1"></i>Categories</button>
+                </div>
               </div>
-            </div>
-          </div>
-
-          <!-- Export -->
-          <div class="settings-card">
-            <div class="settings-card-title"><i class="fas fa-download"></i> Export Personal Data</div>
-            <div class="settings-card-sub">Download your data as CSV files</div>
-            <div class="d-flex gap-2 flex-wrap">
-              <button class="btn btn-outline-primary" id="btnExportTransactions">
-                <i class="fas fa-file-csv me-1"></i>Export Transactions (CSV)
-              </button>
-              <button class="btn btn-outline-primary" id="btnExportCategories">
-                <i class="fas fa-file-csv me-1"></i>Export Categories (CSV)
-              </button>
             </div>
           </div>
 
@@ -1277,6 +1267,11 @@ function initCurrencyUI() {
       updateCurrencyPreview();
     });
   }
+  var symSel = document.getElementById('symbolPositionSelect');
+  if (symSel) {
+    symSel.value = s.symbolPosition || 'before';
+    symSel.addEventListener('change', function(e){ saveSettings({ symbolPosition: e.target.value }); updateCurrencyPreview(); });
+  }
   var decSel = document.getElementById('decimalSelect');
   if (decSel) {
     decSel.value = String(s.decimalPlaces);
@@ -1285,10 +1280,25 @@ function initCurrencyUI() {
       updateCurrencyPreview();
     });
   }
+  var thouSel = document.getElementById('thousandSeparatorSelect');
+  if (thouSel) {
+    thouSel.value = s.thousandSeparator || ',';
+    thouSel.addEventListener('change', function(e){ saveSettings({ thousandSeparator: e.target.value }); updateCurrencyPreview(); });
+  }
+  var negSel = document.getElementById('negativeFormatSelect');
+  if (negSel) {
+    negSel.value = s.negativeFormat || 'minus';
+    negSel.addEventListener('change', function(e){ saveSettings({ negativeFormat: e.target.value }); updateCurrencyPreview(); });
+  }
   var dateSel = document.getElementById('dateFormatSelect');
   if (dateSel) {
     dateSel.value = s.dateFormat;
     dateSel.addEventListener('change', function(e){ saveSettings({ dateFormat: e.target.value }); });
+  }
+  var weekSel = document.getElementById('weekStartsOnSelect');
+  if (weekSel) {
+    weekSel.value = s.weekStartsOn || 'sunday';
+    weekSel.addEventListener('change', function(e){ saveSettings({ weekStartsOn: e.target.value }); });
   }
   var finSel = document.getElementById('financialYearSelect');
   if (finSel) {
@@ -1704,7 +1714,7 @@ if (btnSavePassword) {
 var toggleHideValues = document.getElementById('toggleHideValues');
 if (toggleHideValues) {
   toggleHideValues.addEventListener('change', function(e){
-    saveSettings({ hideValues: e.target.checked });
+    saveSettings({ hideValues: e.target.value === 'true' });
   });
 }
 
@@ -1860,7 +1870,7 @@ document.addEventListener('DOMContentLoaded', function(){
   initDisplayMode();
   initCurrencyUI();
   var hideToggle = document.getElementById('toggleHideValues');
-  if (hideToggle) hideToggle.checked = s.hideValues;
+  if (hideToggle) hideToggle.value = String(!!s.hideValues);
   var theme = localStorage.getItem(THEME_KEY()) || 'light';
   document.documentElement.setAttribute('data-theme', theme);
   var colorTheme = localStorage.getItem(COLOR_THEME_KEY()) || 'forest';
