@@ -341,3 +341,32 @@
         padding-top: 60px !important;
     }
 }
+
+/* ───────────────────────────────────────────────
+   DASHBOARD — Default/Compact view toggle
+─────────────────────────────────────────────── */
+@media (max-width: 767px) {
+
+    .view-mode-toggle .btn {
+        padding: 3px 9px !important;
+        font-size: 0.72rem !important;
+    }
+
+    /* Compact view: tighten row padding on phone */
+    .summary-stat-inner {
+        padding: 9px 12px !important;
+        gap: 10px !important;
+    }
+
+    .acct-summary-row {
+        padding: 10px 12px !important;
+    }
+
+    .acct-breakdown-list {
+        padding-left: 46px !important;
+    }
+
+    .summary-combined-card .stat-card-amount {
+        font-size: 0.85rem !important;
+    }
+}

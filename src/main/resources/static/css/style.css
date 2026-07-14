@@ -2843,3 +2843,192 @@ h3.stat-card-amount,
 }
 
 
+
+/* ═══════════════════════════════════════════════════════════════════════
+   COMPACT DASHBOARD VIEW — Financial Overview / Account Balances combined
+   cards used by the "Compact" dashboard view toggle.
+═══════════════════════════════════════════════════════════════════════ */
+
+/* ===== SHARED DASHBOARD CARD HEADER ===== */
+.dashboard-card-header {
+    background: var(--color-accent, #255F38);
+    color: #f0f0e8;
+    font-weight: 600;
+    padding: 0 16px;
+    height: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: none;
+    flex-shrink: 0;
+}
+.dashboard-card-header h6 { color: #f0f0e8; margin: 0; font-size: 0.9rem; }
+
+/* Compact toggle buttons — same size in every header */
+.dashboard-chart-toggle { display: flex; gap: 0; }
+.dashboard-chart-toggle .btn {
+    padding: 3px 8px;
+    font-size: 0.7rem;
+    line-height: 1.2;
+    border-color: rgba(255,255,255,0.4);
+    color: rgba(255,255,255,0.85);
+    background: transparent;
+}
+.dashboard-chart-toggle .btn:hover,
+.dashboard-chart-toggle .btn.active {
+    background: rgba(255,255,255,0.2);
+    border-color: rgba(255,255,255,0.7);
+    color: #fff;
+}
+.dashboard-chart-toggle .btn i { font-size: 0.68rem; }
+
+/* ===== FINANCIAL SUMMARY COMBINED CARD ===== */
+.summary-combined-card .card-body { padding: 0 !important; }
+
+/* Each row: reset stat-card gradient/transform to transparent row */
+.summary-stat-row.stat-card {
+    background: transparent !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-bottom: 1px solid var(--border-color, rgba(0,0,0,.08)) !important;
+    margin: 0 !important;
+    min-height: unset !important;
+    transition: background 0.18s ease !important;
+}
+.summary-stat-row.stat-card:last-child { border-bottom: none !important; }
+.summary-stat-row.stat-card:hover {
+    background: var(--bg-table-hover, rgba(0,0,0,.045)) !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Left-border accent on hover */
+.summary-stat-row.stat-card--income:hover  { border-left: 3px solid #1a9e5c !important; }
+.summary-stat-row.stat-card--expense:hover { border-left: 3px solid #e03c3c !important; }
+.summary-stat-row.stat-card--savings:hover { border-left: 3px solid #2563eb !important; }
+.summary-stat-row.stat-card--balance:hover { border-left: 3px solid #d97706 !important; }
+.summary-stat-row.stat-card--assets:hover  { border-left: 3px solid #7c3aed !important; }
+.summary-stat-row.stat-card--networth:hover{ border-left: 3px solid #0e7490 !important; }
+
+.summary-stat-inner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 16px;
+}
+
+/* Icon circle — reuse size/shape from original, but with colored bg */
+.summary-stat-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+.summary-stat-row:hover .summary-stat-icon { transform: scale(1.12); }
+
+/* Icon colors per type */
+.stat-card--income.summary-stat-row  .summary-stat-icon { background: rgba(26,158,92,0.15);  color: #1a9e5c; }
+.stat-card--expense.summary-stat-row .summary-stat-icon { background: rgba(224,60,60,0.15);   color: #e03c3c; }
+.stat-card--savings.summary-stat-row .summary-stat-icon { background: rgba(37,99,235,0.15);   color: #2563eb; }
+.stat-card--balance.summary-stat-row .summary-stat-icon { background: rgba(217,119,6,0.15);   color: #d97706; }
+.stat-card--assets.summary-stat-row  .summary-stat-icon { background: rgba(124,58,237,0.15);  color: #7c3aed; }
+.stat-card--networth.summary-stat-row .summary-stat-icon{ background: rgba(14,116,144,0.15);  color: #0e7490; }
+
+/* Text block */
+.summary-stat-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.summary-stat-title { font-size: 0.82rem; font-weight: 600; color: var(--text-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.summary-stat-sub { font-size: 0.70rem; color: var(--text-muted-custom, #888); }
+
+/* Amount — override stat-card-amount sizing for compact rows */
+.summary-combined-card .stat-card-amount {
+    font-size: 0.92rem !important;
+    font-weight: 700 !important;
+    white-space: nowrap;
+    margin: 0 !important;
+    line-height: 1.2;
+    text-shadow: none !important;
+}
+/* Amount color per type — !important needed to beat the global white
+   .stat-card-amount rule (designed for the colored gradient stat cards) */
+.stat-card--income.summary-stat-row  .stat-card-amount { color: #1a9e5c !important; }
+.stat-card--expense.summary-stat-row .stat-card-amount { color: #e03c3c !important; }
+.stat-card--savings.summary-stat-row .stat-card-amount { color: #2563eb !important; }
+.stat-card--balance.summary-stat-row .stat-card-amount { color: #d97706 !important; }
+.stat-card--assets.summary-stat-row  .stat-card-amount { color: #7c3aed !important; }
+.stat-card--networth.summary-stat-row .stat-card-amount{ color: #0e7490 !important; }
+
+/* Eye button — re-skin for non-gradient background */
+.summary-combined-card .summary-eye-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted-custom, #aaa);
+    padding: 4px 6px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+    transition: color 0.15s, background 0.15s;
+}
+.summary-combined-card .summary-eye-btn:hover {
+    background: rgba(0,0,0,0.08);
+    color: var(--text-body);
+}
+
+/* Dark mode */
+[data-theme="dark"] .stat-card--income.summary-stat-row  .summary-stat-icon { background: rgba(74,222,128,0.18);  color: #4ade80; }
+[data-theme="dark"] .stat-card--expense.summary-stat-row .summary-stat-icon { background: rgba(248,113,113,0.18); color: #f87171; }
+[data-theme="dark"] .stat-card--savings.summary-stat-row .summary-stat-icon { background: rgba(96,165,250,0.18);  color: #60a5fa; }
+[data-theme="dark"] .stat-card--balance.summary-stat-row .summary-stat-icon { background: rgba(251,191,36,0.18);  color: #fbbf24; }
+[data-theme="dark"] .stat-card--assets.summary-stat-row  .summary-stat-icon { background: rgba(167,139,250,0.18); color: #a78bfa; }
+[data-theme="dark"] .stat-card--networth.summary-stat-row .summary-stat-icon{ background: rgba(34,211,238,0.18);  color: #22d3ee; }
+
+[data-theme="dark"] .stat-card--income.summary-stat-row  .stat-card-amount { color: #4ade80 !important; }
+[data-theme="dark"] .stat-card--expense.summary-stat-row .stat-card-amount { color: #f87171 !important; }
+[data-theme="dark"] .stat-card--savings.summary-stat-row .stat-card-amount { color: #60a5fa !important; }
+[data-theme="dark"] .stat-card--balance.summary-stat-row .stat-card-amount { color: #fbbf24 !important; }
+[data-theme="dark"] .stat-card--assets.summary-stat-row  .stat-card-amount { color: #a78bfa !important; }
+[data-theme="dark"] .stat-card--networth.summary-stat-row .stat-card-amount{ color: #22d3ee !important; }
+
+[data-theme="dark"] .summary-combined-card .summary-eye-btn { color: rgba(255,255,255,0.4); }
+[data-theme="dark"] .summary-combined-card .summary-eye-btn:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.85); }
+
+/* ===== ACCOUNT BALANCE SUMMARY WIDGET ===== */
+.acct-summary-card .card-body { padding: 0 !important; }
+.acct-icon { width: 34px; height: 34px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+.acct-icon-bank   { background: rgba(59,130,246,0.15); color: #2563eb; }
+.acct-icon-card   { background: rgba(139,92,246,0.15); color: #7c3aed; }
+.acct-icon-credit { background: rgba(220,38,38,0.15);  color: #dc2626; }
+.acct-icon-mfs    { background: rgba(16,185,129,0.15); color: #059669; }
+.acct-icon-cash   { background: rgba(245,158,11,0.15); color: #d97706; }
+.acct-summary-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.acct-summary-item { border-bottom: 1px solid var(--border-color, #e5e7eb); padding: 0; display: flex; flex-direction: column; }
+.acct-summary-item:last-child { border-bottom: none; }
+.acct-summary-total { background: var(--bg-table-stripe, rgba(0,0,0,.025)); }
+.acct-summary-row { display: flex; align-items: center; gap: 12px; padding: 13px 16px; }
+.acct-summary-icon { width: 34px; height: 34px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.95rem; flex-shrink: 0; }
+.acct-summary-label { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.acct-summary-title { font-size: 0.83rem; font-weight: 600; color: var(--text-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.acct-summary-sub { font-size: 0.72rem; color: var(--text-muted-custom, #888); }
+.acct-breakdown-list { padding: 0 12px 8px 62px; display: flex; flex-direction: column; gap: 3px; }
+.acct-breakdown-list:empty { display: none; }
+.acct-breakdown-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.76rem; color: var(--text-muted-custom, #888); }
+.acct-breakdown-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.acct-summary-amount { font-size: 0.9rem; font-weight: 700; white-space: nowrap; color: #16a34a; }
+.acct-breakdown-bal { font-weight: 600; white-space: nowrap; margin-left: 8px; color: #16a34a; }
+.acct-breakdown-bal.bal-credit { color: #dc2626; }
+.balance-positive { color: #16a34a !important; }
+.balance-credit { color: #dc2626 !important; }
+
+/* Dark mode overrides */
+[data-theme="dark"] .acct-summary-amount { color: #4ade80; }
+[data-theme="dark"] .acct-breakdown-bal { color: #4ade80; }
+[data-theme="dark"] .balance-positive { color: #4ade80 !important; }
+[data-theme="dark"] .balance-credit { color: #f87171 !important; }
+[data-theme="dark"] .acct-breakdown-bal.bal-credit { color: #f87171; }

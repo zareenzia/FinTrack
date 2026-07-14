@@ -9,10 +9,105 @@
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/mobile.css">
     <link rel="icon" type="image/png" href="/images/logo.png">
+    <style>
+        /* Net Balance card flips to a warning tone when the selected month is running negative */
+        .stat-card--balance-negative .sc-icon-circle { background: rgba(220, 53, 69, 0.15); color: #dc3545; }
+        .stat-card--balance-negative #balance,
+        .stat-card--balance-negative #balanceCompact { color: #dc3545; }
+        #monthViewSelect { cursor: pointer; }
+
+        /* Default / Compact dashboard view toggle */
+        .view-mode-toggle {
+            display: inline-flex;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 4px;
+            gap: 2px;
+        }
+
+        .view-mode-toggle .btn {
+            font-size: 0.78rem;
+            padding: 6px 14px;
+            border: none;
+            color: var(--text-secondary-custom);
+            background: transparent;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            font-weight: 500;
+        }
+
+        .view-mode-toggle .btn:hover:not(.active) {
+            color: var(--text-body);
+            background: rgba(37, 95, 56, 0.08);
+        }
+
+        .view-mode-toggle .btn.active {
+            background: var(--color-surface);
+            color: #f5f5f0;
+            box-shadow: 0 2px 8px rgba(31, 125, 83, 0.2);
+        }
+
+        .view-mode-toggle .btn.active::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 0.5s ease-in-out;
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .dashboard-view-panel { display: none; }
+        .dashboard-view-panel.active { display: block; }
+
+        /* Greeting section styling */
+        .dashboard-header-greeting {
+            font-size: 0.95rem;
+            color: var(--text-body);
+            margin: 0;
+        }
+        .dashboard-header-greeting small {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-muted-custom);
+            margin-top: 2px;
+        }
+    </style>
 </head>
 <body>
 
 <div class="container-fluid mt-4">
+    <div class="row mb-3">
+        <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div class="dashboard-header-greeting">
+                <div id="dashboardGreeting" style="font-weight: 600;">Dashboard</div>
+                <small id="monthViewSubtitle">Loading...</small>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <div class="btn-group btn-group-sm view-mode-toggle" role="group" aria-label="Dashboard view mode">
+                    <button type="button" class="btn active" id="viewModeDefaultBtn" onclick="setDashboardView('default')" title="Default view">
+                        <i class="fas fa-table-cells-large me-1"></i>DEFAULT
+                    </button>
+                    <button type="button" class="btn" id="viewModeCompactBtn" onclick="setDashboardView('compact')" title="Compact view">
+                        <i class="fas fa-list me-1"></i>COMPACT
+                    </button>
+                </div>
+                <select class="form-select form-select-sm" id="monthViewSelect" style="width:auto; min-width:190px;">
+                    <option value="">Loading…</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div id="dashboardDefaultView" class="dashboard-view-panel active">
     <div class="row mb-4">
         <div class="col-xl-2 col-md-4 mb-3">
             <div class="card stat-card stat-card--income">
@@ -21,7 +116,7 @@
                         <div class="sc-icon-circle"><i class="fas fa-arrow-trend-up"></i></div>
                         <div class="sc-title-block">
                             <div class="sc-title">Total Income</div>
-                            <div class="sc-subtitle"><i class="fas fa-arrow-up sc-trend-up"></i> This month</div>
+                            <div class="sc-subtitle"><i class="fas fa-arrow-up sc-trend-up"></i> <span class="sc-month-label">This month</span></div>
                         </div>
                         <button class="sc-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
                     </div>
@@ -39,7 +134,7 @@
                         <div class="sc-icon-circle"><i class="fas fa-arrow-trend-down"></i></div>
                         <div class="sc-title-block">
                             <div class="sc-title">Total Expense</div>
-                            <div class="sc-subtitle"><i class="fas fa-arrow-down sc-trend-down"></i> This month</div>
+                            <div class="sc-subtitle"><i class="fas fa-arrow-down sc-trend-down"></i> <span class="sc-month-label">This month</span></div>
                         </div>
                         <button class="sc-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
                     </div>
@@ -57,7 +152,7 @@
                         <div class="sc-icon-circle"><i class="fas fa-piggy-bank"></i></div>
                         <div class="sc-title-block">
                             <div class="sc-title">Total Savings</div>
-                            <div class="sc-subtitle"><i class="fas fa-shield-halved sc-trend-up"></i> Protected</div>
+                            <div class="sc-subtitle"><i class="fas fa-shield-halved sc-trend-up"></i> <span class="sc-month-label">This month</span></div>
                         </div>
                         <button class="sc-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
                     </div>
@@ -69,13 +164,13 @@
             </div>
         </div>
         <div class="col-xl-2 col-md-4 mb-3">
-            <div class="card stat-card stat-card--balance">
+            <div class="card stat-card stat-card--balance" id="netBalanceCard">
                 <div class="card-body">
                     <div class="sc-top">
                         <div class="sc-icon-circle"><i class="fas fa-wallet"></i></div>
                         <div class="sc-title-block">
-                            <div class="sc-title">Available Balance</div>
-                            <div class="sc-subtitle"><i class="fas fa-circle-check sc-trend-up"></i> Current</div>
+                            <div class="sc-title">Net Balance</div>
+                            <div class="sc-subtitle"><i class="fas fa-circle-check sc-trend-up"></i> <span class="sc-month-label">This month</span></div>
                         </div>
                         <button class="sc-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
                     </div>
@@ -93,7 +188,7 @@
                         <div class="sc-icon-circle"><i class="fas fa-chart-line"></i></div>
                         <div class="sc-title-block">
                             <div class="sc-title">Assets Value</div>
-                            <div class="sc-subtitle"><i class="fas fa-gem sc-trend-up"></i> Portfolio</div>
+                            <div class="sc-subtitle"><i class="fas fa-gem sc-trend-up"></i> Portfolio · All time</div>
                         </div>
                         <button class="sc-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
                     </div>
@@ -111,7 +206,7 @@
                         <div class="sc-icon-circle"><i class="fas fa-crown"></i></div>
                         <div class="sc-title-block">
                             <div class="sc-title">Net Worth</div>
-                            <div class="sc-subtitle"><i class="fas fa-star sc-trend-up"></i> Total value</div>
+                            <div class="sc-subtitle"><i class="fas fa-star sc-trend-up"></i> Total value · All time</div>
                         </div>
                         <button class="sc-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
                     </div>
@@ -179,16 +274,274 @@
     <!-- Account Balances Widget -->
     <div class="row mb-4">
         <div class="col-md-12">
-            <div class="card">
-                <div class="card-header d-flex align-items-center justify-content-between">
+            <div class="card acct-summary-card">
+                <div class="card-header dashboard-card-header">
                     <h6 class="mb-0"><i class="fas fa-wallet me-2"></i>Account Balances</h6>
                 </div>
-                <div class="card-body" id="accountBalancesWidget">
-                    <span class="text-muted small">Loading...</span>
+                <div class="card-body p-0">
+                    <ul class="acct-summary-list">
+                        <li class="acct-summary-item acct-summary-group">
+                            <div class="acct-summary-row">
+                                <span class="acct-summary-icon acct-icon-bank"><i class="fas fa-university"></i></span>
+                                <span class="acct-summary-label">
+                                    <span class="acct-summary-title">Bank Balance</span>
+                                    <span class="acct-summary-sub">Bank + Debit</span>
+                                </span>
+                                <span class="acct-summary-amount" id="dashboardSummaryBank">…</span>
+                            </div>
+                            <div class="acct-breakdown-list" id="dashboardSummaryBankSubs"></div>
+                        </li>
+                        <li class="acct-summary-item acct-summary-group">
+                            <div class="acct-summary-row">
+                                <span class="acct-summary-icon acct-icon-mfs"><i class="fas fa-mobile-alt"></i></span>
+                                <span class="acct-summary-label">
+                                    <span class="acct-summary-title">MFS Balance</span>
+                                    <span class="acct-summary-sub">bKash, Nagad…</span>
+                                </span>
+                                <span class="acct-summary-amount" id="dashboardSummaryMfs">…</span>
+                            </div>
+                            <div class="acct-breakdown-list" id="dashboardSummaryMfsSubs"></div>
+                        </li>
+                        <li class="acct-summary-item acct-summary-group">
+                            <div class="acct-summary-row">
+                                <span class="acct-summary-icon acct-icon-cash"><i class="fas fa-money-bill-wave"></i></span>
+                                <span class="acct-summary-label">
+                                    <span class="acct-summary-title">Cash</span>
+                                    <span class="acct-summary-sub">Physical cash</span>
+                                </span>
+                                <span class="acct-summary-amount" id="dashboardSummaryCash">…</span>
+                            </div>
+                            <div class="acct-breakdown-list" id="dashboardSummaryCashSubs"></div>
+                        </li>
+                        <li class="acct-summary-item acct-summary-group">
+                            <div class="acct-summary-row">
+                                <span class="acct-summary-icon acct-icon-credit"><i class="fas fa-credit-card"></i></span>
+                                <span class="acct-summary-label">
+                                    <span class="acct-summary-title">Credit Outstanding</span>
+                                    <span class="acct-summary-sub">Credit cards</span>
+                                </span>
+                                <span class="acct-summary-amount balance-credit" id="dashboardSummaryCreditOutstanding">…</span>
+                            </div>
+                            <div class="acct-breakdown-list" id="dashboardSummaryCreditSubs"></div>
+                        </li>
+                        <li class="acct-summary-item acct-summary-total">
+                            <div class="acct-summary-row">
+                                <span class="acct-summary-icon acct-icon-card"><i class="fas fa-coins"></i></span>
+                                <span class="acct-summary-label">
+                                    <span class="acct-summary-title">Total Available</span>
+                                    <span class="acct-summary-sub">Bank + MFS + Cash</span>
+                                </span>
+                                <span class="acct-summary-amount balance-positive fw-bold" id="dashboardSummaryAvailable">…</span>
+                            </div>
+                        </li>
+                    </ul>
                 </div>
             </div>
         </div>
     </div>
+    </div><!-- /#dashboardDefaultView -->
+
+    <!-- ═══════════════ COMPACT VIEW ═══════════════ -->
+    <div id="dashboardCompactView" class="dashboard-view-panel">
+        <div class="row mb-4 align-items-stretch">
+            <!-- Left Column: Financial Summary (Combined Card) -->
+            <div class="col-lg-4 mb-4 mb-lg-0">
+                <div class="card summary-combined-card h-100">
+                    <div class="card-header dashboard-card-header">
+                        <h6 class="mb-0"><i class="fas fa-layer-group me-2"></i>Financial Overview</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="stat-card stat-card--income summary-stat-row">
+                            <div class="summary-stat-inner">
+                                <span class="summary-stat-icon"><i class="fas fa-arrow-trend-up"></i></span>
+                                <div class="summary-stat-text">
+                                    <span class="summary-stat-title">Total Income</span>
+                                    <span class="summary-stat-sub"><i class="fas fa-arrow-up sc-trend-up"></i> <span class="sc-month-label">This month</span></span>
+                                </div>
+                                <h3 class="stat-card-amount" id="total-incomeCompact">...</h3>
+                                <button class="sc-eye-btn summary-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-card--expense summary-stat-row">
+                            <div class="summary-stat-inner">
+                                <span class="summary-stat-icon"><i class="fas fa-arrow-trend-down"></i></span>
+                                <div class="summary-stat-text">
+                                    <span class="summary-stat-title">Total Expense</span>
+                                    <span class="summary-stat-sub"><i class="fas fa-arrow-down sc-trend-down"></i> <span class="sc-month-label">This month</span></span>
+                                </div>
+                                <h3 class="stat-card-amount" id="total-expenseCompact">...</h3>
+                                <button class="sc-eye-btn summary-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-card--savings summary-stat-row">
+                            <div class="summary-stat-inner">
+                                <span class="summary-stat-icon"><i class="fas fa-piggy-bank"></i></span>
+                                <div class="summary-stat-text">
+                                    <span class="summary-stat-title">Total Savings</span>
+                                    <span class="summary-stat-sub"><i class="fas fa-shield-halved sc-trend-up"></i> <span class="sc-month-label">This month</span></span>
+                                </div>
+                                <h3 class="stat-card-amount" id="total-savingsCompact">...</h3>
+                                <button class="sc-eye-btn summary-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-card--balance summary-stat-row" id="netBalanceCardCompact">
+                            <div class="summary-stat-inner">
+                                <span class="summary-stat-icon"><i class="fas fa-wallet"></i></span>
+                                <div class="summary-stat-text">
+                                    <span class="summary-stat-title">Net Balance</span>
+                                    <span class="summary-stat-sub"><i class="fas fa-circle-check sc-trend-up"></i> <span class="sc-month-label">This month</span></span>
+                                </div>
+                                <h3 class="stat-card-amount" id="balanceCompact">...</h3>
+                                <button class="sc-eye-btn summary-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-card--assets summary-stat-row">
+                            <div class="summary-stat-inner">
+                                <span class="summary-stat-icon"><i class="fas fa-chart-line"></i></span>
+                                <div class="summary-stat-text">
+                                    <span class="summary-stat-title">Assets Value</span>
+                                    <span class="summary-stat-sub"><i class="fas fa-gem sc-trend-up"></i> Portfolio</span>
+                                </div>
+                                <h3 class="stat-card-amount" id="total-assetsCompact">...</h3>
+                                <button class="sc-eye-btn summary-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-card--networth summary-stat-row">
+                            <div class="summary-stat-inner">
+                                <span class="summary-stat-icon"><i class="fas fa-crown"></i></span>
+                                <div class="summary-stat-text">
+                                    <span class="summary-stat-title">Net Worth</span>
+                                    <span class="summary-stat-sub"><i class="fas fa-star sc-trend-up"></i> Total value</span>
+                                </div>
+                                <h3 class="stat-card-amount" id="net-worthCompact">...</h3>
+                                <button class="sc-eye-btn summary-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center Column: Account Balances -->
+            <div class="col-lg-4 mb-4 mb-lg-0">
+                <div class="card acct-summary-card h-100">
+                    <div class="card-header dashboard-card-header">
+                        <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Account Balances</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="acct-summary-list">
+                            <li class="acct-summary-item acct-summary-group">
+                                <div class="acct-summary-row">
+                                    <span class="acct-summary-icon acct-icon-bank"><i class="fas fa-university"></i></span>
+                                    <span class="acct-summary-label">
+                                        <span class="acct-summary-title">Bank Balance</span>
+                                        <span class="acct-summary-sub">Bank + Debit</span>
+                                    </span>
+                                    <span class="acct-summary-amount" id="dashboardSummaryBankCompact">…</span>
+                                </div>
+                                <div class="acct-breakdown-list" id="dashboardSummaryBankSubsCompact"></div>
+                            </li>
+                            <li class="acct-summary-item acct-summary-group">
+                                <div class="acct-summary-row">
+                                    <span class="acct-summary-icon acct-icon-mfs"><i class="fas fa-mobile-alt"></i></span>
+                                    <span class="acct-summary-label">
+                                        <span class="acct-summary-title">MFS Balance</span>
+                                        <span class="acct-summary-sub">bKash, Nagad…</span>
+                                    </span>
+                                    <span class="acct-summary-amount" id="dashboardSummaryMfsCompact">…</span>
+                                </div>
+                                <div class="acct-breakdown-list" id="dashboardSummaryMfsSubsCompact"></div>
+                            </li>
+                            <li class="acct-summary-item acct-summary-group">
+                                <div class="acct-summary-row">
+                                    <span class="acct-summary-icon acct-icon-cash"><i class="fas fa-money-bill-wave"></i></span>
+                                    <span class="acct-summary-label">
+                                        <span class="acct-summary-title">Cash</span>
+                                        <span class="acct-summary-sub">Physical cash</span>
+                                    </span>
+                                    <span class="acct-summary-amount" id="dashboardSummaryCashCompact">…</span>
+                                </div>
+                                <div class="acct-breakdown-list" id="dashboardSummaryCashSubsCompact"></div>
+                            </li>
+                            <li class="acct-summary-item acct-summary-group">
+                                <div class="acct-summary-row">
+                                    <span class="acct-summary-icon acct-icon-credit"><i class="fas fa-credit-card"></i></span>
+                                    <span class="acct-summary-label">
+                                        <span class="acct-summary-title">Credit Outstanding</span>
+                                        <span class="acct-summary-sub">Credit cards</span>
+                                    </span>
+                                    <span class="acct-summary-amount balance-credit" id="dashboardSummaryCreditOutstandingCompact">…</span>
+                                </div>
+                                <div class="acct-breakdown-list" id="dashboardSummaryCreditSubsCompact"></div>
+                            </li>
+                            <li class="acct-summary-item acct-summary-total">
+                                <div class="acct-summary-row">
+                                    <span class="acct-summary-icon acct-icon-card"><i class="fas fa-coins"></i></span>
+                                    <span class="acct-summary-label">
+                                        <span class="acct-summary-title">Total Available</span>
+                                        <span class="acct-summary-sub">Bank + MFS + Cash</span>
+                                    </span>
+                                    <span class="acct-summary-amount balance-positive fw-bold" id="dashboardSummaryAvailableCompact">…</span>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Expense by Category -->
+            <div class="col-lg-4 mb-4 mb-lg-0">
+                <div class="card h-100">
+                    <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0" id="categoryChartTitleCompact"><i class="fas fa-pie-chart me-2"></i>Expense by Category</h6>
+                        <div class="btn-group dashboard-chart-toggle" role="group">
+                            <button type="button" class="btn btn-outline-light active" id="categoryPieBtnCompact" onclick="switchCategoryChart('pie')" title="Pie Chart">
+                                <i class="fas fa-chart-pie"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-light" id="categoryBarBtnCompact" onclick="switchCategoryChart('bar')" title="Bar Chart">
+                                <i class="fas fa-bars"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-2">
+                        <div class="row chart-row-category" style="display: flex; align-items: center; height: 100%;">
+                            <div class="col-md-5" id="categoryLegendContainerCompact">
+                                <div id="categoryLegendCompact"></div>
+                            </div>
+                            <div class="col-md-7" style="display: flex; align-items: center; justify-content: center;">
+                                <div style="width: 100%; height: 270px; position: relative;">
+                                    <canvas id="categoryChartCompact"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Trend: Full Width -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="fas fa-line-chart me-2"></i>Monthly Trend</h6>
+                        <div class="btn-group dashboard-chart-toggle" role="group">
+                            <button type="button" class="btn btn-outline-light active" id="monthlyLineBtnCompact" onclick="switchMonthlyChart('line')" title="Line Chart">
+                                <i class="fas fa-line-chart"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-light" id="monthlyBarBtnCompact" onclick="switchMonthlyChart('bar')" title="Bar Chart">
+                                <i class="fas fa-bars"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body chart-body-monthly" style="display: flex; align-items: center; justify-content: center;">
+                        <div style="width: 100%; height: 300px; position: relative;">
+                            <canvas id="monthlyChartCompact"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div><!-- /#dashboardCompactView -->
 
     <div class="row">
         <div class="col-md-12">
@@ -285,6 +638,27 @@
     let monthlyChartType     = 'line';
     let categoryBreakdownType = 'expense';   // 'expense' | 'savings'
 
+    let allTransactions      = [];
+    let selectedMonthKey     = null;   // 'YYYY-MM' or 'ALL'
+
+    /** 'YYYY-MM' key for a date string/object */
+    function monthKeyOf(dateVal) {
+        const d = new Date(dateVal);
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    }
+
+    /** 'YYYY-MM' key for right now */
+    function currentMonthKey() {
+        return monthKeyOf(new Date());
+    }
+
+    /** Human label for a 'YYYY-MM' key, e.g. "July 2026" */
+    function monthKeyLabel(key, short) {
+        const [y, m] = key.split('-');
+        const d = new Date(Number(y), Number(m) - 1, 1);
+        return d.toLocaleDateString('en-US', { month: short ? 'short' : 'long', year: 'numeric' });
+    }
+
     /** Read currency settings from localStorage — defaults match settings.html DEFAULTS */
     const CURRENCY_DEFAULTS = { currencySymbol:'৳', symbolPosition:'before', decimalPlaces:0 };
     function getCurrencySettings() {
@@ -304,13 +678,13 @@
         var num = Number(value).toFixed(c.decimals);
         return c.position === 'before' ? c.symbol + num : num + '\u00a0' + c.symbol;
     }
-    let categoryChartInstance = null;
-    let monthlyChartInstance  = null;
     let categoryColorMap      = {};
 
     /** Shrink .stat-card-amount font until text fits on one line */
     function fitStatAmounts() {
         document.querySelectorAll('.stat-card-amount').forEach(function (el) {
+            const panel = el.closest('.dashboard-view-panel');
+            if (panel && !panel.classList.contains('active')) return; // hidden panel — skip, sized 0
             el.style.fontSize = '';
             const cardBody = el.closest('.card-body');
             if (!cardBody) return;
@@ -359,37 +733,236 @@
         } catch(e) {}
     }
 
+    function setEl(id, val) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = val;
+    }
     function escHtml(s) {
         return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
     function fmt(v) {
         return Number(v||0).toLocaleString('en-BD', {minimumFractionDigits:0, maximumFractionDigits:2});
     }
+    /* ── Dashboard view mode (Default / Compact) ───────────────────────────── */
+    let currentViewMode = 'default'; // 'default' | 'compact'
+    function activeSuffix() { return currentViewMode === 'compact' ? 'Compact' : ''; }
+
+    function setDashboardView(mode, skipSave) {
+        currentViewMode = mode === 'compact' ? 'compact' : 'default';
+        const defPanel = document.getElementById('dashboardDefaultView');
+        const cmpPanel = document.getElementById('dashboardCompactView');
+        if (defPanel) defPanel.classList.toggle('active', currentViewMode === 'default');
+        if (cmpPanel) cmpPanel.classList.toggle('active', currentViewMode === 'compact');
+        const defBtn = document.getElementById('viewModeDefaultBtn');
+        const cmpBtn = document.getElementById('viewModeCompactBtn');
+        if (defBtn) defBtn.classList.toggle('active', currentViewMode === 'default');
+        if (cmpBtn) cmpBtn.classList.toggle('active', currentViewMode === 'compact');
+
+        if (!skipSave) {
+            try { localStorage.setItem(getUserStorageKey('fintrack_dashboard_view'), currentViewMode); } catch(e) {}
+        }
+
+        // Charts need to be (re)drawn for the panel that just became visible —
+        // canvases inside a display:none panel render at 0 size, so redraw fresh.
+        if (categoryChartData.length) drawCategoryChart(categoryChartData, activeSuffix());
+        if (monthlyChartData.length)  drawMonthlyChart(monthlyChartData, activeSuffix());
+        fitStatAmounts();
+        applyCardHideSetting();
+    }
+
     function accountIcon(type) {
         var m = {BANK:'🏦',DEBIT_CARD:'💳',CREDIT_CARD:'💳',MFS:'📱',CASH:'💵'};
         return m[type] || '💰';
     }
+
+    /** Populates the Account Balances card in BOTH the default and compact panels. */
     async function loadAccountBalances() {
         try {
             var token = localStorage.getItem('token');
-            var resp = await fetch('/api/accounts', { headers: { 'Authorization': 'Bearer ' + (token || '') } });
-            if (!resp.ok) return;
-            var accounts = await resp.json();
-            var widget = document.getElementById('accountBalancesWidget');
-            if (!widget) return;
-            if (!accounts || accounts.length === 0) {
-                widget.innerHTML = '<span class="text-muted small">No accounts configured. <a href="/settings">Configure accounts →</a></span>';
-                return;
+
+            var summaryResp = await fetch('/api/accounts/summary', {
+                headers: { 'Authorization': 'Bearer ' + (token || '') }
+            });
+            if (summaryResp.ok) {
+                var s = await summaryResp.json();
+                ['', 'Compact'].forEach(function (suf) {
+                    setEl('dashboardSummaryBank' + suf, '৳' + fmt(s.totalBank));
+                    setEl('dashboardSummaryMfs' + suf, '৳' + fmt(s.totalMfs));
+                    setEl('dashboardSummaryCash' + suf, '৳' + fmt(s.totalCash));
+                    setEl('dashboardSummaryCreditOutstanding' + suf, '৳' + fmt(s.totalCreditOutstanding));
+                    setEl('dashboardSummaryAvailable' + suf, '৳' + fmt(s.totalAvailable));
+                });
             }
-            var html = accounts.map(function(a) {
-                return '<div class="d-inline-flex align-items-center gap-2 me-4 mb-2">' +
-                    '<span style="font-size:1.1rem;">' + accountIcon(a.accountType) + '</span>' +
-                    '<span style="font-size:0.88rem;">' + escHtml(a.accountNickname) + '</span>' +
-                    '<span style="font-weight:700;font-size:0.9rem;color:' + (a.accountType==='CREDIT_CARD'?'#dc2626':'var(--accent-color)') + ';">৳' + fmt(a.currentBalance) + '</span>' +
-                    '</div>';
-            }).join('');
-            widget.innerHTML = '<div class="d-flex flex-wrap">' + html + '</div>';
+
+            var acctResp = await fetch('/api/accounts', {
+                headers: { 'Authorization': 'Bearer ' + (token || '') }
+            });
+            if (acctResp.ok) {
+                var accounts = await acctResp.json() || [];
+                var active = accounts.filter(function(a) { return a.status === 'ACTIVE'; });
+
+                function fillBreakdown(elId, accts, isCredit) {
+                    var el = document.getElementById(elId);
+                    if (!el) return;
+                    if (accts.length === 0) { el.innerHTML = ''; return; }
+                    el.innerHTML = accts.map(function(a) {
+                        var name = escHtml(a.accountNickname);
+                        var bal = fmt(a.currentBalance);
+                        var cls = isCredit ? 'bal-credit' : '';
+                        return '<div class="acct-breakdown-row">' +
+                            '<span class="acct-breakdown-name">' + name + '</span>' +
+                            '<span class="acct-breakdown-bal ' + cls + '">৳' + bal + '</span>' +
+                            '</div>';
+                    }).join('');
+                }
+
+                ['', 'Compact'].forEach(function (suf) {
+                    fillBreakdown('dashboardSummaryBankSubs' + suf, active.filter(function(a) {
+                        return a.accountType === 'BANK' || a.accountType === 'DEBIT_CARD';
+                    }), false);
+                    fillBreakdown('dashboardSummaryMfsSubs' + suf, active.filter(function(a) {
+                        return a.accountType === 'MFS';
+                    }), false);
+                    fillBreakdown('dashboardSummaryCashSubs' + suf, active.filter(function(a) {
+                        return a.accountType === 'CASH';
+                    }), false);
+                    fillBreakdown('dashboardSummaryCreditSubs' + suf, active.filter(function(a) {
+                        return a.accountType === 'CREDIT_CARD';
+                    }), true);
+                });
+            }
         } catch(e) { console.error('loadAccountBalances error:', e); }
+    }
+
+    /** Build the list of selectable months from the transactions we have, newest first,
+     *  always including the real current month even if it has no transactions yet. */
+    function getAvailableMonthKeys() {
+        const set = new Set();
+        allTransactions.forEach(function (tx) { set.add(monthKeyOf(tx.date)); });
+        set.add(currentMonthKey());
+        return Array.from(set).sort().reverse();
+    }
+
+    /** Populate the "Monthly View" dropdown, preserving the current selection if possible */
+    function populateMonthSelector() {
+        const sel = document.getElementById('monthViewSelect');
+        if (!sel) return;
+        const months = getAvailableMonthKeys();
+        const curKey = currentMonthKey();
+        if (!selectedMonthKey) selectedMonthKey = curKey;
+
+        let html = months.map(function (key) {
+            const label = monthKeyLabel(key) + (key === curKey ? ' (Current)' : '');
+            return '<option value="' + key + '"' + (key === selectedMonthKey ? ' selected' : '') + '>' + label + '</option>';
+        }).join('');
+        html += '<option value="ALL"' + (selectedMonthKey === 'ALL' ? ' selected' : '') + '>All Time</option>';
+        sel.innerHTML = html;
+
+        sel.onchange = function () {
+            selectedMonthKey = this.value;
+            onMonthViewChanged();
+        };
+    }
+
+    /** Sum income / expense / savings for a given month key ('YYYY-MM' or 'ALL') */
+    function computeMonthStats(monthKey) {
+        const txs = monthKey === 'ALL'
+            ? allTransactions
+            : allTransactions.filter(function (tx) { return monthKeyOf(tx.date) === monthKey; });
+
+        let income = 0, expense = 0, savings = 0;
+        txs.forEach(function (tx) {
+            const amt = Number(tx.amount) || 0;
+            if (tx.transaction_type === 'income')       income  += amt;
+            else if (tx.transaction_type === 'expense') expense += amt;
+            else if (tx.transaction_type === 'savings') savings += amt;
+        });
+        return { income: income, expense: expense, savings: savings, net: income - expense - savings, txs: txs };
+    }
+
+    /** Group a month's transactions by category for the given type ('expense' | 'savings') */
+    function computeCategoryBreakdown(monthKey, type) {
+        const stats = computeMonthStats(monthKey);
+        const map = {};
+        stats.txs.forEach(function (tx) {
+            if (tx.transaction_type !== type) return;
+            const name = tx.category_name || 'Uncategorized';
+            map[name] = (map[name] || 0) + (Number(tx.amount) || 0);
+        });
+        return Object.keys(map).map(function (name) {
+            return { category: name, total: map[name], color: categoryColorMap[name] || '#6c757d' };
+        }).sort(function (a, b) { return b.total - a.total; });
+    }
+
+    /** Push the selected month's numbers into the top stat cards + subtitles + net-balance styling */
+    function renderMonthCards(monthKey) {
+        const stats = computeMonthStats(monthKey);
+        ['', 'Compact'].forEach(function (suf) {
+            setEl('total-income' + suf,  formatAmount(stats.income));
+            setEl('total-expense' + suf, formatAmount(stats.expense));
+            setEl('total-savings' + suf, formatAmount(stats.savings));
+            setEl('balance' + suf,       formatAmount(stats.net));
+        });
+
+        const label = monthKey === 'ALL' ? 'All time' : monthKeyLabel(monthKey, true);
+        document.querySelectorAll('.sc-month-label').forEach(function (el) { el.textContent = label; });
+
+        const subtitleEl = document.getElementById('monthViewSubtitle');
+        if (subtitleEl) {
+            subtitleEl.textContent = monthKey === 'ALL'
+                ? 'Showing data across all time'
+                : 'Showing data for ' + monthKeyLabel(monthKey);
+        }
+
+        ['netBalanceCard', 'netBalanceCardCompact'].forEach(function (id) {
+            const netCard = document.getElementById(id);
+            if (netCard) netCard.classList.toggle('stat-card--balance-negative', stats.net < 0);
+        });
+
+        fitStatAmounts();
+        applyCardHideSetting();
+    }
+
+    /** Called whenever the Monthly View dropdown changes */
+    function onMonthViewChanged() {
+        renderMonthCards(selectedMonthKey);
+
+        const breakdown = computeCategoryBreakdown(selectedMonthKey, categoryBreakdownType);
+        categoryChartData = breakdown;
+        drawCategoryChart(breakdown, activeSuffix());
+
+        currentPage = 0;
+        applyFiltersAndDisplay();
+    }
+
+    /** Get greeting based on current time of day */
+    function getTimeGreeting() {
+        const hour = new Date().getHours();
+        if (hour >= 5 && hour < 12) return 'Good Morning';
+        if (hour >= 12 && hour < 17) return 'Good Afternoon';
+        if (hour >= 17 && hour < 21) return 'Good Evening';
+        return 'Good Night';
+    }
+
+    /** Update dashboard greeting with username */
+    async function updateGreeting() {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/auth/me', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (res.ok) {
+                const user = await res.json();
+                const username = user.username || user.fullName || 'User';
+                const greeting = getTimeGreeting();
+                const greetingEl = document.getElementById('dashboardGreeting');
+                if (greetingEl) {
+                    greetingEl.textContent = greeting + ', ' + username;
+                }
+            }
+        } catch (error) {
+            console.error('Error loading user greeting:', error);
+        }
     }
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -438,6 +1011,11 @@
             });
         }
 
+        // Restore saved dashboard view (Default / Compact) before first paint of data
+        const savedView = localStorage.getItem(getUserStorageKey('fintrack_dashboard_view')) || 'default';
+        setDashboardView(savedView, true);
+
+        updateGreeting();
         loadDashboard();
         loadAccountBalances();
     });
@@ -446,15 +1024,12 @@
 
     async function loadDashboard() {
         try {
+            // Assets Value & Net Worth are all-time/portfolio figures — not scoped to a month
             const summary = await fetch('/api/analytics/summary').then(r => r.json());
-            document.getElementById('total-income').textContent    = formatAmount(summary.total_income);
-            document.getElementById('total-expense').textContent   = formatAmount(summary.total_expense);
-            document.getElementById('total-savings').textContent   = formatAmount(summary.total_savings || 0);
-            document.getElementById('balance').textContent         = formatAmount(summary.balance);
-            document.getElementById('total-assets').textContent    = formatAmount(summary.total_assets || 0);
-            document.getElementById('net-worth').textContent       = formatAmount(summary.net_worth || 0);
-            fitStatAmounts();
-            applyCardHideSetting();
+            ['', 'Compact'].forEach(function (suf) {
+                setEl('total-assets' + suf, formatAmount(summary.total_assets || 0));
+                setEl('net-worth' + suf,    formatAmount(summary.net_worth || 0));
+            });
 
             const categories = await fetch('/api/categories').then(r => r.json());
             categoryColorMap = {};
@@ -477,16 +1052,22 @@
                 catFilter.value = prevCat;
             }
 
-            const breakdown = await fetch('/api/analytics/category-breakdown?type=' + categoryBreakdownType).then(r => r.json());
+            // Load all transactions once — everything month-specific is derived client-side from this
+            const transactions = await fetch('/api/transactions?limit=1000').then(r => r.json());
+            allTransactions = transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            // Set up / refresh the Monthly View dropdown, defaulting to the current calendar month
+            populateMonthSelector();
+            renderMonthCards(selectedMonthKey);
+
+            const breakdown = computeCategoryBreakdown(selectedMonthKey, categoryBreakdownType);
             categoryChartData = breakdown;
-            drawCategoryChart(breakdown);
+            drawCategoryChart(breakdown, activeSuffix());
 
             const monthly = await fetch('/api/analytics/monthly').then(r => r.json());
             monthlyChartData = monthly;
-            drawMonthlyChart(monthly);
+            drawMonthlyChart(monthly, activeSuffix());
 
-            const transactions = await fetch('/api/transactions?limit=1000').then(r => r.json());
-            allTransactions = transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
             currentPage = 0;
             applyFiltersAndDisplay();
         } catch (error) {
@@ -497,9 +1078,10 @@
     /* ── Filter logic ────────────────────────────────────────────────────── */
     function applyFiltersAndDisplay() {
         filteredTransactions = allTransactions.filter(function (tx) {
-            const catOk  = !txFilterCategory || tx.category_name === txFilterCategory;
-            const typeOk = !txFilterType     || tx.transaction_type === txFilterType;
-            return catOk && typeOk;
+            const catOk   = !txFilterCategory || tx.category_name === txFilterCategory;
+            const typeOk  = !txFilterType     || tx.transaction_type === txFilterType;
+            const monthOk = !selectedMonthKey || selectedMonthKey === 'ALL' || monthKeyOf(tx.date) === selectedMonthKey;
+            return catOk && typeOk && monthOk;
         });
         displayTransactionPage();
     }
@@ -600,8 +1182,11 @@
             }).join('');
         }
 
-        // Sub-heading: show filtered count vs total
-        const totalLabel = allTransactions.length;
+        // Sub-heading: show filtered count vs total for the selected month (or all time)
+        const monthTransactions = allTransactions.filter(function (tx) {
+            return !selectedMonthKey || selectedMonthKey === 'ALL' || monthKeyOf(tx.date) === selectedMonthKey;
+        });
+        const totalLabel = monthTransactions.length;
         const filteredLabel = filteredTransactions.length;
         const hasFilters = txFilterCategory || txFilterType;
         document.getElementById('tx-total-count').textContent =
@@ -741,14 +1326,19 @@
 
     /* ── Charts ──────────────────────────────────────────────────────────── */
 
-    function drawCategoryChart(data) {
-        const ctx = document.getElementById('categoryChart').getContext('2d');
-        if (categoryChartInstance) {
-            categoryChartInstance.destroy();
+    let categoryChartInstances = {}; // suffix -> Chart instance ('' = default, 'Compact' = compact)
+
+    function drawCategoryChart(data, suffix) {
+        suffix = suffix || '';
+        const canvasEl = document.getElementById('categoryChart' + suffix);
+        if (!canvasEl) return; // that panel isn't in the DOM (shouldn't happen, but stay safe)
+        const ctx = canvasEl.getContext('2d');
+        if (categoryChartInstances[suffix]) {
+            categoryChartInstances[suffix].destroy();
         }
 
         if (categoryChartType === 'pie') {
-            categoryChartInstance = new Chart(ctx, {
+            categoryChartInstances[suffix] = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
                     labels: data.map(d => d.category),
@@ -764,9 +1354,10 @@
                     }
                 }
             });
-            document.getElementById('categoryLegendContainer').style.display = 'block';
+            const legendWrap = document.getElementById('categoryLegendContainer' + suffix);
+            if (legendWrap) legendWrap.style.display = 'block';
         } else if (categoryChartType === 'bar') {
-            categoryChartInstance = new Chart(ctx, {
+            categoryChartInstances[suffix] = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: data.map(d => d.category),
@@ -797,36 +1388,46 @@
                     }
                 }
             });
-            document.getElementById('categoryLegendContainer').style.display = 'none';
+            const legendWrap = document.getElementById('categoryLegendContainer' + suffix);
+            if (legendWrap) legendWrap.style.display = 'none';
         }
 
         // Generate simple category legend
-        const legendContainer = document.getElementById('categoryLegend');
-        legendContainer.innerHTML = data.map(d => `
-            <div class="d-flex align-items-center mb-2">
-                <div style="width: 16px; height: 16px; background-color: ${d.color || '#3498db'}; border-radius: 3px; margin-right: 8px; flex-shrink: 0;"></div>
-                <span style="font-size: 0.9rem;">${d.category}</span>
-            </div>
-        `).join('');
+        const legendContainer = document.getElementById('categoryLegend' + suffix);
+        if (legendContainer) {
+            legendContainer.innerHTML = data.map(d => `
+                <div class="d-flex align-items-center mb-2">
+                    <div style="width: 16px; height: 16px; background-color: ${d.color || '#3498db'}; border-radius: 3px; margin-right: 8px; flex-shrink: 0;"></div>
+                    <span style="font-size: 0.9rem;">${d.category}</span>
+                </div>
+            `).join('');
+        }
     }
 
     function switchCategoryChart(type) {
         categoryChartType = type;
-        document.getElementById('categoryPieBtn').classList.toggle('active', type === 'pie');
-        document.getElementById('categoryBarBtn').classList.toggle('active', type === 'bar');
-        drawCategoryChart(categoryChartData);
+        ['', 'Compact'].forEach(function (suf) {
+            const pieBtn = document.getElementById('categoryPieBtn' + suf);
+            const barBtn = document.getElementById('categoryBarBtn' + suf);
+            if (pieBtn) pieBtn.classList.toggle('active', type === 'pie');
+            if (barBtn) barBtn.classList.toggle('active', type === 'bar');
+        });
+        drawCategoryChart(categoryChartData, activeSuffix());
     }
 
-    async function switchCategoryBreakdown(type) {
+    function switchCategoryBreakdown(type) {
         categoryBreakdownType = type;
-        try {
-            const data = await fetch('/api/analytics/category-breakdown?type=expense').then(r => r.json());
-            categoryChartData = data;
-            drawCategoryChart(data);
-        } catch (e) { console.error(e); }
+        const data = computeCategoryBreakdown(selectedMonthKey, categoryBreakdownType);
+        categoryChartData = data;
+        drawCategoryChart(data, activeSuffix());
     }
 
-    function drawMonthlyChart(data) {
+    let monthlyChartInstances = {}; // suffix -> Chart instance ('' = default, 'Compact' = compact)
+
+    function drawMonthlyChart(data, suffix) {
+        suffix = suffix || '';
+        const canvasEl = document.getElementById('monthlyChart' + suffix);
+        if (!canvasEl) return;
         const fiscalYear = ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
         const monthMap = {
             '07': 'Jul', '08': 'Aug', '09': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Dec',
@@ -849,8 +1450,8 @@
             }
         });
 
-        const ctx = document.getElementById('monthlyChart').getContext('2d');
-        if (monthlyChartInstance) monthlyChartInstance.destroy();
+        const ctx = canvasEl.getContext('2d');
+        if (monthlyChartInstances[suffix]) monthlyChartInstances[suffix].destroy();
 
         const commonOptions = {
             responsive: true,
@@ -883,7 +1484,7 @@
             delete savingsDataset.borderColor; delete savingsDataset.tension; delete savingsDataset.fill;
         }
 
-        monthlyChartInstance = new Chart(ctx, {
+        monthlyChartInstances[suffix] = new Chart(ctx, {
             type: monthlyChartType === 'bar' ? 'bar' : 'line',
             data: { labels: fiscalYear, datasets: [incomeDataset, expenseDataset, savingsDataset] },
             options: commonOptions
@@ -892,9 +1493,13 @@
 
     function switchMonthlyChart(type) {
         monthlyChartType = type;
-        document.getElementById('monthlyLineBtn').classList.toggle('active', type === 'line');
-        document.getElementById('monthlyBarBtn').classList.toggle('active', type === 'bar');
-        drawMonthlyChart(monthlyChartData);
+        ['', 'Compact'].forEach(function (suf) {
+            const lineBtn = document.getElementById('monthlyLineBtn' + suf);
+            const barBtn  = document.getElementById('monthlyBarBtn' + suf);
+            if (lineBtn) lineBtn.classList.toggle('active', type === 'line');
+            if (barBtn)  barBtn.classList.toggle('active', type === 'bar');
+        });
+        drawMonthlyChart(monthlyChartData, activeSuffix());
     }
 
     function showNotification(message, type = 'success') {
