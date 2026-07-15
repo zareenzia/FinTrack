@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.example.finzin.entity.UserEntity;
 import org.example.finzin.service.AuthService;
 import org.example.finzin.service.JwtTokenProvider;
+import org.example.finzin.service.RecurringTransactionExecutionService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,13 +29,16 @@ public class AuthController {
     
     private final AuthService authService;
     private final JwtTokenProvider jwtTokenProvider;
-    
+    private final RecurringTransactionExecutionService recurringTransactionExecutionService;
+
     @Value("${app.upload.dir:user-uploads/profiles}")
     private String uploadDir;
-    
-    public AuthController(AuthService authService, JwtTokenProvider jwtTokenProvider) {
+
+    public AuthController(AuthService authService, JwtTokenProvider jwtTokenProvider,
+                           RecurringTransactionExecutionService recurringTransactionExecutionService) {
         this.authService = authService;
         this.jwtTokenProvider = jwtTokenProvider;
+        this.recurringTransactionExecutionService = recurringTransactionExecutionService;
     }
     
     // --- Helper: extract and validate userId from Authorization header -------
@@ -180,7 +184,13 @@ public class AuthController {
             
             UserEntity user = authService.login(request.getUsernameOrEmail(), request.getPassword());
             System.out.println("? User authenticated: " + user.getId());
-            
+
+            try {
+                recurringTransactionExecutionService.processDueForUser(user.getId());
+            } catch (Exception e) {
+                System.out.println("?? Recurring transaction catch-up failed: " + e.getMessage());
+            }
+
             String token = jwtTokenProvider.generateToken(user);
             System.out.println("? Token generated");
             
