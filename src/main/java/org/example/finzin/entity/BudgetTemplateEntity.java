@@ -4,10 +4,8 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "category_budgets", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"budgetPlanId", "categoryId"}, name = "uk_budget_plan_category")
-})
-public class BudgetEntity {
+@Table(name = "budget_templates")
+public class BudgetTemplateEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -15,18 +13,17 @@ public class BudgetEntity {
     @Column(nullable = false)
     private Long userId;
 
-    @Column(nullable = true)
-    private Long budgetPlanId;
+    @Column(nullable = false)
+    private String name;
 
     @Column(nullable = false)
-    private Long categoryId;
-
-    /** Month the budget applies to, formatted "yyyy-MM" (e.g. "2026-07"). */
-    @Column(nullable = false, length = 7)
-    private String period;
+    private Double plannedIncome;
 
     @Column(nullable = false)
-    private Double budgetAmount;
+    private Double plannedSavings;
+
+    @Column(columnDefinition = "TEXT")
+    private String notes;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -49,14 +46,14 @@ public class BudgetEntity {
     public void setId(Long id) { this.id = id; }
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
-    public Long getBudgetPlanId() { return budgetPlanId; }
-    public void setBudgetPlanId(Long budgetPlanId) { this.budgetPlanId = budgetPlanId; }
-    public Long getCategoryId() { return categoryId; }
-    public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
-    public String getPeriod() { return period; }
-    public void setPeriod(String period) { this.period = period; }
-    public Double getBudgetAmount() { return budgetAmount; }
-    public void setBudgetAmount(Double budgetAmount) { this.budgetAmount = budgetAmount; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public Double getPlannedIncome() { return plannedIncome; }
+    public void setPlannedIncome(Double plannedIncome) { this.plannedIncome = plannedIncome; }
+    public Double getPlannedSavings() { return plannedSavings; }
+    public void setPlannedSavings(Double plannedSavings) { this.plannedSavings = plannedSavings; }
+    public String getNotes() { return notes; }
+    public void setNotes(String notes) { this.notes = notes; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

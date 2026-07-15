@@ -10,10 +10,55 @@
     <link rel="stylesheet" href="/css/mobile.css">
     <link rel="icon" type="image/png" href="/images/logo.png">
     <style>
-        .budget-progress { height: 10px; border-radius: 6px; background: var(--bg-input); overflow: hidden; }
-        .budget-progress-bar { height: 100%; background: var(--accent-color); transition: width 0.3s ease; }
-        .budget-progress-bar.over { background: #dc3545; }
-        .budget-card { border-left: 4px solid var(--accent-color); }
+        .bp-progress { height: 10px; border-radius: 6px; background: var(--bg-input); overflow: hidden; }
+        .bp-progress-bar { height: 100%; transition: width 0.3s ease; background: #28a745; }
+        .bp-progress-bar.warn { background: #fd7e14; }
+        .bp-progress-bar.over { background: #dc3545; }
+
+        .bp-status-badge { padding: 0.25rem 0.55rem; border-radius: 999px; font-size: 0.72rem; font-weight: 600; white-space: nowrap; }
+        .bp-status-ON_TRACK { background: rgba(40, 167, 69, 0.15); color: #28a745; }
+        .bp-status-NEAR_LIMIT { background: rgba(253, 126, 20, 0.15); color: #fd7e14; }
+        .bp-status-OVER_BUDGET { background: rgba(220, 53, 69, 0.15); color: #dc3545; }
+        .bp-status-COMPLETED { background: rgba(108, 117, 125, 0.15); color: #6c757d; }
+        .bp-status-IN_PROGRESS { background: rgba(37, 95, 56, 0.15); color: var(--accent-color); }
+        .bp-status-GOAL_ACHIEVED { background: rgba(40, 167, 69, 0.15); color: #28a745; }
+        .bp-status-ACTIVE { background: rgba(37, 95, 56, 0.15); color: var(--accent-color); }
+        .bp-status-ARCHIVED { background: rgba(108, 117, 125, 0.15); color: #6c757d; }
+
+        .bp-card { border-left: 4px solid var(--accent-color); }
+        .bp-suggestion { font-size: 0.8rem; color: var(--text-secondary-custom); background: var(--bg-table-stripe); border-radius: 6px; padding: 6px 10px; margin-top: 8px; }
+
+        .bp-stat-card { text-align: center; padding: 1rem 0.5rem; }
+        .bp-stat-value { font-size: 1.4rem; font-weight: 700; }
+        .bp-stat-label { font-size: 0.78rem; color: var(--text-muted-custom); }
+
+        .bp-score-circle { width: 110px; height: 110px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-direction: column; margin: 0 auto; background: conic-gradient(var(--accent-color) calc(var(--score, 0) * 1%), var(--bg-input) 0); }
+        .bp-score-circle-inner { width: 88px; height: 88px; border-radius: 50%; background: var(--bg-card); display: flex; align-items: center; justify-content: center; flex-direction: column; }
+        .bp-score-value { font-size: 1.5rem; font-weight: 700; }
+        .bp-score-label { font-size: 0.65rem; color: var(--text-muted-custom); }
+        .bp-score-mini { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: conic-gradient(var(--accent-color) calc(var(--score, 0) * 1%), var(--bg-input) 0); }
+        .bp-score-mini-inner { width: 34px; height: 34px; border-radius: 50%; background: var(--bg-card); display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; }
+
+        .bp-empty { text-align: center; padding: 3rem 1rem; color: var(--text-muted-custom); }
+
+        .bp-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .bp-cal-dow { text-align: center; font-size: 0.75rem; color: var(--text-muted-custom); font-weight: 600; padding: 4px 0; }
+        .bp-cal-cell { min-height: 64px; border: 1px solid var(--border-input); border-radius: 6px; padding: 4px; font-size: 0.72rem; background: var(--bg-card); }
+        .bp-cal-cell.empty { background: transparent; border: none; }
+        .bp-cal-date { font-weight: 600; color: var(--text-secondary-custom); }
+        .bp-cal-dots { display: flex; gap: 3px; margin-top: 4px; flex-wrap: wrap; }
+        .bp-cal-dot { width: 7px; height: 7px; border-radius: 50%; }
+        .bp-dot-income { background: #28a745; }
+        .bp-dot-expense { background: #6c757d; }
+        .bp-dot-savings { background: #3b82f6; }
+        .bp-dot-exceeded { background: #dc3545; }
+
+        .bp-history-row td { vertical-align: middle; }
+        .bp-action-btn { width: 32px; height: 32px; border: none; background: transparent; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s ease; color: var(--text-secondary-custom); }
+        .bp-action-btn:hover { background: var(--bg-table-hover); color: var(--accent-color); }
+        .bp-action-btn.danger:hover { background: rgba(220, 53, 69, 0.12); color: #dc3545; }
+
+        .icon-btn { width: 38px; height: 38px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
     </style>
 </head>
 <body>
@@ -21,184 +66,458 @@
 
 <div class="container-fluid mt-4">
     <div class="row">
-        <div class="col-md-12 d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <div class="col-md-12 d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
             <h2 class="mb-0"><i class="fas fa-wallet"></i> Budget Planner</h2>
-            <div class="d-flex align-items-center gap-2">
-                <input type="month" class="form-control form-control-sm" id="budgetPeriod" style="width: auto;">
-                <button type="button" class="btn btn-primary btn-sm" id="openBudgetModalBtn">
-                    <i class="fas fa-plus me-1"></i> Set Budget
-                </button>
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-primary btn-sm" id="openCreatePlanBtn"><i class="fas fa-plus me-1"></i> Create Budget</button>
+                <button type="button" class="btn btn-outline-primary btn-sm" id="copyPreviousBtn"><i class="fas fa-clone me-1"></i> Copy Last Month</button>
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-file-export me-1"></i> Export
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#" onclick="exportPlan('csv');return false;">CSV</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="exportPlan('excel');return false;">Excel (.xlsx)</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="exportPlan('pdf');return false;">PDF</a></li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <p class="text-muted small mb-0">Plan monthly, quarterly, or yearly budgets for income, expenses, and savings — synced live with your transactions.</p>
+        </div>
+    </div>
 
-    <div class="row g-3" id="budgetStatusContainer">
-        <div class="col-12"><p class="text-muted">Loading budgets…</p></div>
+    <div class="row mb-3">
+        <div class="col-12">
+            <select class="form-select form-select-sm" id="planSelect" style="max-width: 420px;">
+                <option value="">Loading budgets…</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="bpNoPlanState" class="bp-empty d-none">
+        <i class="fas fa-wallet fa-3x mb-3"></i>
+        <h5>No budget yet</h5>
+        <p>Create your first budget to start planning income, expenses, and savings.</p>
+        <button type="button" class="btn btn-primary" onclick="openCreatePlanModal()"><i class="fas fa-plus me-1"></i> Create Budget</button>
+    </div>
+
+    <div id="bpPlanContent" class="d-none">
+    <ul class="nav nav-tabs mb-3" id="bpTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#bp-overview-pane" type="button" role="tab"><i class="fas fa-gauge-high me-1"></i> Overview</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#bp-charts-pane" type="button" role="tab" onclick="renderCharts()"><i class="fas fa-chart-pie me-1"></i> Charts</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#bp-calendar-pane" type="button" role="tab" onclick="renderCalendar()"><i class="fas fa-calendar-days me-1"></i> Calendar</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#bp-history-pane" type="button" role="tab" onclick="loadHistory()"><i class="fas fa-clock-rotate-left me-1"></i> History</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#bp-templates-pane" type="button" role="tab" onclick="loadTemplates()"><i class="fas fa-copy me-1"></i> Templates</button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+    <!-- ============== OVERVIEW ============== -->
+    <div class="tab-pane fade show active" id="bp-overview-pane" role="tabpanel">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <div>
+                <h5 class="mb-0" id="bpPlanName">—</h5>
+                <span class="text-muted small" id="bpPlanMeta"></span>
+            </div>
+            <div class="d-flex gap-2">
+                <span class="bp-status-badge" id="bpPlanStatusBadge"></span>
+                <button class="btn btn-sm btn-outline-secondary" onclick="openEditPlanModal()"><i class="fas fa-pen"></i></button>
+                <button class="btn btn-sm btn-outline-danger" onclick="confirmDeletePlan(currentPlanId)"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4" id="bpSummaryCards"></div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-8">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="mb-0"><i class="fas fa-tags me-1"></i> Category Budgets</h6>
+                    <button class="btn btn-sm btn-outline-primary" onclick="openCategoryBudgetModal()"><i class="fas fa-plus me-1"></i> Add Category Budget</button>
+                </div>
+                <div class="row g-3" id="bpCategoryCards"></div>
+            </div>
+            <div class="col-md-4">
+                <h6 class="mb-2"><i class="fas fa-star me-1"></i> Budget Score</h6>
+                <div class="card mb-4">
+                    <div class="card-body text-center">
+                        <div class="bp-score-circle" id="bpScoreCircle" style="--score:0">
+                            <div class="bp-score-circle-inner">
+                                <span class="bp-score-value" id="bpScoreValue">0</span>
+                                <span class="bp-score-label">/ 100</span>
+                            </div>
+                        </div>
+                        <p class="text-muted small mt-2 mb-0">Stayed within budget, savings achieved, income target met.</p>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="mb-0"><i class="fas fa-piggy-bank me-1"></i> Savings Goals</h6>
+                    <button class="btn btn-sm btn-outline-primary" onclick="openSavingsBudgetModal()"><i class="fas fa-plus"></i></button>
+                </div>
+                <div id="bpSavingsCards"></div>
+            </div>
+        </div>
+    </div><!-- /overview -->
+
+    <!-- ============== CHARTS ============== -->
+    <div class="tab-pane fade" id="bp-charts-pane" role="tabpanel">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header dashboard-card-header"><h6 class="mb-0"><i class="fas fa-chart-pie me-1"></i> Budget Allocation</h6></div>
+                    <div class="card-body" style="height:280px;"><canvas id="bpAllocationChart"></canvas></div>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div class="card h-100">
+                    <div class="card-header dashboard-card-header"><h6 class="mb-0"><i class="fas fa-chart-column me-1"></i> Budget vs Actual</h6></div>
+                    <div class="card-body" style="height:280px;"><canvas id="bpVsActualChart"></canvas></div>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header dashboard-card-header"><h6 class="mb-0"><i class="fas fa-chart-line me-1"></i> Budget Trend</h6></div>
+                    <div class="card-body" style="height:280px;"><canvas id="bpTrendChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+    </div><!-- /charts -->
+
+    <!-- ============== CALENDAR ============== -->
+    <div class="tab-pane fade" id="bp-calendar-pane" role="tabpanel">
+        <div class="d-flex gap-3 mb-3 small text-muted flex-wrap">
+            <span><span class="bp-cal-dot bp-dot-income d-inline-block me-1"></span> Income day</span>
+            <span><span class="bp-cal-dot bp-dot-expense d-inline-block me-1"></span> Spending day</span>
+            <span><span class="bp-cal-dot bp-dot-savings d-inline-block me-1"></span> Savings day</span>
+            <span><span class="bp-cal-dot bp-dot-exceeded d-inline-block me-1"></span> Budget exceeded that day</span>
+        </div>
+        <div class="bp-cal-grid mb-2">
+            <div class="bp-cal-dow">Sun</div><div class="bp-cal-dow">Mon</div><div class="bp-cal-dow">Tue</div>
+            <div class="bp-cal-dow">Wed</div><div class="bp-cal-dow">Thu</div><div class="bp-cal-dow">Fri</div><div class="bp-cal-dow">Sat</div>
+        </div>
+        <div class="bp-cal-grid" id="bpCalendarGrid"></div>
+    </div><!-- /calendar -->
+
+    <!-- ============== HISTORY ============== -->
+    <div class="tab-pane fade" id="bp-history-pane" role="tabpanel">
+        <div class="row g-2 mb-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small mb-1">Search</label>
+                <input type="text" class="form-control form-control-sm" id="bpHistorySearch" placeholder="Search by name..." oninput="loadHistory()">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small mb-1">Status</label>
+                <select class="form-select form-select-sm" id="bpHistoryStatus" onchange="loadHistory()">
+                    <option value="">All</option>
+                    <option value="ACTIVE">Active</option>
+                    <option value="ARCHIVED">Archived</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small mb-1">Sort By</label>
+                <select class="form-select form-select-sm" id="bpHistorySort" onchange="loadHistory()">
+                    <option value="startDate">Newest First</option>
+                    <option value="name">Name</option>
+                </select>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Name</th><th>Period</th><th>Income</th><th>Expense</th><th>Savings</th>
+                        <th>Score</th><th>Status</th><th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="bpHistoryBody"></tbody>
+            </table>
+        </div>
+    </div><!-- /history -->
+
+    <!-- ============== TEMPLATES ============== -->
+    <div class="tab-pane fade" id="bp-templates-pane" role="tabpanel">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0">Budget Templates</h6>
+            <button class="btn btn-sm btn-primary" onclick="openTemplateModal()"><i class="fas fa-plus me-1"></i> Create Template</button>
+        </div>
+        <div class="row g-3" id="bpTemplateCards"></div>
+    </div><!-- /templates -->
+    </div><!-- /tab-content -->
+    </div><!-- /#bpPlanContent -->
+</div>
+
+<!-- ============== Create/Edit Plan Modal ============== -->
+<div class="modal fade" id="planModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="planModalTitle"><i class="fas fa-wallet me-2"></i>Create Budget</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Budget Name</label>
+                        <input type="text" class="form-control form-control-sm" id="planName" placeholder="e.g., July Family Budget">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Period Type</label>
+                        <select class="form-select form-select-sm" id="planPeriodType">
+                            <option value="MONTH">Month</option>
+                            <option value="QUARTER">Quarter</option>
+                            <option value="YEAR">Year</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Period Label</label>
+                        <input type="text" class="form-control form-control-sm" id="planPeriod" placeholder="2026-07">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Start Date</label>
+                        <input type="date" class="form-control form-control-sm" id="planStartDate">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">End Date</label>
+                        <input type="date" class="form-control form-control-sm" id="planEndDate">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Expected Income</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">৳</span>
+                            <input type="number" class="form-control" id="planIncome" step="0.01" min="0">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Expected Savings</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">৳</span>
+                            <input type="number" class="form-control" id="planSavings" step="0.01" min="0">
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Notes <small class="text-muted">(optional)</small></label>
+                        <textarea class="form-control form-control-sm" id="planNotes" rows="2"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary icon-btn" data-bs-dismiss="modal" title="Cancel"><i class="fas fa-times"></i></button>
+                <button type="button" class="btn btn-primary icon-btn" id="savePlanBtn" title="Save"><i class="fas fa-check"></i></button>
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- Set Budget Modal -->
-<div class="modal fade" id="setBudgetModal" tabindex="-1" aria-hidden="true">
+<!-- ============== Category Budget Modal ============== -->
+<div class="modal fade" id="categoryBudgetModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-wallet me-2"></i>Set Budget</h5>
+                <h5 class="modal-title"><i class="fas fa-tags me-2"></i>Category Budget</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="mb-3">
-                    <label for="budgetCategory" class="form-label">Category</label>
-                    <select class="form-select form-select-sm" id="budgetCategory" required>
-                        <option value="">Select category</option>
-                    </select>
+                    <label class="form-label">Category</label>
+                    <select class="form-select form-select-sm" id="categoryBudgetCategory"><option value="">Select category</option></select>
                 </div>
                 <div class="mb-3">
-                    <label for="budgetAmount" class="form-label">Monthly Budget Amount</label>
+                    <label class="form-label">Budget Amount</label>
                     <div class="input-group input-group-sm">
                         <span class="input-group-text">৳</span>
-                        <input type="number" class="form-control" id="budgetAmount" step="0.01" min="0.01" required placeholder="0.00">
+                        <input type="number" class="form-control" id="categoryBudgetAmount" step="0.01" min="0.01">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary icon-btn" data-bs-dismiss="modal" title="Cancel"><i class="fas fa-times"></i></button>
+                <button type="button" class="btn btn-primary icon-btn" id="saveCategoryBudgetBtn" title="Save"><i class="fas fa-check"></i></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============== Savings Budget Modal ============== -->
+<div class="modal fade" id="savingsBudgetModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="savingsBudgetModalTitle"><i class="fas fa-piggy-bank me-2"></i>Savings Goal</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3" id="savingsBudgetCategoryWrap">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <label class="form-label mb-1">Savings Goal / Category</label>
+                        <a href="#" class="small" id="toggleNewSavingsCategoryLink" onclick="return false;">+ Create new category</a>
+                    </div>
+                    <select class="form-select form-select-sm" id="savingsBudgetCategory"><option value="">Select category</option></select>
+                    <div id="savingsBudgetCategoryReadonly" class="form-control form-control-sm bg-body-secondary d-none"></div>
+                    <div class="d-none mt-2" id="newSavingsCategoryFields">
+                        <div class="row g-2">
+                            <div class="col-8">
+                                <input type="text" class="form-control form-control-sm" id="newSavingsCategoryName" placeholder="e.g., Umrah Fund">
+                            </div>
+                            <div class="col-4">
+                                <input type="color" class="form-control form-control-color form-control-sm w-100" id="newSavingsCategoryColor" value="#3b82f6">
+                            </div>
+                        </div>
+                        <small class="text-muted">A new savings category will be created for this goal.</small>
+                    </div>
+                </div>
+                <div class="alert alert-info py-2 px-3 small mb-3 d-none" id="savingsBudgetContributedInfo"></div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Target Amount</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">৳</span>
+                            <input type="number" class="form-control" id="savingsBudgetAmount" step="0.01" min="0.01">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Manual Starting Balance <small class="text-muted">(optional)</small></label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">৳</span>
+                            <input type="number" class="form-control" id="savingsBudgetInitialAmount" step="0.01" min="0" placeholder="0.00">
+                        </div>
+                        <small class="text-muted">Money saved before you started tracking this goal here — don't include amounts already logged as transactions.</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Stored In <small class="text-muted">(optional)</small></label>
+                        <select class="form-select form-select-sm" id="savingsBudgetStorageAccount"><option value="">-- Not specified --</option></select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Funded From <small class="text-muted">(optional)</small></label>
+                        <select class="form-select form-select-sm" id="savingsBudgetSourceAccount">
+                            <option value="">-- Not specified --</option>
+                            <option value="__other__">Other (bonus, gift, etc.) — describe...</option>
+                        </select>
+                        <input type="text" class="form-control form-control-sm mt-2 d-none" id="savingsBudgetSourceDescription" placeholder="e.g., Year-end bonus, Gift from parents">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary icon-btn" data-bs-dismiss="modal" title="Cancel"><i class="fas fa-times"></i></button>
+                <button type="button" class="btn btn-primary icon-btn" id="saveSavingsBudgetBtn" title="Save"><i class="fas fa-check"></i></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============== Template Modal ============== -->
+<div class="modal fade" id="templateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-copy me-2"></i>Budget Template</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Template Name</label>
+                        <input type="text" class="form-control form-control-sm" id="templateName" placeholder="e.g., Student Budget">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Expected Income</label>
+                        <input type="number" class="form-control form-control-sm" id="templateIncome" step="0.01" min="0">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Expected Savings</label>
+                        <input type="number" class="form-control form-control-sm" id="templateSavings" step="0.01" min="0">
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label mb-0">Category Allocations</label>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="addTemplateRow()"><i class="fas fa-plus"></i> Add Row</button>
+                </div>
+                <div id="templateRowsContainer"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary icon-btn" data-bs-dismiss="modal" title="Cancel"><i class="fas fa-times"></i></button>
+                <button type="button" class="btn btn-primary icon-btn" id="saveTemplateBtn" title="Save"><i class="fas fa-check"></i></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============== Apply Template Modal ============== -->
+<div class="modal fade" id="applyTemplateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-play me-2"></i>Apply Template</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Budget Name</label>
+                    <input type="text" class="form-control form-control-sm" id="applyName">
+                </div>
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <label class="form-label">Period Type</label>
+                        <select class="form-select form-select-sm" id="applyPeriodType">
+                            <option value="MONTH">Month</option>
+                            <option value="QUARTER">Quarter</option>
+                            <option value="YEAR">Year</option>
+                        </select>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">Period Label</label>
+                        <input type="text" class="form-control form-control-sm" id="applyPeriod" placeholder="2026-08">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Start Date</label>
+                        <input type="date" class="form-control form-control-sm" id="applyStartDate">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">End Date</label>
+                        <input type="date" class="form-control form-control-sm" id="applyEndDate">
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="saveBudgetBtn">Save Budget</button>
+                <button type="button" class="btn btn-primary" id="confirmApplyTemplateBtn">Apply</button>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-    let setBudgetModal;
+<!-- ============== Generic Delete Confirmation Modal ============== -->
+<div class="modal fade" id="bpDeleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bpDeleteModalTitle">Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="bpDeleteModalBody">Are you sure?</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="bpConfirmDeleteBtn">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-    const CURRENCY_DEFAULTS = { currencySymbol:'৳', symbolPosition:'before', decimalPlaces:0 };
-    function getUserStorageKey(baseKey) {
-        try {
-            var raw = localStorage.getItem('finzin_user') || localStorage.getItem('user');
-            var u = JSON.parse(raw);
-            if (u && u.id) return baseKey + '_' + u.id;
-        } catch(e) {}
-        return baseKey;
-    }
-    function getCurrencySettings() {
-        try {
-            var s = Object.assign({}, CURRENCY_DEFAULTS, JSON.parse(localStorage.getItem(getUserStorageKey('fintrack_settings')) || '{}'));
-            return { symbol: s.currencySymbol || '৳', position: s.symbolPosition || 'before', decimals: Number(s.decimalPlaces) >= 0 ? Number(s.decimalPlaces) : 0 };
-        } catch(e) { return { symbol: '৳', position: 'before', decimals: 0 }; }
-    }
-    function formatAmount(value) {
-        var c = getCurrencySettings();
-        var num = Number(value).toFixed(c.decimals);
-        return c.position === 'before' ? c.symbol + num : num + ' ' + c.symbol;
-    }
-
-    function showTopNotification(message, type = 'success') {
-        const container = document.getElementById('toastContainer');
-        const toast = document.createElement('div');
-        toast.className = `notification-toast notification-${type}`;
-        toast.textContent = message;
-        container.appendChild(toast);
-        requestAnimationFrame(() => toast.classList.add('show'));
-        setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 300);
-        }, 5000);
-    }
-
-    function currentPeriod() {
-        return document.getElementById('budgetPeriod').value;
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-        setBudgetModal = new bootstrap.Modal(document.getElementById('setBudgetModal'));
-        const now = new Date();
-        document.getElementById('budgetPeriod').value = now.toISOString().slice(0, 7);
-        document.getElementById('budgetPeriod').addEventListener('change', loadBudgetStatus);
-        document.getElementById('openBudgetModalBtn').addEventListener('click', openSetBudgetModal);
-        document.getElementById('saveBudgetBtn').addEventListener('click', saveBudget);
-
-        loadExpenseCategories();
-        loadBudgetStatus();
-    });
-
-    async function loadExpenseCategories() {
-        try {
-            const categories = await fetch('/api/categories?type=expense').then(r => r.json());
-            const select = document.getElementById('budgetCategory');
-            select.innerHTML = '<option value="">Select category</option>' +
-                categories.map(cat => `<option value="${cat.id}">${cat.name}</option>`).join('');
-        } catch (e) {
-            showTopNotification('Unable to load categories.', 'error');
-        }
-    }
-
-    function openSetBudgetModal() {
-        document.getElementById('budgetCategory').value = '';
-        document.getElementById('budgetAmount').value = '';
-        setBudgetModal.show();
-    }
-
-    async function saveBudget() {
-        const categoryId = parseInt(document.getElementById('budgetCategory').value, 10);
-        const amount = parseFloat(document.getElementById('budgetAmount').value);
-        if (!categoryId) { showTopNotification('Select a category.', 'error'); return; }
-        if (!amount || amount <= 0) { showTopNotification('Enter a valid budget amount.', 'error'); return; }
-
-        try {
-            const response = await fetch('/api/budgets', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ categoryId, period: currentPeriod(), budgetAmount: amount })
-            });
-            if (response.ok) {
-                setBudgetModal.hide();
-                showTopNotification('Budget saved.', 'success');
-                loadBudgetStatus();
-            } else {
-                const err = await response.json().catch(() => null);
-                showTopNotification((err && err.error) || 'Failed to save budget.', 'error');
-            }
-        } catch (e) {
-            showTopNotification('Unable to save budget right now.', 'error');
-        }
-    }
-
-    async function loadBudgetStatus() {
-        const container = document.getElementById('budgetStatusContainer');
-        try {
-            const status = await fetch(`/api/budgets/status?period=${encodeURIComponent(currentPeriod())}`).then(r => r.json());
-            if (!status.length) {
-                container.innerHTML = '<div class="col-12"><p class="text-muted">No budgets set for this month yet. Click "Set Budget" to add one.</p></div>';
-                return;
-            }
-            container.innerHTML = status.map(b => {
-                const percent = Math.min(100, b.percentUsed);
-                const over = b.percentUsed > 100;
-                return `
-                <div class="col-md-6 col-lg-4">
-                    <div class="card budget-card h-100" style="border-left-color: ${b.categoryColor}">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h6 class="mb-0">${b.categoryName}</h6>
-                                <span class="badge ${over ? 'bg-danger' : 'bg-success'}">${b.percentUsed.toFixed(0)}%</span>
-                            </div>
-                            <div class="budget-progress mb-2">
-                                <div class="budget-progress-bar ${over ? 'over' : ''}" style="width: ${percent}%"></div>
-                            </div>
-                            <div class="small text-muted d-flex justify-content-between">
-                                <span>${formatAmount(b.actualAmount)} spent</span>
-                                <span>of ${formatAmount(b.budgetAmount)}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>`;
-            }).join('');
-        } catch (e) {
-            container.innerHTML = '<div class="col-12"><p class="text-muted">Unable to load budget status.</p></div>';
-        }
-    }
-</script>
+<script src="/js/budget-planner.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
 <script src="/js/sidebar.js"></script>
 </body>
 </html>

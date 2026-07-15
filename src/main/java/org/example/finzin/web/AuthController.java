@@ -5,6 +5,7 @@ import org.example.finzin.entity.UserEntity;
 import org.example.finzin.service.AuthService;
 import org.example.finzin.service.JwtTokenProvider;
 import org.example.finzin.service.RecurringTransactionExecutionService;
+import org.example.finzin.service.BudgetScheduler;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,15 +31,18 @@ public class AuthController {
     private final AuthService authService;
     private final JwtTokenProvider jwtTokenProvider;
     private final RecurringTransactionExecutionService recurringTransactionExecutionService;
+    private final BudgetScheduler budgetScheduler;
 
     @Value("${app.upload.dir:user-uploads/profiles}")
     private String uploadDir;
 
     public AuthController(AuthService authService, JwtTokenProvider jwtTokenProvider,
-                           RecurringTransactionExecutionService recurringTransactionExecutionService) {
+                           RecurringTransactionExecutionService recurringTransactionExecutionService,
+                           BudgetScheduler budgetScheduler) {
         this.authService = authService;
         this.jwtTokenProvider = jwtTokenProvider;
         this.recurringTransactionExecutionService = recurringTransactionExecutionService;
+        this.budgetScheduler = budgetScheduler;
     }
     
     // --- Helper: extract and validate userId from Authorization header -------
@@ -189,6 +193,11 @@ public class AuthController {
                 recurringTransactionExecutionService.processDueForUser(user.getId());
             } catch (Exception e) {
                 System.out.println("?? Recurring transaction catch-up failed: " + e.getMessage());
+            }
+            try {
+                budgetScheduler.checkPlansForUser(user.getId());
+            } catch (Exception e) {
+                System.out.println("?? Budget alert check failed: " + e.getMessage());
             }
 
             String token = jwtTokenProvider.generateToken(user);
