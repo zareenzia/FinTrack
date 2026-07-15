@@ -12,4 +12,6 @@ public interface BudgetRepository extends JpaRepository<BudgetEntity, Long> {
     List<BudgetEntity> findByUserId(Long userId);
     List<BudgetEntity> findByUserIdAndPeriod(Long userId, String period);
     Optional<BudgetEntity> findByUserIdAndCategoryIdAndPeriod(Long userId, Long categoryId, String period);
+    List<BudgetEntity> findByBudgetPlanId(Long budgetPlanId);
+    Optional<BudgetEntity> findByBudgetPlanIdAndCategoryId(Long budgetPlanId, Long categoryId);
 }

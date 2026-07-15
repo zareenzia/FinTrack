@@ -4,6 +4,7 @@ import org.example.finzin.entity.NotificationEntity;
 import org.example.finzin.repository.NotificationRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -34,6 +35,18 @@ public class NotificationService {
 
     public long unreadCount(Long userId) {
         return notificationRepository.countByUserIdAndIsReadFalse(userId);
+    }
+
+    /** Creates the notification only if an identical one (same user/type/related entity) hasn't already fired today. */
+    public boolean createIfNotRecent(Long userId, String type, String title, String message,
+                                      String relatedEntityType, Long relatedEntityId) {
+        boolean alreadyFired = notificationRepository.existsByUserIdAndTypeAndRelatedEntityIdAndCreatedAtAfter(
+                userId, type, relatedEntityId, LocalDate.now().atStartOfDay());
+        if (alreadyFired) {
+            return false;
+        }
+        create(userId, type, title, message, relatedEntityType, relatedEntityId);
+        return true;
     }
 
     public NotificationEntity markRead(Long id, Long userId) {

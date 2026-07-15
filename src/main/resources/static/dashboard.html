@@ -116,6 +116,12 @@
             overflow-y: auto;
         }
 
+        /* Current Budget widget */
+        .cb-progress { height: 10px; border-radius: 6px; background: var(--bg-input); overflow: hidden; }
+        .cb-progress-bar { height: 100%; transition: width 0.3s ease; background: #28a745; }
+        .cb-progress-bar.warn { background: #fd7e14; }
+        .cb-progress-bar.over { background: #dc3545; }
+
         /* Recent Transactions collapse toggle */
         .tx-collapse-toggle {
             background: none;
@@ -141,8 +147,11 @@
                 <small id="monthViewSubtitle">Loading...</small>
             </div>
              <div class="d-flex align-items-center gap-2 flex-wrap">
-                <a href="/transactions" class="btn-add-transaction" title="Add new transaction">
+                <button type="button" class="btn-add-transaction" id="openAddTxModalBtn" title="Add new transaction">
                     <i class="fas fa-plus"></i>Add Transaction
+                </button>
+                <a href="/budget-planner" class="btn-add-transaction" title="Plan a budget">
+                    <i class="fas fa-wallet"></i>Plan a Budget
                 </a>
                 <div class="btn-group btn-group-sm view-mode-toggle" role="group" aria-label="Dashboard view mode">
                     <button type="button" class="btn active" id="viewModeDefaultBtn" onclick="setDashboardView('default')" title="Default view">
@@ -402,6 +411,21 @@
             </div>
         </div>
     </div>
+
+    <!-- Current Budget Widget -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-wallet me-2"></i>Current Budget</h6>
+                    <a href="/budget-planner" class="btn btn-sm btn-outline-primary"><i class="fas fa-external-link-alt"></i> Open Budget Planner</a>
+                </div>
+                <div class="card-body" id="currentBudgetBody">
+                    <p class="text-muted small mb-0">Loading…</p>
+                </div>
+            </div>
+        </div>
+    </div>
     </div><!-- /#dashboardDefaultView -->
 
     <!-- ═══════════════ COMPACT VIEW ═══════════════ -->
@@ -619,6 +643,21 @@
                 </div>
             </div>
         </div>
+
+        <!-- Current Budget Widget -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="fas fa-wallet me-2"></i>Current Budget</h6>
+                        <a href="/budget-planner" class="btn btn-sm btn-outline-primary"><i class="fas fa-external-link-alt"></i> Open Budget Planner</a>
+                    </div>
+                    <div class="card-body" id="currentBudgetBodyCompact">
+                        <p class="text-muted small mb-0">Loading…</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div><!-- /#dashboardCompactView -->
 
     <div class="row">
@@ -714,6 +753,7 @@
     let txDeleteModal      = null;
     let txEditId           = null;
     let txEditModal        = null;
+    let txAddModal         = null;
 
     let categoryChartData    = [];
     let monthlyChartData     = [];
@@ -1057,6 +1097,14 @@
         txEditModal = new bootstrap.Modal(document.getElementById('dashboardEditTxModal'));
         document.getElementById('dashboardSaveEditTxBtn').addEventListener('click', saveEditTransaction);
 
+        // Initialise add-transaction modal
+        txAddModal = new bootstrap.Modal(document.getElementById('dashboardAddTxModal'));
+        document.getElementById('openAddTxModalBtn').addEventListener('click', openAddTransactionModal);
+        document.getElementById('dashboardSaveAddTxBtn').addEventListener('click', saveAddTransaction);
+        document.getElementById('dashboardAddTxType').addEventListener('change', function () {
+            loadAddTxCategories(this.value);
+        });
+
         // When type changes in the edit modal, reload categories
         document.getElementById('editTxType').addEventListener('change', function () {
             loadEditCategories(this.value);
@@ -1102,6 +1150,7 @@
         loadDashboard();
         loadAccountBalances();
         loadUpcomingRecurring();
+        loadCurrentBudget();
     });
 
     async function loadUpcomingRecurring() {
@@ -1133,6 +1182,37 @@
             containers.forEach(c => c.innerHTML = html);
         } catch (e) {
             containers.forEach(c => c.innerHTML = '<p class="text-muted small mb-0">Unable to load upcoming recurring transactions.</p>');
+        }
+    }
+
+    async function loadCurrentBudget() {
+        const containers = ['currentBudgetBody', 'currentBudgetBodyCompact']
+            .map(id => document.getElementById(id))
+            .filter(Boolean);
+        if (!containers.length) return;
+        try {
+            const data = await fetch('/api/budget-plans/current').then(r => r.json());
+            if (!data.hasCurrent) {
+                const html = '<p class="text-muted small mb-0">No active budget for this period. <a href="/budget-planner">Create one</a>.</p>';
+                containers.forEach(c => c.innerHTML = html);
+                return;
+            }
+            const pct = Math.min(100, data.summary.utilizationPercent);
+            const barClass = data.summary.utilizationPercent > 100 ? 'over' : (data.summary.utilizationPercent >= 80 ? 'warn' : '');
+            const html = `
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="fw-semibold">${data.name}</span>
+                    <span class="text-muted small">${data.period}</span>
+                </div>
+                <div class="d-flex justify-content-between small text-muted mb-1">
+                    <span>Budget Used</span>
+                    <span>${data.summary.utilizationPercent.toFixed(0)}%</span>
+                </div>
+                <div class="cb-progress mb-2"><div class="cb-progress-bar ${barClass}" style="width:${pct}%"></div></div>
+                <div class="small text-muted">Remaining: <strong style="color: var(--accent-color);">${formatAmount(data.summary.remaining)}</strong></div>`;
+            containers.forEach(c => c.innerHTML = html);
+        } catch (e) {
+            containers.forEach(c => c.innerHTML = '<p class="text-muted small mb-0">Unable to load current budget.</p>');
         }
     }
 
@@ -1238,7 +1318,7 @@
                 <div class="tx-empty">
                     <i class="fas fa-search"></i>
                     <p>${hasFilters ? 'No transactions match the current filters.' : 'No transactions yet.'}</p>
-                    ${!hasFilters ? '<a href="/transactions" class="btn btn-sm btn-primary mt-2"><i class="fas fa-plus"></i> Add Transaction</a>' : ''}
+                    ${!hasFilters ? '<button type="button" class="btn btn-sm btn-primary mt-2" onclick="openAddTransactionModal()"><i class="fas fa-plus"></i> Add Transaction</button>' : ''}
                 </div>`;
         } else {
             container.innerHTML = pageTransactions.map((tx, idx) => {
@@ -1412,6 +1492,79 @@
             }
         } catch (e) {
             showNotification('Error updating transaction', 'error');
+        }
+    }
+
+    /* ── Add transaction ─────────────────────────────────────────────────── */
+    function openAddTransactionModal() {
+        document.getElementById('dashboardAddTxForm').reset();
+        document.getElementById('dashboardAddTxDate').valueAsDate = new Date();
+        loadAddTxCategories(document.getElementById('dashboardAddTxType').value);
+        loadAddTxAccounts();
+        txAddModal.show();
+    }
+
+    async function loadAddTxCategories(type) {
+        const sel = document.getElementById('dashboardAddTxCategory');
+        sel.innerHTML = '<option value="">Loading…</option>';
+        try {
+            const url = type ? `/api/categories?type=${encodeURIComponent(type)}` : '/api/categories';
+            const cats = await fetch(url).then(r => r.json());
+            sel.innerHTML = '<option value="">Select category</option>' +
+                (cats.length ? cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('') : '');
+        } catch (e) {
+            sel.innerHTML = '<option value="">Error loading</option>';
+        }
+    }
+
+    async function loadAddTxAccounts() {
+        const sel = document.getElementById('dashboardAddTxAccount');
+        try {
+            const accounts = await fetch('/api/accounts').then(r => r.json());
+            const label = a => a.accountNickname + (a.bankName ? ' (' + a.bankName + ')' : a.provider ? ' (' + a.provider + ')' : '');
+            sel.innerHTML = '<option value="">-- No account --</option>' + accounts.map(a => `<option value="${a.id}">${label(a)}</option>`).join('');
+        } catch (e) {
+            sel.innerHTML = '<option value="">-- No account --</option>';
+        }
+    }
+
+    async function saveAddTransaction() {
+        const description = document.getElementById('dashboardAddTxDescription').value.trim();
+        const amount      = parseFloat(document.getElementById('dashboardAddTxAmount').value);
+        const categoryId  = parseInt(document.getElementById('dashboardAddTxCategory').value, 10);
+        const type        = document.getElementById('dashboardAddTxType').value;
+        const date        = document.getElementById('dashboardAddTxDate').value;
+        const acctEl      = document.getElementById('dashboardAddTxAccount');
+
+        if (!description || isNaN(amount) || amount <= 0 || !categoryId || !date) {
+            showNotification('Please fill all fields correctly.', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/transactions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    description,
+                    amount,
+                    category_id: categoryId,
+                    transaction_type: type,
+                    date,
+                    sourceAccountId: acctEl && acctEl.value ? parseInt(acctEl.value, 10) : null,
+                    destinationAccountId: null
+                })
+            });
+            if (response.ok) {
+                txAddModal.hide();
+                showNotification('Transaction added successfully', 'success');
+                loadDashboard();
+            } else {
+                const err = await response.json().catch(() => ({}));
+                showNotification(err.error || 'Failed to add transaction', 'error');
+            }
+        } catch (e) {
+            showNotification('Error adding transaction', 'error');
         }
     }
 
@@ -1634,6 +1787,65 @@
         }, 5000);
     }
 </script>
+<!-- Add New Transaction Modal -->
+<div class="modal fade" id="dashboardAddTxModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>Add New Transaction</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="dashboardAddTxForm">
+                    <div class="row g-3">
+                        <div class="col-md-6 mb-2">
+                            <label for="dashboardAddTxDescription" class="form-label">Description</label>
+                            <input type="text" class="form-control form-control-sm" id="dashboardAddTxDescription" required placeholder="e.g., Grocery shopping">
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label for="dashboardAddTxAmount" class="form-label">Amount</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">৳</span>
+                                <input type="number" class="form-control" id="dashboardAddTxAmount" step="0.01" required placeholder="0.00">
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <label for="dashboardAddTxCategory" class="form-label">Category</label>
+                            <select class="form-select form-select-sm" id="dashboardAddTxCategory" required>
+                                <option value="">Select category</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <label for="dashboardAddTxType" class="form-label">Type</label>
+                            <select class="form-select form-select-sm" id="dashboardAddTxType" required>
+                                <option value="expense">Expense</option>
+                                <option value="income">Income</option>
+                                <option value="savings">Savings</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <label for="dashboardAddTxDate" class="form-label">Date</label>
+                            <input type="date" class="form-control form-control-sm" id="dashboardAddTxDate" required>
+                        </div>
+                        <div class="col-md-12 mb-2">
+                            <label for="dashboardAddTxAccount" class="form-label">Account <small class="text-muted">(optional)</small></label>
+                            <select class="form-select form-select-sm" id="dashboardAddTxAccount">
+                                <option value="">-- No account --</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="dashboardSaveAddTxBtn">
+                    <i class="fas fa-plus me-1"></i>Add Transaction
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Edit Transaction Modal -->
 <div class="modal fade" id="dashboardEditTxModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width:460px">
