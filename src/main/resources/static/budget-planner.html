@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Budget Planner - FinTrack</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/mobile.css">
+    <link rel="icon" type="image/png" href="/images/logo.png">
+    <style>
+        .budget-progress { height: 10px; border-radius: 6px; background: var(--bg-input); overflow: hidden; }
+        .budget-progress-bar { height: 100%; background: var(--accent-color); transition: width 0.3s ease; }
+        .budget-progress-bar.over { background: #dc3545; }
+        .budget-card { border-left: 4px solid var(--accent-color); }
+    </style>
+</head>
+<body>
+<div id="toastContainer" class="notification-toast-container" aria-live="polite" aria-atomic="true"></div>
+
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-12 d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+            <h2 class="mb-0"><i class="fas fa-wallet"></i> Budget Planner</h2>
+            <div class="d-flex align-items-center gap-2">
+                <input type="month" class="form-control form-control-sm" id="budgetPeriod" style="width: auto;">
+                <button type="button" class="btn btn-primary btn-sm" id="openBudgetModalBtn">
+                    <i class="fas fa-plus me-1"></i> Set Budget
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3" id="budgetStatusContainer">
+        <div class="col-12"><p class="text-muted">Loading budgets…</p></div>
+    </div>
+</div>
+
+<!-- Set Budget Modal -->
+<div class="modal fade" id="setBudgetModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-wallet me-2"></i>Set Budget</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="budgetCategory" class="form-label">Category</label>
+                    <select class="form-select form-select-sm" id="budgetCategory" required>
+                        <option value="">Select category</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="budgetAmount" class="form-label">Monthly Budget Amount</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text">৳</span>
+                        <input type="number" class="form-control" id="budgetAmount" step="0.01" min="0.01" required placeholder="0.00">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveBudgetBtn">Save Budget</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let setBudgetModal;
+
+    const CURRENCY_DEFAULTS = { currencySymbol:'৳', symbolPosition:'before', decimalPlaces:0 };
+    function getUserStorageKey(baseKey) {
+        try {
+            var raw = localStorage.getItem('finzin_user') || localStorage.getItem('user');
+            var u = JSON.parse(raw);
+            if (u && u.id) return baseKey + '_' + u.id;
+        } catch(e) {}
+        return baseKey;
+    }
+    function getCurrencySettings() {
+        try {
+            var s = Object.assign({}, CURRENCY_DEFAULTS, JSON.parse(localStorage.getItem(getUserStorageKey('fintrack_settings')) || '{}'));
+            return { symbol: s.currencySymbol || '৳', position: s.symbolPosition || 'before', decimals: Number(s.decimalPlaces) >= 0 ? Number(s.decimalPlaces) : 0 };
+        } catch(e) { return { symbol: '৳', position: 'before', decimals: 0 }; }
+    }
+    function formatAmount(value) {
+        var c = getCurrencySettings();
+        var num = Number(value).toFixed(c.decimals);
+        return c.position === 'before' ? c.symbol + num : num + ' ' + c.symbol;
+    }
+
+    function showTopNotification(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `notification-toast notification-${type}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+        requestAnimationFrame(() => toast.classList.add('show'));
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 5000);
+    }
+
+    function currentPeriod() {
+        return document.getElementById('budgetPeriod').value;
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        setBudgetModal = new bootstrap.Modal(document.getElementById('setBudgetModal'));
+        const now = new Date();
+        document.getElementById('budgetPeriod').value = now.toISOString().slice(0, 7);
+        document.getElementById('budgetPeriod').addEventListener('change', loadBudgetStatus);
+        document.getElementById('openBudgetModalBtn').addEventListener('click', openSetBudgetModal);
+        document.getElementById('saveBudgetBtn').addEventListener('click', saveBudget);
+
+        loadExpenseCategories();
+        loadBudgetStatus();
+    });
+
+    async function loadExpenseCategories() {
+        try {
+            const categories = await fetch('/api/categories?type=expense').then(r => r.json());
+            const select = document.getElementById('budgetCategory');
+            select.innerHTML = '<option value="">Select category</option>' +
+                categories.map(cat => `<option value="${cat.id}">${cat.name}</option>`).join('');
+        } catch (e) {
+            showTopNotification('Unable to load categories.', 'error');
+        }
+    }
+
+    function openSetBudgetModal() {
+        document.getElementById('budgetCategory').value = '';
+        document.getElementById('budgetAmount').value = '';
+        setBudgetModal.show();
+    }
+
+    async function saveBudget() {
+        const categoryId = parseInt(document.getElementById('budgetCategory').value, 10);
+        const amount = parseFloat(document.getElementById('budgetAmount').value);
+        if (!categoryId) { showTopNotification('Select a category.', 'error'); return; }
+        if (!amount || amount <= 0) { showTopNotification('Enter a valid budget amount.', 'error'); return; }
+
+        try {
+            const response = await fetch('/api/budgets', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ categoryId, period: currentPeriod(), budgetAmount: amount })
+            });
+            if (response.ok) {
+                setBudgetModal.hide();
+                showTopNotification('Budget saved.', 'success');
+                loadBudgetStatus();
+            } else {
+                const err = await response.json().catch(() => null);
+                showTopNotification((err && err.error) || 'Failed to save budget.', 'error');
+            }
+        } catch (e) {
+            showTopNotification('Unable to save budget right now.', 'error');
+        }
+    }
+
+    async function loadBudgetStatus() {
+        const container = document.getElementById('budgetStatusContainer');
+        try {
+            const status = await fetch(`/api/budgets/status?period=${encodeURIComponent(currentPeriod())}`).then(r => r.json());
+            if (!status.length) {
+                container.innerHTML = '<div class="col-12"><p class="text-muted">No budgets set for this month yet. Click "Set Budget" to add one.</p></div>';
+                return;
+            }
+            container.innerHTML = status.map(b => {
+                const percent = Math.min(100, b.percentUsed);
+                const over = b.percentUsed > 100;
+                return `
+                <div class="col-md-6 col-lg-4">
+                    <div class="card budget-card h-100" style="border-left-color: ${b.categoryColor}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0">${b.categoryName}</h6>
+                                <span class="badge ${over ? 'bg-danger' : 'bg-success'}">${b.percentUsed.toFixed(0)}%</span>
+                            </div>
+                            <div class="budget-progress mb-2">
+                                <div class="budget-progress-bar ${over ? 'over' : ''}" style="width: ${percent}%"></div>
+                            </div>
+                            <div class="small text-muted d-flex justify-content-between">
+                                <span>${formatAmount(b.actualAmount)} spent</span>
+                                <span>of ${formatAmount(b.budgetAmount)}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        } catch (e) {
+            container.innerHTML = '<div class="col-12"><p class="text-muted">Unable to load budget status.</p></div>';
+        }
+    }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/sidebar.js"></script>
+</body>
+</html>

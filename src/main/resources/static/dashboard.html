@@ -109,6 +109,26 @@
             color: var(--text-muted-custom);
             margin-top: 2px;
         }
+
+        /* Shortened side-by-side widgets (default view): Account Balances + Upcoming Recurring */
+        .dashboard-shortened-card .card-body {
+            max-height: 260px;
+            overflow-y: auto;
+        }
+
+        /* Recent Transactions collapse toggle */
+        .tx-collapse-toggle {
+            background: none;
+            border: none;
+            color: inherit;
+            font-size: 0.95rem;
+            padding: 4px 8px;
+            cursor: pointer;
+            transition: transform 0.25s ease;
+        }
+        .tx-collapse-toggle.collapsed {
+            transform: rotate(-90deg);
+        }
     </style>
 </head>
 <body>
@@ -303,9 +323,9 @@
         </div>
     </div>
 
-    <!-- Account Balances Widget -->
+    <!-- Account Balances + Upcoming Recurring Transactions (shortened, side by side) -->
     <div class="row mb-4">
-        <div class="col-md-12">
+        <div class="col-md-6">
             <div class="card acct-summary-card">
                 <div class="card-header dashboard-card-header">
                     <h6 class="mb-0"><i class="fas fa-wallet me-2"></i>Account Balances</h6>
@@ -367,6 +387,17 @@
                             </div>
                         </li>
                     </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card dashboard-shortened-card">
+                <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-sync-alt me-2"></i>Upcoming Recurring Transactions</h6>
+                    <a href="/transactions" class="btn btn-sm btn-outline-primary"><i class="fas fa-external-link-alt"></i> View All</a>
+                </div>
+                <div class="card-body" id="upcomingRecurringBody">
+                    <p class="text-muted small mb-0">Loading…</p>
                 </div>
             </div>
         </div>
@@ -573,6 +604,21 @@
                 </div>
             </div>
         </div>
+
+        <!-- Upcoming Recurring Transactions -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card dashboard-shortened-card">
+                    <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="fas fa-sync-alt me-2"></i>Upcoming Recurring Transactions</h6>
+                        <a href="/transactions" class="btn btn-sm btn-outline-primary"><i class="fas fa-external-link-alt"></i> View All</a>
+                    </div>
+                    <div class="card-body" id="upcomingRecurringBodyCompact">
+                        <p class="text-muted small mb-0">Loading…</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div><!-- /#dashboardCompactView -->
 
     <div class="row">
@@ -598,7 +644,7 @@
                             <option value="expense">Expense</option>
                             <option value="savings">Savings</option>
                         </select>                        <select class="tx-filter-select" id="txLimitSelect" title="Transactions to show">
-                            <option value="5">Show 5</option>
+                            <option value="5" selected>Show 5</option>
                             <option value="10">Show 10</option>
                             <option value="20">Show 20</option>
                             <option value="50">Show 50</option>
@@ -607,8 +653,12 @@
                         <a href="/transactions" class="btn btn-sm tx-view-all-btn">
                             <i class="fas fa-external-link-alt"></i> View All
                         </a>
+                        <button type="button" class="tx-collapse-toggle" id="txCollapseToggleBtn" data-bs-toggle="collapse" data-bs-target="#recentTransactionsCollapse" aria-expanded="true" aria-controls="recentTransactionsCollapse" title="Collapse/expand">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
                     </div>
                 </div>
+                <div class="collapse show" id="recentTransactionsCollapse">
                 <div class="card-body p-0">
                     <!-- Column Labels -->
                     <div class="tx-col-labels">
@@ -640,6 +690,7 @@
                         </button>
                     </div>
                 </div>
+                </div><!-- /#recentTransactionsCollapse -->
             </div>
         </div>
     </div>
@@ -1050,7 +1101,40 @@
         updateGreeting();
         loadDashboard();
         loadAccountBalances();
+        loadUpcomingRecurring();
     });
+
+    async function loadUpcomingRecurring() {
+        const containers = ['upcomingRecurringBody', 'upcomingRecurringBodyCompact']
+            .map(id => document.getElementById(id))
+            .filter(Boolean);
+        if (!containers.length) return;
+        try {
+            const items = await fetch('/api/recurring-transactions/upcoming?days=14').then(r => r.json());
+            if (!items.length) {
+                containers.forEach(c => c.innerHTML = '<p class="text-muted small mb-0">No upcoming recurring transactions in the next 14 days.</p>');
+                return;
+            }
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            const dayLabel = (dateStr) => {
+                const d = new Date(dateStr); d.setHours(0, 0, 0, 0);
+                const diffDays = Math.round((d - today) / 86400000);
+                if (diffDays === 0) return 'Today';
+                if (diffDays === 1) return 'Tomorrow';
+                return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+            };
+            const html = '<div class="d-flex flex-wrap gap-3">' + items.map(r => `
+                <div class="p-2 px-3 rounded" style="background: var(--bg-table-stripe); min-width: 160px;">
+                    <div class="small text-muted">${dayLabel(r.nextExecutionDate)}</div>
+                    <div class="fw-semibold">${r.transactionName}</div>
+                    <div class="small" style="color: var(--accent-color);">${formatAmount(r.amount)}</div>
+                </div>
+            `).join('') + '</div>';
+            containers.forEach(c => c.innerHTML = html);
+        } catch (e) {
+            containers.forEach(c => c.innerHTML = '<p class="text-muted small mb-0">Unable to load upcoming recurring transactions.</p>');
+        }
+    }
 
     window.addEventListener('resize', fitStatAmounts);
 

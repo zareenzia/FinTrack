@@ -79,5 +79,19 @@ public class PageController {
         }
         return "forward:/assets.html";
     }
+
+    // Recurring Transactions now lives on the Transactions page.
+    @GetMapping("/recurring-transactions")
+    public String recurringTransactions() {
+        return "redirect:/transactions";
+    }
+
+    @GetMapping("/budget-planner")
+    public String budgetPlanner(HttpServletRequest request) {
+        if (request.getAttribute("userId") == null) {
+            return "redirect:/login";
+        }
+        return "forward:/budget-planner.html";
+    }
 }
 
