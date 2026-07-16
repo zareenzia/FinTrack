@@ -13,6 +13,78 @@
     const COLLAPSED_KEY  = getUserStorageKey('sidebar_collapsed');
     const THEME_KEY      = getUserStorageKey('fintrack_theme');
     const SETTINGS_KEY   = getUserStorageKey('fintrack_settings');
+    const COMPACT_KEY    = getUserStorageKey('sidebar_compact_mode');
+
+    // ── All available sidebar modules (master registry) ──────────────────────
+    const SIDEBAR_MODULES = [
+        { id: 'dashboard',         label: 'Home',              icon: 'fas fa-home',            href: '/dashboard',         locked: true  },
+        { id: 'transactions',      label: 'Transactions',      icon: 'fas fa-exchange-alt',    href: '/transactions'                     },
+        { id: 'budget-planner',    label: 'Budget Planner',    icon: 'fas fa-wallet',          href: '/budget-planner'                   },
+        { id: 'notes',             label: 'Notes',             icon: 'fas fa-sticky-note',     href: '/notes'                            },
+        { id: 'todos',             label: 'To-Do',             icon: 'fas fa-tasks',           href: '/todos'                            },
+        { id: 'assets',            label: 'Assets',            icon: 'fas fa-coins',           href: '/assets'                           },
+        { id: 'financial-planner', label: 'Financial Planner', icon: 'fas fa-bullseye',        href: '/financial-planner'                },
+        { id: 'calculator',        label: 'Calculator',        icon: 'fas fa-calculator',      href: null,   special: 'calculator'       },
+        { id: 'settings',          label: 'Settings',          icon: 'fas fa-cog',             href: '/settings',          locked: true  },
+    ];
+
+    // ── Sidebar preference helpers ────────────────────────────────────────────
+    function getSidebarPrefsKey() { return getUserStorageKey('sidebar_prefs'); }
+
+    function getDefaultPrefs() {
+        return SIDEBAR_MODULES.map(function(m, i) {
+            return { id: m.id, visible: true, pinned: false, displayOrder: i };
+        });
+    }
+
+    function loadSidebarPrefs() {
+        try {
+            var raw = localStorage.getItem(getSidebarPrefsKey());
+            if (!raw) return getDefaultPrefs();
+            var saved = JSON.parse(raw);
+            // Merge: add any new modules not in saved prefs
+            var savedIds = saved.map(function(p) { return p.id; });
+            var maxOrder = saved.reduce(function(m,p) { return Math.max(m, p.displayOrder || 0); }, 0);
+            SIDEBAR_MODULES.forEach(function(m, i) {
+                if (savedIds.indexOf(m.id) === -1) {
+                    saved.push({ id: m.id, visible: true, pinned: false, displayOrder: maxOrder + i + 1 });
+                }
+            });
+            return saved;
+        } catch(e) {
+            return getDefaultPrefs();
+        }
+    }
+
+    function saveSidebarPrefs(prefs) {
+        try { localStorage.setItem(getSidebarPrefsKey(), JSON.stringify(prefs)); } catch(e) {}
+        // Best-effort server sync (non-blocking)
+        fetch('/api/sidebar-preferences', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ preferencesJson: JSON.stringify(prefs) })
+        }).catch(function() {});
+    }
+
+    function getOrderedModules(prefs) {
+        var prefMap = {};
+        prefs.forEach(function(p) { prefMap[p.id] = p; });
+
+        var pinned = [], unpinned = [];
+        SIDEBAR_MODULES.forEach(function(m) {
+            var p = prefMap[m.id] || { visible: true, pinned: false, displayOrder: 99 };
+            if (!p.visible) return;
+            if (p.pinned && !m.locked) pinned.push({ module: m, pref: p });
+            else unpinned.push({ module: m, pref: p });
+        });
+        pinned.sort(function(a,b) { return (a.pref.displayOrder||0) - (b.pref.displayOrder||0); });
+        // locked modules stay at their natural position in unpinned
+        var lockedAtStart = unpinned.filter(function(x) { return x.module.locked && x.module.id === 'dashboard'; });
+        var lockedAtEnd   = unpinned.filter(function(x) { return x.module.locked && x.module.id !== 'dashboard'; });
+        var free          = unpinned.filter(function(x) { return !x.module.locked; });
+        free.sort(function(a,b) { return (a.pref.displayOrder||0) - (b.pref.displayOrder||0); });
+        return lockedAtStart.concat(pinned).concat(free).concat(lockedAtEnd);
+    }
 
     // ── Apply global settings (font-size, animations, color theme) immediately
     (function applyGlobalSettingsEarly() {
@@ -119,20 +191,44 @@
         const userName = user ? (user.fullName || user.username || user.name || 'User') : 'User';
         const initials = getInitials(userName);
         const profilePicUrl = user && user.profilePicture ? user.profilePicture : null;
-        // Initial icon depends on current (or preferred) theme
         const isDark = (localStorage.getItem(THEME_KEY) || getPreferredTheme()) === 'dark';
         const themeIcon  = isDark ? 'fas fa-sun sidebar-icon' : 'fas fa-moon sidebar-icon';
         const themeLabel = isDark ? 'Light Mode' : 'Dark Mode';
 
         const aside = document.createElement('aside');
         aside.id = 'sidebar';
+
+        // Build nav items from preferences
+        const prefs = loadSidebarPrefs();
+        const ordered = getOrderedModules(prefs);
+        const prefMap = {};
+        prefs.forEach(function(p) { prefMap[p.id] = p; });
+
+        var navItemsHtml = ordered.map(function(entry) {
+            var m = entry.module;
+            var p = entry.pref;
+            var pinBadge = (p.pinned && !m.locked)
+                ? '<span class="sidebar-pin-dot" title="Pinned" aria-label="Pinned"></span>' : '';
+
+            if (m.special === 'calculator') {
+                return '<button class="sidebar-item" id="calcSidebarBtn" title="' + m.label + '" aria-label="' + m.label + '" style="background:none;border:none;width:100%;text-align:left;">' +
+                    '<i class="' + m.icon + ' sidebar-icon"></i>' +
+                    '<span class="sidebar-label">' + m.label + '</span>' + pinBadge +
+                    '</button>';
+            }
+            return '<a href="' + m.href + '" class="sidebar-item" data-path="' + m.id + '" title="' + m.label + '" aria-label="' + m.label + '">' +
+                '<i class="' + m.icon + ' sidebar-icon"></i>' +
+                '<span class="sidebar-label">' + m.label + '</span>' + pinBadge +
+                '</a>';
+        }).join('');
+
         aside.innerHTML = `
             <div class="sidebar-header">
                 <div class="sidebar-brand">
                     <img src="/images/logo.png" alt="FinTrack" class="sidebar-brand-logo">
                     <span class="sidebar-label">FinTrack</span>
                 </div>
-                <button class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Toggle sidebar">
+                <button class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Toggle sidebar" aria-label="Toggle sidebar">
                     <i class="fas fa-chevron-left" id="sidebarToggleIcon"></i>
                 </button>
             </div>
@@ -174,27 +270,29 @@
                     <i class="fas fa-cog sidebar-icon"></i>
                     <span class="sidebar-label">Settings</span>
                 </a>
+            <nav class="sidebar-nav" id="sidebarNav" aria-label="Main navigation">
+                ${navItemsHtml}
             </nav>
 
             <div class="sidebar-spacer"></div>
 
             <div class="sidebar-bottom">
-                <button class="sidebar-item" id="notificationBellBtn" title="Notifications" style="background:none;border:none;width:100%;text-align:left;position:relative;">
+                <button class="sidebar-item" id="notificationBellBtn" title="Notifications" aria-label="Notifications" style="background:none;border:none;width:100%;text-align:left;position:relative;">
                     <i class="fas fa-bell sidebar-icon"></i>
                     <span class="sidebar-label">Notifications</span>
-                    <span id="notifBadge" class="d-none" style="position:absolute; top:6px; left:26px; background:#dc3545; color:#fff; border-radius:999px; font-size:0.65rem; padding:1px 6px; font-weight:600;"></span>
+                    <span id="notifBadge" class="d-none" style="position:absolute; top:6px; left:26px; background:#dc3545; color:#fff; border-radius:999px; font-size:0.65rem; padding:1px 6px; font-weight:600;" aria-live="polite"></span>
                 </button>
-                <button class="sidebar-item sidebar-theme-toggle" id="themeToggleBtn" title="Toggle theme">
+                <button class="sidebar-item sidebar-theme-toggle" id="themeToggleBtn" title="Toggle theme" aria-label="Toggle theme">
                     <span class="theme-icon-wrap">
                         <i class="${themeIcon}" id="themeToggleIcon"></i>
                     </span>
                     <span class="sidebar-label" id="themeToggleLbl">${themeLabel}</span>
                 </button>
-                <div class="sidebar-item sidebar-profile" id="sidebarProfileBtn" title="${userName}">
+                <div class="sidebar-item sidebar-profile" id="sidebarProfileBtn" title="${userName}" tabindex="0" role="button" aria-label="Profile: ${userName}">
                     <div class="sidebar-avatar" id="sidebarAvatar" style="overflow:hidden;">${profilePicUrl ? `<img src="${profilePicUrl}" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : initials}</div>
                     <span class="sidebar-label" id="sidebarUserName">${userName}</span>
                 </div>
-                <a href="#" class="sidebar-item sidebar-logout" id="sidebarLogoutBtn" title="Logout">
+                <a href="#" class="sidebar-item sidebar-logout" id="sidebarLogoutBtn" title="Logout" aria-label="Logout">
                     <i class="fas fa-sign-out-alt sidebar-icon"></i>
                     <span class="sidebar-label">Logout</span>
                 </a>
@@ -584,6 +682,167 @@
             .catch(function () {});
     }
 
+    // ── Sidebar Customizer Modal ──────────────────────────────────────────────
+    function injectSidebarCustomizerModal() {
+        if (document.getElementById('sidebarCustomizerModal')) return;
+        var modal = document.createElement('div');
+        modal.id = 'sidebarCustomizerModal';
+        modal.className = 'modal fade';
+        modal.setAttribute('tabindex', '-1');
+        modal.setAttribute('aria-labelledby', 'sidebarCustomizerTitle');
+        modal.setAttribute('aria-modal', 'true');
+        modal.setAttribute('role', 'dialog');
+        modal.innerHTML = `
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="sidebarCustomizerTitle"><i class="fas fa-sliders-h me-2"></i>Customize Sidebar</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <p class="text-muted small mb-3">Drag modules to reorder. Toggle visibility. Pin favorites to the top. <strong>Home</strong>, <strong>Settings</strong>, and <strong>Logout</strong> cannot be hidden.</p>
+              <div class="input-group mb-3">
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                <input type="text" id="customizerSearch" class="form-control" placeholder="Search modules…" aria-label="Search modules">
+              </div>
+              <div id="customizerList" class="list-group" role="list" aria-label="Sidebar modules">
+              </div>
+            </div>
+            <div class="modal-footer d-flex justify-content-between">
+              <button type="button" class="btn btn-outline-danger btn-sm" id="customizerRestoreBtn">
+                <i class="fas fa-undo me-1"></i>Restore Defaults
+              </button>
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary btn-sm" id="customizerSaveBtn">
+                  <i class="fas fa-save me-1"></i>Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+        document.body.appendChild(modal);
+    }
+
+    function openSidebarCustomizer() {
+        injectSidebarCustomizerModal();
+        var prefs = loadSidebarPrefs();
+        var prefMap = {};
+        prefs.forEach(function(p) { prefMap[p.id] = p; });
+
+        // Build working copy
+        var working = SIDEBAR_MODULES.map(function(m, i) {
+            var p = prefMap[m.id] || { id: m.id, visible: true, pinned: false, displayOrder: i };
+            return { id: m.id, visible: !!p.visible, pinned: !!p.pinned, displayOrder: p.displayOrder || i,
+                     label: m.label, icon: m.icon, locked: !!m.locked };
+        });
+        working.sort(function(a,b) { return a.displayOrder - b.displayOrder; });
+
+        function renderList(filter) {
+            var list = document.getElementById('customizerList');
+            list.innerHTML = '';
+            working.forEach(function(item, idx) {
+                if (filter && item.label.toLowerCase().indexOf(filter.toLowerCase()) === -1) return;
+                var li = document.createElement('div');
+                li.className = 'list-group-item list-group-item-action d-flex align-items-center gap-3 px-3 py-2';
+                li.setAttribute('draggable', 'true');
+                li.setAttribute('data-id', item.id);
+                li.setAttribute('role', 'listitem');
+                li.style.cursor = item.locked ? 'default' : 'grab';
+
+                var dragHandle = item.locked ? '<span style="width:16px;display:inline-block;"></span>' :
+                    '<span class="drag-handle text-muted" title="Drag to reorder" style="cursor:grab;font-size:1.1rem;"><i class="fas fa-grip-vertical"></i></span>';
+
+                var pinClass = item.pinned ? 'text-warning' : 'text-muted';
+                var pinTitle = item.pinned ? 'Unpin' : 'Pin to top';
+                var pinBtn = item.locked ? '<span style="width:28px;display:inline-block;"></span>' :
+                    '<button class="btn btn-sm p-0 border-0 pin-btn ' + pinClass + '" title="' + pinTitle + '" style="width:28px;" aria-label="' + pinTitle + '" aria-pressed="' + item.pinned + '">' +
+                    '<i class="fas fa-thumbtack"></i></button>';
+
+                var toggleDisabled = item.locked ? 'disabled title="Cannot hide"' : '';
+                var toggleChecked = item.visible ? 'checked' : '';
+                var toggleHtml = '<div class="form-check form-switch mb-0" style="padding-left:0;">' +
+                    '<input class="form-check-input vis-toggle" type="checkbox" ' + toggleChecked + ' ' + toggleDisabled +
+                    ' id="vis_' + item.id + '" aria-label="Toggle visibility of ' + item.label + '" style="cursor:' + (item.locked ? 'not-allowed' : 'pointer') + ';margin-left:0;"></div>';
+
+                li.innerHTML = dragHandle + '<i class="' + item.icon + ' sidebar-icon me-1" style="width:18px;text-align:center;"></i>' +
+                    '<span class="flex-grow-1 fw-medium">' + item.label + (item.locked ? ' <span class="badge bg-secondary ms-1" style="font-size:0.65rem;">locked</span>' : '') + '</span>' +
+                    pinBtn + toggleHtml;
+
+                // Visibility toggle
+                var toggle = li.querySelector('.vis-toggle');
+                if (toggle && !item.locked) {
+                    toggle.addEventListener('change', function() {
+                        item.visible = this.checked;
+                        li.classList.toggle('opacity-50', !this.checked);
+                    });
+                }
+                if (!item.visible) li.classList.add('opacity-50');
+
+                // Pin button
+                var pinBtnEl = li.querySelector('.pin-btn');
+                if (pinBtnEl) {
+                    pinBtnEl.addEventListener('click', function() {
+                        item.pinned = !item.pinned;
+                        renderList(document.getElementById('customizerSearch').value);
+                    });
+                }
+
+                // Drag & drop
+                li.addEventListener('dragstart', function(e) {
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', item.id);
+                    li.classList.add('dragging');
+                });
+                li.addEventListener('dragend', function() { li.classList.remove('dragging'); });
+                li.addEventListener('dragover', function(e) {
+                    e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+                    li.classList.add('drag-over');
+                });
+                li.addEventListener('dragleave', function() { li.classList.remove('drag-over'); });
+                li.addEventListener('drop', function(e) {
+                    e.preventDefault(); li.classList.remove('drag-over');
+                    var fromId = e.dataTransfer.getData('text/plain');
+                    var fromIdx = working.findIndex(function(x) { return x.id === fromId; });
+                    var toIdx   = working.findIndex(function(x) { return x.id === item.id; });
+                    if (fromIdx !== -1 && toIdx !== -1 && fromIdx !== toIdx) {
+                        var moved = working.splice(fromIdx, 1)[0];
+                        working.splice(toIdx, 0, moved);
+                        working.forEach(function(x, i) { x.displayOrder = i; });
+                        renderList(document.getElementById('customizerSearch').value);
+                    }
+                });
+
+                list.appendChild(li);
+            });
+        }
+
+        renderList('');
+
+        document.getElementById('customizerSearch').oninput = function() { renderList(this.value); };
+
+        document.getElementById('customizerSaveBtn').onclick = function() {
+            working.forEach(function(x, i) { x.displayOrder = i; });
+            saveSidebarPrefs(working.map(function(x) {
+                return { id: x.id, visible: x.visible, pinned: x.pinned, displayOrder: x.displayOrder };
+            }));
+            bootstrap.Modal.getInstance(document.getElementById('sidebarCustomizerModal')).hide();
+            if (typeof window.reloadSidebar === 'function') window.reloadSidebar();
+        };
+
+        document.getElementById('customizerRestoreBtn').onclick = function() {
+            if (!confirm('Restore the default sidebar layout? This will remove all customizations.')) return;
+            var defaults = getDefaultPrefs();
+            saveSidebarPrefs(defaults);
+            fetch('/api/sidebar-preferences', { method: 'DELETE' }).catch(function(){});
+            bootstrap.Modal.getInstance(document.getElementById('sidebarCustomizerModal')).hide();
+            if (typeof window.reloadSidebar === 'function') window.reloadSidebar();
+        };
+
+        var bsModal = new bootstrap.Modal(document.getElementById('sidebarCustomizerModal'));
+        bsModal.show();
+    }
+
     function init() {
         // Apply theme immediately to prevent flash of wrong theme
         initTheme();
@@ -661,6 +920,43 @@
                 toggleNotificationPanel();
             });
         }
+        refreshUnreadBadge();
+
+        // Apply compact mode
+        if (localStorage.getItem(COMPACT_KEY) === 'true') {
+            document.body.classList.add('sidebar-compact');
+        }
+
+        // Expose customizer globally
+        window.openSidebarCustomizer = openSidebarCustomizer;
+        window.reloadSidebar = function() {
+            var old = document.getElementById('sidebar');
+            if (old) {
+                var newSidebar = buildSidebar();
+                old.parentNode.replaceChild(newSidebar, old);
+                initWireup(newSidebar);
+            }
+        };
+    }
+
+    function initWireup(sidebar) {
+        setActiveItem(sidebar);
+        var t = document.getElementById('sidebarToggleBtn');
+        if (t) t.addEventListener('click', toggleSidebar);
+        var th = document.getElementById('themeToggleBtn');
+        if (th) th.addEventListener('click', toggleTheme);
+        var pr = document.getElementById('sidebarProfileBtn');
+        if (pr) pr.addEventListener('click', openProfileModal);
+        var lo = document.getElementById('sidebarLogoutBtn');
+        if (lo) lo.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (typeof logout === 'function') logout();
+            else { localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href = '/login'; }
+        });
+        var calcBtn = document.getElementById('calcSidebarBtn');
+        if (calcBtn) calcBtn.addEventListener('click', function() { if (typeof window.toggleCalc === 'function') window.toggleCalc(); });
+        var notifBtn = document.getElementById('notificationBellBtn');
+        if (notifBtn) notifBtn.addEventListener('click', function(e) { e.stopPropagation(); toggleNotificationPanel(); });
         refreshUnreadBadge();
     }
 

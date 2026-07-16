@@ -101,5 +101,13 @@ public class PageController {
         }
         return "forward:/ai-assistant.html";
     }
+
+    @GetMapping("/financial-planner")
+    public String financialPlanner(HttpServletRequest request) {
+        if (request.getAttribute("userId") == null) {
+            return "redirect:/login";
+        }
+        return "forward:/financial-planner.html";
+    }
 }
 

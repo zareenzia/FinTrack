@@ -451,21 +451,7 @@ Download PDF.
 
 # ⭐ Tier 5
 
-## 19. Investment Portfolio
 
-Track
-
-Stocks
-
-Mutual Funds
-
-Crypto
-
-Bonds
-
-ETF
-
----
 
 ## 20. Loan Manager
 
@@ -541,19 +527,7 @@ Permissions
 
 ---
 
-## 24. Multi Currency
 
-Travel mode.
-
-USD
-
-EUR
-
-BDT
-
-Automatic conversion.
-
----
 
 ## 25. Attachments
 
