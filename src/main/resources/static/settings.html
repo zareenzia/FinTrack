@@ -143,6 +143,7 @@
   </style>
 </head>
 <body>
+<div id="toastContainer" class="notification-toast-container" aria-live="polite" aria-atomic="true"></div>
   <div class="settings-layout">
     <div class="settings-left-panel">
       <div class="settings-left-header">
@@ -1056,19 +1057,24 @@ function applySettings(s) {
 }
 
 // ============== Notifications ==============
+var TOAST_ICONS = { success: 'fa-circle-check', error: 'fa-circle-exclamation', warning: 'fa-triangle-exclamation', info: 'fa-circle-info' };
+var TOAST_TYPE_ALIAS = { danger: 'error' };
 function showNotification(message, type) {
-  type = type || 'success';
-  var colors = { success:'#2e7d4f', danger:'#ef4444', warning:'#f59e0b', info:'#3b82f6' };
-  var div = document.createElement('div');
-  div.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;min-width:280px;max-width:380px;background:#fff;border-left:4px solid '+(colors[type]||colors.success)+';border-radius:8px;padding:14px 18px;box-shadow:0 4px 20px rgba(0,0,0,.15);display:flex;align-items:center;gap:12px;animation:slideIn .3s ease;';
-  var icons = { success:'check-circle', danger:'exclamation-circle', warning:'exclamation-triangle', info:'info-circle' };
-  div.innerHTML = '<i class="fas fa-'+(icons[type]||'check-circle')+'" style="color:'+(colors[type]||colors.success)+';font-size:1.1rem"></i><span style="flex:1;font-size:.9rem">'+message+'</span><button onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;color:#888;font-size:1rem">&#x2715;</button>';
-  document.body.appendChild(div);
-  setTimeout(function(){ if (div.parentElement) div.remove(); }, 4000);
+  type = TOAST_TYPE_ALIAS[type] || type || 'success';
+  var container = document.getElementById('toastContainer');
+  if (!container) return;
+  var toast = document.createElement('div');
+  toast.className = 'notification-toast notification-' + type;
+  toast.innerHTML = '<i class="fas ' + (TOAST_ICONS[type] || TOAST_ICONS.success) + ' notification-toast-icon"></i>' +
+    '<span class="notification-toast-message"></span>' +
+    '<button type="button" class="notification-toast-close" aria-label="Dismiss">&times;</button>';
+  toast.querySelector('.notification-toast-message').textContent = message;
+  var dismiss = function () { toast.classList.remove('show'); setTimeout(function () { toast.remove(); }, 300); };
+  toast.querySelector('.notification-toast-close').addEventListener('click', dismiss);
+  container.appendChild(toast);
+  requestAnimationFrame(function () { toast.classList.add('show'); });
+  setTimeout(dismiss, 5000);
 }
-var slideStyle = document.createElement('style');
-slideStyle.textContent = '@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}';
-document.head.appendChild(slideStyle);
 
 // ============== Icon picker ==============
 var CAT_ICONS = ['tag','shopping-cart','home','car','utensils','heart','briefcase','gift','plane','gamepad','book','music','mobile-alt','bolt','graduation-cap','piggy-bank','chart-line','coffee','pizza-slice','baby','film','dumbbell','paw','leaf'];

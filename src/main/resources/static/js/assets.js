@@ -719,21 +719,23 @@
 
     // ── TOAST ──────────────────────────────────────────────────────────────────
 
+    const TOAST_ICONS = { success: 'fa-circle-check', error: 'fa-circle-exclamation', warning: 'fa-triangle-exclamation', info: 'fa-circle-info' };
+
     function showToast(message, type) {
         const container = document.getElementById('toastContainer');
         if (!container) return;
-        const id = 'toast-' + Date.now();
-        const iconMap = { success: 'fa-check-circle text-success', error: 'fa-exclamation-circle text-danger', info: 'fa-info-circle text-info' };
-        const icon = iconMap[type] || iconMap.info;
+        type = type || 'info';
         const el = document.createElement('div');
-        el.id = id;
-        el.className = 'notification-toast show';
-        el.innerHTML = `<div class="toast-body d-flex align-items-center gap-2">
-            <i class="fas ${icon}"></i><span>${escHtml(message)}</span>
-            <button type="button" class="btn-close btn-close-sm ms-auto" onclick="document.getElementById('${id}').remove()"></button>
-        </div>`;
+        el.className = `notification-toast notification-${type}`;
+        el.innerHTML = `<i class="fas ${TOAST_ICONS[type] || TOAST_ICONS.info} notification-toast-icon"></i>` +
+            `<span class="notification-toast-message"></span>` +
+            `<button type="button" class="notification-toast-close" aria-label="Dismiss">&times;</button>`;
+        el.querySelector('.notification-toast-message').textContent = message;
+        const dismiss = () => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); };
+        el.querySelector('.notification-toast-close').addEventListener('click', dismiss);
         container.appendChild(el);
-        setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 400); }, 4000);
+        requestAnimationFrame(() => el.classList.add('show'));
+        setTimeout(dismiss, 5000);
     }
 
 })();
