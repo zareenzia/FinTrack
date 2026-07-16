@@ -48,22 +48,6 @@ public class PageController {
         return "forward:/transactions.html";
     }
 
-    @GetMapping("/categories")
-    public String categories(HttpServletRequest request) {
-        if (request.getAttribute("userId") == null) {
-            return "redirect:/login";
-        }
-        return "forward:/categories.html";
-    }
-
-    @GetMapping("/assets")
-    public String assets(HttpServletRequest request) {
-        if (request.getAttribute("userId") == null) {
-            return "redirect:/login";
-        }
-        return "forward:/assets.html";
-    }
-
     @GetMapping("/notes")
     public String notes(HttpServletRequest request) {
         if (request.getAttribute("userId") == null) {
@@ -86,6 +70,28 @@ public class PageController {
             return "redirect:/login";
         }
         return "forward:/settings.html";
+    }
+
+    @GetMapping("/assets")
+    public String assets(HttpServletRequest request) {
+        if (request.getAttribute("userId") == null) {
+            return "redirect:/login";
+        }
+        return "forward:/assets.html";
+    }
+
+    // Recurring Transactions now lives on the Transactions page.
+    @GetMapping("/recurring-transactions")
+    public String recurringTransactions() {
+        return "redirect:/transactions";
+    }
+
+    @GetMapping("/budget-planner")
+    public String budgetPlanner(HttpServletRequest request) {
+        if (request.getAttribute("userId") == null) {
+            return "redirect:/login";
+        }
+        return "forward:/budget-planner.html";
     }
 }
 

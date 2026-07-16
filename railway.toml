@@ -1,0 +1,8 @@
+[build]
+builder = "railpack"
+buildCommand = "sh gradlew bootJar -x test"
+
+[deploy]
+startCommand = "java -jar build/libs/finzin-0.0.1-SNAPSHOT.jar"
+healthcheckPath = "/login"
+restartPolicyType = "on_failure"

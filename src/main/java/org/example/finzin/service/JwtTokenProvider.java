@@ -5,20 +5,21 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.example.finzin.entity.UserEntity;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 @Service
 public class JwtTokenProvider {
-    private static final long TOKEN_EXPIRATION = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
-    
+    private static final long TOKEN_EXPIRATION = 7 * 24 * 60 * 60 * 1000L; // 7 days
+
     private final SecretKey secretKey;
-    
-    public JwtTokenProvider() {
-        // Generate a properly sized key for HS512 (512 bits / 64 bytes)
-        this.secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS512);
+
+    public JwtTokenProvider(@Value("${app.jwt.secret}") String jwtSecret) {
+        this.secretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 
     public String generateToken(UserEntity user) {

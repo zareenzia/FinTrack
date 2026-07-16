@@ -146,6 +146,10 @@
                     <i class="fas fa-exchange-alt sidebar-icon"></i>
                     <span class="sidebar-label">Transactions</span>
                 </a>
+                <a href="/budget-planner" class="sidebar-item" data-path="budget-planner" title="Budget Planner">
+                    <i class="fas fa-wallet sidebar-icon"></i>
+                    <span class="sidebar-label">Budget Planner</span>
+                </a>
                 <a href="/notes" class="sidebar-item" data-path="notes" title="Notes">
                     <i class="fas fa-sticky-note sidebar-icon"></i>
                     <span class="sidebar-label">Notes</span>
@@ -153,6 +157,10 @@
                 <a href="/todos" class="sidebar-item" data-path="todos" title="To-Do">
                     <i class="fas fa-tasks sidebar-icon"></i>
                     <span class="sidebar-label">To-Do</span>
+                </a>
+                <a href="/assets" class="sidebar-item" data-path="assets" title="Assets">
+                    <i class="fas fa-coins sidebar-icon"></i>
+                    <span class="sidebar-label">Assets</span>
                 </a>
                 <button class="sidebar-item" id="calcSidebarBtn" title="Calculator" style="background:none;border:none;width:100%;text-align:left;">
                     <i class="fas fa-calculator sidebar-icon"></i>
@@ -167,6 +175,11 @@
             <div class="sidebar-spacer"></div>
 
             <div class="sidebar-bottom">
+                <button class="sidebar-item" id="notificationBellBtn" title="Notifications" style="background:none;border:none;width:100%;text-align:left;position:relative;">
+                    <i class="fas fa-bell sidebar-icon"></i>
+                    <span class="sidebar-label">Notifications</span>
+                    <span id="notifBadge" class="d-none" style="position:absolute; top:6px; left:26px; background:#dc3545; color:#fff; border-radius:999px; font-size:0.65rem; padding:1px 6px; font-weight:600;"></span>
+                </button>
                 <button class="sidebar-item sidebar-theme-toggle" id="themeToggleBtn" title="Toggle theme">
                     <span class="theme-icon-wrap">
                         <i class="${themeIcon}" id="themeToggleIcon"></i>
@@ -397,6 +410,13 @@
             link.href = '/css/calculator.css';
             document.head.appendChild(link);
         }
+        // Load mobile CSS (global, idempotent)
+        if (!document.querySelector('link[href="/css/mobile.css"]')) {
+            var mlink = document.createElement('link');
+            mlink.rel = 'stylesheet';
+            mlink.href = '/css/mobile.css';
+            document.head.appendChild(mlink);
+        }
 
         // Inject popup HTML (idempotent)
         if (document.getElementById('calcPopup')) return;
@@ -457,6 +477,7 @@
                 '</div>' +
                 '<div class="calc-footer">' +
                   '<button class="calc-copy-btn" id="calcCopyBtn"><i class="fas fa-copy"></i> Copy Result</button>' +
+                  '<button class="calc-done-btn calc-hidden" id="calcDoneBtn"><i class="fas fa-check"></i> Done</button>' +
                   '<span class="calc-sci-badge" title="Coming soon"><i class="fas fa-flask" style="margin-right:4px"></i>Sci (soon)</span>' +
                 '</div>' +
               '</div>' +
@@ -472,6 +493,91 @@
             script.src = '/js/calculator.js';
             document.body.appendChild(script);
         }
+    }
+
+    /* ── Notifications ─────────────────────────────────────────── */
+
+    function injectNotificationPanel() {
+        if (document.getElementById('notifDropdownPanel')) return;
+
+        var panel = document.createElement('div');
+        panel.id = 'notifDropdownPanel';
+        panel.style.cssText = 'display:none; position:fixed; bottom:70px; left:90px; width:320px; max-height:400px; overflow-y:auto; background:var(--bg-modal); border:1px solid var(--border-color); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.25); z-index:2000; padding:8px;';
+        panel.innerHTML = '<div style="display:flex; justify-content:space-between; align-items:center; padding:6px 8px; font-weight:600; color:var(--text-primary-custom);">' +
+            '<span><i class="fas fa-bell me-1"></i>Notifications</span>' +
+            '</div><div id="notifListContainer"></div>';
+        document.body.appendChild(panel);
+
+        document.addEventListener('click', function (e) {
+            var panelEl = document.getElementById('notifDropdownPanel');
+            var bellBtn = document.getElementById('notificationBellBtn');
+            if (!panelEl || panelEl.style.display === 'none') return;
+            if (!panelEl.contains(e.target) && e.target !== bellBtn && !bellBtn.contains(e.target)) {
+                panelEl.style.display = 'none';
+            }
+        });
+    }
+
+    function toggleNotificationPanel() {
+        var panel = document.getElementById('notifDropdownPanel');
+        if (!panel) return;
+        var isOpen = panel.style.display !== 'none';
+        if (isOpen) {
+            panel.style.display = 'none';
+            return;
+        }
+        panel.style.display = 'block';
+        loadNotificationList();
+    }
+
+    function loadNotificationList() {
+        var container = document.getElementById('notifListContainer');
+        if (!container) return;
+        container.innerHTML = '<p class="text-muted small p-2 mb-0">Loading…</p>';
+        fetch('/api/notifications')
+            .then(function (r) { return r.json(); })
+            .then(function (items) {
+                if (!items.length) {
+                    container.innerHTML = '<p class="text-muted small p-2 mb-0">No notifications yet.</p>';
+                    return;
+                }
+                container.innerHTML = items.slice(0, 20).map(function (n) {
+                    var unreadStyle = n.isRead ? '' : 'background:var(--bg-table-stripe);';
+                    return '<div style="padding:8px; border-bottom:1px solid var(--border-input); cursor:pointer; ' + unreadStyle + '" onclick="window.__markNotifRead(' + n.id + ')">' +
+                        '<div style="font-weight:600; font-size:0.85rem; color:var(--text-primary-custom);">' + n.title + '</div>' +
+                        '<div style="font-size:0.8rem; color:var(--text-secondary-custom);">' + n.message + '</div>' +
+                        '</div>';
+                }).join('');
+            })
+            .catch(function () {
+                container.innerHTML = '<p class="text-muted small p-2 mb-0">Unable to load notifications.</p>';
+            });
+    }
+
+    function markNotificationRead(id) {
+        fetch('/api/notifications/' + id + '/read', { method: 'PATCH' })
+            .then(function () {
+                loadNotificationList();
+                refreshUnreadBadge();
+            })
+            .catch(function () {});
+    }
+    window.__markNotifRead = markNotificationRead;
+
+    function refreshUnreadBadge() {
+        fetch('/api/notifications/unread-count')
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                var badge = document.getElementById('notifBadge');
+                if (!badge) return;
+                if (data.unreadCount > 0) {
+                    badge.textContent = data.unreadCount > 99 ? '99+' : data.unreadCount;
+                    badge.classList.remove('d-none');
+                } else {
+                    badge.classList.add('d-none');
+                }
+            })
+            .catch(function () {});
     }
 
     function init() {
@@ -531,6 +637,7 @@
         });
         injectProfileModal();
         injectCalculator();
+        injectNotificationPanel();
 
         // Wire up calculator sidebar button
         var calcBtn = document.getElementById('calcSidebarBtn');
@@ -541,6 +648,16 @@
                 }
             });
         }
+
+        // Wire up notification bell
+        var notifBtn = document.getElementById('notificationBellBtn');
+        if (notifBtn) {
+            notifBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                toggleNotificationPanel();
+            });
+        }
+        refreshUnreadBadge();
     }
 
     // Expose for debugging/external use

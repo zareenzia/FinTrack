@@ -7,101 +7,412 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/mobile.css">
     <link rel="icon" type="image/png" href="/images/logo.png">
+    <style>
+        .amount-calc-btn:hover { background: var(--surface-color) !important; border-color: var(--surface-color) !important; }
+        /* Transfer flow layout */
+        .transfer-flow { display: flex; align-items: flex-end; gap: 8px; }
+        .transfer-flow-field { flex: 1; min-width: 0; }
+        .transfer-flow-arrow { flex-shrink: 0; padding-bottom: 6px; color: var(--accent-color); font-size: 1.1rem; }
+
+        /* Recurring Transactions section */
+        .rt-table thead th { border-bottom: 2px solid var(--border-color); color: var(--text-secondary-custom); font-weight: 600; font-size: 0.85rem; }
+        .rt-table tbody tr:hover { background: var(--bg-table-hover); }
+        .rt-table tbody tr:nth-child(odd) { background: var(--bg-table-stripe); }
+        .rt-table td, .rt-table th { vertical-align: middle; padding: 0.65rem 0.75rem; }
+        .rt-status-badge { padding: 0.3rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+        .rt-status-ACTIVE { background: rgba(37, 95, 56, 0.15); color: var(--accent-color); }
+        .rt-status-PAUSED { background: rgba(255, 193, 7, 0.2); color: #b8860b; }
+        .rt-status-COMPLETED { background: rgba(108, 117, 125, 0.2); color: #6c757d; }
+        .rt-empty { text-align: center; padding: 3rem 1rem; color: var(--text-muted-custom); }
+
+        /* Plain, borderless row-action icon buttons */
+        .rt-action-btn { width: 32px; height: 32px; border: none; background: transparent; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s ease; }
+        .rt-action-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+        .rt-action-edit { color: rgba(59, 130, 246, 0.55); }
+        .rt-action-edit:hover:not(:disabled) { background: rgba(59, 130, 246, 0.12); color: #3b82f6; transform: scale(1.1); }
+        .rt-action-pause { color: rgba(184, 134, 11, 0.6); }
+        .rt-action-pause:hover:not(:disabled) { background: rgba(184, 134, 11, 0.15); color: #b8860b; transform: scale(1.1); }
+        .rt-action-delete { color: rgba(220, 38, 38, 0.5); }
+        .rt-action-delete:hover:not(:disabled) { background: rgba(220, 38, 38, 0.12); color: #dc3545; transform: scale(1.1); }
+
+        /* Icon-only modal footer buttons */
+        .icon-btn { width: 38px; height: 38px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+
+        /* Next Month Forecast tab */
+        .rt-forecast-total-card { background: linear-gradient(135deg, var(--accent-color), rgba(0,0,0,0.1)); color: #fff; border-radius: 12px; padding: 1.5rem; }
+        .rt-forecast-total-amount { font-size: 2rem; font-weight: 700; }
+        .rt-section-card { border-left: 4px solid var(--accent-color); }
+        .rt-section-item { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid var(--border-input); font-size: 0.9rem; }
+        .rt-section-item:last-child { border-bottom: none; }
+    </style>
 </head>
 <body>
 <div id="toastContainer" class="notification-toast-container" aria-live="polite" aria-atomic="true"></div>
 
 <div class="container-fluid mt-4">
     <div class="row">
-        <div class="col-md-12">
-            <h2 class="mb-4"><i class="fas fa-exchange-alt"></i> Transactions</h2>
+        <div class="col-md-12 d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+            <h2 class="mb-0"><i class="fas fa-exchange-alt"></i> Transactions</h2>
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-primary btn-sm" id="openAddTransactionModalBtn">
+                    <i class="fas fa-plus-circle me-1"></i> Add New Transaction
+                </button>
+                <button type="button" class="btn btn-success btn-sm" id="openTransferModalBtn">
+                    <i class="fas fa-random me-1"></i> Log Cash Transfer
+                </button>
+                <button type="button" class="btn btn-outline-primary btn-sm" id="openRecurringModalBtn">
+                    <i class="fas fa-sync-alt me-1"></i> Create Recurring Transaction
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="openManageCategoriesModalBtn">
+                    <i class="fas fa-tags me-1"></i> Manage Categories
+                </button>
+            </div>
         </div>
     </div>
 
-    <div class="row mb-4 g-4">
-        <!-- Add New Transaction -->
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h6 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Add New Transaction</h6>
+    <div class="row">
+        <div class="col-md-12">
+            <p class="text-muted small mb-4">
+                Add one-off income, expenses, and savings, log transfers between your accounts, and set up recurring transactions
+                (like rent, bills, or subscriptions) that post automatically — then track everything below across your recurring
+                schedules, next month's forecast, and recent activity.
+            </p>
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs mb-3" id="rtTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="rt-list-tab" data-bs-toggle="tab" data-bs-target="#rt-list-pane" type="button" role="tab">
+                <i class="fas fa-list me-1"></i> All Recurring Transactions
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="rt-forecast-tab" data-bs-toggle="tab" data-bs-target="#rt-forecast-pane" type="button" role="tab">
+                <i class="fas fa-calendar-alt me-1"></i> Next Month Forecast
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="rt-recent-tab" data-bs-toggle="tab" data-bs-target="#rt-recent-pane" type="button" role="tab">
+                <i class="fas fa-receipt me-1"></i> Recent Transactions
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content mb-4">
+    <div class="tab-pane fade show active" id="rt-list-pane" role="tabpanel">
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small mb-1">Search</label>
+                    <input type="text" class="form-control form-control-sm" id="rtSearch" placeholder="Search by name...">
                 </div>
-                <div class="card-body">
-                    <form id="transactionForm">
-                        <div class="mb-2">
-                            <label for="description" class="form-label">Description</label>
-                            <input type="text" class="form-control form-control-sm" id="description" required placeholder="e.g., Grocery shopping">
-                        </div>
-                        <div class="mb-2">
-                            <label for="amount" class="form-label">Amount</label>
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text">৳</span>
-                                <input type="number" class="form-control" id="amount" step="0.01" required placeholder="0.00">
-                            </div>
-                        </div>
-                        <div class="row g-2 mb-2">
-                            <div class="col-7">
-                                <label for="category" class="form-label">Category</label>
-                                <select class="form-select form-select-sm" id="category" required>
-                                    <option value="">Select category</option>
-                                </select>
-                            </div>
-                            <div class="col-5">
-                                <label for="type" class="form-label">Type</label>
-                                <select class="form-select form-select-sm" id="type" required>
-                                    <option value="expense">Expense</option>
-                                    <option value="income">Income</option>
-                                    <option value="savings">Savings</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="date" class="form-label">Date</label>
-                            <input type="date" class="form-control form-control-sm" id="date" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100 btn-sm" style="padding:8px;">
-                            <i class="fas fa-save me-1"></i> Add Transaction
-                        </button>
-                    </form>
+                <div class="col-md-2">
+                    <label class="form-label small mb-1">Type</label>
+                    <select class="form-select form-select-sm" id="rtFilterType">
+                        <option value="">All</option>
+                        <option value="income">Income</option>
+                        <option value="expense">Expense</option>
+                        <option value="savings">Savings</option>
+                        <option value="transfer">Transfer</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small mb-1">Frequency</label>
+                    <select class="form-select form-select-sm" id="rtFilterFrequency">
+                        <option value="">All</option>
+                        <option value="DAILY">Daily</option>
+                        <option value="WEEKLY">Weekly</option>
+                        <option value="MONTHLY">Monthly</option>
+                        <option value="QUARTERLY">Quarterly</option>
+                        <option value="YEARLY">Yearly</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small mb-1">Status</label>
+                    <select class="form-select form-select-sm" id="rtFilterStatus">
+                        <option value="">All</option>
+                        <option value="ACTIVE">Active</option>
+                        <option value="PAUSED">Paused</option>
+                        <option value="COMPLETED">Completed</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small mb-1">Sort By</label>
+                    <select class="form-select form-select-sm" id="rtSortBy">
+                        <option value="nextExecutionDate">Next Run</option>
+                        <option value="transactionName">Name</option>
+                        <option value="amount">Amount</option>
+                        <option value="status">Status</option>
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label small mb-1">Page Size</label>
+                    <select class="form-select form-select-sm" id="rtPageSize">
+                        <option value="10">10</option>
+                        <option value="20" selected>20</option>
+                        <option value="50">50</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table rt-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Category</th>
+                            <th>Amount</th>
+                            <th>Frequency</th>
+                            <th>Next Run</th>
+                            <th>Last Executed</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rtTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span class="small text-muted" id="rtPageInfo"></span>
+            <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary" id="rtPrevBtn" onclick="rtPreviousPage()"><i class="fas fa-chevron-left"></i></button>
+                <button class="btn btn-outline-secondary" id="rtNextBtn" onclick="rtNextPage()"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+    </div>
+
+    </div><!-- /#rt-list-pane -->
+
+    <div class="tab-pane fade" id="rt-forecast-pane" role="tabpanel">
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <div class="rt-forecast-total-card">
+                    <div class="small opacity-75"><i class="fas fa-calendar-alt me-1"></i> Total due next month (<span id="rtForecastMonthLabel"></span>)</div>
+                    <div class="rt-forecast-total-amount" id="rtForecastTotalDue">৳0</div>
+                    <div class="small opacity-75 mt-1">Expenses + Savings + Transfers out, based on active recurring transactions</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">Expected Income</div>
+                        <div class="fs-4 fw-bold text-success" id="rtForecastIncome">৳0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">Net (Income − Outflow)</div>
+                        <div class="fs-4 fw-bold" id="rtForecastNet">৳0</div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Assets -->
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h6 class="mb-0"><i class="fas fa-building me-2"></i>Assets</h6>
+        <h6 class="mb-3"><i class="fas fa-layer-group me-1"></i> Fixed Sections</h6>
+        <div class="row g-3" id="rtForecastSections">
+            <div class="col-12"><p class="text-muted">Loading forecast…</p></div>
+        </div>
+    </div><!-- /#rt-forecast-pane -->
+
+    <div class="tab-pane fade" id="rt-recent-pane" role="tabpanel">
+        <div class="card tx-card">
+            <div class="card-header tx-card-header">
+                <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                    <div class="tx-header-icon">
+                        <i class="fas fa-receipt"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 tx-header-title">Recent Transactions</h6>
+                        <span class="tx-header-sub" id="tx-total-count"></span>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <form id="assetForm" class="mb-3">
-                        <div class="row g-2 mb-2">
-                            <div class="col-7">
-                                <label for="assetName" class="form-label">Asset Name</label>
-                                <input type="text" class="form-control form-control-sm" id="assetName" required placeholder="e.g., Savings Account">
-                            </div>
-                            <div class="col-5">
-                                <label for="assetType" class="form-label">Type</label>
-                                <input type="text" class="form-control form-control-sm" id="assetType" placeholder="Cash, Property…">
-                            </div>
+                <div class="tx-header-actions">
+                    <select class="tx-filter-select" id="txMonthFilter" title="Filter by month">
+                        <option value="">Loading…</option>
+                    </select>
+                    <select class="tx-filter-select" id="txCategoryFilter" title="Filter by category">
+                        <option value="">All Categories</option>
+                    </select>
+                    <select class="tx-filter-select" id="txTypeFilter" title="Filter by type">
+                        <option value="">All Types</option>
+                        <option value="income">Income</option>
+                        <option value="expense">Expense</option>
+                        <option value="savings">Savings</option>
+                    </select>
+                    <select class="tx-filter-select" id="txLimitSelect" title="Transactions to show">
+                        <option value="5">Show 5</option>
+                        <option value="10">Show 10</option>
+                        <option value="20">Show 20</option>
+                        <option value="50">Show 50</option>
+                        <option value="100">Show 100</option>
+                    </select>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <!-- Column Labels -->
+                <div class="tx-col-labels">
+                    <span class="tx-col-date"><i class="fas fa-calendar-alt"></i> Date</span>
+                    <span class="tx-col-desc"><i class="fas fa-align-left"></i> Description</span>
+                    <span class="tx-col-cat"><i class="fas fa-tag"></i> Category</span>
+                    <span class="tx-col-type"><i class="fas fa-exchange-alt"></i> Type</span>
+                    <span class="tx-col-amount"><i class="fas fa-coins"></i> Amount</span>
+                    <span class="tx-col-action"></span>
+                </div>
+                <div id="recent-tx-body"></div>
+            </div>
+            <!-- Pagination -->
+            <div class="tx-pagination">
+                <span class="tx-page-info" id="tx-page-info"></span>
+                <div class="tx-page-controls">
+                    <button class="tx-page-btn" id="tx-first-btn" onclick="goToFirstPage()" title="First page">
+                        <i class="fas fa-angle-double-left"></i>
+                    </button>
+                    <button class="tx-page-btn" id="tx-prev-btn" onclick="previousTransactionPage()" title="Previous">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span class="tx-page-numbers" id="tx-page-numbers"></span>
+                    <button class="tx-page-btn" id="tx-next-btn" onclick="nextTransactionPage()" title="Next">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <button class="tx-page-btn" id="tx-last-btn" onclick="goToLastPage()" title="Last page">
+                        <i class="fas fa-angle-double-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div><!-- /#rt-recent-pane -->
+
+    </div><!-- /.tab-content -->
+</div>
+
+<!-- Add New Transaction Modal -->
+<div class="modal fade" id="addTransactionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>Add New Transaction</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="transactionForm">
+                    <div class="row g-3">
+                        <div class="col-md-6 mb-2">
+                            <label for="description" class="form-label">Description</label>
+                            <input type="text" class="form-control form-control-sm" id="description" required placeholder="e.g., Grocery shopping">
                         </div>
-                        <div class="mb-3">
-                            <label for="assetValue" class="form-label">Current Value</label>
+                        <div class="col-md-6 mb-2">
+                            <label for="amount" class="form-label">Amount</label>
                             <div class="input-group input-group-sm">
                                 <span class="input-group-text">৳</span>
-                                <input type="number" class="form-control" id="assetValue" step="0.01" min="0" required placeholder="0.00">
+                                <input type="number" class="form-control" id="amount" step="0.01" required placeholder="0.00">
+                                <button type="button" class="input-group-text amount-calc-btn" id="amountCalcBtn" title="Open Calculator" onclick="if(window.openCalcForInput) window.openCalcForInput('amount'); else if(window.openCalc) window.openCalc();" style="cursor:pointer; background:var(--accent-color); border-color:var(--accent-color); color:#fff; transition:background 0.2s;">
+                                    <i class="fas fa-calculator" style="font-size:0.8rem;"></i>
+                                </button>
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-primary btn-sm w-100" style="padding:8px;">
-                            <i class="fas fa-plus me-1"></i> Add Asset
-                        </button>
-                    </form>
-                    <div class="d-flex justify-content-between align-items-center mb-2 px-1" style="font-size:0.85rem;">
-                        <span style="font-weight:600;">Total Asset Value</span>
-                        <span id="total-asset-value" style="font-weight:700;color:var(--accent-color);">$0.00</span>
+                        <div class="col-md-4 mb-2">
+                            <label for="category" class="form-label">Category</label>
+                            <select class="form-select form-select-sm" id="category" required>
+                                <option value="">Select category</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <label for="type" class="form-label">Type</label>
+                            <select class="form-select form-select-sm" id="type" required>
+                                <option value="expense">Expense</option>
+                                <option value="income">Income</option>
+                                <option value="savings">Savings</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <label for="date" class="form-label">Date</label>
+                            <input type="date" class="form-control form-control-sm" id="date" required>
+                        </div>
+                        <div class="col-md-12 mb-2">
+                            <label for="sourceAccount" class="form-label">Account <small class="text-muted">(optional)</small></label>
+                            <select class="form-select form-select-sm" id="sourceAccount">
+                                <option value="">-- No account --</option>
+                            </select>
+                        </div>
                     </div>
-                    <div id="assetList"></div>
-                </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary icon-btn" data-bs-dismiss="modal" title="Cancel"><i class="fas fa-times"></i></button>
+                <button type="button" class="btn btn-primary icon-btn" id="saveTransactionBtn" title="Add Transaction"><i class="fas fa-check"></i></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Log Cash Transfer Modal -->
+<div class="modal fade" id="transferModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-random me-2"></i>Log Cash Transfer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-3">Move money between any of your accounts — bank, MFS, cash wallet, or credit card. Balances update instantly.</p>
+                <form id="transferForm">
+                    <!-- From → To visual flow -->
+                    <div class="transfer-flow mb-3">
+                        <div class="transfer-flow-field">
+                            <label class="form-label fw-semibold"><i class="fas fa-arrow-up-from-bracket me-1 text-danger"></i>From Account</label>
+                            <select class="form-select form-select-sm" id="transferFrom" required>
+                                <option value="">Select source…</option>
+                            </select>
+                        </div>
+                        <div class="transfer-flow-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                        <div class="transfer-flow-field">
+                            <label class="form-label fw-semibold"><i class="fas fa-arrow-down-to-bracket me-1 text-success"></i>To Account</label>
+                            <select class="form-select form-select-sm" id="transferTo" required>
+                                <option value="">Select destination…</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Amount</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">৳</span>
+                            <input type="number" class="form-control" id="transferAmount" step="0.01" min="0.01" required placeholder="0.00">
+                            <button type="button" class="input-group-text amount-calc-btn" title="Open Calculator" onclick="if(window.openCalcForInput) window.openCalcForInput('transferAmount'); else if(window.openCalc) window.openCalc();" style="cursor:pointer; background:var(--accent-color); border-color:var(--accent-color); color:#fff;">
+                                <i class="fas fa-calculator" style="font-size:0.8rem;"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label">Date</label>
+                            <input type="date" class="form-control form-control-sm" id="transferDate" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Note <small class="text-muted">(optional)</small></label>
+                            <input type="text" class="form-control form-control-sm" id="transferNote" placeholder="e.g., Salary split">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary icon-btn" data-bs-dismiss="modal" title="Cancel"><i class="fas fa-times"></i></button>
+                <button type="button" class="btn btn-success icon-btn" id="saveTransferBtn" title="Log Transfer"><i class="fas fa-check"></i></button>
             </div>
         </div>
     </div>
@@ -210,6 +521,186 @@
     </div>
 </div>
 
+<!-- Create/Edit Recurring Transaction Modal -->
+<div class="modal fade" id="createRecurringModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="recurringModalTitle"><i class="fas fa-sync-alt me-2"></i>Create Recurring Transaction</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="recurringForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="recurName" class="form-label">Transaction Name</label>
+                            <input type="text" class="form-control form-control-sm" id="recurName" required placeholder="e.g., Monthly Salary">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="recurType" class="form-label">Transaction Type</label>
+                            <select class="form-select form-select-sm" id="recurType" required>
+                                <option value="expense">Expense</option>
+                                <option value="income">Income</option>
+                                <option value="savings">Savings</option>
+                                <option value="transfer">Transfer</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label for="recurDescription" class="form-label">Description <small class="text-muted">(optional)</small></label>
+                            <input type="text" class="form-control form-control-sm" id="recurDescription" placeholder="Notes">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="recurAmount" class="form-label">Amount</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">৳</span>
+                                <input type="number" class="form-control" id="recurAmount" step="0.01" min="0.01" required placeholder="0.00">
+                            </div>
+                        </div>
+                        <div class="col-md-4" id="recurCategoryWrap">
+                            <label for="recurCategory" class="form-label">Category</label>
+                            <select class="form-select form-select-sm" id="recurCategory">
+                                <option value="">Select category</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4" id="recurAccountSingleWrap">
+                            <label for="recurSourceAccount" class="form-label" id="recurSourceAccountLabel">Account</label>
+                            <select class="form-select form-select-sm" id="recurSourceAccount">
+                                <option value="">-- No account --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-none" id="recurDestAccountWrap">
+                            <label for="recurDestAccount" class="form-label">To Account</label>
+                            <select class="form-select form-select-sm" id="recurDestAccount">
+                                <option value="">Select destination…</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="recurFrequency" class="form-label">Frequency</label>
+                            <select class="form-select form-select-sm" id="recurFrequency">
+                                <option value="DAILY">Daily</option>
+                                <option value="WEEKLY">Weekly</option>
+                                <option value="MONTHLY" selected>Monthly</option>
+                                <option value="QUARTERLY">Quarterly</option>
+                                <option value="YEARLY">Yearly</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="recurInterval" class="form-label">Every X <small class="text-muted">(interval)</small></label>
+                            <input type="number" class="form-control form-control-sm" id="recurInterval" min="1" value="1" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="recurStartDate" class="form-label">Start Date</label>
+                            <input type="date" class="form-control form-control-sm" id="recurStartDate" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="recurEndDate" class="form-label">End Date</label>
+                            <input type="date" class="form-control form-control-sm" id="recurEndDate">
+                        </div>
+                        <div class="col-md-6 d-flex align-items-end">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="recurNeverEnds" checked>
+                                <label class="form-check-label" for="recurNeverEnds">Never Ends</label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary icon-btn" data-bs-dismiss="modal" title="Cancel"><i class="fas fa-times"></i></button>
+                <button type="button" class="btn btn-primary icon-btn" id="saveRecurringBtn" title="Save">
+                    <i class="fas fa-check" id="saveRecurringBtnIcon"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Recurring Transaction Confirmation Modal -->
+<div class="modal fade" id="deleteRecurringModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Recurring Transaction</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Delete this recurring transaction? Previously generated transactions will not be affected.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteRecurringBtn">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Transaction Modal (Recent Transactions tab) -->
+<div class="modal fade" id="dashboardEditTxModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:460px">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-pen me-2"></i>Edit Transaction</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editTxId">
+                <div class="mb-3">
+                    <label for="editTxDescription" class="form-label">Description</label>
+                    <input type="text" class="form-control" id="editTxDescription" placeholder="e.g., Grocery shopping" required>
+                </div>
+                <div class="mb-3">
+                    <label for="editTxAmount" class="form-label">Amount</label>
+                    <div class="input-group">
+                        <span class="input-group-text">৳</span>
+                        <input type="number" class="form-control" id="editTxAmount" step="0.01" min="0.01" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="editTxType" class="form-label">Type</label>
+                    <select class="form-select" id="editTxType">
+                        <option value="expense">Expense</option>
+                        <option value="income">Income</option>
+                        <option value="savings">Savings</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="editTxCategory" class="form-label">Category</label>
+                    <select class="form-select" id="editTxCategory" required>
+                        <option value="">Loading…</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="dashboardSaveEditTxBtn">
+                    <i class="fas fa-save me-1"></i>Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Transaction Confirmation Modal (Recent Transactions tab) -->
+<div class="modal fade" id="dashboardDeleteTxModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:420px">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-trash-alt me-2"></i>Delete Transaction</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-4">
+                <p class="mb-0">Are you sure you want to delete this transaction? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="dashboardConfirmDeleteTxBtn">
+                    <i class="fas fa-trash-alt me-1"></i>Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     function getUserStorageKey(baseKey) {
         try {
@@ -219,13 +710,35 @@
         } catch(e) {}
         return baseKey;
     }
-    let cachedAssets = [];
     let editCategoryId = null;
     let deleteCategoryId = null;
     let manageCategoriesModal = null;
     let editCategoryModal = null;
     let deleteCategoryModal = null;
     let addCategoryModal = null;
+    let createRecurringModal = null;
+    let deleteRecurringModal = null;
+    let addTransactionModal = null;
+    let transferModal = null;
+
+    // Recent Transactions tab state
+    let allTransactions = [];
+    let filteredTransactions = [];
+    let currentPage = 0;
+    let pageSize = parseInt(localStorage.getItem('tx_page_limit') || '5', 10);
+    let txFilterCategory = '';
+    let txFilterType = '';
+    let txFilterMonth = null; // 'YYYY-MM' or 'ALL'
+    let txDeleteId = null;
+    let txDeleteModal = null;
+    let txEditId = null;
+    let txEditModal = null;
+    let categoryColorMap = {};
+    let allRecurring = [];
+    let filteredRecurring = [];
+    let rtCurrentPage = 0;
+    let editRecurringId = null;
+    let deleteRecurringId = null;
     document.getElementById('date').valueAsDate = new Date();
 
     const CURRENCY_DEFAULTS = { currencySymbol:'৳', symbolPosition:'before', decimalPlaces:0 };
@@ -252,21 +765,94 @@
         editCategoryModal = new bootstrap.Modal(document.getElementById('editCategoryModal'));
         deleteCategoryModal = new bootstrap.Modal(document.getElementById('deleteCategoryModal'));
         addCategoryModal = new bootstrap.Modal(document.getElementById('addCategoryModal'));
-        
+        createRecurringModal = new bootstrap.Modal(document.getElementById('createRecurringModal'));
+        deleteRecurringModal = new bootstrap.Modal(document.getElementById('deleteRecurringModal'));
+        addTransactionModal = new bootstrap.Modal(document.getElementById('addTransactionModal'));
+        transferModal = new bootstrap.Modal(document.getElementById('transferModal'));
+        txDeleteModal = new bootstrap.Modal(document.getElementById('dashboardDeleteTxModal'));
+        txEditModal = new bootstrap.Modal(document.getElementById('dashboardEditTxModal'));
+
+        document.getElementById('dashboardConfirmDeleteTxBtn').addEventListener('click', confirmDeleteTransaction);
+        document.getElementById('dashboardSaveEditTxBtn').addEventListener('click', saveEditTransaction);
+        document.getElementById('editTxType').addEventListener('change', function () {
+            loadEditCategories(this.value);
+        });
+
+        const savedLimit = localStorage.getItem('tx_page_limit') || '5';
+        pageSize = parseInt(savedLimit, 10);
+        const limitEl = document.getElementById('txLimitSelect');
+        if (limitEl) {
+            limitEl.value = savedLimit;
+            limitEl.addEventListener('change', function () {
+                pageSize = parseInt(this.value, 10);
+                localStorage.setItem('tx_page_limit', this.value);
+                currentPage = 0;
+                applyFiltersAndDisplay();
+            });
+        }
+        document.getElementById('txCategoryFilter').addEventListener('change', function () {
+            txFilterCategory = this.value;
+            currentPage = 0;
+            applyFiltersAndDisplay();
+        });
+        document.getElementById('txTypeFilter').addEventListener('change', function () {
+            txFilterType = this.value;
+            currentPage = 0;
+            applyFiltersAndDisplay();
+        });
+        document.getElementById('txMonthFilter').addEventListener('change', function () {
+            txFilterMonth = this.value;
+            currentPage = 0;
+            applyFiltersAndDisplay();
+        });
+
+        document.getElementById('openManageCategoriesModalBtn').addEventListener('click', openCategoryManagementModal);
         document.getElementById('saveCategoryChangesBtn').addEventListener('click', saveCategoryChanges);
         document.getElementById('confirmDeleteCategoryBtn').addEventListener('click', confirmDeleteCategory);
         document.getElementById('addNewCategoryBtn').addEventListener('click', openAddCategoryModal);
         document.getElementById('createCategoryBtn').addEventListener('click', createNewCategory);
-        
+        document.getElementById('openRecurringModalBtn').addEventListener('click', openCreateRecurringModal);
+        document.getElementById('openAddTransactionModalBtn').addEventListener('click', openAddTransactionModal);
+        document.getElementById('openTransferModalBtn').addEventListener('click', openTransferModal);
+        document.getElementById('saveTransactionBtn').addEventListener('click', () => document.getElementById('transactionForm').requestSubmit());
+        document.getElementById('saveTransferBtn').addEventListener('click', () => document.getElementById('transferForm').requestSubmit());
+        document.getElementById('recurType').addEventListener('change', onRecurTypeChange);
+        document.getElementById('recurNeverEnds').addEventListener('change', onRecurNeverEndsChange);
+        document.getElementById('saveRecurringBtn').addEventListener('click', saveRecurringTransaction);
+        document.getElementById('confirmDeleteRecurringBtn').addEventListener('click', confirmDeleteRecurring);
+
+        document.getElementById('rtSearch').addEventListener('input', applyRtFilters);
+        document.getElementById('rtFilterType').addEventListener('change', applyRtFilters);
+        document.getElementById('rtFilterFrequency').addEventListener('change', applyRtFilters);
+        document.getElementById('rtFilterStatus').addEventListener('change', applyRtFilters);
+        document.getElementById('rtSortBy').addEventListener('change', applyRtFilters);
+        document.getElementById('rtPageSize').addEventListener('change', function () { rtCurrentPage = 0; applyRtFilters(); });
+
         loadCategories(document.getElementById('type').value);
-        loadAssets();
+        loadAccountsIntoSelect();
         applyCurrencySymbolToInputs();
+        document.getElementById('transferDate').valueAsDate = new Date();
+        loadRecurring();
+        loadRecentTransactions();
     });
 
     function openCategoryManagementModal(e) {
         e.preventDefault();
         loadCategoriesForManagement();
         manageCategoriesModal.show();
+    }
+
+    function openAddTransactionModal() {
+        document.getElementById('transactionForm').reset();
+        document.getElementById('date').valueAsDate = new Date();
+        loadCategories(document.getElementById('type').value);
+        addTransactionModal.show();
+    }
+
+    function openTransferModal() {
+        document.getElementById('transferForm').reset();
+        document.getElementById('transferDate').valueAsDate = new Date();
+        transferModal.show();
     }
 
     async function loadCategories(type) {
@@ -295,12 +881,15 @@
 
     document.getElementById('transactionForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const srcAcctEl = document.getElementById('sourceAccount');
         const transaction = {
             description: document.getElementById('description').value,
             amount: parseFloat(document.getElementById('amount').value),
             category_id: parseInt(document.getElementById('category').value, 10),
             transaction_type: document.getElementById('type').value,
-            date: document.getElementById('date').value
+            date: document.getElementById('date').value,
+            sourceAccountId: srcAcctEl && srcAcctEl.value ? parseInt(srcAcctEl.value, 10) : null,
+            destinationAccountId: null
         };
 
         try {
@@ -311,9 +900,11 @@
             });
 
             if (response.ok) {
+                addTransactionModal.hide();
                 document.getElementById('transactionForm').reset();
                 document.getElementById('date').valueAsDate = new Date();
                 loadCategories(document.getElementById('type').value);
+                loadRecentTransactions();
                 showTopNotification('Transaction added.', 'success');
             } else {
                 showTopNotification('Failed to add transaction.', 'error');
@@ -323,85 +914,54 @@
         }
     });
 
-    document.getElementById('assetForm').addEventListener('submit', async (e) => {
+    document.getElementById('transferForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const asset = {
-            name: document.getElementById('assetName').value.trim(),
-            type: document.getElementById('assetType').value.trim(),
-            value: parseFloat(document.getElementById('assetValue').value),
-            description: ''
+        const fromId = document.getElementById('transferFrom').value;
+        const toId   = document.getElementById('transferTo').value;
+        const amount = parseFloat(document.getElementById('transferAmount').value);
+        const note   = document.getElementById('transferNote').value.trim();
+        const date   = document.getElementById('transferDate').value;
+
+        if (!fromId || !toId) {
+            showTopNotification('Please select both From and To accounts.', 'error'); return;
+        }
+        if (fromId === toId) {
+            showTopNotification('Source and destination accounts must be different.', 'error'); return;
+        }
+        if (!amount || amount <= 0) {
+            showTopNotification('Enter a valid amount.', 'error'); return;
+        }
+
+        const payload = {
+            description: note || 'Transfer',
+            amount: amount,
+            category_id: null,
+            transaction_type: 'transfer',
+            date: date,
+            sourceAccountId: parseInt(fromId, 10),
+            destinationAccountId: parseInt(toId, 10)
         };
 
-        if (!asset.name || Number.isNaN(asset.value)) {
-            showTopNotification('Asset name and value are required.', 'error');
-            return;
-        }
-
         try {
-            const response = await fetch('/api/assets', {
+            const response = await fetch('/api/transactions', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(asset)
+                body: JSON.stringify(payload)
             });
             if (response.ok) {
-                document.getElementById('assetForm').reset();
-                loadAssets();
-                showTopNotification('Asset added successfully.', 'success');
+                transferModal.hide();
+                document.getElementById('transferForm').reset();
+                document.getElementById('transferDate').valueAsDate = new Date();
+                loadRecentTransactions();
+                showTopNotification('Transfer logged successfully.', 'success');
             } else {
-                const errorData = await response.json().catch(() => null);
-                showTopNotification(errorData?.error || 'Failed to add asset.', 'error');
+                const err = await response.json().catch(() => null);
+                showTopNotification((err && err.error) || 'Failed to log transfer.', 'error');
             }
         } catch (error) {
-            showTopNotification('Unable to add asset right now.', 'error');
+            showTopNotification('Unable to log transfer right now.', 'error');
         }
     });
-
-    async function loadAssets() {
-        try {
-            const response = await fetch('/api/assets');
-            const assets = await response.json();
-            cachedAssets = assets;
-            const total = assets.reduce((sum, a) => sum + Number(a.value || 0), 0);
-            document.getElementById('total-asset-value').textContent = formatAmount(total);
-
-            const list = document.getElementById('assetList');
-            if (!assets.length) {
-                list.innerHTML = '<p class="text-muted mb-0">No assets added yet</p>';
-                return;
-            }
-
-            list.innerHTML = assets.map(asset => `
-                <div class="card mb-2">
-                    <div class="card-body py-2 d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="mb-1">${asset.name}</h6>
-                            <small class="text-muted">${asset.type || 'General'}</small>
-                        </div>
-                        <div class="text-end">
-                            <div class="fw-bold text-secondary">${formatAmount(asset.value)}</div>
-                            <button class="btn btn-sm btn-danger" onclick="deleteAsset(${asset.id})">Delete</button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        } catch (error) {
-            showTopNotification('Unable to load assets.', 'error');
-        }
-    }
-
-    async function deleteAsset(id) {
-        try {
-            const response = await fetch(`/api/assets/${id}`, {method: 'DELETE'});
-            if (response.ok) {
-                loadAssets();
-                showTopNotification('Asset deleted successfully.', 'success');
-            } else {
-                showTopNotification('Failed to delete asset.', 'error');
-            }
-        } catch (error) {
-            showTopNotification('Unable to delete asset right now.', 'error');
-        }
-    }
 
     function showTopNotification(message, type = 'success') {
         const container = document.getElementById('toastContainer');
@@ -578,7 +1138,691 @@
             showTopNotification('Unable to create category right now.', 'error');
         }
     }
+    async function loadAccountsIntoSelect() {
+        try {
+            const resp = await fetch('/api/accounts');
+            if (!resp.ok) return;
+            const accounts = await resp.json();
+        const label = a => a.accountNickname + (a.bankName ? ' (' + a.bankName + ')' : a.provider ? ' (' + a.provider + ')' : '');
+        const srcSel  = document.getElementById('sourceAccount');
+        const fromSel = document.getElementById('transferFrom');
+        const toSel   = document.getElementById('transferTo');
+        const recurSrcSel  = document.getElementById('recurSourceAccount');
+        const recurDestSel = document.getElementById('recurDestAccount');
+        const srcOpts = '<option value="">-- No account --</option>' + accounts.map(a => `<option value="${a.id}">${label(a)}</option>`).join('');
+        const txOpts  = '<option value="">Select…</option>' + accounts.map(a => `<option value="${a.id}">${label(a)}</option>`).join('');
+        if (srcSel)  srcSel.innerHTML  = srcOpts;
+        if (fromSel) fromSel.innerHTML = txOpts;
+        if (toSel)   toSel.innerHTML   = txOpts;
+        if (recurSrcSel)  recurSrcSel.innerHTML  = srcOpts;
+        if (recurDestSel) recurDestSel.innerHTML = txOpts;
+        } catch(e) { console.warn('Could not load accounts for select:', e); }
+    }
 
+    // ============== RECURRING TRANSACTIONS ==============
+    async function loadRecurring() {
+        try {
+            const response = await fetch('/api/recurring-transactions');
+            allRecurring = await response.json();
+            applyRtFilters();
+            renderForecast();
+        } catch (e) {
+            showTopNotification('Unable to load recurring transactions.', 'error');
+        }
+    }
+
+    function applyRtFilters() {
+        const search = document.getElementById('rtSearch').value.trim().toLowerCase();
+        const type = document.getElementById('rtFilterType').value;
+        const frequency = document.getElementById('rtFilterFrequency').value;
+        const status = document.getElementById('rtFilterStatus').value;
+        const sortBy = document.getElementById('rtSortBy').value;
+
+        filteredRecurring = allRecurring.filter(r => {
+            const searchOk = !search || r.transactionName.toLowerCase().includes(search);
+            const typeOk = !type || r.transactionType === type;
+            const frequencyOk = !frequency || r.frequency === frequency;
+            const statusOk = !status || r.status === status;
+            return searchOk && typeOk && frequencyOk && statusOk;
+        }).sort((a, b) => {
+            if (sortBy === 'amount') return b.amount - a.amount;
+            if (sortBy === 'transactionName') return a.transactionName.localeCompare(b.transactionName);
+            if (sortBy === 'status') return a.status.localeCompare(b.status);
+            return new Date(a.nextExecutionDate) - new Date(b.nextExecutionDate);
+        });
+        rtCurrentPage = 0;
+        renderRtTable();
+    }
+
+    function renderRtTable() {
+        const pageSize = parseInt(document.getElementById('rtPageSize').value, 10);
+        const totalPages = Math.max(1, Math.ceil(filteredRecurring.length / pageSize));
+        rtCurrentPage = Math.min(rtCurrentPage, totalPages - 1);
+        const start = rtCurrentPage * pageSize;
+        const pageItems = filteredRecurring.slice(start, start + pageSize);
+
+        const tbody = document.getElementById('rtTableBody');
+        if (pageItems.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9"><div class="rt-empty"><i class="fas fa-sync-alt fa-2x mb-2"></i><p>No recurring transactions found.</p></div></td></tr>`;
+        } else {
+            tbody.innerHTML = pageItems.map(r => `
+                <tr>
+                    <td><strong>${r.transactionName}</strong></td>
+                    <td>${r.transactionType.charAt(0).toUpperCase() + r.transactionType.slice(1)}</td>
+                    <td>${r.categoryName || (r.transactionType === 'transfer' ? '—' : 'Uncategorized')}</td>
+                    <td>${formatAmount(r.amount)}</td>
+                    <td>${r.frequency.charAt(0) + r.frequency.slice(1).toLowerCase()}${r.intervalValue > 1 ? ' (every ' + r.intervalValue + ')' : ''}</td>
+                    <td>${r.nextExecutionDate}</td>
+                    <td>${r.lastExecutionDate || '—'}</td>
+                    <td><span class="rt-status-badge rt-status-${r.status}">${r.status}</span></td>
+                    <td class="text-end">
+                        <button class="rt-action-btn rt-action-edit" title="Edit" onclick="editRecurring(${r.id})"><i class="fas fa-pen"></i></button>
+                        <button class="rt-action-btn rt-action-pause" title="${r.status === 'PAUSED' ? 'Resume' : 'Pause'}" onclick="toggleRecurringStatus(${r.id}, '${r.status}')" ${r.status === 'COMPLETED' ? 'disabled' : ''}>
+                            <i class="fas ${r.status === 'PAUSED' ? 'fa-play' : 'fa-pause'}"></i>
+                        </button>
+                        <button class="rt-action-btn rt-action-delete" title="Delete" onclick="deleteRecurring(${r.id})"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        const shown = Math.min(start + pageSize, filteredRecurring.length);
+        const from = filteredRecurring.length === 0 ? 0 : start + 1;
+        document.getElementById('rtPageInfo').textContent = `Showing ${from}-${shown} of ${filteredRecurring.length}`;
+        document.getElementById('rtPrevBtn').disabled = rtCurrentPage === 0;
+        document.getElementById('rtNextBtn').disabled = rtCurrentPage >= totalPages - 1;
+    }
+
+    function rtPreviousPage() { if (rtCurrentPage > 0) { rtCurrentPage--; renderRtTable(); } }
+    function rtNextPage() { rtCurrentPage++; renderRtTable(); }
+
+    async function toggleRecurringStatus(id, currentStatus) {
+        const newStatus = currentStatus === 'PAUSED' ? 'ACTIVE' : 'PAUSED';
+        try {
+            const response = await fetch(`/api/recurring-transactions/${id}/status`, {
+                method: 'PATCH',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ status: newStatus })
+            });
+            if (response.ok) {
+                showTopNotification(newStatus === 'ACTIVE' ? 'Recurring transaction resumed.' : 'Recurring transaction paused.', 'success');
+                loadRecurring();
+            } else {
+                showTopNotification('Failed to update status.', 'error');
+            }
+        } catch (e) {
+            showTopNotification('Unable to update status right now.', 'error');
+        }
+    }
+
+    function deleteRecurring(id) {
+        deleteRecurringId = id;
+        deleteRecurringModal.show();
+    }
+
+    async function confirmDeleteRecurring() {
+        if (deleteRecurringId === null) return;
+        try {
+            const response = await fetch(`/api/recurring-transactions/${deleteRecurringId}`, { method: 'DELETE' });
+            if (response.ok || response.status === 204) {
+                deleteRecurringModal.hide();
+                deleteRecurringId = null;
+                showTopNotification('Recurring transaction deleted.', 'success');
+                loadRecurring();
+            } else {
+                showTopNotification('Failed to delete.', 'error');
+            }
+        } catch (e) {
+            showTopNotification('Unable to delete right now.', 'error');
+        }
+    }
+
+    function openCreateRecurringModal() {
+        editRecurringId = null;
+        document.getElementById('recurringModalTitle').innerHTML = '<i class="fas fa-sync-alt me-2"></i>Create Recurring Transaction';
+        document.getElementById('saveRecurringBtn').title = 'Create Recurring Transaction';
+        document.getElementById('saveRecurringBtnIcon').className = 'fas fa-plus';
+        document.getElementById('recurringForm').reset();
+        document.getElementById('recurStartDate').valueAsDate = new Date();
+        document.getElementById('recurEndDate').value = '';
+        document.getElementById('recurNeverEnds').checked = true;
+        onRecurNeverEndsChange();
+        onRecurTypeChange();
+        createRecurringModal.show();
+    }
+
+    function editRecurring(id) {
+        const r = allRecurring.find(x => x.id === id);
+        if (!r) return;
+        editRecurringId = id;
+        document.getElementById('recurringModalTitle').innerHTML = '<i class="fas fa-pen me-2"></i>Edit Recurring Transaction';
+        document.getElementById('saveRecurringBtn').title = 'Save Changes';
+        document.getElementById('saveRecurringBtnIcon').className = 'fas fa-check';
+
+        document.getElementById('recurName').value = r.transactionName;
+        document.getElementById('recurDescription').value = r.description || '';
+        document.getElementById('recurType').value = r.transactionType;
+        document.getElementById('recurAmount').value = r.amount;
+        document.getElementById('recurFrequency').value = r.frequency;
+        document.getElementById('recurInterval').value = r.intervalValue;
+        document.getElementById('recurStartDate').value = r.startDate;
+        document.getElementById('recurEndDate').value = r.endDate || '';
+        document.getElementById('recurNeverEnds').checked = !r.endDate;
+        onRecurNeverEndsChange();
+
+        onRecurTypeChange().then(() => {
+            if (r.categoryId) document.getElementById('recurCategory').value = r.categoryId;
+            if (r.sourceAccountId) document.getElementById('recurSourceAccount').value = r.sourceAccountId;
+            if (r.destinationAccountId) document.getElementById('recurDestAccount').value = r.destinationAccountId;
+        });
+
+        createRecurringModal.show();
+    }
+
+    async function loadRecurCategories(type) {
+        try {
+            const url = type && type !== 'transfer' ? `/api/categories?type=${encodeURIComponent(type)}` : '/api/categories';
+            const response = await fetch(url);
+            const categories = await response.json();
+            const select = document.getElementById('recurCategory');
+            select.innerHTML = '<option value="">Select category</option>' +
+                categories.map(cat => `<option value="${cat.id}">${cat.name}</option>`).join('');
+        } catch (error) {
+            showTopNotification('Unable to load categories.', 'error');
+        }
+    }
+
+    function onRecurTypeChange() {
+        const type = document.getElementById('recurType').value;
+        const categoryWrap = document.getElementById('recurCategoryWrap');
+        const destWrap = document.getElementById('recurDestAccountWrap');
+        const sourceLabel = document.getElementById('recurSourceAccountLabel');
+
+        categoryWrap.classList.toggle('d-none', type === 'transfer');
+        destWrap.classList.toggle('d-none', type !== 'transfer');
+
+        const labels = {
+            income: 'Deposit To Account',
+            expense: 'Pay From Account',
+            savings: 'Deduct From Account',
+            transfer: 'From Account'
+        };
+        sourceLabel.textContent = labels[type] || 'Account';
+
+        return loadRecurCategories(type);
+    }
+
+    function onRecurNeverEndsChange() {
+        const neverEnds = document.getElementById('recurNeverEnds').checked;
+        const endDateInput = document.getElementById('recurEndDate');
+        endDateInput.disabled = neverEnds;
+        if (neverEnds) endDateInput.value = '';
+    }
+
+    async function saveRecurringTransaction() {
+        const type = document.getElementById('recurType').value;
+        const neverEnds = document.getElementById('recurNeverEnds').checked;
+        const destAccountEl = document.getElementById('recurDestAccount');
+        const srcAccountEl = document.getElementById('recurSourceAccount');
+        const categoryEl = document.getElementById('recurCategory');
+
+        const payload = {
+            transactionName: document.getElementById('recurName').value.trim(),
+            description: document.getElementById('recurDescription').value.trim(),
+            transactionType: type,
+            categoryId: (type !== 'transfer' && categoryEl.value) ? parseInt(categoryEl.value, 10) : null,
+            amount: parseFloat(document.getElementById('recurAmount').value),
+            sourceAccountId: srcAccountEl.value ? parseInt(srcAccountEl.value, 10) : null,
+            destinationAccountId: (type === 'transfer' && destAccountEl.value) ? parseInt(destAccountEl.value, 10) : null,
+            frequency: document.getElementById('recurFrequency').value,
+            intervalValue: parseInt(document.getElementById('recurInterval').value, 10) || 1,
+            startDate: document.getElementById('recurStartDate').value,
+            endDate: neverEnds ? null : (document.getElementById('recurEndDate').value || null)
+        };
+
+        if (!payload.transactionName) { showTopNotification('Transaction name is required.', 'error'); return; }
+        if (!payload.amount || payload.amount <= 0) { showTopNotification('Enter a valid amount.', 'error'); return; }
+        if (type === 'transfer' && (!payload.sourceAccountId || !payload.destinationAccountId)) {
+            showTopNotification('Select both From and To accounts for a transfer.', 'error'); return;
+        }
+
+        const isEdit = editRecurringId !== null;
+        const url = isEdit ? `/api/recurring-transactions/${editRecurringId}` : '/api/recurring-transactions';
+        const method = isEdit ? 'PUT' : 'POST';
+
+        try {
+            const response = await fetch(url, {
+                method,
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            if (response.ok) {
+                createRecurringModal.hide();
+                showTopNotification(isEdit ? 'Recurring transaction updated.' : 'Recurring transaction created.', 'success');
+                loadRecurring();
+            } else {
+                const err = await response.json().catch(() => null);
+                showTopNotification((err && err.error) || 'Failed to save recurring transaction.', 'error');
+            }
+        } catch (error) {
+            showTopNotification('Unable to save recurring transaction right now.', 'error');
+        }
+    }
+
+    // ============== NEXT MONTH FORECAST ==============
+    function addInterval(date, frequency, intervalValue) {
+        const d = new Date(date.getTime());
+        switch (frequency) {
+            case 'DAILY': d.setDate(d.getDate() + intervalValue); break;
+            case 'WEEKLY': d.setDate(d.getDate() + intervalValue * 7); break;
+            case 'MONTHLY': d.setMonth(d.getMonth() + intervalValue); break;
+            case 'QUARTERLY': d.setMonth(d.getMonth() + intervalValue * 3); break;
+            case 'YEARLY': d.setFullYear(d.getFullYear() + intervalValue); break;
+            default: d.setMonth(d.getMonth() + intervalValue);
+        }
+        return d;
+    }
+
+    /** Counts how many times a recurring transaction will fall within [rangeStart, rangeEnd] (inclusive). */
+    function countOccurrencesInRange(r, rangeStart, rangeEnd) {
+        let occDate = new Date(r.nextExecutionDate + 'T00:00:00');
+        const endDate = r.endDate ? new Date(r.endDate + 'T00:00:00') : null;
+        let count = 0;
+        let safety = 0;
+        while (occDate <= rangeEnd && safety < 500) {
+            if (endDate && occDate > endDate) break;
+            if (occDate >= rangeStart) count++;
+            occDate = addInterval(occDate, r.frequency, r.intervalValue);
+            safety++;
+        }
+        return count;
+    }
+
+    function renderForecast() {
+        const now = new Date();
+        const rangeStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        const rangeEnd = new Date(now.getFullYear(), now.getMonth() + 2, 0);
+        document.getElementById('rtForecastMonthLabel').textContent = rangeStart.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+        const active = allRecurring.filter(r => r.status === 'ACTIVE');
+
+        let totalDue = 0;
+        let totalIncome = 0;
+        const sections = {}; // key -> { label, items: [{name, frequency, occurrences, subtotal}], subtotal }
+
+        active.forEach(r => {
+            const occurrences = countOccurrencesInRange(r, rangeStart, rangeEnd);
+            if (occurrences === 0) return;
+            const subtotal = occurrences * r.amount;
+
+            if (r.transactionType === 'income') {
+                totalIncome += subtotal;
+                return;
+            }
+
+            totalDue += subtotal;
+            const sectionKey = r.transactionType === 'transfer' ? 'Transfers Out' : (r.categoryName || 'Uncategorized');
+            if (!sections[sectionKey]) sections[sectionKey] = { label: sectionKey, items: [], subtotal: 0 };
+            sections[sectionKey].items.push({
+                name: r.transactionName,
+                frequency: r.frequency.charAt(0) + r.frequency.slice(1).toLowerCase(),
+                occurrences,
+                subtotal
+            });
+            sections[sectionKey].subtotal += subtotal;
+        });
+
+        document.getElementById('rtForecastTotalDue').textContent = formatAmount(totalDue);
+        document.getElementById('rtForecastIncome').textContent = formatAmount(totalIncome);
+        const netEl = document.getElementById('rtForecastNet');
+        const net = totalIncome - totalDue;
+        netEl.textContent = formatAmount(net);
+        netEl.className = 'fs-4 fw-bold ' + (net >= 0 ? 'text-success' : 'text-danger');
+
+        const sectionsContainer = document.getElementById('rtForecastSections');
+        const sectionKeys = Object.keys(sections).sort((a, b) => sections[b].subtotal - sections[a].subtotal);
+        if (sectionKeys.length === 0) {
+            sectionsContainer.innerHTML = '<div class="col-12"><p class="text-muted">No fixed payments or contributions due next month.</p></div>';
+            return;
+        }
+
+        sectionsContainer.innerHTML = sectionKeys.map(key => {
+            const section = sections[key];
+            const itemsHtml = section.items.map(item => `
+                <div class="rt-section-item">
+                    <span>${item.name} <small class="text-muted">(${item.frequency}${item.occurrences > 1 ? ' × ' + item.occurrences : ''})</small></span>
+                    <span class="fw-semibold">${formatAmount(item.subtotal)}</span>
+                </div>
+            `).join('');
+            return `
+                <div class="col-md-6">
+                    <div class="card rt-section-card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0">${section.label}</h6>
+                                <span class="fw-bold">${formatAmount(section.subtotal)}</span>
+                            </div>
+                            ${itemsHtml}
+                        </div>
+                    </div>
+                </div>`;
+        }).join('');
+    }
+
+    // ============== RECENT TRANSACTIONS TAB ==============
+    /** 'YYYY-MM' key for a date string/object */
+    function monthKeyOf(dateVal) {
+        const d = new Date(dateVal);
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    }
+
+    /** 'YYYY-MM' key for right now */
+    function currentMonthKey() {
+        return monthKeyOf(new Date());
+    }
+
+    /** Human label for a 'YYYY-MM' key, e.g. "July 2026" */
+    function monthKeyLabel(key, short) {
+        const [y, m] = key.split('-');
+        const d = new Date(Number(y), Number(m) - 1, 1);
+        return d.toLocaleDateString('en-US', { month: short ? 'short' : 'long', year: 'numeric' });
+    }
+
+    /** Build the list of selectable months from the transactions we have, newest first,
+     *  always including the real current month even if it has no transactions yet. */
+    function getAvailableMonthKeys() {
+        const set = new Set();
+        allTransactions.forEach(function (tx) { set.add(monthKeyOf(tx.date)); });
+        set.add(currentMonthKey());
+        return Array.from(set).sort().reverse();
+    }
+
+    /** Populate the Recent Transactions month filter, preserving the current selection if possible */
+    function populateMonthFilter() {
+        const sel = document.getElementById('txMonthFilter');
+        if (!sel) return;
+        const months = getAvailableMonthKeys();
+        const curKey = currentMonthKey();
+        if (!txFilterMonth) txFilterMonth = curKey;
+
+        let html = months.map(function (key) {
+            const label = monthKeyLabel(key) + (key === curKey ? ' (Current)' : '');
+            return '<option value="' + key + '"' + (key === txFilterMonth ? ' selected' : '') + '>' + label + '</option>';
+        }).join('');
+        html += '<option value="ALL"' + (txFilterMonth === 'ALL' ? ' selected' : '') + '>All Time</option>';
+        sel.innerHTML = html;
+    }
+
+    async function loadRecentTransactions() {
+        try {
+            const categories = await fetch('/api/categories').then(r => r.json());
+            categoryColorMap = {};
+            categories.forEach(cat => { categoryColorMap[cat.name] = cat.color || '#6c757d'; });
+
+            const catFilter = document.getElementById('txCategoryFilter');
+            if (catFilter) {
+                const prevCat = catFilter.value;
+                catFilter.innerHTML = '<option value="">All Categories</option>';
+                categories.forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value = cat.name;
+                    opt.textContent = cat.name;
+                    catFilter.appendChild(opt);
+                });
+                catFilter.value = prevCat;
+            }
+
+            const transactions = await fetch('/api/transactions?limit=1000').then(r => r.json());
+            allTransactions = transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            populateMonthFilter();
+            currentPage = 0;
+            applyFiltersAndDisplay();
+        } catch (error) {
+            console.error('Error loading recent transactions:', error);
+        }
+    }
+
+    function applyFiltersAndDisplay() {
+        filteredTransactions = allTransactions.filter(function (tx) {
+            const catOk   = !txFilterCategory || tx.category_name === txFilterCategory;
+            const typeOk  = !txFilterType     || tx.transaction_type === txFilterType;
+            const monthOk = !txFilterMonth    || txFilterMonth === 'ALL' || monthKeyOf(tx.date) === txFilterMonth;
+            return catOk && typeOk && monthOk;
+        });
+        displayTransactionPage();
+    }
+
+    function displayTransactionPage() {
+        const start = currentPage * pageSize;
+        const end   = start + pageSize;
+        const pageTransactions = filteredTransactions.slice(start, end);
+        const totalPages = Math.ceil(filteredTransactions.length / pageSize);
+
+        const typeIcon  = { income: 'fa-arrow-up', expense: 'fa-arrow-down', savings: 'fa-piggy-bank' };
+        const txTypeIcon = (type) => `<i class="fas ${typeIcon[type] || 'fa-circle'}"></i>`;
+
+        function getCatIcon(name) {
+            if (!name) return 'fa-tag';
+            const n = name.toLowerCase();
+            if (n.includes('food') || n.includes('restaurant') || n.includes('eat'))        return 'fa-utensils';
+            if (n.includes('transport') || n.includes('car') || n.includes('fuel'))        return 'fa-car';
+            if (n.includes('shop') || n.includes('cloth') || n.includes('fashion'))        return 'fa-shopping-bag';
+            if (n.includes('health') || n.includes('medical') || n.includes('doctor'))     return 'fa-heartbeat';
+            if (n.includes('entertain') || n.includes('movie') || n.includes('game'))      return 'fa-film';
+            if (n.includes('salary') || n.includes('income') || n.includes('wage'))        return 'fa-briefcase';
+            if (n.includes('rent') || n.includes('house') || n.includes('home'))           return 'fa-home';
+            if (n.includes('edu') || n.includes('school') || n.includes('book'))           return 'fa-graduation-cap';
+            if (n.includes('invest') || n.includes('stock') || n.includes('dividend'))     return 'fa-chart-line';
+            if (n.includes('travel') || n.includes('hotel') || n.includes('flight'))       return 'fa-plane';
+            if (n.includes('phone') || n.includes('mobile') || n.includes('internet'))     return 'fa-mobile-alt';
+            if (n.includes('electric') || n.includes('bill') || n.includes('utility'))     return 'fa-bolt';
+            return 'fa-tag';
+        }
+
+        const container = document.getElementById('recent-tx-body');
+
+        if (filteredTransactions.length === 0) {
+            const hasFilters = txFilterCategory || txFilterType || (txFilterMonth && txFilterMonth !== 'ALL');
+            container.innerHTML = `
+                <div class="tx-empty">
+                    <i class="fas fa-search"></i>
+                    <p>${hasFilters ? 'No transactions match the current filters.' : 'No transactions yet.'}</p>
+                    ${!hasFilters ? '<button type="button" class="btn btn-sm btn-primary mt-2" onclick="openAddTransactionModal()"><i class="fas fa-plus"></i> Add Transaction</button>' : ''}
+                </div>`;
+        } else {
+            container.innerHTML = pageTransactions.map((tx, idx) => {
+                const catColor  = categoryColorMap[tx.category_name] || '#6c757d';
+                const isIncome  = tx.transaction_type === 'income';
+                const isSavings = tx.transaction_type === 'savings';
+                const txClass   = isIncome ? 'income' : (isSavings ? 'savings' : 'expense');
+                const dateObj   = new Date(tx.date);
+                const dayName   = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+                const dateStr   = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const yearStr   = dateObj.getFullYear();
+                const catIcon   = getCatIcon(tx.category_name);
+                const amtPrefix = isIncome ? '+' : (isSavings ? '⇒' : '−');
+                return `
+                <div class="tx-row" style="animation-delay: ${idx * 40}ms">
+                    <div class="tx-col-date">
+                        <div class="tx-date-badge">
+                            <span class="tx-date-day">${dayName}</span>
+                            <span class="tx-date-date">${dateStr}</span>
+                            <span class="tx-date-year">${yearStr}</span>
+                        </div>
+                    </div>
+                    <div class="tx-col-desc">
+                        <div class="tx-type-dot dot-${txClass}">
+                            ${txTypeIcon(tx.transaction_type)}
+                        </div>
+                        <div class="tx-desc-text">
+                            <span class="tx-desc-main">${tx.description}</span>
+                        </div>
+                    </div>
+                    <div class="tx-col-cat">
+                        <span class="tx-category-chip" style="--cat-color: ${catColor}">
+                            <i class="fas ${catIcon}"></i>
+                            ${tx.category_name || 'Uncategorized'}
+                        </span>
+                    </div>
+                    <div class="tx-col-type">
+                        <span class="tx-type-badge type-${txClass}">
+                            ${txTypeIcon(tx.transaction_type)}
+                            ${tx.transaction_type.charAt(0).toUpperCase() + tx.transaction_type.slice(1)}
+                        </span>
+                    </div>
+                    <div class="tx-col-amount">
+                        <span class="tx-amount amount-${txClass}">
+                            ${amtPrefix}${formatAmount(tx.amount)}
+                        </span>
+                    </div>
+                    <div class="tx-col-action">
+                        <button class="tx-edit-btn" onclick="editTransaction(${tx.id})" title="Edit">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                        <button class="tx-delete-btn" onclick="deleteTransaction(${tx.id})" title="Delete">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        const monthTransactions = allTransactions.filter(function (tx) {
+            return !txFilterMonth || txFilterMonth === 'ALL' || monthKeyOf(tx.date) === txFilterMonth;
+        });
+        const totalLabel = monthTransactions.length;
+        const filteredLabel = filteredTransactions.length;
+        const hasFilters = txFilterCategory || txFilterType;
+        document.getElementById('tx-total-count').textContent =
+            hasFilters
+                ? `${filteredLabel} of ${totalLabel} transaction${totalLabel !== 1 ? 's' : ''}`
+                : `${totalLabel} transaction${totalLabel !== 1 ? 's' : ''}`;
+
+        const shown = Math.min(end, filteredTransactions.length);
+        const from  = filteredTransactions.length === 0 ? 0 : start + 1;
+        document.getElementById('tx-page-info').innerHTML =
+            `<i class="fas fa-list-ul"></i> Showing <strong>${from}–${shown}</strong> of <strong>${filteredTransactions.length}</strong>`;
+
+        const numbersEl = document.getElementById('tx-page-numbers');
+        let nums = '';
+        const range = 2;
+        for (let i = 0; i < totalPages; i++) {
+            if (i === 0 || i === totalPages - 1 || (i >= currentPage - range && i <= currentPage + range)) {
+                nums += `<button class="tx-page-num ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i + 1}</button>`;
+            } else if (i === currentPage - range - 1 || i === currentPage + range + 1) {
+                nums += `<span class="tx-page-ellipsis">…</span>`;
+            }
+        }
+        numbersEl.innerHTML = nums;
+
+        document.getElementById('tx-prev-btn').disabled  = currentPage === 0;
+        document.getElementById('tx-first-btn').disabled = currentPage === 0;
+        document.getElementById('tx-next-btn').disabled  = currentPage >= totalPages - 1;
+        document.getElementById('tx-last-btn').disabled  = currentPage >= totalPages - 1;
+    }
+
+    function goToPage(page)      { currentPage = page; displayTransactionPage(); }
+    function goToFirstPage()     { currentPage = 0; displayTransactionPage(); }
+    function goToLastPage()      { currentPage = Math.max(0, Math.ceil(filteredTransactions.length / pageSize) - 1); displayTransactionPage(); }
+    function nextTransactionPage()     { if (currentPage < Math.ceil(filteredTransactions.length / pageSize) - 1) { currentPage++; displayTransactionPage(); } }
+    function previousTransactionPage() { if (currentPage > 0) { currentPage--; displayTransactionPage(); } }
+
+    function editTransaction(id) {
+        const tx = allTransactions.find(t => t.id === id);
+        if (!tx) return;
+        txEditId = id;
+        document.getElementById('editTxId').value          = id;
+        document.getElementById('editTxDescription').value = tx.description;
+        document.getElementById('editTxAmount').value      = Number(tx.amount).toFixed(2);
+        document.getElementById('editTxType').value        = tx.transaction_type;
+        loadEditCategories(tx.transaction_type, tx.category_id);
+        txEditModal.show();
+    }
+
+    async function loadEditCategories(type, selectedId) {
+        const sel = document.getElementById('editTxCategory');
+        sel.innerHTML = '<option value="">Loading…</option>';
+        try {
+            const url = type ? `/api/categories?type=${encodeURIComponent(type)}` : '/api/categories';
+            const cats = await fetch(url).then(r => r.json());
+            sel.innerHTML = cats.length
+                ? cats.map(c => `<option value="${c.id}"${c.id === selectedId ? ' selected' : ''}>${c.name}</option>`).join('')
+                : '<option value="">No categories found</option>';
+            if (selectedId && !cats.find(c => c.id === selectedId)) {
+                const all = await fetch('/api/categories').then(r => r.json());
+                const cat = all.find(c => c.id === selectedId);
+                if (cat) {
+                    const opt = document.createElement('option');
+                    opt.value = cat.id; opt.textContent = cat.name; opt.selected = true;
+                    sel.insertBefore(opt, sel.firstChild);
+                }
+            }
+        } catch (e) {
+            sel.innerHTML = '<option value="">Error loading</option>';
+        }
+    }
+
+    async function saveEditTransaction() {
+        const id          = parseInt(document.getElementById('editTxId').value, 10);
+        const description = document.getElementById('editTxDescription').value.trim();
+        const amount      = parseFloat(document.getElementById('editTxAmount').value);
+        const type        = document.getElementById('editTxType').value;
+        const categoryId  = parseInt(document.getElementById('editTxCategory').value, 10);
+
+        if (!description || isNaN(amount) || amount <= 0 || !categoryId) {
+            showTopNotification('Please fill all fields correctly.', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/transactions/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    description,
+                    amount,
+                    transaction_type: type,
+                    category_id: categoryId
+                })
+            });
+            if (response.ok) {
+                txEditModal.hide();
+                txEditId = null;
+                showTopNotification('Transaction updated successfully.', 'success');
+                loadRecentTransactions();
+            } else {
+                const err = await response.json().catch(() => ({}));
+                showTopNotification(err.error || 'Failed to update transaction.', 'error');
+            }
+        } catch (e) {
+            showTopNotification('Error updating transaction.', 'error');
+        }
+    }
+
+    function deleteTransaction(id) {
+        txDeleteId = id;
+        txDeleteModal.show();
+    }
+
+    async function confirmDeleteTransaction() {
+        if (txDeleteId === null) return;
+        const id = txDeleteId;
+        txDeleteId = null;
+        txDeleteModal.hide();
+        try {
+            const response = await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
+            if (response.ok) {
+                showTopNotification('Transaction deleted successfully.', 'success');
+                loadRecentTransactions();
+            } else {
+                showTopNotification('Failed to delete transaction.', 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting transaction:', error);
+            showTopNotification('Error deleting transaction.', 'error');
+        }
+    }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/js/sidebar.js"></script>

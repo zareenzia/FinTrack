@@ -227,7 +227,7 @@
 /* Function row (AC, +/−) */
 .calc-btn-fn {
     background: var(--bg-input);
-    color: var(--text-secondary-custom);
+    color: var(--text-body);
     font-size: 0.92rem;
 }
 .calc-btn-fn:hover { background: var(--bg-dropdown-hover); }
@@ -238,19 +238,22 @@
 
 /* Operators */
 .calc-btn-op {
-    background: rgba(31, 125, 83, 0.1);
-    color: var(--color-surface);
-    font-size: 1.15rem;
+    background: var(--nav-active-bg);
+    color: var(--nav-active-text);
+    font-size: 1.25rem;
+    font-weight: 700;
 }
-.calc-btn-op:hover { background: rgba(31, 125, 83, 0.2); }
-.calc-btn-op.op-active { background: var(--color-accent); color: #fff; }
+.calc-btn-op:hover { background: var(--bg-dropdown-hover); color: var(--nav-active-text); filter: brightness(1.15); }
+.calc-btn-op.op-active { background: var(--accent-color); color: #fff; }
 
 /* Equals */
 .calc-btn-eq {
-    background: linear-gradient(135deg, var(--color-accent), var(--color-surface));
+    background: var(--accent-color);
     color: #fff;
+    font-size: 1.25rem;
+    font-weight: 700;
 }
-.calc-btn-eq:hover { filter: brightness(1.1); }
+.calc-btn-eq:hover { background: var(--surface-color); color: #fff; }
 
 /* Wide 0 */
 .calc-btn-zero {
@@ -371,6 +374,27 @@
     font-family: inherit;
 }
 .calc-copy-btn:hover { background: var(--bg-dropdown-hover); color: var(--text-body); }
+
+/* Done button — only visible when opened from an input field */
+.calc-done-btn {
+    background: var(--accent-color);
+    border: none;
+    border-radius: 6px;
+    padding: 4px 14px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: background 0.15s ease, transform 0.1s ease;
+    font-family: inherit;
+    letter-spacing: 0.3px;
+}
+.calc-done-btn:hover  { background: var(--surface-color); transform: translateY(-1px); }
+.calc-done-btn:active { transform: translateY(0); }
+.calc-done-btn.calc-hidden { display: none !important; }
 
 .calc-sci-badge {
     font-size: 0.65rem;
