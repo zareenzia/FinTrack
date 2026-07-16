@@ -1513,58 +1513,89 @@ body.has-sidebar {
     animation: fadeIn 0.5s ease-out;
 }
 
-/* ===== NOTIFICATIONS ===== */
+/* ===== NOTIFICATIONS =====
+   Anchored bottom-right (not top) so it never overlaps a page's own header
+   controls (action buttons, period selectors, etc.), which vary per page and
+   can wrap unpredictably near the top of the viewport. */
 .notification-toast-container {
     position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 1100;
-    width: min(92vw, 450px);
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    width: min(92vw, 380px);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
     pointer-events: none;
 }
 
 .notification-toast {
-    margin-bottom: 12px;
-    padding: 16px 20px;
-    border-radius: 12px;
-    font-weight: 600;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
     opacity: 0;
-    transform: translateY(-20px);
-    transition: all 0.4s cubic-bezier(0.23, 1, 0.320, 1);
-    border-left: 5px solid transparent;
+    transform: translateX(40px);
+    transition: all 0.35s cubic-bezier(0.23, 1, 0.320, 1);
+    border-left: 4px solid transparent;
     background: var(--bg-notification);
     color: var(--text-notification);
-    letter-spacing: 0.3px;
-    animation: slideIn 0.4s ease-out;
-}
-
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(-30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    pointer-events: auto;
 }
 
 .notification-toast.show {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(0);
 }
 
-.notification-toast.notification-success {
-    border-left-color: #1F7D53;
-    background: linear-gradient(135deg, #f0f9f7 0%, #e8f5f1 100%);
+.notification-toast-icon {
+    flex-shrink: 0;
+    font-size: 1.1rem;
 }
 
-.notification-toast.notification-error {
-    border-left-color: #e74c3c;
-    background: linear-gradient(135deg, #fef5f5 0%, #fce8e6 100%);
+.notification-toast-message {
+    flex: 1;
+    word-break: break-word;
 }
+
+.notification-toast-close {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    padding: 4px;
+    margin: -4px -4px -4px 0;
+    cursor: pointer;
+    color: currentColor;
+    opacity: 0.55;
+    font-size: 0.95rem;
+    line-height: 1;
+    transition: opacity 0.15s ease;
+}
+
+.notification-toast-close:hover {
+    opacity: 1;
+}
+
+/* Card chrome (background/text) always comes from the active color theme via
+   --bg-notification / --text-notification — only the accent bar + icon carry
+   fixed semantic meaning (success/error/warning/info), so a toast always looks
+   native to whichever of the 9 themes is active instead of a foreign pastel box. */
+.notification-toast.notification-success { border-left-color: #1F7D53; }
+.notification-toast.notification-success .notification-toast-icon { color: #1F7D53; }
+
+.notification-toast.notification-error { border-left-color: #e74c3c; }
+.notification-toast.notification-error .notification-toast-icon { color: #e74c3c; }
+
+.notification-toast.notification-warning { border-left-color: #f59e0b; }
+.notification-toast.notification-warning .notification-toast-icon { color: #f59e0b; }
+
+.notification-toast.notification-info { border-left-color: #3b82f6; }
+.notification-toast.notification-info .notification-toast-icon { color: #3b82f6; }
 
 /* ===== COLLAPSE/ACCORDION ===== */
 .card-header[data-bs-toggle="collapse"] {
@@ -2018,15 +2049,6 @@ h3.stat-card-amount,
 }
 
 /* Dark mode scrollbar (inherits from theme variables above — no extra rules needed) */
-
-/* Notification toast dark overrides */
-[data-theme="dark"] .notification-toast.notification-success {
-    background: linear-gradient(135deg, #162e18 0%, #1a3820 100%);
-}
-
-[data-theme="dark"] .notification-toast.notification-error {
-    background: linear-gradient(135deg, #2e1212 0%, #381818 100%);
-}
 
 /* =====================================================
    RECENT TRANSACTIONS â€” Modern Card-List
