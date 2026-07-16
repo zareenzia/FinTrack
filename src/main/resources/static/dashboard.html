@@ -661,6 +661,53 @@
         </div>
     </div><!-- /#dashboardCompactView -->
 
+    <!-- ═══════════ FINANCIAL PLANNER WIDGET ═══════════ -->
+    <div class="row mb-4" id="fpWidgetRow">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-bullseye me-2"></i>Financial Planner</h6>
+                    <a href="/financial-planner" class="btn btn-primary btn-sm">
+                        <i class="fas fa-arrow-right me-1"></i>Open Financial Planner
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3" id="fpWidgetCards">
+                        <div class="col-sm-6 col-xl-3">
+                            <div class="d-flex align-items-center gap-3 p-3 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);">
+                                <div style="width:40px;height:40px;border-radius:10px;background:rgba(31,125,83,0.15);color:var(--color-surface);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.1rem;"><i class="fas fa-chart-line"></i></div>
+                                <div><div style="font-weight:700;font-size:1rem;" id="fpwInvValue">—</div><div style="font-size:0.75rem;color:var(--text-muted-custom);">Investment Portfolio</div></div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-xl-3">
+                            <div class="d-flex align-items-center gap-3 p-3 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);">
+                                <div style="width:40px;height:40px;border-radius:10px;background:rgba(239,68,68,0.15);color:#ef4444;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.1rem;"><i class="fas fa-hand-holding-usd"></i></div>
+                                <div><div style="font-weight:700;font-size:1rem;" id="fpwLoans">—</div><div style="font-size:0.75rem;color:var(--text-muted-custom);">Active Loans</div></div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-xl-3">
+                            <div class="d-flex align-items-center gap-3 p-3 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);">
+                                <div style="width:40px;height:40px;border-radius:10px;background:rgba(249,115,22,0.15);color:#f97316;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.1rem;"><i class="fas fa-bell"></i></div>
+                                <div><div style="font-weight:700;font-size:1rem;" id="fpwRenewals">—</div><div style="font-size:0.75rem;color:var(--text-muted-custom);">Upcoming Renewals (30d)</div></div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-xl-3">
+                            <div class="d-flex align-items-center gap-3 p-3 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);">
+                                <div style="width:40px;height:40px;border-radius:10px;background:rgba(168,85,247,0.15);color:#a855f7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.1rem;"><i class="fas fa-star"></i></div>
+                                <div>
+                                    <div style="font-weight:700;font-size:1rem;" id="fpwGoalPct">—</div>
+                                    <div style="font-size:0.75rem;color:var(--text-muted-custom);">Wishlist Progress</div>
+                                    <div style="margin-top:4px;height:5px;border-radius:999px;background:var(--bg-input);overflow:hidden;min-width:80px;"><div id="fpwGoalBar" style="height:100%;background:#a855f7;border-radius:999px;width:0%;transition:width 0.4s ease;"></div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ═══════════════════════════════════════════════ -->
+
     <div class="row">
         <div class="col-md-12">
             <div class="card tx-card">
@@ -1149,6 +1196,7 @@
         loadAccountBalances();
         loadUpcomingRecurring();
         loadCurrentBudget();
+        loadFpWidget();
     });
 
     async function loadUpcomingRecurring() {
@@ -1212,6 +1260,29 @@
         } catch (e) {
             containers.forEach(c => c.innerHTML = '<p class="text-muted small mb-0">Unable to load current budget.</p>');
         }
+    }
+
+    async function loadFpWidget() {
+        try {
+            const data = await fetch('/api/financial-planner/summary').then(r => r.ok ? r.json() : null);
+            if (!data) return;
+            const fmtC = (v) => {
+                const c = typeof getCurrencySettings === 'function' ? getCurrencySettings() : { symbol: '৳', position: 'before', decimals: 0 };
+                const num = Number(v || 0).toLocaleString('en-BD', { minimumFractionDigits: 0, maximumFractionDigits: c.decimals });
+                return c.position === 'before' ? c.symbol + num : num + '\u00a0' + c.symbol;
+            };
+            const el = id => document.getElementById(id);
+            if (el('fpwInvValue')) el('fpwInvValue').textContent = fmtC(data.investmentValue);
+            if (el('fpwLoans')) el('fpwLoans').textContent = data.activeLoans + ' loan' + (data.activeLoans !== 1 ? 's' : '') + (data.loanRemainingBalance ? ' · ' + fmtC(data.loanRemainingBalance) : '');
+            if (el('fpwRenewals')) el('fpwRenewals').textContent = data.upcomingRenewals + ' renewal' + (data.upcomingRenewals !== 1 ? 's' : '');
+            if (el('fpwGoalPct') && data.goalsTarget > 0) {
+                const pct = Math.min(100, Math.round((data.goalsSaved / data.goalsTarget) * 100));
+                el('fpwGoalPct').textContent = fmtC(data.goalsSaved) + ' / ' + fmtC(data.goalsTarget) + ' (' + pct + '%)';
+                if (el('fpwGoalBar')) el('fpwGoalBar').style.width = pct + '%';
+            } else if (el('fpwGoalPct')) {
+                el('fpwGoalPct').textContent = data.goalsCount + ' goal' + (data.goalsCount !== 1 ? 's' : '');
+            }
+        } catch (e) { /* silently ignore */ }
     }
 
     window.addEventListener('resize', fitStatAmounts);

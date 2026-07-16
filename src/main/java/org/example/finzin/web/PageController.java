@@ -93,5 +93,13 @@ public class PageController {
         }
         return "forward:/budget-planner.html";
     }
+
+    @GetMapping("/financial-planner")
+    public String financialPlanner(HttpServletRequest request) {
+        if (request.getAttribute("userId") == null) {
+            return "redirect:/login";
+        }
+        return "forward:/financial-planner.html";
+    }
 }
 

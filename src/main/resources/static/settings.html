@@ -324,6 +324,21 @@
                   <option value="false">Hide symbols</option>
                 </select>
               </div>
+              <!-- Sidebar Mode -->
+              <div class="compact-pref-row">
+                <label class="compact-pref-label" for="selectSidebarMode"><i class="fas fa-compress-alt"></i> Sidebar Mode</label>
+                <select id="selectSidebarMode" class="form-select compact-pref-select">
+                  <option value="false">Expanded — icons + labels</option>
+                  <option value="true">Compact — icons only</option>
+                </select>
+              </div>
+              <!-- Sidebar Customization -->
+              <div class="compact-pref-row">
+                <label class="compact-pref-label"><i class="fas fa-sliders-h"></i> Sidebar Layout</label>
+                <button class="btn btn-outline-primary btn-sm" id="btnCustomizeSidebar" onclick="if(typeof openSidebarCustomizer==='function') openSidebarCustomizer();">
+                  <i class="fas fa-cog me-1"></i>Customize Sidebar
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1327,10 +1342,31 @@ if (btnResetAppearance) {
     if (sfs) sfs.value = DEFAULTS.fontSize || 'medium';
     var sl = document.getElementById('selectLayout');
     if (sl) sl.value = DEFAULTS.layout || 'comfortable';
+    // Reset compact mode
+    var sidebarCompactKey = getUserStorageKey('sidebar_compact_mode');
+    localStorage.removeItem(sidebarCompactKey);
+    document.body.classList.remove('sidebar-compact');
+    var sm = document.getElementById('selectSidebarMode');
+    if (sm) sm.value = 'false';
     syncAllPills(s);
     showNotification('Appearance reset to defaults', 'info');
   });
 }
+
+// Compact mode select
+(function() {
+  var sidebarCompactKey = getUserStorageKey('sidebar_compact_mode');
+  var sm = document.getElementById('selectSidebarMode');
+  if (sm) {
+    sm.value = localStorage.getItem(sidebarCompactKey) === 'true' ? 'true' : 'false';
+    sm.addEventListener('change', function() {
+      var compact = this.value === 'true';
+      localStorage.setItem(sidebarCompactKey, String(compact));
+      document.body.classList.toggle('sidebar-compact', compact);
+      showNotification(compact ? 'Compact sidebar enabled' : 'Expanded sidebar enabled', 'success');
+    });
+  }
+})();
 
 // ============== Categories ==============
 var allCategories = [];

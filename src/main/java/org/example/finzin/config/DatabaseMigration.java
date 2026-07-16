@@ -135,6 +135,82 @@ public class DatabaseMigration implements BeanPostProcessor {
                 "planned_amount DOUBLE PRECISION NOT NULL, " +
                 "is_savings BOOLEAN NOT NULL DEFAULT FALSE" +
                 ")");
+
+        // ============== Financial Planner ==============
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS investments (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "user_id BIGINT NOT NULL, " +
+                "name VARCHAR(255) NOT NULL, " +
+                "investment_type VARCHAR(50) NOT NULL, " +
+                "platform VARCHAR(255), " +
+                "purchase_date DATE NOT NULL, " +
+                "quantity DOUBLE PRECISION NOT NULL, " +
+                "purchase_price DOUBLE PRECISION NOT NULL, " +
+                "current_price DOUBLE PRECISION NOT NULL, " +
+                "notes TEXT, " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "updated_at TIMESTAMP NOT NULL DEFAULT NOW()" +
+                ")");
+
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS loans (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "user_id BIGINT NOT NULL, " +
+                "loan_name VARCHAR(255) NOT NULL, " +
+                "loan_type VARCHAR(50) NOT NULL, " +
+                "lender_borrower VARCHAR(255), " +
+                "principal_amount DOUBLE PRECISION NOT NULL, " +
+                "interest_rate DOUBLE PRECISION, " +
+                "emi_amount DOUBLE PRECISION, " +
+                "loan_start_date DATE NOT NULL, " +
+                "loan_end_date DATE, " +
+                "remaining_balance DOUBLE PRECISION NOT NULL, " +
+                "payment_frequency VARCHAR(20), " +
+                "status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE', " +
+                "notes TEXT, " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "updated_at TIMESTAMP NOT NULL DEFAULT NOW()" +
+                ")");
+
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS subscriptions (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "user_id BIGINT NOT NULL, " +
+                "name VARCHAR(255) NOT NULL, " +
+                "category VARCHAR(100), " +
+                "billing_cycle VARCHAR(20) NOT NULL, " +
+                "cost DOUBLE PRECISION NOT NULL, " +
+                "renewal_date DATE, " +
+                "payment_method VARCHAR(100), " +
+                "payment_account VARCHAR(255), " +
+                "auto_renewal BOOLEAN NOT NULL DEFAULT TRUE, " +
+                "status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE', " +
+                "notes TEXT, " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "updated_at TIMESTAMP NOT NULL DEFAULT NOW()" +
+                ")");
+
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS wishlist_goals (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "user_id BIGINT NOT NULL, " +
+                "goal_name VARCHAR(255) NOT NULL, " +
+                "category VARCHAR(100), " +
+                "target_amount DOUBLE PRECISION NOT NULL, " +
+                "saved_amount DOUBLE PRECISION NOT NULL DEFAULT 0, " +
+                "target_date DATE, " +
+                "priority VARCHAR(20) NOT NULL DEFAULT 'MEDIUM', " +
+                "status VARCHAR(20) NOT NULL DEFAULT 'IN_PROGRESS', " +
+                "icon VARCHAR(100), " +
+                "notes TEXT, " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "updated_at TIMESTAMP NOT NULL DEFAULT NOW()" +
+                ")");
+
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS sidebar_preferences (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "user_id BIGINT NOT NULL UNIQUE, " +
+                "preferences_json TEXT, " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "updated_at TIMESTAMP NOT NULL DEFAULT NOW()" +
+                ")");
     }
 
     private void runSilently(DataSource dataSource, String sql) {
