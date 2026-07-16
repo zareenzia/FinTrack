@@ -65,6 +65,9 @@
                 <button type="button" class="btn btn-outline-primary btn-sm" id="openRecurringModalBtn">
                     <i class="fas fa-sync-alt me-1"></i> Create Recurring Transaction
                 </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="openManageCategoriesModalBtn">
+                    <i class="fas fa-tags me-1"></i> Manage Categories
+                </button>
             </div>
         </div>
     </div>
@@ -803,6 +806,7 @@
             applyFiltersAndDisplay();
         });
 
+        document.getElementById('openManageCategoriesModalBtn').addEventListener('click', openCategoryManagementModal);
         document.getElementById('saveCategoryChangesBtn').addEventListener('click', saveCategoryChanges);
         document.getElementById('confirmDeleteCategoryBtn').addEventListener('click', confirmDeleteCategory);
         document.getElementById('addNewCategoryBtn').addEventListener('click', openAddCategoryModal);
