@@ -21,7 +21,9 @@ public class AiSettingsService {
     }
 
     /** Returns null if maxTokens/temperature are out of range — caller responds 400. */
-    public AiSettingsEntity update(Long userId, String model, Integer maxTokens, Double temperature, Boolean enabled, Boolean developerMode) {
+    public AiSettingsEntity update(Long userId, String model, Integer maxTokens, Double temperature, Boolean enabled, Boolean developerMode,
+                                    Boolean enableProactiveInsights, Boolean enableBudgetCoaching, Boolean enableSavingsCoaching,
+                                    Boolean enableMonthlyReports, Boolean enableDashboardSummary) {
         if (maxTokens != null && (maxTokens < 100 || maxTokens > 4000)) return null;
         if (temperature != null && (temperature < 0 || temperature > 2)) return null;
 
@@ -31,6 +33,11 @@ public class AiSettingsService {
         if (temperature != null) entity.setTemperature(temperature);
         if (enabled != null) entity.setEnabled(enabled);
         if (developerMode != null) entity.setDeveloperMode(developerMode);
+        if (enableProactiveInsights != null) entity.setEnableProactiveInsights(enableProactiveInsights);
+        if (enableBudgetCoaching != null) entity.setEnableBudgetCoaching(enableBudgetCoaching);
+        if (enableSavingsCoaching != null) entity.setEnableSavingsCoaching(enableSavingsCoaching);
+        if (enableMonthlyReports != null) entity.setEnableMonthlyReports(enableMonthlyReports);
+        if (enableDashboardSummary != null) entity.setEnableDashboardSummary(enableDashboardSummary);
         return repository.save(entity);
     }
 }

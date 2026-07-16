@@ -125,6 +125,12 @@
         }
         .ai-suggestion-chip:hover { background: var(--bg-table-hover); border-color: var(--accent-color); }
 
+        .ai-quick-actions {
+            display: flex; flex-wrap: nowrap; gap: 8px; overflow-x: auto;
+            padding: 10px 20px; border-top: 1px solid var(--border-color);
+        }
+        .ai-quick-actions .ai-suggestion-chip { white-space: nowrap; flex: 0 0 auto; }
+
         .ai-disabled-banner { margin: 12px 20px 0; }
 
         .ai-input-row {
@@ -181,6 +187,7 @@
                     <div class="ai-suggestions" id="aiSuggestions"></div>
                 </div>
             </div>
+            <div class="ai-quick-actions" id="aiQuickActions"></div>
             <form class="ai-input-row" id="aiInputForm">
                 <textarea id="aiMessageInput" rows="1" placeholder="Ask anything about your finances..." required></textarea>
                 <button type="submit" class="ai-send-btn" id="aiSendBtn"><i class="fas fa-paper-plane"></i></button>

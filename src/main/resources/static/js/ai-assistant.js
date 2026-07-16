@@ -12,6 +12,19 @@
         'What are my top spending categories?'
     ];
 
+    const QUICK_ACTIONS = [
+        'Summarize this month',
+        'Analyze my spending',
+        'How can I save more?',
+        'Check my budget',
+        'Show my assets',
+        'Find unusual expenses',
+        'Explain my balance',
+        'Review my subscriptions',
+        'Review savings',
+        'Create a budget'
+    ];
+
     let conversations = [];
     let currentConversationId = null;
     let aiEnabled = true;
@@ -73,9 +86,23 @@
         });
 
         renderSuggestions();
+        renderQuickActions();
         loadSettings();
         loadConversations();
     });
+
+    function renderQuickActions() {
+        const container = document.getElementById('aiQuickActions');
+        container.innerHTML = QUICK_ACTIONS.map(q =>
+            `<button type="button" class="ai-suggestion-chip">${escapeHtml(q)}</button>`
+        ).join('');
+        container.querySelectorAll('.ai-suggestion-chip').forEach((chip, i) => {
+            chip.addEventListener('click', () => {
+                if (sending) return;
+                sendMessage(QUICK_ACTIONS[i]);
+            });
+        });
+    }
 
     function renderSuggestions() {
         const container = document.getElementById('aiSuggestions');

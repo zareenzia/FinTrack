@@ -91,6 +91,14 @@ public class FinancialContextService {
         return result;
     }
 
+    /** monthA/monthB: "YYYY-MM"; each defaults to the current month when blank/unparseable. */
+    public Map<String, Object> getMonthComparison(Long userId, String monthA, String monthB) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("monthA", getMonthlyExpenses(userId, monthA));
+        result.put("monthB", getMonthlyExpenses(userId, monthB));
+        return result;
+    }
+
     public List<Map<String, Object>> getRecentTransactions(Long userId, int limit) {
         int safeLimit = Math.max(1, Math.min(limit, 50));
         return transactionRepository.findByUserIdOrderByDateDesc(userId).stream()

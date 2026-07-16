@@ -191,6 +191,25 @@ public class DatabaseMigration implements BeanPostProcessor {
                 ")");
         runSilently(dataSource, "CREATE INDEX IF NOT EXISTS idx_ai_doc_embed_user ON ai_document_embeddings (user_id)");
         runSilently(dataSource, "CREATE INDEX IF NOT EXISTS idx_ai_doc_embed_vector ON ai_document_embeddings USING hnsw (embedding vector_cosine_ops)");
+
+        // ============== AI Financial Coach (Phase 2C) ==============
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS net_worth_snapshots (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "user_id BIGINT NOT NULL, " +
+                "snapshot_month VARCHAR(7) NOT NULL, " +
+                "net_worth DOUBLE PRECISION NOT NULL, " +
+                "total_assets DOUBLE PRECISION NOT NULL, " +
+                "balance DOUBLE PRECISION NOT NULL, " +
+                "total_savings_contributed DOUBLE PRECISION NOT NULL, " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "CONSTRAINT uk_networth_snapshot_user_month UNIQUE (user_id, snapshot_month)" +
+                ")");
+
+        runSilently(dataSource, "ALTER TABLE ai_settings ADD COLUMN IF NOT EXISTS enable_proactive_insights BOOLEAN NOT NULL DEFAULT TRUE");
+        runSilently(dataSource, "ALTER TABLE ai_settings ADD COLUMN IF NOT EXISTS enable_budget_coaching BOOLEAN NOT NULL DEFAULT TRUE");
+        runSilently(dataSource, "ALTER TABLE ai_settings ADD COLUMN IF NOT EXISTS enable_savings_coaching BOOLEAN NOT NULL DEFAULT TRUE");
+        runSilently(dataSource, "ALTER TABLE ai_settings ADD COLUMN IF NOT EXISTS enable_monthly_reports BOOLEAN NOT NULL DEFAULT TRUE");
+        runSilently(dataSource, "ALTER TABLE ai_settings ADD COLUMN IF NOT EXISTS enable_dashboard_summary BOOLEAN NOT NULL DEFAULT TRUE");
     }
 
     private void runSilently(DataSource dataSource, String sql) {

@@ -719,6 +719,30 @@
                 <div><small class="text-muted">Shows a debug panel (retrieved documents, similarity scores, tool calls, token usage) below every AI response.</small></div>
               </div>
 
+              <hr class="my-3">
+              <div class="mb-2 fw-semibold small text-muted">AI Financial Coach Features</div>
+
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="aiSettingsProactiveInsights">
+                <label class="form-check-label" for="aiSettingsProactiveInsights">Enable Proactive Insights</label>
+              </div>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="aiSettingsBudgetCoaching">
+                <label class="form-check-label" for="aiSettingsBudgetCoaching">Enable Budget Coaching</label>
+              </div>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="aiSettingsSavingsCoaching">
+                <label class="form-check-label" for="aiSettingsSavingsCoaching">Enable Savings Coaching</label>
+              </div>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="aiSettingsMonthlyReports">
+                <label class="form-check-label" for="aiSettingsMonthlyReports">Enable Monthly Reports</label>
+              </div>
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" role="switch" id="aiSettingsDashboardSummary">
+                <label class="form-check-label" for="aiSettingsDashboardSummary">Enable Dashboard Summary</label>
+              </div>
+
               <div class="row g-3">
                 <div class="col-md-6">
                   <label class="form-label">Provider</label>
@@ -1170,6 +1194,11 @@ function loadAiSettings() {
     document.getElementById('aiSettingsMaxTokens').value = s.maxTokens || 800;
     document.getElementById('aiSettingsTemperature').value = s.temperature != null ? s.temperature : 0.3;
     document.getElementById('aiSettingsTempLabel').textContent = (s.temperature != null ? s.temperature : 0.3);
+    document.getElementById('aiSettingsProactiveInsights').checked = s.enableProactiveInsights !== false;
+    document.getElementById('aiSettingsBudgetCoaching').checked = s.enableBudgetCoaching !== false;
+    document.getElementById('aiSettingsSavingsCoaching').checked = s.enableSavingsCoaching !== false;
+    document.getElementById('aiSettingsMonthlyReports').checked = s.enableMonthlyReports !== false;
+    document.getElementById('aiSettingsDashboardSummary').checked = s.enableDashboardSummary !== false;
   }).catch(function(){ showNotification('Unable to load AI settings.', 'danger'); });
 }
 
@@ -1183,7 +1212,12 @@ document.getElementById('aiSettingsSaveBtn').addEventListener('click', function(
     maxTokens: parseInt(document.getElementById('aiSettingsMaxTokens').value, 10),
     temperature: parseFloat(document.getElementById('aiSettingsTemperature').value),
     enabled: document.getElementById('aiSettingsEnabled').checked,
-    developerMode: document.getElementById('aiSettingsDeveloperMode').checked
+    developerMode: document.getElementById('aiSettingsDeveloperMode').checked,
+    enableProactiveInsights: document.getElementById('aiSettingsProactiveInsights').checked,
+    enableBudgetCoaching: document.getElementById('aiSettingsBudgetCoaching').checked,
+    enableSavingsCoaching: document.getElementById('aiSettingsSavingsCoaching').checked,
+    enableMonthlyReports: document.getElementById('aiSettingsMonthlyReports').checked,
+    enableDashboardSummary: document.getElementById('aiSettingsDashboardSummary').checked
   };
   fetch('/api/ai/settings', {
     method: 'PUT',

@@ -1,5 +1,6 @@
 package org.example.finzin.ai;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -13,7 +14,7 @@ import java.util.Map;
 /**
  * Owns the tool JSON-schema list handed to OpenAI (single source of truth, so declared tools
  * never drift from what's actually executable) and dispatches tool calls to
- * {@link FinancialContextService}.
+ * {@link FinancialContextService} and the Phase 2C coach services.
  *
  * SECURITY: every dispatch takes {@code userId} as a plain Java parameter supplied by the
  * caller (ultimately the JWT-derived request attribute in AIController) — userId is never a
@@ -25,10 +26,20 @@ public class FinancialToolExecutor {
     private static final Logger log = LoggerFactory.getLogger(FinancialToolExecutor.class);
 
     private final FinancialContextService financialContextService;
+    private final FinancialHealthService financialHealthService;
+    private final InsightService insightService;
+    private final RecommendationService recommendationService;
+    private final MonthlyReportService monthlyReportService;
     private final ObjectMapper objectMapper;
 
-    public FinancialToolExecutor(FinancialContextService financialContextService, ObjectMapper objectMapper) {
+    public FinancialToolExecutor(FinancialContextService financialContextService, FinancialHealthService financialHealthService,
+                                  InsightService insightService, RecommendationService recommendationService,
+                                  MonthlyReportService monthlyReportService, ObjectMapper objectMapper) {
         this.financialContextService = financialContextService;
+        this.financialHealthService = financialHealthService;
+        this.insightService = insightService;
+        this.recommendationService = recommendationService;
+        this.monthlyReportService = monthlyReportService;
         this.objectMapper = objectMapper;
     }
 
@@ -51,7 +62,25 @@ public class FinancialToolExecutor {
                 tool("getSavings", "Returns how much the user has saved in total and the status of any active savings goals.",
                         Map.of()),
                 tool("getAssets", "Returns the user's gold/jewelry assets, individually and totaled by value and weight.",
-                        Map.of())
+                        Map.of()),
+                tool("getMonthComparison", "Compares income/expense/savings/net between two calendar months.",
+                        Map.of("monthA", strParam("First month, YYYY-MM format. Omit for the current month."),
+                               "monthB", strParam("Second month, YYYY-MM format. Omit for the current month.")),
+                        List.of()),
+                tool("getFinancialHealth", "Returns the user's financial health metrics: savings rate, expense ratio, income/cash-flow " +
+                                "stability, budget utilization, asset and net worth growth, and an overall 0-100 health score with its breakdown.",
+                        Map.of()),
+                tool("getInsights", "Returns generated insights about notable spending/income/savings trends and changes (month-over-month and vs. trailing average).",
+                        Map.of()),
+                tool("getRecommendations", "Returns evidence-cited personalized recommendations (e.g. reduce a category's spending, build an emergency fund).",
+                        Map.of()),
+                tool("getBudgetCoachAdvice", "Returns remaining budget, overspending flags, and safe daily spending allowance for the user's current budget plan.",
+                        Map.of()),
+                tool("getSavingsCoachAdvice", "Returns savings trend, emergency fund target/progress, and savings goal status.",
+                        Map.of()),
+                tool("getMonthlyReport", "Returns a structured monthly report: income/expense/savings summary, asset growth, budget performance, " +
+                                "category analysis, top purchases, financial health, recommendations, and goals for next month.",
+                        Map.of("month", strParam("Month in YYYY-MM format. Omit for the current month.")), List.of())
         );
     }
 
@@ -70,12 +99,24 @@ public class FinancialToolExecutor {
                 case "getNetWorth" -> financialContextService.getNetWorth(userId);
                 case "getSavings" -> financialContextService.getSavings(userId);
                 case "getAssets" -> financialContextService.getAssets(userId);
+                case "getMonthComparison" -> financialContextService.getMonthComparison(userId, textOrNull(args, "monthA"), textOrNull(args, "monthB"));
+                case "getFinancialHealth" -> toMap(financialHealthService.calculate(userId));
+                case "getInsights" -> Map.of("insights", insightService.generateInsights(userId));
+                case "getRecommendations" -> Map.of("recommendations", recommendationService.generateRecommendations(userId));
+                case "getBudgetCoachAdvice" -> toMap(recommendationService.getBudgetCoachAdvice(userId));
+                case "getSavingsCoachAdvice" -> toMap(recommendationService.getSavingsCoachAdvice(userId));
+                case "getMonthlyReport" -> toMap(monthlyReportService.generate(userId, textOrNull(args, "month")));
                 default -> Map.of("error", "Unknown tool: " + toolName);
             };
         } catch (Exception e) {
             log.warn("Tool execution failed toolName={} errorType={}", toolName, e.getClass().getSimpleName());
             return Map.of("error", "Failed to retrieve that information right now.");
         }
+    }
+
+    /** Converts a record result into a Map so every branch of {@link #execute} returns a uniform type. */
+    private Map<String, Object> toMap(Object record) {
+        return objectMapper.convertValue(record, new TypeReference<Map<String, Object>>() {});
     }
 
     private static String textOrNull(JsonNode args, String field) {

@@ -34,7 +34,8 @@ public class AiSettingsApiController {
         if (body == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "Request body is required"));
         }
-        AiSettingsEntity updated = aiSettingsService.update(userId, body.model(), body.maxTokens(), body.temperature(), body.enabled(), body.developerMode());
+        AiSettingsEntity updated = aiSettingsService.update(userId, body.model(), body.maxTokens(), body.temperature(), body.enabled(), body.developerMode(),
+                body.enableProactiveInsights(), body.enableBudgetCoaching(), body.enableSavingsCoaching(), body.enableMonthlyReports(), body.enableDashboardSummary());
         if (updated == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "maxTokens must be 100-4000 and temperature must be 0-2"));
         }
@@ -49,8 +50,15 @@ public class AiSettingsApiController {
         map.put("temperature", entity.getTemperature());
         map.put("enabled", entity.getEnabled());
         map.put("developerMode", entity.getDeveloperMode());
+        map.put("enableProactiveInsights", entity.getEnableProactiveInsights());
+        map.put("enableBudgetCoaching", entity.getEnableBudgetCoaching());
+        map.put("enableSavingsCoaching", entity.getEnableSavingsCoaching());
+        map.put("enableMonthlyReports", entity.getEnableMonthlyReports());
+        map.put("enableDashboardSummary", entity.getEnableDashboardSummary());
         return map;
     }
 
-    private record SettingsRequest(String model, Integer maxTokens, Double temperature, Boolean enabled, Boolean developerMode) {}
+    private record SettingsRequest(String model, Integer maxTokens, Double temperature, Boolean enabled, Boolean developerMode,
+                                    Boolean enableProactiveInsights, Boolean enableBudgetCoaching, Boolean enableSavingsCoaching,
+                                    Boolean enableMonthlyReports, Boolean enableDashboardSummary) {}
 }
