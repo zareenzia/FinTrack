@@ -138,6 +138,7 @@
     </style>
 </head>
 <body>
+<div id="toastContainer" class="notification-toast-container" aria-live="polite" aria-atomic="true"></div>
 
 <div class="container-fluid mt-4">
     <div class="row mb-3">
@@ -1101,9 +1102,6 @@
         txAddModal = new bootstrap.Modal(document.getElementById('dashboardAddTxModal'));
         document.getElementById('openAddTxModalBtn').addEventListener('click', openAddTransactionModal);
         document.getElementById('dashboardSaveAddTxBtn').addEventListener('click', saveAddTransaction);
-        document.getElementById('dashboardAddTxType').addEventListener('change', function () {
-            loadAddTxCategories(this.value);
-        });
 
         // When type changes in the edit modal, reload categories
         document.getElementById('editTxType').addEventListener('change', function () {
@@ -1499,17 +1497,19 @@
     function openAddTransactionModal() {
         document.getElementById('dashboardAddTxForm').reset();
         document.getElementById('dashboardAddTxDate').valueAsDate = new Date();
-        loadAddTxCategories(document.getElementById('dashboardAddTxType').value);
+        loadAddTxCategories();
         loadAddTxAccounts();
         txAddModal.show();
     }
 
-    async function loadAddTxCategories(type) {
+    async function loadAddTxCategories() {
         const sel = document.getElementById('dashboardAddTxCategory');
         sel.innerHTML = '<option value="">Loading…</option>';
         try {
-            const url = type ? `/api/categories?type=${encodeURIComponent(type)}` : '/api/categories';
-            const cats = await fetch(url).then(r => r.json());
+            // Show every category regardless of the selected transaction type — categories aren't
+            // strictly tied to one type (e.g. an "income"-tagged category should still be pickable
+            // for an expense entry), and filtering by type was hiding income/savings categories.
+            const cats = await fetch('/api/categories').then(r => r.json());
             sel.innerHTML = '<option value="">Select category</option>' +
                 (cats.length ? cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('') : '');
         } catch (e) {
@@ -1772,18 +1772,15 @@
     }
 
     function showNotification(message, type = 'success') {
-        const notificationHTML = `
-            <div class="alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        `;
-        const container = document.createElement('div');
-        container.innerHTML = notificationHTML;
-        document.body.appendChild(container.firstElementChild);
-        
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `notification-toast notification-${type === 'success' ? 'success' : 'error'}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+        requestAnimationFrame(() => toast.classList.add('show'));
         setTimeout(() => {
-            container.firstElementChild?.remove();
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
         }, 5000);
     }
 </script>
