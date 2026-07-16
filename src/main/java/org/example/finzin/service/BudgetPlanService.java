@@ -1,5 +1,6 @@
 package org.example.finzin.service;
 
+import org.example.finzin.ai.rag.DocumentIndexer;
 import org.example.finzin.entity.AccountEntity;
 import org.example.finzin.entity.BudgetEntity;
 import org.example.finzin.entity.BudgetPlanEntity;
@@ -34,11 +35,12 @@ public class BudgetPlanService {
     private final TransactionRepository transactionRepository;
     private final AccountRepository accountRepository;
     private final NotificationService notificationService;
+    private final DocumentIndexer documentIndexer;
 
     public BudgetPlanService(BudgetPlanRepository budgetPlanRepository, BudgetRepository budgetRepository,
                              SavingsBudgetRepository savingsBudgetRepository, CategoryRepository categoryRepository,
                              TransactionRepository transactionRepository, AccountRepository accountRepository,
-                             NotificationService notificationService) {
+                             NotificationService notificationService, DocumentIndexer documentIndexer) {
         this.budgetPlanRepository = budgetPlanRepository;
         this.budgetRepository = budgetRepository;
         this.savingsBudgetRepository = savingsBudgetRepository;
@@ -46,6 +48,7 @@ public class BudgetPlanService {
         this.transactionRepository = transactionRepository;
         this.accountRepository = accountRepository;
         this.notificationService = notificationService;
+        this.documentIndexer = documentIndexer;
     }
 
     // ============== CRUD ==============
@@ -100,18 +103,22 @@ public class BudgetPlanService {
     }
 
     public BudgetPlanEntity save(BudgetPlanEntity entity) {
-        return budgetPlanRepository.save(entity);
+        BudgetPlanEntity saved = budgetPlanRepository.save(entity);
+        documentIndexer.indexBudgetPlan(saved);
+        return saved;
     }
 
     public void archive(BudgetPlanEntity plan) {
         plan.setStatus("ARCHIVED");
         budgetPlanRepository.save(plan);
+        documentIndexer.indexBudgetPlan(plan);
     }
 
     public void delete(BudgetPlanEntity plan) {
         budgetRepository.findByBudgetPlanId(plan.getId()).forEach(b -> budgetRepository.deleteById(b.getId()));
         savingsBudgetRepository.findByBudgetPlanId(plan.getId()).forEach(s -> savingsBudgetRepository.deleteById(s.getId()));
         budgetPlanRepository.deleteById(plan.getId());
+        documentIndexer.deleteBudgetPlan(plan.getUserId(), plan.getId());
     }
 
     public BudgetPlanEntity duplicate(BudgetPlanEntity source, String newName, String periodType, String period,
@@ -129,6 +136,7 @@ public class BudgetPlanService {
         copy.setStatus("ACTIVE");
         BudgetPlanEntity saved = budgetPlanRepository.save(copy);
         copyCategoriesAndSavings(source.getId(), saved.getId());
+        documentIndexer.indexBudgetPlan(saved);
         return saved;
     }
 
@@ -146,6 +154,7 @@ public class BudgetPlanService {
         newPlan.setPlannedSavings(previous.getPlannedSavings());
         budgetPlanRepository.save(newPlan);
         copyCategoriesAndSavings(previous.getId(), newPlan.getId());
+        documentIndexer.indexBudgetPlan(newPlan);
         return newPlan;
     }
 
@@ -181,7 +190,9 @@ public class BudgetPlanService {
         entity.setCategoryId(categoryId);
         entity.setPeriod(plan.getPeriod());
         entity.setBudgetAmount(amount);
-        return budgetRepository.save(entity);
+        BudgetEntity saved = budgetRepository.save(entity);
+        documentIndexer.indexBudgetPlan(plan);
+        return saved;
     }
 
     public SavingsBudgetEntity upsertSavingsBudget(BudgetPlanEntity plan, Long categoryId, Double targetAmount) {
@@ -201,15 +212,25 @@ public class BudgetPlanService {
         // account id always wins so a stale free-text description can't linger once one is picked.
         entity.setSourceAccountId(sourceAccountId);
         entity.setSourceDescription(sourceAccountId == null ? sourceDescription : null);
-        return savingsBudgetRepository.save(entity);
+        SavingsBudgetEntity saved = savingsBudgetRepository.save(entity);
+        documentIndexer.indexBudgetPlan(plan);
+        return saved;
     }
 
     public void deleteCategoryBudgetById(Long budgetId) {
-        budgetRepository.deleteById(budgetId);
+        budgetRepository.findById(budgetId).ifPresent(b -> budgetPlanRepository.findById(b.getBudgetPlanId())
+                .ifPresent(plan -> {
+                    budgetRepository.deleteById(budgetId);
+                    documentIndexer.indexBudgetPlan(plan);
+                }));
     }
 
     public void deleteSavingsBudgetById(Long savingsId) {
-        savingsBudgetRepository.deleteById(savingsId);
+        savingsBudgetRepository.findById(savingsId).ifPresent(s -> budgetPlanRepository.findById(s.getBudgetPlanId())
+                .ifPresent(plan -> {
+                    savingsBudgetRepository.deleteById(savingsId);
+                    documentIndexer.indexBudgetPlan(plan);
+                }));
     }
 
     // ============== Computed views (always live — never cached) ==============

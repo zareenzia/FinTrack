@@ -162,6 +162,9 @@
         <a class="settings-nav-item" data-section="account-config" href="#">
           <i class="fas fa-wallet"></i> Account Configuration
         </a>
+        <a class="settings-nav-item" data-section="ai-assistant" href="#">
+          <i class="fas fa-robot"></i> AI Assistant
+        </a>
         <a class="settings-nav-item" data-section="security" href="#">
           <i class="fas fa-shield-alt"></i> Privacy &amp; Security
         </a>
@@ -698,6 +701,54 @@
           </div><!-- end two-column row -->
         </section>
 
+        <!-- ===== AI ASSISTANT ===== -->
+        <section class="settings-section" id="section-ai-assistant">
+          <div class="settings-section-heading"><i class="fas fa-robot" style="color:var(--accent-color)"></i> AI Assistant</div>
+          <p class="settings-section-desc">Configure the AI Financial Assistant that answers questions about your own data.</p>
+
+          <div class="card">
+            <div class="card-body">
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" role="switch" id="aiSettingsEnabled">
+                <label class="form-check-label" for="aiSettingsEnabled">Enable AI Assistant</label>
+              </div>
+
+              <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="aiSettingsDeveloperMode">
+                <label class="form-check-label" for="aiSettingsDeveloperMode">Developer Mode</label>
+                <div><small class="text-muted">Shows a debug panel (retrieved documents, similarity scores, tool calls, token usage) below every AI response.</small></div>
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label">Provider</label>
+                  <select class="form-select" id="aiSettingsProvider" disabled>
+                    <option value="openai" selected>OpenAI</option>
+                  </select>
+                  <small class="text-muted">More providers may be added in a future update.</small>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Model</label>
+                  <input type="text" class="form-control" id="aiSettingsModel" placeholder="gpt-5">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Max Response Length <small class="text-muted">(tokens, 100-4000)</small></label>
+                  <input type="number" class="form-control" id="aiSettingsMaxTokens" min="100" max="4000" step="50">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Temperature <span id="aiSettingsTempLabel" class="text-muted"></span></label>
+                  <input type="range" class="form-range" id="aiSettingsTemperature" min="0" max="2" step="0.1">
+                  <small class="text-muted">Lower = more focused and consistent, higher = more creative.</small>
+                </div>
+              </div>
+
+              <button type="button" class="btn btn-primary mt-3" id="aiSettingsSaveBtn">
+                <i class="fas fa-save me-1"></i>Save AI Settings
+              </button>
+            </div>
+          </div>
+        </section>
+
         <!-- ===== ABOUT ===== -->
         <section class="settings-section" id="section-about">
           <div class="settings-section-heading"><i class="fas fa-info-circle" style="color:var(--accent-color)"></i> About FinTrack</div>
@@ -1106,7 +1157,45 @@ document.querySelectorAll('.settings-nav-item').forEach(function(item){
     if (section === 'categories' && allCategories.length === 0) loadCategories();
     if (section === 'security') loadUserProfile();
     if (section === 'account-config') { if (typeof loadAll === 'function') loadAll(); }
+    if (section === 'ai-assistant') loadAiSettings();
   });
+});
+
+// ============== AI Settings ==============
+function loadAiSettings() {
+  fetch('/api/ai/settings').then(function(r){ return r.json(); }).then(function(s){
+    document.getElementById('aiSettingsEnabled').checked = s.enabled !== false;
+    document.getElementById('aiSettingsDeveloperMode').checked = s.developerMode === true;
+    document.getElementById('aiSettingsModel').value = s.model || 'gpt-5';
+    document.getElementById('aiSettingsMaxTokens').value = s.maxTokens || 800;
+    document.getElementById('aiSettingsTemperature').value = s.temperature != null ? s.temperature : 0.3;
+    document.getElementById('aiSettingsTempLabel').textContent = (s.temperature != null ? s.temperature : 0.3);
+  }).catch(function(){ showNotification('Unable to load AI settings.', 'danger'); });
+}
+
+document.getElementById('aiSettingsTemperature').addEventListener('input', function(){
+  document.getElementById('aiSettingsTempLabel').textContent = this.value;
+});
+
+document.getElementById('aiSettingsSaveBtn').addEventListener('click', function(){
+  var body = {
+    model: document.getElementById('aiSettingsModel').value.trim(),
+    maxTokens: parseInt(document.getElementById('aiSettingsMaxTokens').value, 10),
+    temperature: parseFloat(document.getElementById('aiSettingsTemperature').value),
+    enabled: document.getElementById('aiSettingsEnabled').checked,
+    developerMode: document.getElementById('aiSettingsDeveloperMode').checked
+  };
+  fetch('/api/ai/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  }).then(function(r){
+    if (r.ok) {
+      showNotification('AI settings saved.', 'success');
+    } else {
+      return r.json().then(function(err){ showNotification((err && err.error) || 'Failed to save AI settings.', 'danger'); });
+    }
+  }).catch(function(){ showNotification('Unable to save AI settings right now.', 'danger'); });
 });
 
 // ============== Color Theme ==============

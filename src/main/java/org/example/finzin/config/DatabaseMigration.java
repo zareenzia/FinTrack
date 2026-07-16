@@ -135,6 +135,62 @@ public class DatabaseMigration implements BeanPostProcessor {
                 "planned_amount DOUBLE PRECISION NOT NULL, " +
                 "is_savings BOOLEAN NOT NULL DEFAULT FALSE" +
                 ")");
+
+        // ============== AI Financial Assistant ==============
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS ai_conversations (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "user_id BIGINT NOT NULL, " +
+                "title VARCHAR(255), " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "updated_at TIMESTAMP NOT NULL DEFAULT NOW()" +
+                ")");
+
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS ai_messages (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "conversation_id BIGINT NOT NULL, " +
+                "user_id BIGINT NOT NULL, " +
+                "role VARCHAR(20) NOT NULL, " +
+                "content TEXT NOT NULL, " +
+                "tool_name VARCHAR(100), " +
+                "token_count INTEGER, " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW()" +
+                ")");
+        runSilently(dataSource, "CREATE INDEX IF NOT EXISTS idx_ai_messages_conv_created ON ai_messages (conversation_id, created_at)");
+        runSilently(dataSource, "CREATE INDEX IF NOT EXISTS idx_ai_messages_user ON ai_messages (user_id)");
+
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS ai_settings (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "user_id BIGINT NOT NULL, " +
+                "provider VARCHAR(30) NOT NULL DEFAULT 'openai', " +
+                "model VARCHAR(60) NOT NULL DEFAULT 'gpt-5', " +
+                "max_tokens INTEGER NOT NULL DEFAULT 800, " +
+                "temperature DOUBLE PRECISION NOT NULL DEFAULT 0.3, " +
+                "enabled BOOLEAN NOT NULL DEFAULT TRUE, " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "updated_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "CONSTRAINT uk_ai_settings_user UNIQUE (user_id)" +
+                ")");
+        runSilently(dataSource, "ALTER TABLE ai_settings ADD COLUMN IF NOT EXISTS developer_mode BOOLEAN NOT NULL DEFAULT FALSE");
+
+        // ============== RAG: Semantic Retrieval Infrastructure (Phase 2A) ==============
+        runSilently(dataSource, "CREATE EXTENSION IF NOT EXISTS vector");
+
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS ai_document_embeddings (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "user_id BIGINT NOT NULL, " +
+                "entity_type VARCHAR(30) NOT NULL, " +
+                "entity_id BIGINT NOT NULL, " +
+                "title VARCHAR(255), " +
+                "content TEXT NOT NULL, " +
+                "content_hash VARCHAR(64) NOT NULL, " +
+                "metadata TEXT, " +
+                "embedding vector(1536), " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "updated_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "CONSTRAINT uk_ai_doc_embed_entity UNIQUE (user_id, entity_type, entity_id)" +
+                ")");
+        runSilently(dataSource, "CREATE INDEX IF NOT EXISTS idx_ai_doc_embed_user ON ai_document_embeddings (user_id)");
+        runSilently(dataSource, "CREATE INDEX IF NOT EXISTS idx_ai_doc_embed_vector ON ai_document_embeddings USING hnsw (embedding vector_cosine_ops)");
     }
 
     private void runSilently(DataSource dataSource, String sql) {

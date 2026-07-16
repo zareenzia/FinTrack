@@ -142,6 +142,10 @@
                     <i class="fas fa-home sidebar-icon"></i>
                     <span class="sidebar-label">Home</span>
                 </a>
+                <a href="/ai-assistant" class="sidebar-item" data-path="ai-assistant" title="AI Assistant">
+                    <i class="fas fa-robot sidebar-icon"></i>
+                    <span class="sidebar-label">AI Assistant</span>
+                </a>
                 <a href="/transactions" class="sidebar-item" data-path="transactions" title="Transactions">
                     <i class="fas fa-exchange-alt sidebar-icon"></i>
                     <span class="sidebar-label">Transactions</span>

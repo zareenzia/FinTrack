@@ -11,7 +11,8 @@ import org.example.finzin.repository.CategoryRepository;
 import org.example.finzin.repository.NoteRepository;
 import org.example.finzin.repository.TodoRepository;
 import org.example.finzin.repository.TransactionRepository;
-import org.example.finzin.service.gold.GoldAssetService;
+import org.example.finzin.service.FinancialSummaryService;
+import org.example.finzin.ai.rag.DocumentIndexer;
 import org.example.finzin.entity.AccountEntity;
 import org.example.finzin.repository.AccountRepository;
 import org.springframework.http.HttpStatus;
@@ -46,17 +47,19 @@ public class FinanceApiController {
     private final AssetRepository assetRepository;
     private final NoteRepository noteRepository;
     private final TodoRepository todoRepository;
-    private final GoldAssetService goldAssetService;
     private final AccountRepository accountRepository;
+    private final FinancialSummaryService financialSummaryService;
+    private final DocumentIndexer documentIndexer;
 
-    public FinanceApiController(CategoryRepository categoryRepository, TransactionRepository transactionRepository, AssetRepository assetRepository, NoteRepository noteRepository, TodoRepository todoRepository, GoldAssetService goldAssetService, AccountRepository accountRepository) {
+    public FinanceApiController(CategoryRepository categoryRepository, TransactionRepository transactionRepository, AssetRepository assetRepository, NoteRepository noteRepository, TodoRepository todoRepository, AccountRepository accountRepository, FinancialSummaryService financialSummaryService, DocumentIndexer documentIndexer) {
         this.categoryRepository = categoryRepository;
         this.transactionRepository = transactionRepository;
         this.assetRepository = assetRepository;
         this.noteRepository = noteRepository;
         this.todoRepository = todoRepository;
-        this.goldAssetService = goldAssetService;
         this.accountRepository = accountRepository;
+        this.financialSummaryService = financialSummaryService;
+        this.documentIndexer = documentIndexer;
     }
     
     private Long getUserId(HttpServletRequest request) {
@@ -289,6 +292,7 @@ public class FinanceApiController {
         entity.setDestinationAccountId(body.destinationAccountId());
         TransactionEntity saved = transactionRepository.save(entity);
         applyBalanceChange(userId, body.sourceAccountId(), body.destinationAccountId(), normalizedType, body.amount(), false);
+        documentIndexer.indexTransaction(saved);
         return ResponseEntity.status(HttpStatus.CREATED).body(toTransactionResponse(saved));
     }
 
@@ -331,6 +335,7 @@ public class FinanceApiController {
         entity.setDestinationAccountId(body.destinationAccountId());
         TransactionEntity saved = transactionRepository.save(entity);
         applyBalanceChange(userId, body.sourceAccountId(), body.destinationAccountId(), normalizedType, body.amount(), false);
+        documentIndexer.indexTransaction(saved);
         return ResponseEntity.ok(toTransactionResponse(saved));
     }
 
@@ -343,6 +348,7 @@ public class FinanceApiController {
         }
         applyBalanceChange(userId, entity.getSourceAccountId(), entity.getDestinationAccountId(), entity.getTransactionType(), entity.getAmount(), true);
         transactionRepository.deleteById(id);
+        documentIndexer.deleteTransaction(userId, id);
         return ResponseEntity.noContent().build();
     }
 
@@ -375,6 +381,7 @@ public class FinanceApiController {
         entity.setArchived(false);
 
         NoteEntity saved = noteRepository.save(entity);
+        documentIndexer.indexNote(saved);
         return ResponseEntity.status(HttpStatus.CREATED).body(toNoteResponse(saved));
     }
 
@@ -406,6 +413,7 @@ public class FinanceApiController {
         }
 
         NoteEntity updated = noteRepository.save(entity);
+        documentIndexer.indexNote(updated);
         return ResponseEntity.ok(toNoteResponse(updated));
     }
 
@@ -417,6 +425,7 @@ public class FinanceApiController {
             return ResponseEntity.notFound().build();
         }
         noteRepository.deleteById(id);
+        documentIndexer.deleteNote(userId, id);
         return ResponseEntity.noContent().build();
     }
 
@@ -469,6 +478,7 @@ public class FinanceApiController {
         entity.setColor(body.color != null ? body.color : "#29B6F6");
 
         TodoEntity saved = todoRepository.save(entity);
+        documentIndexer.indexTodo(saved);
         return ResponseEntity.status(HttpStatus.CREATED).body(toTodoResponse(saved));
     }
 
@@ -512,6 +522,7 @@ public class FinanceApiController {
         }
 
         TodoEntity updated = todoRepository.save(entity);
+        documentIndexer.indexTodo(updated);
         return ResponseEntity.ok(toTodoResponse(updated));
     }
 
@@ -523,6 +534,7 @@ public class FinanceApiController {
             return ResponseEntity.notFound().build();
         }
         todoRepository.deleteById(id);
+        documentIndexer.deleteTodo(userId, id);
         return ResponseEntity.noContent().build();
     }
 
@@ -530,13 +542,13 @@ public class FinanceApiController {
     @GetMapping("/analytics/summary")
     public Map<String, Object> summary(HttpServletRequest request) {
         Long userId = getUserId(request);
-        double income       = getTotalIncome(userId);
-        double expense      = getTotalExpense(userId);
-        double savingsTx    = getTotalSavings(userId);
-        double balance      = income - expense - savingsTx;          // available balance
-        double totalAssets  = getTotalAssets(userId);
-        double savingsRate  = income == 0 ? 0 : (savingsTx / income) * 100;
-        double netWorth     = balance + savingsTx + totalAssets;
+        double income       = financialSummaryService.getTotalIncome(userId);
+        double expense      = financialSummaryService.getTotalExpense(userId);
+        double savingsTx    = financialSummaryService.getTotalSavings(userId);
+        double balance      = financialSummaryService.getBalance(userId);
+        double totalAssets  = financialSummaryService.getTotalAssets(userId);
+        double savingsRate  = financialSummaryService.getSavingsRate(userId);
+        double netWorth     = financialSummaryService.getNetWorth(userId);
 
         return Map.of(
                 "total_income",   income,
@@ -643,28 +655,6 @@ public class FinanceApiController {
         return map;
     }
 
-
-    private double getTotalIncome(Long userId) {
-        Double sum = transactionRepository.sumByUserIdAndTransactionType(userId, "income");
-        return sum == null ? 0 : sum;
-    }
-
-    private double getTotalExpense(Long userId) {
-        Double sum = transactionRepository.sumByUserIdAndTransactionType(userId, "expense");
-        return sum == null ? 0 : sum;
-    }
-
-    private double getTotalSavings(Long userId) {
-        Double sum = transactionRepository.sumByUserIdAndTransactionType(userId, "savings");
-        return sum == null ? 0 : sum;
-    }
-
-    private double getTotalAssets(Long userId) {
-        Double sum = assetRepository.sumValuesByUserId(userId);
-        double regularAssets = sum == null ? 0 : sum;
-        double goldAssets = goldAssetService.getTotalGoldValueForUser(userId);
-        return regularAssets + goldAssets;
-    }
 
     private void applyBalanceChange(Long userId, Long sourceAccountId, Long destinationAccountId, String type, double amount, boolean reverse) {
         double multiplier = reverse ? -1 : 1;

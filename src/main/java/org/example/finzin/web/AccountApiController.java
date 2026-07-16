@@ -1,6 +1,7 @@
 package org.example.finzin.web;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.example.finzin.ai.rag.DocumentIndexer;
 import org.example.finzin.entity.AccountEntity;
 import org.example.finzin.repository.AccountRepository;
 import org.example.finzin.repository.TransactionRepository;
@@ -19,10 +20,12 @@ public class AccountApiController {
 
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
+    private final DocumentIndexer documentIndexer;
 
-    public AccountApiController(AccountRepository accountRepository, TransactionRepository transactionRepository) {
+    public AccountApiController(AccountRepository accountRepository, TransactionRepository transactionRepository, DocumentIndexer documentIndexer) {
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
+        this.documentIndexer = documentIndexer;
     }
 
     private Long getUserId(HttpServletRequest request) {
@@ -76,6 +79,7 @@ public class AccountApiController {
         mapRequestToEntity(body, entity);
         entity.setCurrentBalance(body.openingBalance() != null ? body.openingBalance() : 0.0);
         AccountEntity saved = accountRepository.save(entity);
+        documentIndexer.indexAccount(saved);
         return ResponseEntity.status(HttpStatus.CREATED).body(toAccountResponse(saved));
     }
 
@@ -93,6 +97,7 @@ public class AccountApiController {
         mapRequestToEntity(body, entity);
         entity.setCurrentBalance(entity.getCurrentBalance() + balanceDiff);
         AccountEntity saved = accountRepository.save(entity);
+        documentIndexer.indexAccount(saved);
         return ResponseEntity.ok(toAccountResponse(saved));
     }
 
@@ -108,6 +113,7 @@ public class AccountApiController {
             return ResponseEntity.badRequest().body(Map.of("error", "Cannot delete account with associated transactions"));
         }
         accountRepository.deleteById(id);
+        documentIndexer.deleteAccount(userId, id);
         return ResponseEntity.noContent().build();
     }
 
@@ -120,6 +126,7 @@ public class AccountApiController {
         }
         entity.setStatus("ACTIVE".equals(entity.getStatus()) ? "INACTIVE" : "ACTIVE");
         accountRepository.save(entity);
+        documentIndexer.indexAccount(entity);
         return ResponseEntity.ok(toAccountResponse(entity));
     }
 

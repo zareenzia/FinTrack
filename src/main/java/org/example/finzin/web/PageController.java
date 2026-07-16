@@ -93,5 +93,13 @@ public class PageController {
         }
         return "forward:/budget-planner.html";
     }
+
+    @GetMapping("/ai-assistant")
+    public String aiAssistant(HttpServletRequest request) {
+        if (request.getAttribute("userId") == null) {
+            return "redirect:/login";
+        }
+        return "forward:/ai-assistant.html";
+    }
 }
 
