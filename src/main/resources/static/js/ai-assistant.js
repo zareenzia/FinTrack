@@ -93,13 +93,15 @@
 
     function renderQuickActions() {
         const container = document.getElementById('aiQuickActions');
-        container.innerHTML = QUICK_ACTIONS.map(q =>
+        const chipsHtml = QUICK_ACTIONS.map(q =>
             `<button type="button" class="ai-suggestion-chip">${escapeHtml(q)}</button>`
         ).join('');
+        // Rendered twice back-to-back so the CSS marquee (translateX(-50%)) loops seamlessly.
+        container.innerHTML = `<div class="ai-quick-actions-track">${chipsHtml}${chipsHtml}</div>`;
         container.querySelectorAll('.ai-suggestion-chip').forEach((chip, i) => {
             chip.addEventListener('click', () => {
                 if (sending) return;
-                sendMessage(QUICK_ACTIONS[i]);
+                sendMessage(QUICK_ACTIONS[i % QUICK_ACTIONS.length]);
             });
         });
     }

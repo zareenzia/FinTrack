@@ -57,4 +57,9 @@ public class NotificationService {
         entity.setIsRead(true);
         return notificationRepository.save(entity);
     }
+
+    /** Returns how many notifications were flipped to read. */
+    public int markAllRead(Long userId) {
+        return notificationRepository.markAllReadByUserId(userId);
+    }
 }

@@ -126,10 +126,27 @@
         .ai-suggestion-chip:hover { background: var(--bg-table-hover); border-color: var(--accent-color); }
 
         .ai-quick-actions {
-            display: flex; flex-wrap: nowrap; gap: 8px; overflow-x: auto;
-            padding: 10px 20px; border-top: 1px solid var(--border-color);
+            display: flex; overflow: hidden;
+            padding: 10px 0; border-top: 1px solid var(--border-color);
+            -webkit-mask-image: linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent);
+            mask-image: linear-gradient(to right, transparent, black 24px, black calc(100% - 24px), transparent);
+        }
+        .ai-quick-actions-track {
+            display: flex; flex-wrap: nowrap; gap: 8px; width: max-content; padding: 0 20px;
+            animation: ai-quick-actions-scroll 30s linear infinite;
+        }
+        .ai-quick-actions:hover .ai-quick-actions-track {
+            animation-play-state: paused;
         }
         .ai-quick-actions .ai-suggestion-chip { white-space: nowrap; flex: 0 0 auto; }
+
+        @keyframes ai-quick-actions-scroll {
+            from { transform: translateX(0); }
+            to { transform: translateX(-50%); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .ai-quick-actions-track { animation: none; }
+        }
 
         .ai-disabled-banner { margin: 12px 20px 0; }
 
