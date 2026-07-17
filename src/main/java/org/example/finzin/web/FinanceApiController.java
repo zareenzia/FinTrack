@@ -1,11 +1,13 @@
 package org.example.finzin.web;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.example.finzin.entity.AccountEntity;
 import org.example.finzin.entity.AssetEntity;
 import org.example.finzin.entity.CategoryEntity;
 import org.example.finzin.entity.NoteEntity;
 import org.example.finzin.entity.TodoEntity;
 import org.example.finzin.entity.TransactionEntity;
+import org.example.finzin.repository.AccountRepository;
 import org.example.finzin.repository.AssetRepository;
 import org.example.finzin.repository.CategoryRepository;
 import org.example.finzin.repository.NoteRepository;
@@ -50,8 +52,9 @@ public class FinanceApiController {
     private final FinancialSummaryService financialSummaryService;
     private final DocumentIndexer documentIndexer;
     private final AccountBalanceService accountBalanceService;
+    private final AccountRepository accountRepository;
 
-    public FinanceApiController(CategoryRepository categoryRepository, TransactionRepository transactionRepository, AssetRepository assetRepository, NoteRepository noteRepository, TodoRepository todoRepository, FinancialSummaryService financialSummaryService, DocumentIndexer documentIndexer, AccountBalanceService accountBalanceService) {
+    public FinanceApiController(CategoryRepository categoryRepository, TransactionRepository transactionRepository, AssetRepository assetRepository, NoteRepository noteRepository, TodoRepository todoRepository, FinancialSummaryService financialSummaryService, DocumentIndexer documentIndexer, AccountBalanceService accountBalanceService, AccountRepository accountRepository) {
         this.categoryRepository = categoryRepository;
         this.transactionRepository = transactionRepository;
         this.assetRepository = assetRepository;
@@ -60,6 +63,7 @@ public class FinanceApiController {
         this.financialSummaryService = financialSummaryService;
         this.documentIndexer = documentIndexer;
         this.accountBalanceService = accountBalanceService;
+        this.accountRepository = accountRepository;
     }
     
     private Long getUserId(HttpServletRequest request) {
@@ -239,13 +243,14 @@ public class FinanceApiController {
     ) {
         Long userId = getUserId(request);
         List<TransactionEntity> transactions = transactionRepository.findByUserId(userId);
-        
+        Map<Long, String> accountNames = accountNicknamesByUserId(userId);
+
         return transactions.stream()
                 .filter(t -> categoryIdFilter == null || (t.getCategory() != null && t.getCategory().getId().equals(categoryIdFilter)))
                 .filter(t -> type == null || type.isBlank() || t.getTransactionType().equalsIgnoreCase(type))
                 .sorted(Comparator.comparing(TransactionEntity::getDate).reversed())
                 .limit(limit)
-                .map(this::toTransactionResponse)
+                .map(t -> toTransactionResponse(t, accountNames))
                 .collect(Collectors.toList());
     }
 
@@ -278,6 +283,8 @@ public class FinanceApiController {
             }
         }
 
+        boolean fromSavings = normalizedType.equals("expense") && Boolean.TRUE.equals(body.fromSavings());
+
         LocalDateTime date = parseDate(body.date);
         TransactionEntity entity = new TransactionEntity(
                 userId,
@@ -288,8 +295,9 @@ public class FinanceApiController {
                 date,
                 LocalDateTime.now()
         );
-        entity.setSourceAccountId(body.sourceAccountId());
+        entity.setSourceAccountId(fromSavings ? null : body.sourceAccountId());
         entity.setDestinationAccountId(body.destinationAccountId());
+        entity.setFromSavings(fromSavings);
 
         AccountBalanceService.TransactionSaveResult result;
         try {
@@ -298,7 +306,7 @@ public class FinanceApiController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
         documentIndexer.indexTransaction(result.transaction());
-        Map<String, Object> responseBody = toTransactionResponse(result.transaction());
+        Map<String, Object> responseBody = toTransactionResponse(result.transaction(), accountNicknamesByUserId(userId));
         if (result.warning() != null) {
             responseBody.put("warning", result.warning());
         }
@@ -331,6 +339,8 @@ public class FinanceApiController {
             return ResponseEntity.badRequest().body(Map.of("error", "transaction_type must be income, expense, savings, or transfer"));
         }
 
+        boolean fromSavings = normalizedType.equals("expense") && Boolean.TRUE.equals(body.fromSavings());
+
         Long oldSourceAccountId = entity.getSourceAccountId();
         Long oldDestinationAccountId = entity.getDestinationAccountId();
         String oldType = entity.getTransactionType();
@@ -343,8 +353,9 @@ public class FinanceApiController {
         if (body.date != null && !body.date.isBlank()) {
             entity.setDate(parseDate(body.date));
         }
-        entity.setSourceAccountId(body.sourceAccountId());
+        entity.setSourceAccountId(fromSavings ? null : body.sourceAccountId());
         entity.setDestinationAccountId(body.destinationAccountId());
+        entity.setFromSavings(fromSavings);
 
         AccountBalanceService.TransactionSaveResult result;
         try {
@@ -353,7 +364,7 @@ public class FinanceApiController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
         documentIndexer.indexTransaction(result.transaction());
-        Map<String, Object> responseBody = toTransactionResponse(result.transaction());
+        Map<String, Object> responseBody = toTransactionResponse(result.transaction(), accountNicknamesByUserId(userId));
         if (result.warning() != null) {
             responseBody.put("warning", result.warning());
         }
@@ -669,7 +680,12 @@ public class FinanceApiController {
         );
     }
 
-    private Map<String, Object> toTransactionResponse(TransactionEntity entity) {
+    private Map<Long, String> accountNicknamesByUserId(Long userId) {
+        return accountRepository.findByUserId(userId).stream()
+                .collect(Collectors.toMap(AccountEntity::getId, AccountEntity::getAccountNickname));
+    }
+
+    private Map<String, Object> toTransactionResponse(TransactionEntity entity, Map<Long, String> accountNames) {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("id", entity.getId());
         map.put("amount", entity.getAmount());
@@ -681,6 +697,10 @@ public class FinanceApiController {
         map.put("created_at", entity.getCreatedAt().toString());
         map.put("sourceAccountId", entity.getSourceAccountId());
         map.put("destinationAccountId", entity.getDestinationAccountId());
+        boolean fromSavings = Boolean.TRUE.equals(entity.getFromSavings());
+        map.put("fromSavings", fromSavings);
+        Long paidFromId = entity.getSourceAccountId() != null ? entity.getSourceAccountId() : entity.getDestinationAccountId();
+        map.put("account_name", fromSavings ? "Savings" : (paidFromId != null ? accountNames.getOrDefault(paidFromId, "-") : "-"));
         return map;
     }
 
@@ -730,7 +750,8 @@ public class FinanceApiController {
             String transaction_type,
             String date,
             Long sourceAccountId,
-            Long destinationAccountId
+            Long destinationAccountId,
+            Boolean fromSavings
     ) {
     }
 

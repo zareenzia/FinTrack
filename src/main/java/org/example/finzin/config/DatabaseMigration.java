@@ -31,6 +31,7 @@ public class DatabaseMigration implements BeanPostProcessor {
 
         runSilently(dataSource, "ALTER TABLE transactions ADD COLUMN IF NOT EXISTS is_auto_generated BOOLEAN DEFAULT FALSE");
         runSilently(dataSource, "ALTER TABLE transactions ADD COLUMN IF NOT EXISTS recurring_transaction_id BIGINT");
+        runSilently(dataSource, "ALTER TABLE transactions ADD COLUMN IF NOT EXISTS from_savings BOOLEAN NOT NULL DEFAULT FALSE");
 
         runSilently(dataSource, "CREATE TABLE IF NOT EXISTS recurring_transactions (" +
                 "id BIGSERIAL PRIMARY KEY, " +

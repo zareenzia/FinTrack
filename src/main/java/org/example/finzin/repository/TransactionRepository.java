@@ -22,7 +22,10 @@ public interface TransactionRepository extends JpaRepository<TransactionEntity, 
     
     @Query("SELECT SUM(t.amount) FROM TransactionEntity t WHERE t.userId = :userId AND t.transactionType = :type")
     Double sumByUserIdAndTransactionType(@Param("userId") Long userId, @Param("type") String type);
-    
+
+    @Query("SELECT SUM(t.amount) FROM TransactionEntity t WHERE t.userId = :userId AND t.transactionType = :type AND t.fromSavings = true")
+    Double sumByUserIdAndTransactionTypeAndFromSavingsTrue(@Param("userId") Long userId, @Param("type") String type);
+
     @Query("SELECT SUM(t.amount) FROM TransactionEntity t WHERE t.userId = :userId AND t.transactionType = :type")
     Double sumByUserIdAndType(@Param("userId") Long userId, @Param("type") String type);
 

@@ -129,6 +129,9 @@ public class TransactionEntity {
     @Column(nullable = true)
     private Long recurringTransactionId;
 
+    @Column(nullable = true)
+    private Boolean fromSavings = false;
+
     public Long getSourceAccountId() {
         return sourceAccountId;
     }
@@ -159,5 +162,13 @@ public class TransactionEntity {
 
     public void setRecurringTransactionId(Long recurringTransactionId) {
         this.recurringTransactionId = recurringTransactionId;
+    }
+
+    public Boolean getFromSavings() {
+        return fromSavings;
+    }
+
+    public void setFromSavings(Boolean fromSavings) {
+        this.fromSavings = fromSavings != null ? fromSavings : false;
     }
 }

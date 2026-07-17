@@ -2224,7 +2224,7 @@ h3.stat-card-amount,
 /* â”€â”€ Column labels row â”€â”€ */
 .tx-col-labels {
     display: grid;
-    grid-template-columns: 110px 1fr 160px 120px 130px 82px;
+    grid-template-columns: 110px 1fr 160px 140px 120px 130px 82px;
     padding: 8px 20px;
     font-size: 0.7rem;
     font-weight: 700;
@@ -2244,7 +2244,7 @@ h3.stat-card-amount,
 /* â”€â”€ Transaction row â”€â”€ */
 .tx-row {
     display: grid;
-    grid-template-columns: 110px 1fr 160px 120px 130px 82px;
+    grid-template-columns: 110px 1fr 160px 140px 120px 130px 82px;
     align-items: center;
     padding: 12px 20px;
     gap: 8px;
@@ -2320,6 +2320,17 @@ h3.stat-card-amount,
     font-size: 0.88rem;
     font-weight: 600;
     color: var(--tx-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+}
+
+/* Paid-from account column */
+.tx-account-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--tx-label-color);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -2577,7 +2588,7 @@ h3.stat-card-amount,
 @media (max-width: 900px) {
     .tx-col-labels,
     .tx-row {
-        grid-template-columns: 90px 1fr 130px 100px 110px 68px;
+        grid-template-columns: 90px 1fr 130px 120px 100px 110px 68px;
         padding: 10px 14px;
     }
 }
@@ -2591,12 +2602,13 @@ h3.stat-card-amount,
         padding: 14px 16px;
         position: relative;
     }
-    .tx-col-date  { order: 1; }
-    .tx-col-desc  { order: 2; }
-    .tx-col-cat   { order: 3; }
-    .tx-col-type  { order: 4; }
+    .tx-col-date    { order: 1; }
+    .tx-col-desc    { order: 2; }
+    .tx-col-cat     { order: 3; }
+    .tx-col-account { order: 4; }
+    .tx-col-type    { order: 5; }
     .tx-col-amount {
-        order: 5;
+        order: 6;
         font-size: 1.1rem !important;
     }
     .tx-col-action {

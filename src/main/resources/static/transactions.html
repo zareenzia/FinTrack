@@ -266,6 +266,7 @@
                     <span class="tx-col-date"><i class="fas fa-calendar-alt"></i> Date</span>
                     <span class="tx-col-desc"><i class="fas fa-align-left"></i> Description</span>
                     <span class="tx-col-cat"><i class="fas fa-tag"></i> Category</span>
+                    <span class="tx-col-account"><i class="fas fa-wallet"></i> Paid From</span>
                     <span class="tx-col-type"><i class="fas fa-exchange-alt"></i> Type</span>
                     <span class="tx-col-amount"><i class="fas fa-coins"></i> Amount</span>
                     <span class="tx-col-action"></span>
@@ -341,7 +342,7 @@
                             <input type="date" class="form-control form-control-sm" id="date" required>
                         </div>
                         <div class="col-md-12 mb-2">
-                            <label for="sourceAccount" class="form-label">Account <small class="text-muted">(optional)</small></label>
+                            <label for="sourceAccount" class="form-label" id="sourceAccountLabel">Paid From <small class="text-muted">(optional)</small></label>
                             <select class="form-select form-select-sm" id="sourceAccount">
                                 <option value="">-- No account --</option>
                             </select>
@@ -664,6 +665,12 @@
                     </select>
                 </div>
                 <div class="mb-3">
+                    <label for="editTxAccount" class="form-label" id="editTxAccountLabel">Paid From <small class="text-muted">(optional)</small></label>
+                    <select class="form-select" id="editTxAccount">
+                        <option value="">-- No account --</option>
+                    </select>
+                </div>
+                <div class="mb-3">
                     <label for="editTxCategory" class="form-label">Category</label>
                     <select class="form-select" id="editTxCategory" required>
                         <option value="">Loading…</option>
@@ -776,6 +783,8 @@
         document.getElementById('dashboardSaveEditTxBtn').addEventListener('click', saveEditTransaction);
         document.getElementById('editTxType').addEventListener('change', function () {
             loadEditCategories(this.value);
+            applyAccountFieldLabel('editTxAccountLabel', this.value);
+            applySavingsPseudoOption(document.getElementById('editTxAccount'), this.value);
         });
 
         const savedLimit = localStorage.getItem('tx_page_limit') || '5';
@@ -829,7 +838,10 @@
         document.getElementById('rtPageSize').addEventListener('change', function () { rtCurrentPage = 0; applyRtFilters(); });
 
         loadCategories(document.getElementById('type').value);
-        loadAccountsIntoSelect();
+        loadAccountsIntoSelect().then(function () {
+            applySavingsPseudoOption(document.getElementById('sourceAccount'), document.getElementById('type').value);
+        });
+        applyAccountFieldLabel('sourceAccountLabel', document.getElementById('type').value);
         applyCurrencySymbolToInputs();
         document.getElementById('transferDate').valueAsDate = new Date();
         loadRecurring();
@@ -846,6 +858,8 @@
         document.getElementById('transactionForm').reset();
         document.getElementById('date').valueAsDate = new Date();
         loadCategories(document.getElementById('type').value);
+        applyAccountFieldLabel('sourceAccountLabel', document.getElementById('type').value);
+        applySavingsPseudoOption(document.getElementById('sourceAccount'), document.getElementById('type').value);
         addTransactionModal.show();
     }
 
@@ -877,19 +891,23 @@
 
     document.getElementById('type').addEventListener('change', function () {
         loadCategories(this.value);
+        applyAccountFieldLabel('sourceAccountLabel', this.value);
+        applySavingsPseudoOption(document.getElementById('sourceAccount'), this.value);
     });
 
     document.getElementById('transactionForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const srcAcctEl = document.getElementById('sourceAccount');
+        const srcAcctEl  = document.getElementById('sourceAccount');
+        const srcAcctVal = srcAcctEl ? srcAcctEl.value : '';
         const transaction = {
             description: document.getElementById('description').value,
             amount: parseFloat(document.getElementById('amount').value),
             category_id: parseInt(document.getElementById('category').value, 10),
             transaction_type: document.getElementById('type').value,
             date: document.getElementById('date').value,
-            sourceAccountId: srcAcctEl && srcAcctEl.value ? parseInt(srcAcctEl.value, 10) : null,
-            destinationAccountId: null
+            sourceAccountId: srcAcctVal && srcAcctVal !== 'SAVINGS' ? parseInt(srcAcctVal, 10) : null,
+            destinationAccountId: null,
+            fromSavings: srcAcctVal === 'SAVINGS'
         };
 
         try {
@@ -1151,7 +1169,28 @@
             showTopNotification('Unable to create category right now.', 'error');
         }
     }
-    async function loadAccountsIntoSelect() {
+    const ACCOUNT_FIELD_LABELS = { expense: 'Paid From', income: 'Received Into', savings: 'Savings Account' };
+    function applyAccountFieldLabel(labelElId, type) {
+        const labelEl = document.getElementById(labelElId);
+        if (!labelEl) return;
+        labelEl.innerHTML = (ACCOUNT_FIELD_LABELS[type] || 'Paid From') + ' <small class="text-muted">(optional)</small>';
+    }
+    function applySavingsPseudoOption(selectEl, type) {
+        if (!selectEl) return;
+        const existing = selectEl.querySelector('option[value="SAVINGS"]');
+        if (type === 'expense') {
+            if (!existing) {
+                const opt = document.createElement('option');
+                opt.value = 'SAVINGS';
+                opt.textContent = '💰 Savings (spend from savings)';
+                selectEl.insertBefore(opt, selectEl.options[1] || null);
+            }
+        } else if (existing) {
+            if (selectEl.value === 'SAVINGS') selectEl.value = '';
+            existing.remove();
+        }
+    }
+    async function loadAccountsIntoSelect() {
         try {
             const resp = await fetch('/api/accounts');
             if (!resp.ok) return;
@@ -1678,6 +1717,9 @@
                             ${tx.category_name || 'Uncategorized'}
                         </span>
                     </div>
+                    <div class="tx-col-account">
+                        <span class="tx-account-name">${tx.account_name || '-'}</span>
+                    </div>
                     <div class="tx-col-type">
                         <span class="tx-type-badge type-${txClass}">
                             ${txTypeIcon(tx.transaction_type)}
@@ -1750,7 +1792,23 @@
         document.getElementById('editTxAmount').value      = Number(tx.amount).toFixed(2);
         document.getElementById('editTxType').value        = tx.transaction_type;
         loadEditCategories(tx.transaction_type, tx.category_id);
+        applyAccountFieldLabel('editTxAccountLabel', tx.transaction_type);
+        const selectedAccountValue = tx.fromSavings ? 'SAVINGS' : (tx.sourceAccountId != null ? String(tx.sourceAccountId) : '');
+        loadEditTxAccounts(selectedAccountValue, tx.transaction_type);
         txEditModal.show();
+    }
+
+    async function loadEditTxAccounts(selectedValue, type) {
+        const sel = document.getElementById('editTxAccount');
+        try {
+            const accounts = await fetch('/api/accounts').then(r => r.json());
+            const label = a => a.accountNickname + (a.bankName ? ' (' + a.bankName + ')' : a.provider ? ' (' + a.provider + ')' : '');
+            sel.innerHTML = '<option value="">-- No account --</option>' + accounts.map(a => `<option value="${a.id}">${label(a)}</option>`).join('');
+        } catch (e) {
+            sel.innerHTML = '<option value="">-- No account --</option>';
+        }
+        applySavingsPseudoOption(sel, type);
+        sel.value = selectedValue || '';
     }
 
     async function loadEditCategories(type, selectedId) {
@@ -1782,6 +1840,7 @@
         const amount      = parseFloat(document.getElementById('editTxAmount').value);
         const type        = document.getElementById('editTxType').value;
         const categoryId  = parseInt(document.getElementById('editTxCategory').value, 10);
+        const acctVal     = document.getElementById('editTxAccount').value;
 
         if (!description || isNaN(amount) || amount <= 0 || !categoryId) {
             showTopNotification('Please fill all fields correctly.', 'error');
@@ -1796,7 +1855,10 @@
                     description,
                     amount,
                     transaction_type: type,
-                    category_id: categoryId
+                    category_id: categoryId,
+                    sourceAccountId: acctVal && acctVal !== 'SAVINGS' ? parseInt(acctVal, 10) : null,
+                    destinationAccountId: null,
+                    fromSavings: acctVal === 'SAVINGS'
                 })
             });
             const data = await response.json().catch(() => ({}));
