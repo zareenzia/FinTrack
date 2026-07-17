@@ -240,11 +240,17 @@
             <div class="sidebar-spacer"></div>
 
             <div class="sidebar-bottom">
-                <button class="sidebar-item" id="notificationBellBtn" title="Notifications" aria-label="Notifications" style="background:none;border:none;width:100%;text-align:left;position:relative;">
-                    <i class="fas fa-bell sidebar-icon"></i>
-                    <span class="sidebar-label">Notifications</span>
-                    <span id="notifBadge" class="d-none" style="position:absolute; top:6px; left:26px; background:#dc3545; color:#fff; border-radius:999px; font-size:0.65rem; padding:1px 6px; font-weight:600;" aria-live="polite"></span>
-                </button>
+                <div class="sidebar-icon-row">
+                    <button class="sidebar-item sidebar-icon-only" id="notificationBellBtn" title="Notifications" aria-label="Notifications" style="background:none;border:none;position:relative;">
+                        <i class="fas fa-bell sidebar-icon"></i>
+                        <span class="sidebar-label">Notifications</span>
+                        <span id="notifBadge" class="d-none" style="position:absolute; top:6px; right:6px; background:#dc3545; color:#fff; border-radius:999px; font-size:0.65rem; padding:1px 6px; font-weight:600;" aria-live="polite"></span>
+                    </button>
+                    <a href="/ai-assistant" class="sidebar-item sidebar-icon-only" id="aiAssistantIconBtn" data-path="ai-assistant" title="AI Assistant" aria-label="AI Assistant">
+                        <i class="fas fa-robot sidebar-icon"></i>
+                        <span class="sidebar-label">AI Assistant</span>
+                    </a>
+                </div>
                 <button class="sidebar-item sidebar-theme-toggle" id="themeToggleBtn" title="Toggle theme" aria-label="Toggle theme">
                     <span class="theme-icon-wrap">
                         <i class="${themeIcon}" id="themeToggleIcon"></i>
@@ -570,8 +576,14 @@
         panel.style.cssText = 'display:none; position:fixed; bottom:70px; left:90px; width:320px; max-height:400px; overflow-y:auto; background:var(--bg-modal); border:1px solid var(--border-color); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.25); z-index:2000; padding:8px;';
         panel.innerHTML = '<div style="display:flex; justify-content:space-between; align-items:center; padding:6px 8px; font-weight:600; color:var(--text-primary-custom);">' +
             '<span><i class="fas fa-bell me-1"></i>Notifications</span>' +
+            '<button type="button" id="notifMarkAllReadBtn" style="background:none; border:none; color:var(--accent-color); font-size:0.75rem; font-weight:600; cursor:pointer; padding:2px 4px;">Mark all as read</button>' +
             '</div><div id="notifListContainer"></div>';
         document.body.appendChild(panel);
+
+        document.getElementById('notifMarkAllReadBtn').addEventListener('click', function (e) {
+            e.stopPropagation();
+            markAllNotificationsRead();
+        });
 
         document.addEventListener('click', function (e) {
             var panelEl = document.getElementById('notifDropdownPanel');
@@ -628,6 +640,15 @@
             .catch(function () {});
     }
     window.__markNotifRead = markNotificationRead;
+
+    function markAllNotificationsRead() {
+        fetch('/api/notifications/read-all', { method: 'PATCH' })
+            .then(function () {
+                loadNotificationList();
+                refreshUnreadBadge();
+            })
+            .catch(function () {});
+    }
 
     function refreshUnreadBadge() {
         fetch('/api/notifications/unread-count')

@@ -136,6 +136,81 @@ public class DatabaseMigration implements BeanPostProcessor {
                 "is_savings BOOLEAN NOT NULL DEFAULT FALSE" +
                 ")");
 
+        // ============== AI Financial Assistant ==============
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS ai_conversations (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "user_id BIGINT NOT NULL, " +
+                "title VARCHAR(255), " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "updated_at TIMESTAMP NOT NULL DEFAULT NOW()" +
+                ")");
+
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS ai_messages (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "conversation_id BIGINT NOT NULL, " +
+                "user_id BIGINT NOT NULL, " +
+                "role VARCHAR(20) NOT NULL, " +
+                "content TEXT NOT NULL, " +
+                "tool_name VARCHAR(100), " +
+                "token_count INTEGER, " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW()" +
+                ")");
+        runSilently(dataSource, "CREATE INDEX IF NOT EXISTS idx_ai_messages_conv_created ON ai_messages (conversation_id, created_at)");
+        runSilently(dataSource, "CREATE INDEX IF NOT EXISTS idx_ai_messages_user ON ai_messages (user_id)");
+
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS ai_settings (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "user_id BIGINT NOT NULL, " +
+                "provider VARCHAR(30) NOT NULL DEFAULT 'openai', " +
+                "model VARCHAR(60) NOT NULL DEFAULT 'gpt-5', " +
+                "max_tokens INTEGER NOT NULL DEFAULT 800, " +
+                "temperature DOUBLE PRECISION NOT NULL DEFAULT 0.3, " +
+                "enabled BOOLEAN NOT NULL DEFAULT TRUE, " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "updated_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "CONSTRAINT uk_ai_settings_user UNIQUE (user_id)" +
+                ")");
+        runSilently(dataSource, "ALTER TABLE ai_settings ADD COLUMN IF NOT EXISTS developer_mode BOOLEAN NOT NULL DEFAULT FALSE");
+
+        // ============== RAG: Semantic Retrieval Infrastructure (Phase 2A) ==============
+        runSilently(dataSource, "CREATE EXTENSION IF NOT EXISTS vector");
+
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS ai_document_embeddings (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "user_id BIGINT NOT NULL, " +
+                "entity_type VARCHAR(30) NOT NULL, " +
+                "entity_id BIGINT NOT NULL, " +
+                "title VARCHAR(255), " +
+                "content TEXT NOT NULL, " +
+                "content_hash VARCHAR(64) NOT NULL, " +
+                "metadata TEXT, " +
+                "embedding vector(1536), " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "updated_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "CONSTRAINT uk_ai_doc_embed_entity UNIQUE (user_id, entity_type, entity_id)" +
+                ")");
+        runSilently(dataSource, "CREATE INDEX IF NOT EXISTS idx_ai_doc_embed_user ON ai_document_embeddings (user_id)");
+        runSilently(dataSource, "CREATE INDEX IF NOT EXISTS idx_ai_doc_embed_vector ON ai_document_embeddings USING hnsw (embedding vector_cosine_ops)");
+
+        // ============== AI Financial Coach (Phase 2C) ==============
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS net_worth_snapshots (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "user_id BIGINT NOT NULL, " +
+                "snapshot_month VARCHAR(7) NOT NULL, " +
+                "net_worth DOUBLE PRECISION NOT NULL, " +
+                "total_assets DOUBLE PRECISION NOT NULL, " +
+                "balance DOUBLE PRECISION NOT NULL, " +
+                "total_savings_contributed DOUBLE PRECISION NOT NULL, " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "CONSTRAINT uk_networth_snapshot_user_month UNIQUE (user_id, snapshot_month)" +
+                ")");
+
+        runSilently(dataSource, "ALTER TABLE ai_settings ADD COLUMN IF NOT EXISTS enable_proactive_insights BOOLEAN NOT NULL DEFAULT TRUE");
+        runSilently(dataSource, "ALTER TABLE ai_settings ADD COLUMN IF NOT EXISTS enable_budget_coaching BOOLEAN NOT NULL DEFAULT TRUE");
+        runSilently(dataSource, "ALTER TABLE ai_settings ADD COLUMN IF NOT EXISTS enable_savings_coaching BOOLEAN NOT NULL DEFAULT TRUE");
+        runSilently(dataSource, "ALTER TABLE ai_settings ADD COLUMN IF NOT EXISTS enable_monthly_reports BOOLEAN NOT NULL DEFAULT TRUE");
+        runSilently(dataSource, "ALTER TABLE ai_settings ADD COLUMN IF NOT EXISTS enable_dashboard_summary BOOLEAN NOT NULL DEFAULT TRUE");
+
         // ============== Financial Planner ==============
         runSilently(dataSource, "CREATE TABLE IF NOT EXISTS investments (" +
                 "id BIGSERIAL PRIMARY KEY, " +
@@ -211,6 +286,35 @@ public class DatabaseMigration implements BeanPostProcessor {
                 "created_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
                 "updated_at TIMESTAMP NOT NULL DEFAULT NOW()" +
                 ")");
+
+        // ============== Notes: "done" state ==============
+        runSilently(dataSource, "ALTER TABLE notes ADD COLUMN IF NOT EXISTS done BOOLEAN NOT NULL DEFAULT FALSE");
+
+        // Repair pre-existing checklist markup: the editor used to emit data-list="check", a value
+        // Quill's own checkbox click handler (formats/list.js) never recognizes as toggleable —
+        // only "checked"/"unchecked" are. Rewriting to "unchecked" makes existing checklist items
+        // clickable without altering any note's visible content or deleting anything.
+        runSilently(dataSource, "UPDATE notes SET content = REPLACE(content, 'data-list=\"check\"', 'data-list=\"unchecked\"') " +
+                "WHERE content LIKE '%data-list=\"check\"%'");
+
+        // ============== Credit card accounting ==============
+        runSilently(dataSource, "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS credit_limit_behavior VARCHAR(10) NOT NULL DEFAULT 'WARN'");
+
+        // Outstanding balance is a derived value, not an independently-trusted stored number: on every
+        // startup, recompute each credit card's current_balance from opening_balance plus the signed
+        // effect of every transaction that references it (source: expense/savings/transfer-out increase
+        // what's owed, income decreases it as a refund; destination: transfer-in is a payment and
+        // decreases it). Idempotent and safe to run every time — it only ever re-derives the same
+        // number the live application logic would already be maintaining.
+        runSilently(dataSource, "UPDATE accounts a SET current_balance = a.opening_balance + COALESCE((" +
+                "SELECT SUM(CASE " +
+                "WHEN t.source_account_id = a.id AND t.transaction_type IN ('expense','savings','transfer') THEN t.amount " +
+                "WHEN t.source_account_id = a.id AND t.transaction_type = 'income' THEN -t.amount " +
+                "WHEN t.destination_account_id = a.id AND t.transaction_type = 'transfer' THEN -t.amount " +
+                "ELSE 0 END) " +
+                "FROM transactions t WHERE t.source_account_id = a.id OR t.destination_account_id = a.id" +
+                "), 0) " +
+                "WHERE a.account_type = 'CREDIT_CARD'");
     }
 
     private void runSilently(DataSource dataSource, String sql) {

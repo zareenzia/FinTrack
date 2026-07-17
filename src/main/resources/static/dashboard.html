@@ -413,6 +413,21 @@
         </div>
     </div>
 
+    <!-- AI Financial Coach Summary -->
+    <div class="row mb-4" id="aiSummaryRow">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-robot me-2"></i>AI Financial Coach</h6>
+                    <a href="/ai-assistant" class="btn btn-sm btn-outline-primary"><i class="fas fa-comment-dots"></i> Open AI Assistant</a>
+                </div>
+                <div class="card-body" id="aiSummaryBody">
+                    <p class="text-muted small mb-0">Loading…</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Current Budget Widget -->
     <div class="row mb-4">
         <div class="col-md-12">
@@ -639,6 +654,21 @@
                         <a href="/transactions" class="btn btn-sm btn-outline-primary"><i class="fas fa-external-link-alt"></i> View All</a>
                     </div>
                     <div class="card-body" id="upcomingRecurringBodyCompact">
+                        <p class="text-muted small mb-0">Loading…</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Financial Coach Summary -->
+        <div class="row mb-4" id="aiSummaryRowCompact">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="fas fa-robot me-2"></i>AI Financial Coach</h6>
+                        <a href="/ai-assistant" class="btn btn-sm btn-outline-primary"><i class="fas fa-comment-dots"></i> Open AI Assistant</a>
+                    </div>
+                    <div class="card-body" id="aiSummaryBodyCompact">
                         <p class="text-muted small mb-0">Loading…</p>
                     </div>
                 </div>
@@ -1196,6 +1226,7 @@
         loadAccountBalances();
         loadUpcomingRecurring();
         loadCurrentBudget();
+        loadAiSummary();
         loadFpWidget();
     });
 
@@ -1228,6 +1259,48 @@
             containers.forEach(c => c.innerHTML = html);
         } catch (e) {
             containers.forEach(c => c.innerHTML = '<p class="text-muted small mb-0">Unable to load upcoming recurring transactions.</p>');
+        }
+    }
+
+    function escapeAiSummaryText(text) {
+        const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+        return String(text == null ? '' : text).replace(/[&<>"']/g, m => map[m]);
+    }
+
+    async function loadAiSummary() {
+        const bodies = ['aiSummaryBody', 'aiSummaryBodyCompact'].map(id => document.getElementById(id)).filter(Boolean);
+        const rows = ['aiSummaryRow', 'aiSummaryRowCompact'].map(id => document.getElementById(id)).filter(Boolean);
+        if (!bodies.length) return;
+        try {
+            const data = await fetch('/api/ai/dashboard-summary').then(r => r.json());
+            if (!data.enabled) {
+                rows.forEach(r => r.classList.add('d-none'));
+                return;
+            }
+            const scoreColor = data.healthScore >= 75 ? '#28a745' : (data.healthScore >= 50 ? '#ffc107' : '#dc3545');
+            let html = '<div class="d-flex align-items-center gap-3 mb-2">';
+            html += `<div class="text-center" style="min-width:70px;"><div class="fw-bold" style="font-size:1.6rem;color:${scoreColor};">${data.healthScore}</div><div class="small text-muted">Health Score</div></div>`;
+            html += '<div class="flex-grow-1">';
+            if (data.todaysInsight) html += `<div class="small mb-1"><i class="fas fa-lightbulb me-1 text-warning"></i>${escapeAiSummaryText(data.todaysInsight)}</div>`;
+            if (data.aiRecommendation) html += `<div class="small mb-1"><i class="fas fa-wand-magic-sparkles me-1" style="color: var(--accent-color);"></i>${escapeAiSummaryText(data.aiRecommendation)}</div>`;
+            if (!data.todaysInsight && !data.aiRecommendation) html += '<div class="small text-muted">No new insights right now — check back after you log more activity.</div>';
+            html += '</div></div>';
+
+            html += '<div class="row g-2 small">';
+            if (data.biggestExpense) {
+                html += `<div class="col-md-4"><span class="text-muted">Biggest Expense:</span> <strong>${formatAmount(data.biggestExpense.amount)}</strong>${data.biggestExpense.category ? ' (' + escapeAiSummaryText(data.biggestExpense.category) + ')' : ''}</div>`;
+            }
+            if (data.budgetStatus) {
+                html += '<div class="col-md-4"><span class="text-muted">Budget:</span> ' +
+                    (data.budgetStatus.hasBudget ? `${data.budgetStatus.utilizationPercent.toFixed(0)}% used` : 'No active budget') + '</div>';
+            }
+            if (data.savingsProgress) {
+                html += `<div class="col-md-4"><span class="text-muted">Emergency Fund:</span> ${data.savingsProgress.emergencyFundProgressPercent.toFixed(0)}%</div>`;
+            }
+            html += '</div>';
+            bodies.forEach(b => b.innerHTML = html);
+        } catch (e) {
+            bodies.forEach(b => b.innerHTML = '<p class="text-muted small mb-0">Unable to load AI summary.</p>');
         }
     }
 
@@ -1550,14 +1623,14 @@
                     category_id: categoryId
                 })
             });
+            const data = await response.json().catch(() => ({}));
             if (response.ok) {
                 txEditModal.hide();
                 txEditId = null;
-                showNotification('Transaction updated successfully', 'success');
+                showNotification(data.warning || 'Transaction updated successfully', data.warning ? 'warning' : 'success');
                 loadDashboard();
             } else {
-                const err = await response.json().catch(() => ({}));
-                showNotification(err.error || 'Failed to update transaction', 'error');
+                showNotification(data.error || 'Failed to update transaction', 'error');
             }
         } catch (e) {
             showNotification('Error updating transaction', 'error');
@@ -1626,13 +1699,13 @@
                     destinationAccountId: null
                 })
             });
+            const data = await response.json().catch(() => ({}));
             if (response.ok) {
                 txAddModal.hide();
-                showNotification('Transaction added successfully', 'success');
+                showNotification(data.warning || 'Transaction added successfully', data.warning ? 'warning' : 'success');
                 loadDashboard();
             } else {
-                const err = await response.json().catch(() => ({}));
-                showNotification(err.error || 'Failed to add transaction', 'error');
+                showNotification(data.error || 'Failed to add transaction', 'error');
             }
         } catch (e) {
             showNotification('Error adding transaction', 'error');

@@ -795,8 +795,9 @@ body.has-sidebar {
     padding-left: 5px;
 }
 
-/* Tooltip on collapsed hover */
-#sidebar.collapsed .sidebar-item:hover::after {
+/* Tooltip on collapsed hover (and always for icon-only items, since they never show a label) */
+#sidebar.collapsed .sidebar-item:hover::after,
+.sidebar-item.sidebar-icon-only:hover::after {
     content: attr(title);
     position: absolute;
     left: calc(100% + 10px);
@@ -834,6 +835,34 @@ body.has-sidebar {
 .sidebar-logout:hover {
     background: rgba(239, 68, 68, 0.1) !important;
     color: #ef4444 !important;
+}
+
+/* Icon-only pair (Notifications + AI Assistant) shown side by side above the other bottom items */
+.sidebar-icon-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 3px;
+}
+
+.sidebar-icon-row .sidebar-item {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.sidebar-item.sidebar-icon-only {
+    justify-content: center;
+    padding: 11px 8px;
+}
+
+.sidebar-item.sidebar-icon-only .sidebar-label {
+    /* Tooltip (title attr) carries the label instead — kept in the DOM for accessibility/testability. */
+    opacity: 0;
+    max-width: 0;
+    pointer-events: none;
+}
+
+#sidebar.collapsed .sidebar-icon-row {
+    flex-direction: column;
 }
 
 /* Avatar */

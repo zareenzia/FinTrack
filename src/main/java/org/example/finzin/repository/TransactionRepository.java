@@ -42,5 +42,7 @@ public interface TransactionRepository extends JpaRepository<TransactionEntity, 
     @Query("SELECT t FROM TransactionEntity t WHERE t.userId = :userId AND t.date >= :start AND t.date < :end")
     List<TransactionEntity> findByUserIdAndDateRange(@Param("userId") Long userId,
                                                       @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    List<TransactionEntity> findBySourceAccountIdOrDestinationAccountIdOrderByDateAsc(Long sourceAccountId, Long destinationAccountId);
 }
 
