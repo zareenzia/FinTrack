@@ -286,6 +286,35 @@ public class DatabaseMigration implements BeanPostProcessor {
                 "created_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
                 "updated_at TIMESTAMP NOT NULL DEFAULT NOW()" +
                 ")");
+
+        // ============== Notes: "done" state ==============
+        runSilently(dataSource, "ALTER TABLE notes ADD COLUMN IF NOT EXISTS done BOOLEAN NOT NULL DEFAULT FALSE");
+
+        // Repair pre-existing checklist markup: the editor used to emit data-list="check", a value
+        // Quill's own checkbox click handler (formats/list.js) never recognizes as toggleable —
+        // only "checked"/"unchecked" are. Rewriting to "unchecked" makes existing checklist items
+        // clickable without altering any note's visible content or deleting anything.
+        runSilently(dataSource, "UPDATE notes SET content = REPLACE(content, 'data-list=\"check\"', 'data-list=\"unchecked\"') " +
+                "WHERE content LIKE '%data-list=\"check\"%'");
+
+        // ============== Credit card accounting ==============
+        runSilently(dataSource, "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS credit_limit_behavior VARCHAR(10) NOT NULL DEFAULT 'WARN'");
+
+        // Outstanding balance is a derived value, not an independently-trusted stored number: on every
+        // startup, recompute each credit card's current_balance from opening_balance plus the signed
+        // effect of every transaction that references it (source: expense/savings/transfer-out increase
+        // what's owed, income decreases it as a refund; destination: transfer-in is a payment and
+        // decreases it). Idempotent and safe to run every time — it only ever re-derives the same
+        // number the live application logic would already be maintaining.
+        runSilently(dataSource, "UPDATE accounts a SET current_balance = a.opening_balance + COALESCE((" +
+                "SELECT SUM(CASE " +
+                "WHEN t.source_account_id = a.id AND t.transaction_type IN ('expense','savings','transfer') THEN t.amount " +
+                "WHEN t.source_account_id = a.id AND t.transaction_type = 'income' THEN -t.amount " +
+                "WHEN t.destination_account_id = a.id AND t.transaction_type = 'transfer' THEN -t.amount " +
+                "ELSE 0 END) " +
+                "FROM transactions t WHERE t.source_account_id = a.id OR t.destination_account_id = a.id" +
+                "), 0) " +
+                "WHERE a.account_type = 'CREDIT_CARD'");
     }
 
     private void runSilently(DataSource dataSource, String sql) {

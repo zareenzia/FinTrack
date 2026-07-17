@@ -989,6 +989,14 @@
               <input type="number" class="form-control form-control-sm" id="acctDueDay" min="1" max="31" placeholder="e.g. 10">
             </div>
           </div>
+          <div class="mb-3 field-credit" style="display:none">
+            <label class="form-label">If a purchase exceeds the credit limit</label>
+            <select class="form-select" id="acctCreditLimitBehavior">
+              <option value="WARN">⚠️ Warn but allow</option>
+              <option value="BLOCK">🚫 Block the transaction</option>
+              <option value="IGNORE">➖ Ignore (no check)</option>
+            </select>
+          </div>
           <div class="mb-3">
             <label class="form-label fw-semibold" id="openingBalanceLabel">Opening Balance</label>
             <div class="input-group"><span class="input-group-text">৳</span>
@@ -1027,6 +1035,56 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" title="Cancel"><i class="fas fa-times"></i></button>
           <button type="button" class="btn btn-danger" onclick="confirmDelete()" title="Delete"><i class="fas fa-trash-alt"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Credit Card Ledger Modal ── -->
+  <div class="modal fade" id="ledgerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fas fa-list-ul me-2"></i><span id="ledgerModalTitle">Ledger</span></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-2 mb-3">
+            <div class="col-md-3">
+              <label class="form-label small mb-1">From</label>
+              <input type="date" class="form-control form-control-sm" id="ledgerStartDate">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small mb-1">To</label>
+              <input type="date" class="form-control form-control-sm" id="ledgerEndDate">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small mb-1">Type</label>
+              <select class="form-select form-select-sm" id="ledgerTypeFilter">
+                <option value="">All</option>
+                <option value="expense">Purchases</option>
+                <option value="transfer">Payments</option>
+                <option value="income">Refunds</option>
+                <option value="savings">Savings</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small mb-1">Search</label>
+              <input type="text" class="form-control form-control-sm" id="ledgerSearch" placeholder="Merchant, category…">
+            </div>
+          </div>
+          <div class="d-flex justify-content-end mb-2">
+            <button class="btn btn-sm btn-outline-primary" onclick="applyLedgerFilters()"><i class="fas fa-filter me-1"></i>Apply Filters</button>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Type</th><th class="text-end">Amount</th><th class="text-end">Balance</th></tr></thead>
+              <tbody id="ledgerTableBody"><tr><td colspan="6" class="text-center text-muted">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
         </div>
       </div>
     </div>

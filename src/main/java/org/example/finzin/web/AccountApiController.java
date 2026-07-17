@@ -5,10 +5,12 @@ import org.example.finzin.ai.rag.DocumentIndexer;
 import org.example.finzin.entity.AccountEntity;
 import org.example.finzin.repository.AccountRepository;
 import org.example.finzin.repository.TransactionRepository;
+import org.example.finzin.service.CreditCardService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,11 +23,14 @@ public class AccountApiController {
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
     private final DocumentIndexer documentIndexer;
+    private final CreditCardService creditCardService;
 
-    public AccountApiController(AccountRepository accountRepository, TransactionRepository transactionRepository, DocumentIndexer documentIndexer) {
+    public AccountApiController(AccountRepository accountRepository, TransactionRepository transactionRepository,
+                                 DocumentIndexer documentIndexer, CreditCardService creditCardService) {
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
         this.documentIndexer = documentIndexer;
+        this.creditCardService = creditCardService;
     }
 
     private Long getUserId(HttpServletRequest request) {
@@ -142,6 +147,7 @@ public class AccountApiController {
         entity.setCreditLimit(body.creditLimit());
         entity.setStatementDay(body.statementDay());
         entity.setDueDay(body.dueDay());
+        entity.setCreditLimitBehavior(body.creditLimitBehavior() != null ? body.creditLimitBehavior() : "WARN");
         entity.setOpeningBalance(body.openingBalance() != null ? body.openingBalance() : 0.0);
         entity.setStatus(body.status() != null ? body.status() : "ACTIVE");
     }
@@ -160,18 +166,54 @@ public class AccountApiController {
         map.put("creditLimit", entity.getCreditLimit());
         map.put("statementDay", entity.getStatementDay());
         map.put("dueDay", entity.getDueDay());
+        map.put("creditLimitBehavior", entity.getCreditLimitBehavior());
         map.put("openingBalance", entity.getOpeningBalance());
         map.put("currentBalance", entity.getCurrentBalance());
         map.put("status", entity.getStatus());
         map.put("createdAt", entity.getCreatedAt().toString());
         map.put("updatedAt", entity.getUpdatedAt().toString());
+        if (CreditCardService.isCreditCard(entity)) {
+            CreditCardService.CreditCardStats stats = creditCardService.getStats(entity);
+            map.put("availableCredit", stats.availableCredit());
+            map.put("utilizationPercent", stats.utilizationPercent());
+            map.put("minimumPaymentEstimate", stats.minimumPaymentEstimate());
+            map.put("daysUntilDue", stats.daysUntilDue());
+        }
         return map;
+    }
+
+    @GetMapping("/{id}/ledger")
+    public ResponseEntity<?> getLedger(HttpServletRequest request, @PathVariable Long id,
+                                        @RequestParam(required = false) String startDate,
+                                        @RequestParam(required = false) String endDate,
+                                        @RequestParam(required = false) String category,
+                                        @RequestParam(required = false) String type,
+                                        @RequestParam(required = false) String merchant) {
+        Long userId = getUserId(request);
+        AccountEntity account = accountRepository.findById(id).orElse(null);
+        if (account == null || !account.getUserId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Account not found"));
+        }
+        LocalDate start = parseLocalDate(startDate);
+        LocalDate end = parseLocalDate(endDate);
+        List<CreditCardService.LedgerEntry> ledger = creditCardService.getLedger(userId, id, start, end, category, type, merchant);
+        return ResponseEntity.ok(ledger);
+    }
+
+    private LocalDate parseLocalDate(String value) {
+        if (value == null || value.isBlank()) return null;
+        try {
+            return LocalDate.parse(value);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private record AccountRequest(
             String accountType, String bankName, String accountNickname,
             String accountNumber, String cardType, Long linkedAccountId,
             String provider, String mobileNumber, Double creditLimit,
-            Integer statementDay, Integer dueDay, Double openingBalance, String status
+            Integer statementDay, Integer dueDay, String creditLimitBehavior,
+            Double openingBalance, String status
     ) {}
 }

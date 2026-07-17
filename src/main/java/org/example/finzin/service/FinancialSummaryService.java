@@ -1,5 +1,7 @@
 package org.example.finzin.service;
 
+import org.example.finzin.entity.AccountEntity;
+import org.example.finzin.repository.AccountRepository;
 import org.example.finzin.repository.AssetRepository;
 import org.example.finzin.repository.TransactionRepository;
 import org.example.finzin.service.gold.GoldAssetService;
@@ -14,11 +16,14 @@ public class FinancialSummaryService {
     private final TransactionRepository transactionRepository;
     private final AssetRepository assetRepository;
     private final GoldAssetService goldAssetService;
+    private final AccountRepository accountRepository;
 
-    public FinancialSummaryService(TransactionRepository transactionRepository, AssetRepository assetRepository, GoldAssetService goldAssetService) {
+    public FinancialSummaryService(TransactionRepository transactionRepository, AssetRepository assetRepository,
+                                    GoldAssetService goldAssetService, AccountRepository accountRepository) {
         this.transactionRepository = transactionRepository;
         this.assetRepository = assetRepository;
         this.goldAssetService = goldAssetService;
+        this.accountRepository = accountRepository;
     }
 
     public double getTotalIncome(Long userId) {
@@ -52,7 +57,15 @@ public class FinancialSummaryService {
         return income == 0 ? 0 : (getTotalSavings(userId) / income) * 100;
     }
 
+    /** Sum of outstanding balances across the user's CREDIT_CARD accounts — a liability, not an asset. */
+    public double getTotalCreditCardDebt(Long userId) {
+        return accountRepository.findByUserId(userId).stream()
+                .filter(a -> "CREDIT_CARD".equals(a.getAccountType()))
+                .mapToDouble(AccountEntity::getCurrentBalance)
+                .sum();
+    }
+
     public double getNetWorth(Long userId) {
-        return getBalance(userId) + getTotalSavings(userId) + getTotalAssets(userId);
+        return getBalance(userId) + getTotalSavings(userId) + getTotalAssets(userId) - getTotalCreditCardDebt(userId);
     }
 }

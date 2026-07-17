@@ -899,15 +899,20 @@
                 body: JSON.stringify(transaction)
             });
 
+            const data = await response.json().catch(() => null);
             if (response.ok) {
                 addTransactionModal.hide();
                 document.getElementById('transactionForm').reset();
                 document.getElementById('date').valueAsDate = new Date();
                 loadCategories(document.getElementById('type').value);
                 loadRecentTransactions();
-                showTopNotification('Transaction added.', 'success');
+                if (data && data.warning) {
+                    showTopNotification(data.warning, 'warning');
+                } else {
+                    showTopNotification('Transaction added.', 'success');
+                }
             } else {
-                showTopNotification('Failed to add transaction.', 'error');
+                showTopNotification((data && data.error) || 'Failed to add transaction.', 'error');
             }
         } catch (error) {
             showTopNotification('Unable to add transaction right now.', 'error');
@@ -948,15 +953,19 @@
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(payload)
             });
+            const data = await response.json().catch(() => null);
             if (response.ok) {
                 transferModal.hide();
                 document.getElementById('transferForm').reset();
                 document.getElementById('transferDate').valueAsDate = new Date();
                 loadRecentTransactions();
-                showTopNotification('Transfer logged successfully.', 'success');
+                if (data && data.warning) {
+                    showTopNotification(data.warning, 'warning');
+                } else {
+                    showTopNotification('Transfer logged successfully.', 'success');
+                }
             } else {
-                const err = await response.json().catch(() => null);
-                showTopNotification((err && err.error) || 'Failed to log transfer.', 'error');
+                showTopNotification((data && data.error) || 'Failed to log transfer.', 'error');
             }
         } catch (error) {
             showTopNotification('Unable to log transfer right now.', 'error');
@@ -1790,14 +1799,14 @@
                     category_id: categoryId
                 })
             });
+            const data = await response.json().catch(() => ({}));
             if (response.ok) {
                 txEditModal.hide();
                 txEditId = null;
-                showTopNotification('Transaction updated successfully.', 'success');
+                showTopNotification(data.warning || 'Transaction updated successfully.', data.warning ? 'warning' : 'success');
                 loadRecentTransactions();
             } else {
-                const err = await response.json().catch(() => ({}));
-                showTopNotification(err.error || 'Failed to update transaction.', 'error');
+                showTopNotification(data.error || 'Failed to update transaction.', 'error');
             }
         } catch (e) {
             showTopNotification('Error updating transaction.', 'error');

@@ -12,9 +12,9 @@ import org.example.finzin.repository.NoteRepository;
 import org.example.finzin.repository.TodoRepository;
 import org.example.finzin.repository.TransactionRepository;
 import org.example.finzin.service.FinancialSummaryService;
+import org.example.finzin.service.AccountBalanceService;
+import org.example.finzin.service.CreditCardValidationException;
 import org.example.finzin.ai.rag.DocumentIndexer;
-import org.example.finzin.entity.AccountEntity;
-import org.example.finzin.repository.AccountRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -47,19 +47,19 @@ public class FinanceApiController {
     private final AssetRepository assetRepository;
     private final NoteRepository noteRepository;
     private final TodoRepository todoRepository;
-    private final AccountRepository accountRepository;
     private final FinancialSummaryService financialSummaryService;
     private final DocumentIndexer documentIndexer;
+    private final AccountBalanceService accountBalanceService;
 
-    public FinanceApiController(CategoryRepository categoryRepository, TransactionRepository transactionRepository, AssetRepository assetRepository, NoteRepository noteRepository, TodoRepository todoRepository, AccountRepository accountRepository, FinancialSummaryService financialSummaryService, DocumentIndexer documentIndexer) {
+    public FinanceApiController(CategoryRepository categoryRepository, TransactionRepository transactionRepository, AssetRepository assetRepository, NoteRepository noteRepository, TodoRepository todoRepository, FinancialSummaryService financialSummaryService, DocumentIndexer documentIndexer, AccountBalanceService accountBalanceService) {
         this.categoryRepository = categoryRepository;
         this.transactionRepository = transactionRepository;
         this.assetRepository = assetRepository;
         this.noteRepository = noteRepository;
         this.todoRepository = todoRepository;
-        this.accountRepository = accountRepository;
         this.financialSummaryService = financialSummaryService;
         this.documentIndexer = documentIndexer;
+        this.accountBalanceService = accountBalanceService;
     }
     
     private Long getUserId(HttpServletRequest request) {
@@ -290,10 +290,19 @@ public class FinanceApiController {
         );
         entity.setSourceAccountId(body.sourceAccountId());
         entity.setDestinationAccountId(body.destinationAccountId());
-        TransactionEntity saved = transactionRepository.save(entity);
-        applyBalanceChange(userId, body.sourceAccountId(), body.destinationAccountId(), normalizedType, body.amount(), false);
-        documentIndexer.indexTransaction(saved);
-        return ResponseEntity.status(HttpStatus.CREATED).body(toTransactionResponse(saved));
+
+        AccountBalanceService.TransactionSaveResult result;
+        try {
+            result = accountBalanceService.createTransaction(userId, entity);
+        } catch (CreditCardValidationException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+        documentIndexer.indexTransaction(result.transaction());
+        Map<String, Object> responseBody = toTransactionResponse(result.transaction());
+        if (result.warning() != null) {
+            responseBody.put("warning", result.warning());
+        }
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseBody);
     }
 
     @PutMapping("/transactions/{id}")
@@ -322,8 +331,11 @@ public class FinanceApiController {
             return ResponseEntity.badRequest().body(Map.of("error", "transaction_type must be income, expense, savings, or transfer"));
         }
 
-        // Reverse old balance before updating entity
-        applyBalanceChange(userId, entity.getSourceAccountId(), entity.getDestinationAccountId(), entity.getTransactionType(), entity.getAmount(), true);
+        Long oldSourceAccountId = entity.getSourceAccountId();
+        Long oldDestinationAccountId = entity.getDestinationAccountId();
+        String oldType = entity.getTransactionType();
+        double oldAmount = entity.getAmount();
+
         entity.setDescription(body.description.trim());
         entity.setAmount(body.amount);
         entity.setCategory(category);
@@ -333,10 +345,19 @@ public class FinanceApiController {
         }
         entity.setSourceAccountId(body.sourceAccountId());
         entity.setDestinationAccountId(body.destinationAccountId());
-        TransactionEntity saved = transactionRepository.save(entity);
-        applyBalanceChange(userId, body.sourceAccountId(), body.destinationAccountId(), normalizedType, body.amount(), false);
-        documentIndexer.indexTransaction(saved);
-        return ResponseEntity.ok(toTransactionResponse(saved));
+
+        AccountBalanceService.TransactionSaveResult result;
+        try {
+            result = accountBalanceService.updateTransaction(userId, entity, oldSourceAccountId, oldDestinationAccountId, oldType, oldAmount);
+        } catch (CreditCardValidationException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+        documentIndexer.indexTransaction(result.transaction());
+        Map<String, Object> responseBody = toTransactionResponse(result.transaction());
+        if (result.warning() != null) {
+            responseBody.put("warning", result.warning());
+        }
+        return ResponseEntity.ok(responseBody);
     }
 
     @DeleteMapping("/transactions/{id}")
@@ -346,20 +367,24 @@ public class FinanceApiController {
         if (entity == null || !entity.getUserId().equals(userId)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Transaction not found"));
         }
-        applyBalanceChange(userId, entity.getSourceAccountId(), entity.getDestinationAccountId(), entity.getTransactionType(), entity.getAmount(), true);
-        transactionRepository.deleteById(id);
+        accountBalanceService.deleteTransaction(userId, entity);
         documentIndexer.deleteTransaction(userId, id);
         return ResponseEntity.noContent().build();
     }
 
     // ============== NOTE ENDPOINTS ==============
     @GetMapping("/notes")
-    public List<Map<String, Object>> getNotes(HttpServletRequest request, @RequestParam(required = false) String search) {
+    public List<Map<String, Object>> getNotes(HttpServletRequest request, @RequestParam(required = false) String search,
+                                               @RequestParam(required = false) Boolean archived) {
         Long userId = getUserId(request);
-        List<NoteEntity> notes = search != null && !search.isBlank() ? 
-                noteRepository.searchByUserIdAndContent(userId, search) : 
-                noteRepository.findByUserIdAndArchivedFalseOrderByPinnedDescUpdatedAtDesc(userId);
-        
+        List<NoteEntity> notes;
+        if (Boolean.TRUE.equals(archived)) {
+            notes = noteRepository.findByUserIdAndArchived(userId, true);
+        } else if (search != null && !search.isBlank()) {
+            notes = noteRepository.searchByUserIdAndContent(userId, search);
+        } else {
+            notes = noteRepository.findByUserIdAndArchivedFalseOrderByPinnedDescUpdatedAtDesc(userId);
+        }
         return notes.stream().map(this::toNoteResponse).collect(Collectors.toList());
     }
 
@@ -379,6 +404,7 @@ public class FinanceApiController {
         entity.setTags(body.tags != null ? body.tags : "");
         entity.setPinned(body.pinned != null ? body.pinned : false);
         entity.setArchived(false);
+        entity.setDone(body.done != null ? body.done : false);
 
         NoteEntity saved = noteRepository.save(entity);
         documentIndexer.indexNote(saved);
@@ -410,6 +436,9 @@ public class FinanceApiController {
         }
         if (body.archived != null) {
             entity.setArchived(body.archived);
+        }
+        if (body.done != null) {
+            entity.setDone(body.done);
         }
 
         NoteEntity updated = noteRepository.save(entity);
@@ -656,28 +685,6 @@ public class FinanceApiController {
     }
 
 
-    private void applyBalanceChange(Long userId, Long sourceAccountId, Long destinationAccountId, String type, double amount, boolean reverse) {
-        double multiplier = reverse ? -1 : 1;
-        if (sourceAccountId != null) {
-            AccountEntity account = accountRepository.findById(sourceAccountId).orElse(null);
-            if (account != null && account.getUserId().equals(userId)) {
-                switch (type) {
-                    case "income"  -> account.setCurrentBalance(account.getCurrentBalance() + multiplier * amount);
-                    case "expense", "savings" -> account.setCurrentBalance(account.getCurrentBalance() - multiplier * amount);
-                    case "transfer" -> account.setCurrentBalance(account.getCurrentBalance() - multiplier * amount);
-                }
-                accountRepository.save(account);
-            }
-        }
-        if ("transfer".equals(type) && destinationAccountId != null) {
-            AccountEntity dest = accountRepository.findById(destinationAccountId).orElse(null);
-            if (dest != null && dest.getUserId().equals(userId)) {
-                dest.setCurrentBalance(dest.getCurrentBalance() + multiplier * amount);
-                accountRepository.save(dest);
-            }
-        }
-    }
-
     private LocalDateTime parseDate(String dateString) {
         if (dateString == null || dateString.isBlank()) {
             return LocalDateTime.now();
@@ -741,7 +748,8 @@ public class FinanceApiController {
             String color,
             String tags,
             Boolean pinned,
-            Boolean archived
+            Boolean archived,
+            Boolean done
     ) {
     }
 
@@ -762,18 +770,19 @@ public class FinanceApiController {
         String plain = stripNoteHtml(entity.getContent());
         String preview = plain.length() > 150 ? plain.substring(0, 150) + "…" : plain;
 
-        return Map.of(
-                "id", entity.getId(),
-                "title", entity.getTitle(),
-                "content", entity.getContent() != null ? entity.getContent() : "",
-                "preview", preview,
-                "color", entity.getColor() != null ? entity.getColor() : "#FEF3C7",
-                "tags", entity.getTags() != null ? entity.getTags() : "",
-                "pinned", entity.getPinned() != null ? entity.getPinned() : false,
-                "archived", entity.getArchived() != null ? entity.getArchived() : false,
-                "created_at", entity.getCreatedAt().toString(),
-                "updated_at", entity.getUpdatedAt().toString()
-        );
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("id", entity.getId());
+        map.put("title", entity.getTitle());
+        map.put("content", entity.getContent() != null ? entity.getContent() : "");
+        map.put("preview", preview);
+        map.put("color", entity.getColor() != null ? entity.getColor() : "#FEF3C7");
+        map.put("tags", entity.getTags() != null ? entity.getTags() : "");
+        map.put("pinned", entity.getPinned() != null ? entity.getPinned() : false);
+        map.put("archived", entity.getArchived() != null ? entity.getArchived() : false);
+        map.put("done", entity.getDone() != null ? entity.getDone() : false);
+        map.put("created_at", entity.getCreatedAt().toString());
+        map.put("updated_at", entity.getUpdatedAt().toString());
+        return map;
     }
 
     /** Strip HTML tags and decode common entities for plain-text preview. */

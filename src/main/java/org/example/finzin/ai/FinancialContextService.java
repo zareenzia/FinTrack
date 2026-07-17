@@ -136,6 +136,7 @@ public class FinancialContextService {
         result.put("balance", financialSummaryService.getBalance(userId));
         result.put("totalSavingsContributed", financialSummaryService.getTotalSavings(userId));
         result.put("totalAssets", financialSummaryService.getTotalAssets(userId));
+        result.put("creditCardDebt", financialSummaryService.getTotalCreditCardDebt(userId));
         return result;
     }
 

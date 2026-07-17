@@ -1623,14 +1623,14 @@
                     category_id: categoryId
                 })
             });
+            const data = await response.json().catch(() => ({}));
             if (response.ok) {
                 txEditModal.hide();
                 txEditId = null;
-                showNotification('Transaction updated successfully', 'success');
+                showNotification(data.warning || 'Transaction updated successfully', data.warning ? 'warning' : 'success');
                 loadDashboard();
             } else {
-                const err = await response.json().catch(() => ({}));
-                showNotification(err.error || 'Failed to update transaction', 'error');
+                showNotification(data.error || 'Failed to update transaction', 'error');
             }
         } catch (e) {
             showNotification('Error updating transaction', 'error');
@@ -1699,13 +1699,13 @@
                     destinationAccountId: null
                 })
             });
+            const data = await response.json().catch(() => ({}));
             if (response.ok) {
                 txAddModal.hide();
-                showNotification('Transaction added successfully', 'success');
+                showNotification(data.warning || 'Transaction added successfully', data.warning ? 'warning' : 'success');
                 loadDashboard();
             } else {
-                const err = await response.json().catch(() => ({}));
-                showNotification(err.error || 'Failed to add transaction', 'error');
+                showNotification(data.error || 'Failed to add transaction', 'error');
             }
         } catch (e) {
             showNotification('Error adding transaction', 'error');
