@@ -37,8 +37,15 @@ public class FinancialSummaryService {
     }
 
     public double getTotalSavings(Long userId) {
-        Double sum = transactionRepository.sumByUserIdAndTransactionType(userId, "savings");
-        return sum == null ? 0 : sum;
+        Double deposits = transactionRepository.sumByUserIdAndTransactionType(userId, "savings");
+        Double withdrawals = transactionRepository.sumByUserIdAndTransactionTypeAndFromSavingsTrue(userId, "expense");
+        // A from-savings expense is already counted once inside getTotalExpense(); netting it out of
+        // getTotalSavings() here is the ONLY change needed — getBalance() (= totalIncome - totalExpense -
+        // getTotalSavings()) and getNetWorth() automatically stay correct algebraically, because the
+        // withdrawal amount cancels out exactly (verified by hand: with a $500 from-savings expense,
+        // totalExpense goes up $500 and getTotalSavings() goes down $500, so getBalance is unchanged;
+        // net worth correctly drops by $500 through the savings term only).
+        return (deposits == null ? 0 : deposits) - (withdrawals == null ? 0 : withdrawals);
     }
 
     public double getTotalAssets(Long userId) {
