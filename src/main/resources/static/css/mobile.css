@@ -211,6 +211,7 @@
     /* Settings content padding */
     .settings-panel .settings-card {
         padding: 16px !important;
+        overflow-x: hidden;
     }
 
     /* Theme selector: 1 column on very small phones */
@@ -227,6 +228,59 @@
     .option-pill {
         padding: 6px 12px;
         font-size: 0.82rem;
+    }
+
+    /* Compact preference rows (Appearance/Currency/Security/About cards):
+       fixed 2-col grid + nowrap labels forced rows wider than the card */
+    .compact-prefs-grid {
+        grid-template-columns: 1fr !important;
+        gap: 4px 0 !important;
+    }
+
+    .compact-pref-select {
+        max-width: 62% !important;
+    }
+}
+
+@media (max-width: 420px) {
+
+    /* Very small phones: stack label above control instead of squeezing them onto one line */
+    .compact-pref-row {
+        flex-wrap: wrap;
+        row-gap: 4px;
+    }
+
+    .compact-pref-label {
+        white-space: normal !important;
+    }
+
+    .compact-pref-select {
+        max-width: 100% !important;
+        flex: 1 1 100%;
+    }
+}
+
+/* ───────────────────────────────────────────────
+   ACCOUNT CONFIGURATION — filter bar overflow fix
+─────────────────────────────────────────────── */
+@media (max-width: 767px) {
+
+    /* Filter bar was flex-wrap:nowrap with fixed 160px/120px/120px widths —
+       guaranteed to overflow past the card on any phone screen */
+    #section-account-config .filter-bar {
+        flex-wrap: wrap !important;
+        width: 100%;
+    }
+
+    #section-account-config .filter-bar #acctSearch {
+        width: 100% !important;
+        flex: 1 1 100%;
+    }
+
+    #section-account-config .filter-bar #acctTypeFilter,
+    #section-account-config .filter-bar #acctStatusFilter {
+        width: auto !important;
+        flex: 1 1 calc(50% - 3px);
     }
 }
 
