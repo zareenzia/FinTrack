@@ -48,6 +48,14 @@
         .rt-section-card { border-left: 4px solid var(--accent-color); }
         .rt-section-item { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid var(--border-input); font-size: 0.9rem; }
         .rt-section-item:last-child { border-bottom: none; }
+
+        /* Bulk transaction rows (Add New Transaction modal) */
+        .tx-bulk-row { border: 1px solid var(--border-color, #e5e7eb); border-radius: 10px; padding: 12px; margin-bottom: 10px; background: var(--bg-card, #fff); animation: txRowIn .2s ease; }
+        .tx-bulk-row.has-error { border-color: #ef4444; }
+        .tx-bulk-row.removing { animation: txRowOut .18s ease forwards; }
+        @keyframes txRowIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes txRowOut { to { opacity: 0; transform: scale(.97); } }
+        .tx-row-actions { gap: 4px; }
     </style>
 </head>
 <body>
@@ -309,7 +317,7 @@
 
 <!-- Add New Transaction Modal -->
 <div class="modal fade" id="addTransactionModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>Add New Transaction</h5>
@@ -317,46 +325,8 @@
             </div>
             <div class="modal-body">
                 <form id="transactionForm">
-                    <div class="row g-3">
-                        <div class="col-md-6 mb-2">
-                            <label for="description" class="form-label">Description</label>
-                            <input type="text" class="form-control form-control-sm" id="description" required placeholder="e.g., Grocery shopping">
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <label for="amount" class="form-label">Amount</label>
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text">৳</span>
-                                <input type="number" class="form-control" id="amount" step="0.01" required placeholder="0.00">
-                                <button type="button" class="input-group-text amount-calc-btn" id="amountCalcBtn" title="Open Calculator" onclick="if(window.openCalcForInput) window.openCalcForInput('amount'); else if(window.openCalc) window.openCalc();" style="cursor:pointer; background:var(--accent-color); border-color:var(--accent-color); color:#fff; transition:background 0.2s;">
-                                    <i class="fas fa-calculator" style="font-size:0.8rem;"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-2">
-                            <label for="category" class="form-label">Category</label>
-                            <select class="form-select form-select-sm" id="category" required>
-                                <option value="">Select category</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-2">
-                            <label for="type" class="form-label">Type</label>
-                            <select class="form-select form-select-sm" id="type" required>
-                                <option value="expense">Expense</option>
-                                <option value="income">Income</option>
-                                <option value="savings">Savings</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-2">
-                            <label for="date" class="form-label">Date</label>
-                            <input type="date" class="form-control form-control-sm" id="date" required>
-                        </div>
-                        <div class="col-md-12 mb-2">
-                            <label for="sourceAccount" class="form-label" id="sourceAccountLabel">Paid From <small class="text-muted">(optional)</small></label>
-                            <select class="form-select form-select-sm" id="sourceAccount">
-                                <option value="">-- No account --</option>
-                            </select>
-                        </div>
-                    </div>
+                    <div id="txRowsContainer"></div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddTxRow"><i class="fas fa-plus"></i> Add Another Transaction</button>
                 </form>
             </div>
             <div class="modal-footer">
@@ -774,7 +744,16 @@
     let editRecurringId = null;
     let recurNextRunManuallyEdited = false;
     let deleteRecurringId = null;
-    document.getElementById('date').valueAsDate = new Date();
+    let cachedAccounts = [];
+    let txRows = [];
+    let txRowSeq = 0;
+    let categoriesByTypeCache = {};
+
+    function escHtml(str) {
+        return String(str == null ? '' : str).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
 
     const CURRENCY_DEFAULTS = { currencySymbol:'৳', symbolPosition:'before', decimalPlaces:0 };
     function getCurrencySettings() {
@@ -880,11 +859,7 @@
         document.getElementById('rtSortBy').addEventListener('change', applyRtFilters);
         document.getElementById('rtPageSize').addEventListener('change', function () { rtCurrentPage = 0; applyRtFilters(); });
 
-        loadCategories(document.getElementById('type').value);
-        loadAccountsIntoSelect().then(function () {
-            applySavingsPseudoOption(document.getElementById('sourceAccount'), document.getElementById('type').value);
-        });
-        applyAccountFieldLabel('sourceAccountLabel', document.getElementById('type').value);
+        loadAccountsIntoSelect();
         applyCurrencySymbolToInputs();
         document.getElementById('transferDate').valueAsDate = new Date();
         loadRecurring();
@@ -898,11 +873,8 @@
     }
 
     function openAddTransactionModal() {
-        document.getElementById('transactionForm').reset();
-        document.getElementById('date').valueAsDate = new Date();
-        loadCategories(document.getElementById('type').value);
-        applyAccountFieldLabel('sourceAccountLabel', document.getElementById('type').value);
-        applySavingsPseudoOption(document.getElementById('sourceAccount'), document.getElementById('type').value);
+        txRows = [newTxRow()];
+        renderTxRows();
         addTransactionModal.show();
     }
 
@@ -968,73 +940,245 @@
         }
     }
 
-    async function loadCategories(type) {
-        try {
-            const url = type ? `/api/categories?type=${encodeURIComponent(type)}` : '/api/categories';
-            const response = await fetch(url);
-            const categories = await response.json();
-            cachedCategories = categories;
-
-            const select = document.getElementById('category');
-            select.innerHTML = '<option value="">Select a category</option>';
-            categories.forEach(cat => {
-                const option = document.createElement('option');
-                option.value = cat.id;
-                option.textContent = cat.name;
-                select.appendChild(option);
-            });
-        } catch (error) {
-            showTopNotification('Unable to load categories.', 'error');
+    async function loadCategoriesIntoSelect(selectEl, type) {
+        if (!selectEl) return;
+        if (!categoriesByTypeCache[type]) {
+            try {
+                const resp = await fetch(`/api/categories?type=${encodeURIComponent(type)}`);
+                categoriesByTypeCache[type] = resp.ok ? await resp.json() : [];
+            } catch (e) {
+                categoriesByTypeCache[type] = [];
+            }
         }
+        const cats = categoriesByTypeCache[type];
+        const currentVal = selectEl.value;
+        selectEl.innerHTML = '<option value="">Select category</option>' +
+            cats.map(cat => `<option value="${cat.id}">${escHtml(cat.name)}</option>`).join('');
+        if (currentVal && cats.some(cat => String(cat.id) === String(currentVal))) selectEl.value = currentVal;
     }
 
-    document.getElementById('type').addEventListener('change', function () {
-        loadCategories(this.value);
-        applyAccountFieldLabel('sourceAccountLabel', this.value);
-        applySavingsPseudoOption(document.getElementById('sourceAccount'), this.value);
+    function populateTxRowAccountSelect(selectEl) {
+        if (!selectEl) return;
+        const label = a => a.accountNickname + (a.bankName ? ' (' + a.bankName + ')' : a.provider ? ' (' + a.provider + ')' : '');
+        selectEl.innerHTML = '<option value="">-- No account --</option>' +
+            cachedAccounts.map(a => `<option value="${a.id}">${escHtml(label(a))}</option>`).join('');
+    }
+
+    function newTxRow(data) {
+        data = data || {};
+        return {
+            uid: 'tr' + (++txRowSeq),
+            description: data.description || '',
+            amount: data.amount || '',
+            categoryId: data.categoryId || '',
+            type: data.type || 'expense',
+            accountVal: data.accountVal || '',
+            date: data.date || '',
+            error: null
+        };
+    }
+
+    function focusTxRowDesc(uid) {
+        const rowEl = document.querySelector('[data-row-uid="' + uid + '"]');
+        const input = rowEl ? rowEl.querySelector('.tx-row-desc') : null;
+        if (input) input.focus();
+    }
+
+    function renderTxRows() {
+        const container = document.getElementById('txRowsContainer');
+        if (!container) return;
+
+        container.innerHTML = txRows.map(row => {
+            const canRemove = txRows.length > 1;
+            return `
+            <div class="tx-bulk-row${row.error ? ' has-error' : ''}" data-row-uid="${row.uid}">
+                <div class="row g-2">
+                    <div class="col-md-3 mb-2">
+                        <label class="form-label small mb-1 text-muted">Description</label>
+                        <input type="text" class="form-control form-control-sm tx-row-desc" placeholder="e.g., Grocery shopping" value="${escHtml(row.description)}">
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label small mb-1 text-muted">Amount</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">৳</span>
+                            <input type="number" class="form-control tx-row-amount" step="0.01" placeholder="0.00" value="${escHtml(row.amount)}">
+                            <button type="button" class="input-group-text amount-calc-btn tx-row-calc-btn" title="Open Calculator" style="cursor:pointer; background:var(--accent-color); border-color:var(--accent-color); color:#fff;"><i class="fas fa-calculator" style="font-size:0.8rem;"></i></button>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label small mb-1 text-muted">Type</label>
+                        <select class="form-select form-select-sm tx-row-type">
+                            <option value="expense">Expense</option>
+                            <option value="income">Income</option>
+                            <option value="savings">Savings</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <label class="form-label small mb-1 text-muted">Category</label>
+                        <select class="form-select form-select-sm tx-row-category"><option value="">Select category</option></select>
+                    </div>
+                    <div class="col-md-2 mb-2 d-flex align-items-end tx-row-actions">
+                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 tx-row-dup" title="Duplicate"><i class="fas fa-copy"></i></button>
+                        ${canRemove ? '<button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 tx-row-remove" title="Remove"><i class="fas fa-trash"></i></button>' : ''}
+                    </div>
+                </div>
+                <div class="row g-2">
+                    <div class="col-md-6 mb-1">
+                        <label class="form-label small mb-1 text-muted tx-row-account-label">Paid From <small class="text-muted">(optional)</small></label>
+                        <select class="form-select form-select-sm tx-row-account"><option value="">-- No account --</option></select>
+                    </div>
+                    <div class="col-md-6 mb-1">
+                        <label class="form-label small mb-1 text-muted">Date</label>
+                        <input type="date" class="form-control form-control-sm tx-row-date">
+                    </div>
+                </div>
+                <div class="tx-row-error small text-danger mt-1${row.error ? '' : ' d-none'}">${escHtml(row.error || '')}</div>
+            </div>`;
+        }).join('');
+
+        txRows.forEach(row => {
+            const rowEl = container.querySelector(`[data-row-uid="${row.uid}"]`);
+            if (!rowEl) return;
+
+            const amountElId = 'tx-amount-' + row.uid;
+            const accountLabelId = 'tx-account-label-' + row.uid;
+
+            rowEl.querySelector('.tx-row-desc').addEventListener('input', function () { row.description = this.value; });
+
+            const amountEl = rowEl.querySelector('.tx-row-amount');
+            amountEl.id = amountElId;
+            amountEl.addEventListener('input', function () { row.amount = this.value; });
+            rowEl.querySelector('.tx-row-calc-btn').addEventListener('click', function () {
+                if (window.openCalcForInput) window.openCalcForInput(amountElId);
+                else if (window.openCalc) window.openCalc();
+            });
+
+            const typeSel = rowEl.querySelector('.tx-row-type');
+            typeSel.value = row.type;
+            const categorySel = rowEl.querySelector('.tx-row-category');
+            const accountSel = rowEl.querySelector('.tx-row-account');
+            const accountLabelEl = rowEl.querySelector('.tx-row-account-label');
+            accountLabelEl.id = accountLabelId;
+
+            loadCategoriesIntoSelect(categorySel, row.type).then(() => {
+                if (row.categoryId) categorySel.value = row.categoryId;
+            });
+            applyAccountFieldLabel(accountLabelId, row.type);
+            populateTxRowAccountSelect(accountSel);
+            applySavingsPseudoOption(accountSel, row.type);
+            accountSel.value = row.accountVal;
+
+            typeSel.addEventListener('change', function () {
+                row.type = this.value;
+                row.categoryId = '';
+                categorySel.value = '';
+                loadCategoriesIntoSelect(categorySel, row.type);
+                applyAccountFieldLabel(accountLabelId, row.type);
+                applySavingsPseudoOption(accountSel, row.type);
+                row.accountVal = accountSel.value;
+            });
+            categorySel.addEventListener('change', function () { row.categoryId = this.value; });
+            accountSel.addEventListener('change', function () { row.accountVal = this.value; });
+
+            const dateEl = rowEl.querySelector('.tx-row-date');
+            if (row.date) dateEl.value = row.date;
+            else dateEl.valueAsDate = new Date();
+            row.date = dateEl.value;
+            dateEl.addEventListener('input', function () { row.date = this.value; });
+
+            const dupBtn = rowEl.querySelector('.tx-row-dup');
+            dupBtn.addEventListener('click', function () {
+                const idx = txRows.indexOf(row);
+                const copy = newTxRow({ description: row.description, amount: row.amount, categoryId: row.categoryId, type: row.type, accountVal: row.accountVal, date: row.date });
+                txRows.splice(idx + 1, 0, copy);
+                renderTxRows();
+                focusTxRowDesc(copy.uid);
+            });
+
+            const removeBtn = rowEl.querySelector('.tx-row-remove');
+            if (removeBtn) {
+                removeBtn.addEventListener('click', function () {
+                    rowEl.classList.add('removing');
+                    setTimeout(function () {
+                        txRows = txRows.filter(r => r.uid !== row.uid);
+                        renderTxRows();
+                    }, 180);
+                });
+            }
+        });
+    }
+
+    document.getElementById('btnAddTxRow').addEventListener('click', function () {
+        const row = newTxRow();
+        txRows.push(row);
+        renderTxRows();
+        focusTxRowDesc(row.uid);
     });
 
     document.getElementById('transactionForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const srcAcctEl  = document.getElementById('sourceAccount');
-        const srcAcctVal = srcAcctEl ? srcAcctEl.value : '';
-        const transaction = {
-            description: document.getElementById('description').value,
-            amount: parseFloat(document.getElementById('amount').value),
-            category_id: parseInt(document.getElementById('category').value, 10),
-            transaction_type: document.getElementById('type').value,
-            date: document.getElementById('date').value,
-            sourceAccountId: srcAcctVal && srcAcctVal !== 'SAVINGS' ? parseInt(srcAcctVal, 10) : null,
-            destinationAccountId: null,
-            fromSavings: srcAcctVal === 'SAVINGS'
-        };
-
-        try {
-            const response = await fetch('/api/transactions', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(transaction)
-            });
-
-            const data = await response.json().catch(() => null);
-            if (response.ok) {
-                addTransactionModal.hide();
-                document.getElementById('transactionForm').reset();
-                document.getElementById('date').valueAsDate = new Date();
-                loadCategories(document.getElementById('type').value);
-                loadRecentTransactions();
-                if (data && data.warning) {
-                    showTopNotification(data.warning, 'warning');
-                } else {
-                    showTopNotification('Transaction added.', 'success');
-                }
-            } else {
-                showTopNotification((data && data.error) || 'Failed to add transaction.', 'error');
-            }
-        } catch (error) {
-            showTopNotification('Unable to add transaction right now.', 'error');
-        }
+        await saveBulkTransactions();
     });
+
+    async function saveBulkTransactions() {
+        let hasError = false;
+        txRows.forEach(row => {
+            row.error = null;
+            const amt = parseFloat(row.amount);
+            if (!row.description || !row.description.trim()) { row.error = 'Description is required.'; hasError = true; }
+            else if (!row.amount || isNaN(amt) || amt <= 0) { row.error = 'Enter a valid amount.'; hasError = true; }
+            else if (!row.categoryId) { row.error = 'Select a category.'; hasError = true; }
+            else if (!row.date) { row.error = 'Select a date.'; hasError = true; }
+        });
+        if (hasError) {
+            renderTxRows();
+            showTopNotification('Please fix the highlighted row' + (txRows.filter(r => r.error).length > 1 ? 's' : '') + '.', 'error');
+            return;
+        }
+
+        const results = await Promise.all(txRows.map(async row => {
+            const payload = {
+                description: row.description.trim(),
+                amount: parseFloat(row.amount),
+                category_id: parseInt(row.categoryId, 10),
+                transaction_type: row.type,
+                date: row.date,
+                sourceAccountId: row.accountVal && row.accountVal !== 'SAVINGS' ? parseInt(row.accountVal, 10) : null,
+                destinationAccountId: null,
+                fromSavings: row.accountVal === 'SAVINGS'
+            };
+            try {
+                const response = await fetch('/api/transactions', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json().catch(() => null);
+                if (response.ok) return { row, ok: true, warning: data && data.warning };
+                row.error = (data && data.error) || 'Failed to add transaction.';
+                return { row, ok: false };
+            } catch (error) {
+                row.error = 'Unable to add transaction right now.';
+                return { row, ok: false };
+            }
+        }));
+
+        const succeeded = results.filter(r => r.ok);
+        const failed = results.filter(r => !r.ok);
+
+        if (failed.length === 0) {
+            addTransactionModal.hide();
+            showTopNotification(succeeded.length === 1 ? 'Transaction added.' : `${succeeded.length} transactions added successfully.`, 'success');
+            const warned = succeeded.find(r => r.warning);
+            if (warned) showTopNotification(warned.warning, 'warning');
+            loadRecentTransactions();
+        } else {
+            txRows = failed.map(r => r.row);
+            renderTxRows();
+            showTopNotification(`${succeeded.length} added, ${failed.length} failed — see highlighted row${failed.length > 1 ? 's' : ''} below.`, succeeded.length === 0 ? 'error' : 'warning');
+            if (succeeded.length) loadRecentTransactions();
+        }
+    }
 
     document.getElementById('transferForm').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -1225,7 +1369,7 @@
                 editCategoryModal.hide();
                 editCategoryId = null;
                 loadCategoriesForManagement();
-                loadCategories(document.getElementById('type').value);
+                categoriesByTypeCache = {};
                 showTopNotification('Category updated successfully.', 'success');
             } else {
                 const errorData = await response.json().catch(() => null);
@@ -1249,7 +1393,7 @@
                 deleteCategoryModal.hide();
                 deleteCategoryId = null;
                 loadCategoriesForManagement();
-                loadCategories(document.getElementById('type').value);
+                categoriesByTypeCache = {};
                 showTopNotification('Category deleted successfully.', 'success');
             } else {
                 const errorData = await response.json().catch(() => null);
@@ -1263,8 +1407,7 @@
     function openAddCategoryModal() {
         document.getElementById('newCategoryName').value = '';
         document.getElementById('newCategoryColor').value = '#3498db';
-        // Pre-select type matching the current transaction type
-        const currentType = document.getElementById('type').value || 'general';
+        const currentType = 'general';
         const typeEl = document.getElementById('newCategoryType');
         if (typeEl) typeEl.value = currentType;
         addCategoryModal.show();
@@ -1296,7 +1439,7 @@
             if (response.ok) {
                 addCategoryModal.hide();
                 loadCategoriesForManagement();
-                loadCategories(document.getElementById('type').value);
+                categoriesByTypeCache = {};
                 showTopNotification('Category created successfully.', 'success');
             } else {
                 const errorData = await response.json().catch(() => null);
@@ -1332,6 +1475,7 @@
             const resp = await fetch('/api/accounts');
             if (!resp.ok) return;
             const accounts = await resp.json();
+        cachedAccounts = accounts;
         const label = a => a.accountNickname + (a.bankName ? ' (' + a.bankName + ')' : a.provider ? ' (' + a.provider + ')' : '');
         const srcSel  = document.getElementById('sourceAccount');
         const fromSel = document.getElementById('transferFrom');
