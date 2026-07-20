@@ -17,6 +17,7 @@ import org.example.finzin.service.FinancialSummaryService;
 import org.example.finzin.service.AccountBalanceService;
 import org.example.finzin.service.CreditCardValidationException;
 import org.example.finzin.ai.rag.DocumentIndexer;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -118,8 +119,14 @@ public class FinanceApiController {
         if (body.categoryType != null && !body.categoryType.isBlank()) {
             entity.setCategoryType(body.categoryType.toLowerCase(Locale.ROOT));
         }
-        CategoryEntity saved = categoryRepository.save(entity);
-        return ResponseEntity.status(HttpStatus.CREATED).body(toCategoryResponse(saved));
+        try {
+            CategoryEntity saved = categoryRepository.save(entity);
+            return ResponseEntity.status(HttpStatus.CREATED).body(toCategoryResponse(saved));
+        } catch (DataIntegrityViolationException e) {
+            // Defense in depth: a duplicate name that slips past the pre-check above (e.g. a race
+            // between concurrent bulk-creation requests) must surface as a clean 400, not a 500.
+            return ResponseEntity.badRequest().body(Map.of("error", "Category name already exists"));
+        }
     }
 
     @PutMapping("/categories/{id}")

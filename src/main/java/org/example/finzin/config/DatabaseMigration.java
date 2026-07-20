@@ -33,6 +33,13 @@ public class DatabaseMigration implements BeanPostProcessor {
         runSilently(dataSource, "ALTER TABLE transactions ADD COLUMN IF NOT EXISTS recurring_transaction_id BIGINT");
         runSilently(dataSource, "ALTER TABLE transactions ADD COLUMN IF NOT EXISTS from_savings BOOLEAN NOT NULL DEFAULT FALSE");
 
+        // Stale leftover from before CategoryEntity's uniqueness was properly scoped to
+        // (userId, name): a Hibernate-auto-named global unique constraint on categories.name alone
+        // is still live in the DB (ddl-auto=validate never drops/alters existing constraints), so
+        // ANY user creating a category name any other user has ever used gets an unhandled 500.
+        // The correctly-scoped uk_user_category_name constraint already covers per-user uniqueness.
+        runSilently(dataSource, "ALTER TABLE categories DROP CONSTRAINT IF EXISTS ukt8o6pivur7nn124jehx7cygw5");
+
         runSilently(dataSource, "CREATE TABLE IF NOT EXISTS recurring_transactions (" +
                 "id BIGSERIAL PRIMARY KEY, " +
                 "user_id BIGINT NOT NULL, " +

@@ -66,6 +66,18 @@
     .icon-picker{display:flex;flex-wrap:wrap;gap:4px}
     .icon-option{width:28px;height:28px;border:1.5px solid var(--border-color,#e5e7eb);border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.75rem;transition:all .15s;color:var(--text-body)}
     .icon-option.selected{border-color:var(--accent-color);background:rgba(46,125,79,.1);color:var(--accent-color)}
+    .color-picker{display:flex;flex-wrap:wrap;gap:6px}
+    .color-swatch{width:22px;height:22px;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:transform .15s ease,box-shadow .15s ease;position:relative;flex-shrink:0}
+    .color-swatch:hover{transform:scale(1.15)}
+    .color-swatch.selected{border-color:var(--text-body,#333);box-shadow:0 0 0 2px var(--bg-card,#fff)}
+    .color-swatch.selected::after{content:'\f00c';font-family:'Font Awesome 6 Free';font-weight:900;position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.6rem;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+    .cat-bulk-row{border:1px solid var(--border-color,#e5e7eb);border-radius:10px;padding:12px;margin-bottom:10px;background:var(--bg-card,#fff);animation:catRowIn .2s ease}
+    .cat-bulk-row.has-error{border-color:#ef4444}
+    .cat-bulk-row.removing{animation:catRowOut .18s ease forwards}
+    @keyframes catRowIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes catRowOut{to{opacity:0;transform:scale(.97)}}
+    .cat-row-preview{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.9rem;flex-shrink:0;transition:background .15s ease}
+    .cat-row-actions{display:flex;gap:4px;flex-shrink:0}
     .pw-strength{height:4px;border-radius:4px;margin-top:6px;transition:all .3s}
     .danger-zone{border:1.5px solid #ef4444!important}
     .danger-zone .settings-card-title{color:#ef4444}
@@ -452,31 +464,11 @@
 
           <div id="addCatForm" style="display:none" class="settings-card mb-3" style="padding:14px 16px">
             <div class="d-flex align-items-center justify-content-between mb-2">
-              <span class="compact-pref-label"><i class="fas fa-tag"></i> <span id="catFormTitle">New Category</span></span>
+              <span class="compact-pref-label"><i class="fas fa-tag"></i> <span id="catFormTitle">New Categories</span></span>
               <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="btnCancelAddCat" title="Cancel"><i class="fas fa-times"></i></button>
             </div>
-            <div class="row g-2 mb-2">
-              <div class="col-5">
-                <input type="text" class="form-control form-control-sm" id="catName" placeholder="Name *">
-              </div>
-              <div class="col-4">
-                <select class="form-select form-select-sm" id="catType">
-                  <option value="general">General</option>
-                  <option value="income">Income</option>
-                  <option value="expense">Expense</option>
-                  <option value="savings">Savings</option>
-                </select>
-              </div>
-              <div class="col-3">
-                <input type="color" class="form-control form-control-color w-100" id="catColor" value="#2e7d4f" title="Color" style="height:31px">
-              </div>
-              <div class="col-12">
-                <input type="text" class="form-control form-control-sm" id="catDesc" placeholder="Description (optional)">
-              </div>
-              <div class="col-12">
-                <div class="icon-picker" id="iconPicker"></div>
-              </div>
-            </div>
+            <div id="catRowsContainer"></div>
+            <button class="btn btn-sm btn-outline-primary w-100 mb-2" type="button" id="btnAddCatRow"><i class="fas fa-plus me-1"></i>Add Another Category</button>
             <button class="btn btn-sm btn-success" id="btnSaveCat"><i class="fas fa-check me-1"></i>Save</button>
           </div>
 
@@ -1224,22 +1216,8 @@ function showNotification(message, type) {
   setTimeout(dismiss, 5000);
 }
 
-// ============== Icon picker ==============
+// ============== Icon picker (used per-row by the bulk category form below) ==============
 var CAT_ICONS = ['tag','shopping-cart','home','car','utensils','heart','briefcase','gift','plane','gamepad','book','music','mobile-alt','bolt','graduation-cap','piggy-bank','chart-line','coffee','pizza-slice','baby','film','dumbbell','paw','leaf'];
-var selectedIcon = 'tag';
-(function initIconPicker() {
-  var picker = document.getElementById('iconPicker');
-  if (!picker) return;
-  picker.innerHTML = CAT_ICONS.map(function(icon){
-    return '<div class="icon-option'+(icon==='tag'?' selected':'')+'" data-icon="'+icon+'"><i class="fas fa-'+icon+'"></i></div>';
-  }).join('');
-  picker.querySelectorAll('.icon-option').forEach(function(opt){
-    opt.addEventListener('click', function(){
-      selectedIcon = opt.dataset.icon;
-      picker.querySelectorAll('.icon-option').forEach(function(o){ o.classList.toggle('selected', o.dataset.icon === selectedIcon); });
-    });
-  });
-})();
 
 // ============== Nav switching ==============
 document.querySelectorAll('.settings-nav-item').forEach(function(item){
@@ -1649,30 +1627,164 @@ if (btnToggleAddCat) {
 var btnCancelAddCat = document.getElementById('btnCancelAddCat');
 if (btnCancelAddCat) btnCancelAddCat.addEventListener('click', closeCatForm);
 
+// ============== Bulk category rows ==============
+var CATEGORY_COLORS = ['#E53935','#F4511E','#FB8C00','#FDD835','#7CB342','#43A047','#00897B','#00ACC1','#1E88E5','#3949AB','#5E35B1','#8E24AA','#D81B60','#EC407A','#6D4C41','#757575','#546E7A','#90A4AE','#2E7D32','#1565C0'];
+var catRows = [];
+var catRowSeq = 0;
+
+function newCatRow(data) {
+  data = data || {};
+  return {
+    uid: 'r' + (++catRowSeq),
+    id: data.id || null,
+    name: data.name || '',
+    categoryType: (data.categoryType || 'general').toLowerCase(),
+    color: data.color || CATEGORY_COLORS[8],
+    icon: data.icon || 'tag',
+    description: data.description || '',
+    error: null
+  };
+}
+
+function focusRowName(uid) {
+  var rowEl = document.querySelector('[data-row-uid="' + uid + '"]');
+  var input = rowEl ? rowEl.querySelector('.cat-row-name') : null;
+  if (input) input.focus();
+}
+
+function renderCatRows() {
+  var container = document.getElementById('catRowsContainer');
+  if (!container) return;
+  var isEdit = editingCatId !== null;
+
+  container.innerHTML = catRows.map(function (row) {
+    var canRemove = !isEdit && catRows.length > 1;
+    return '' +
+      '<div class="cat-bulk-row' + (row.error ? ' has-error' : '') + '" data-row-uid="' + row.uid + '">' +
+        '<div class="d-flex align-items-start gap-2 mb-2">' +
+          '<div class="cat-row-preview" style="background:' + row.color + '"><i class="fas fa-' + row.icon + '"></i></div>' +
+          '<div class="flex-grow-1">' +
+            '<div class="row g-2">' +
+              '<div class="col-7"><input type="text" class="form-control form-control-sm cat-row-name" placeholder="Category Name *" value="' + escHtml(row.name) + '"></div>' +
+              '<div class="col-5">' +
+                '<select class="form-select form-select-sm cat-row-type">' +
+                  '<option value="general">General</option>' +
+                  '<option value="income">Income</option>' +
+                  '<option value="expense">Expense</option>' +
+                  '<option value="savings">Savings</option>' +
+                '</select>' +
+              '</div>' +
+            '</div>' +
+            '<input type="text" class="form-control form-control-sm cat-row-desc mt-2" placeholder="Description (optional)" value="' + escHtml(row.description) + '">' +
+          '</div>' +
+          '<div class="cat-row-actions">' +
+            (isEdit ? '' : '<button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 cat-row-dup" title="Duplicate"><i class="fas fa-copy"></i></button>') +
+            (canRemove ? '<button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 cat-row-remove" title="Remove"><i class="fas fa-trash"></i></button>' : '') +
+          '</div>' +
+        '</div>' +
+        '<div class="mb-1"><label class="form-label small mb-1 text-muted">Color</label><div class="color-picker cat-row-colors"></div></div>' +
+        '<div><label class="form-label small mb-1 text-muted">Icon</label><div class="icon-picker cat-row-icons"></div></div>' +
+        '<div class="cat-row-error small text-danger mt-1' + (row.error ? '' : ' d-none') + '">' + escHtml(row.error || '') + '</div>' +
+      '</div>';
+  }).join('');
+
+  catRows.forEach(function (row) {
+    var rowEl = container.querySelector('[data-row-uid="' + row.uid + '"]');
+    if (!rowEl) return;
+
+    var typeSel = rowEl.querySelector('.cat-row-type');
+    typeSel.value = row.categoryType;
+    typeSel.addEventListener('change', function () { row.categoryType = this.value; });
+
+    rowEl.querySelector('.cat-row-name').addEventListener('input', function () { row.name = this.value; });
+    rowEl.querySelector('.cat-row-desc').addEventListener('input', function () { row.description = this.value; });
+
+    var colorsEl = rowEl.querySelector('.cat-row-colors');
+    colorsEl.innerHTML = CATEGORY_COLORS.map(function (c) {
+      return '<div class="color-swatch' + (c.toLowerCase() === row.color.toLowerCase() ? ' selected' : '') + '" data-color="' + c + '" style="background:' + c + '" title="' + c + '"></div>';
+    }).join('');
+    colorsEl.querySelectorAll('.color-swatch').forEach(function (sw) {
+      sw.addEventListener('click', function () {
+        row.color = sw.dataset.color;
+        colorsEl.querySelectorAll('.color-swatch').forEach(function (s) { s.classList.toggle('selected', s === sw); });
+        rowEl.querySelector('.cat-row-preview').style.background = row.color;
+      });
+    });
+
+    var iconsEl = rowEl.querySelector('.cat-row-icons');
+    iconsEl.innerHTML = CAT_ICONS.map(function (icon) {
+      return '<div class="icon-option' + (icon === row.icon ? ' selected' : '') + '" data-icon="' + icon + '"><i class="fas fa-' + icon + '"></i></div>';
+    }).join('');
+    iconsEl.querySelectorAll('.icon-option').forEach(function (opt) {
+      opt.addEventListener('click', function () {
+        row.icon = opt.dataset.icon;
+        iconsEl.querySelectorAll('.icon-option').forEach(function (o) { o.classList.toggle('selected', o === opt); });
+        rowEl.querySelector('.cat-row-preview').innerHTML = '<i class="fas fa-' + row.icon + '"></i>';
+      });
+    });
+
+    var dupBtn = rowEl.querySelector('.cat-row-dup');
+    if (dupBtn) {
+      dupBtn.addEventListener('click', function () {
+        var idx = catRows.indexOf(row);
+        var copy = newCatRow({ name: row.name ? row.name + ' Copy' : '', categoryType: row.categoryType, color: row.color, icon: row.icon, description: row.description });
+        catRows.splice(idx + 1, 0, copy);
+        renderCatRows();
+        focusRowName(copy.uid);
+      });
+    }
+
+    var removeBtn = rowEl.querySelector('.cat-row-remove');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', function () {
+        rowEl.classList.add('removing');
+        setTimeout(function () {
+          catRows = catRows.filter(function (r) { return r.uid !== row.uid; });
+          renderCatRows();
+        }, 180);
+      });
+    }
+  });
+}
+
+var btnAddCatRow = document.getElementById('btnAddCatRow');
+if (btnAddCatRow) {
+  btnAddCatRow.addEventListener('click', function () {
+    var row = newCatRow();
+    catRows.push(row);
+    renderCatRows();
+    focusRowName(row.uid);
+  });
+}
+
 function openCatForm(cat) {
   var form = document.getElementById('addCatForm');
   if (!form) return;
   editingCatId = cat ? cat.id : null;
-  document.getElementById('catName').value = cat ? (cat.name||'') : '';
-  document.getElementById('catType').value = cat ? (cat.categoryType||'general').toLowerCase() : 'general';
-  document.getElementById('catColor').value = cat ? (cat.color||'#2e7d4f') : '#2e7d4f';
-  document.getElementById('catDesc').value = cat ? (cat.description||'') : '';
-  selectedIcon = cat ? (cat.icon||'tag') : 'tag';
-  document.querySelectorAll('.icon-option').forEach(function(o){ o.classList.toggle('selected', o.dataset.icon === selectedIcon); });
+  catRows = cat
+    ? [newCatRow({ id: cat.id, name: cat.name, categoryType: cat.categoryType, color: cat.color, icon: cat.icon, description: cat.description })]
+    : [newCatRow()];
+  renderCatRows();
+
+  var addRowBtn = document.getElementById('btnAddCatRow');
+  if (addRowBtn) addRowBtn.classList.toggle('d-none', !!cat);
+
   var saveBtn = document.getElementById('btnSaveCat');
   if (saveBtn) saveBtn.innerHTML = cat ? '<i class="fas fa-check me-1"></i>Update' : '<i class="fas fa-check me-1"></i>Save';
   var titleEl = document.getElementById('catFormTitle');
-  if (titleEl) titleEl.textContent = cat ? 'Edit Category' : 'New Category';
+  if (titleEl) titleEl.textContent = cat ? 'Edit Category' : 'New Categories';
   form.style.display = 'block';
   form.scrollIntoView({ behavior:'smooth', block:'nearest' });
   var toggleBtn = document.getElementById('btnToggleAddCat');
   if (toggleBtn) toggleBtn.innerHTML = '<i class="fas fa-times"></i>';
+  focusRowName(catRows[0].uid);
 }
 
 function closeCatForm() {
   var form = document.getElementById('addCatForm');
   if (form) form.style.display = 'none';
   editingCatId = null;
+  catRows = [];
   var toggleBtn = document.getElementById('btnToggleAddCat');
   if (toggleBtn) toggleBtn.innerHTML = '<i class="fas fa-plus"></i>';
 }
@@ -1680,29 +1792,74 @@ function closeCatForm() {
 var btnSaveCat = document.getElementById('btnSaveCat');
 if (btnSaveCat) {
   btnSaveCat.addEventListener('click', async function(){
-    var nameEl = document.getElementById('catName');
-    var name = nameEl ? nameEl.value.trim() : '';
-    if (!name) { showNotification('Category name is required', 'danger'); return; }
-    var body = {
-      name: name,
-      categoryType: document.getElementById('catType').value,
-      color: document.getElementById('catColor').value,
-      icon: selectedIcon,
-      description: (document.getElementById('catDesc') ? document.getElementById('catDesc').value.trim() : '') || ''
-    };
-    try {
-      var token = getAuthToken();
-      var headers = Object.assign({ 'Content-Type':'application/json' }, token ? {'Authorization':'Bearer '+token} : {});
-      var url = editingCatId ? '/api/categories/'+editingCatId : '/api/categories';
-      var method = editingCatId ? 'PUT' : 'POST';
-      var res = await fetch(url, { method: method, headers: headers, body: JSON.stringify(body) });
-      if (!res.ok) throw new Error('Failed');
-      showNotification(editingCatId ? 'Category updated!' : 'Category created!', 'success');
-      closeCatForm();
-      await loadCategories();
-    } catch(e) {
-      showNotification('Failed to save category', 'danger');
+    catRows.forEach(function (r) { r.error = null; });
+
+    var hasError = false;
+    catRows.forEach(function (row) {
+      if (!row.name || !row.name.trim()) { row.error = 'Name is required'; hasError = true; }
+    });
+    var seen = {};
+    catRows.forEach(function (row) {
+      var key = (row.name || '').trim().toLowerCase();
+      if (!key || row.error) return;
+      if (seen[key]) { row.error = 'Duplicate name in this batch'; seen[key].error = 'Duplicate name in this batch'; hasError = true; }
+      else { seen[key] = row; }
+    });
+    if (hasError) {
+      renderCatRows();
+      showNotification('Please fix the highlighted row' + (catRows.length > 1 ? 's' : ''), 'danger');
+      return;
     }
+
+    var token = getAuthToken();
+    var headers = Object.assign({ 'Content-Type':'application/json' }, token ? {'Authorization':'Bearer '+token} : {});
+
+    if (editingCatId) {
+      var row = catRows[0];
+      try {
+        var res = await fetch('/api/categories/' + editingCatId, {
+          method: 'PUT', headers: headers,
+          body: JSON.stringify({ name: row.name.trim(), categoryType: row.categoryType, color: row.color, icon: row.icon, description: row.description.trim() })
+        });
+        if (!res.ok) throw new Error('Failed');
+        showNotification('Category updated!', 'success');
+        closeCatForm();
+        await loadCategories();
+      } catch (e) {
+        showNotification('Failed to save category', 'danger');
+      }
+      return;
+    }
+
+    var results = await Promise.all(catRows.map(function (row) {
+      return fetch('/api/categories', {
+        method: 'POST', headers: headers,
+        body: JSON.stringify({ name: row.name.trim(), categoryType: row.categoryType, color: row.color, icon: row.icon, description: row.description.trim() })
+      }).then(async function (res) {
+        if (!res.ok) {
+          var data = await res.json().catch(function () { return {}; });
+          row.error = data.error || 'Failed to save';
+          return false;
+        }
+        return true;
+      }).catch(function () {
+        row.error = 'Network error';
+        return false;
+      });
+    }));
+
+    var succeeded = results.filter(Boolean).length;
+    var failed = results.length - succeeded;
+
+    if (failed === 0) {
+      showNotification(succeeded + ' ' + (succeeded === 1 ? 'Category' : 'Categories') + ' Created Successfully', 'success');
+      closeCatForm();
+    } else {
+      catRows = catRows.filter(function (row) { return !!row.error; });
+      renderCatRows();
+      showNotification(succeeded + ' created, ' + failed + ' failed — see highlighted row' + (failed > 1 ? 's' : '') + ' below', 'danger');
+    }
+    await loadCategories();
   });
 }
 
