@@ -258,6 +258,7 @@
                         <option value="income">Income</option>
                         <option value="expense">Expense</option>
                         <option value="savings">Savings</option>
+                        <option value="transfer">Transfer</option>
                     </select>
                     <select class="tx-filter-select" id="txLimitSelect" title="Transactions to show">
                         <option value="5">Show 5</option>
@@ -1837,7 +1838,7 @@
         const pageTransactions = filteredTransactions.slice(start, end);
         const totalPages = Math.ceil(filteredTransactions.length / pageSize);
 
-        const typeIcon  = { income: 'fa-arrow-up', expense: 'fa-arrow-down', savings: 'fa-piggy-bank' };
+        const typeIcon  = { income: 'fa-arrow-up', expense: 'fa-arrow-down', savings: 'fa-piggy-bank', transfer: 'fa-right-left' };
         const txTypeIcon = (type) => `<i class="fas ${typeIcon[type] || 'fa-circle'}"></i>`;
 
         function getCatIcon(name) {
