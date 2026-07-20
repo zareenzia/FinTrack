@@ -1075,9 +1075,16 @@
         let income = 0, expense = 0, savings = 0;
         txs.forEach(function (tx) {
             const amt = Number(tx.amount) || 0;
-            if (tx.transaction_type === 'income')       income  += amt;
-            else if (tx.transaction_type === 'expense') expense += amt;
-            else if (tx.transaction_type === 'savings') savings += amt;
+            if (tx.transaction_type === 'income') {
+                income += amt;
+            } else if (tx.transaction_type === 'expense') {
+                expense += amt;
+                // A "spend from savings" expense still counts fully as an expense, but also draws
+                // down this month's savings bucket — same netting rule the backend applies.
+                if (tx.fromSavings) savings -= amt;
+            } else if (tx.transaction_type === 'savings') {
+                savings += amt;
+            }
         });
         return { income: income, expense: expense, savings: savings, net: income - expense - savings, txs: txs };
     }
@@ -1474,7 +1481,11 @@
         } else {
             container.innerHTML = pageTransactions.map((tx, idx) => {
                 const catColor  = categoryColorMap[tx.category_name] || '#6c757d';
-                const isIncome  = tx.transaction_type === 'income';
+                // An External Source -> real account transfer is money entering the system, just
+                // like income — style it the same way rather than defaulting every transfer to
+                // expense-red (a real account -> External Destination correctly stays expense-red).
+                const isExternalIncoming = tx.transaction_type === 'transfer' && !tx.sourceAccountId && !!tx.destinationAccountId;
+                const isIncome  = tx.transaction_type === 'income' || isExternalIncoming;
                 const isSavings = tx.transaction_type === 'savings';
                 const txClass   = isIncome ? 'income' : (isSavings ? 'savings' : 'expense');
                 const dateObj   = new Date(tx.date);
@@ -1507,7 +1518,7 @@
                         </span>
                     </div>
                     <div class="tx-col-account">
-                        <span class="tx-account-name">${tx.account_name || '-'}</span>
+                        <span class="tx-account-name" title="${tx.account_name || '-'}">${tx.account_name || '-'}</span>
                     </div>
                     <div class="tx-col-type">
                         <span class="tx-type-badge type-${txClass}">

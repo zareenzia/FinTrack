@@ -272,6 +272,13 @@ public class FinanceApiController {
             return ResponseEntity.badRequest().body(Map.of("error", "transaction_type must be income, expense, savings, or transfer"));
         }
 
+        // A transfer's source/destination account can each be null to mean "outside the tracked
+        // accounts" (external source/destination) — but not both at once, since then nothing in
+        // the system would actually move.
+        if (normalizedType.equals("transfer") && body.sourceAccountId() == null && body.destinationAccountId() == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "A transfer needs at least one tracked account — select a From or To account."));
+        }
+
         CategoryEntity category = null;
         if (!normalizedType.equals("transfer")) {
             if (body.category_id == null) {
@@ -639,8 +646,16 @@ public class FinanceApiController {
             YearMonth month = YearMonth.from(t.getDate());
             Totals totals = grouped.computeIfAbsent(month, m -> new Totals());
             switch (t.getTransactionType()) {
-                case "income"  -> totals.income  += t.getAmount();
-                case "expense" -> totals.expense += t.getAmount();
+                case "income" -> totals.income += t.getAmount();
+                case "expense" -> {
+                    totals.expense += t.getAmount();
+                    // A "spend from savings" expense still counts fully as an expense (for
+                    // category/budget reporting), but also draws down that month's savings bucket —
+                    // same netting rule as FinancialSummaryService.getTotalSavings().
+                    if (Boolean.TRUE.equals(t.getFromSavings())) {
+                        totals.savings -= t.getAmount();
+                    }
+                }
                 case "savings" -> totals.savings += t.getAmount();
             }
         }
@@ -699,9 +714,31 @@ public class FinanceApiController {
         map.put("destinationAccountId", entity.getDestinationAccountId());
         boolean fromSavings = Boolean.TRUE.equals(entity.getFromSavings());
         map.put("fromSavings", fromSavings);
-        Long paidFromId = entity.getSourceAccountId() != null ? entity.getSourceAccountId() : entity.getDestinationAccountId();
-        map.put("account_name", fromSavings ? "Savings" : (paidFromId != null ? accountNames.getOrDefault(paidFromId, "-") : "-"));
+        map.put("account_name", resolveAccountName(entity, accountNames, fromSavings));
         return map;
+    }
+
+    /**
+     * A transfer's source and/or destination account can be null to represent money entering or
+     * leaving the tracked accounts from outside the system (e.g. salary received, ATM withdrawal) —
+     * no account row is ever created for these, they're purely a display label. Every other
+     * transaction type keeps its original single-account resolution unchanged.
+     */
+    private String resolveAccountName(TransactionEntity entity, Map<Long, String> accountNames, boolean fromSavings) {
+        if ("transfer".equals(entity.getTransactionType())) {
+            String sourceLabel = entity.getSourceAccountId() != null
+                    ? accountNames.getOrDefault(entity.getSourceAccountId(), "-")
+                    : "External Source";
+            String destinationLabel = entity.getDestinationAccountId() != null
+                    ? accountNames.getOrDefault(entity.getDestinationAccountId(), "-")
+                    : "External Destination";
+            return sourceLabel + " → " + destinationLabel;
+        }
+        if (fromSavings) {
+            return "Savings";
+        }
+        Long paidFromId = entity.getSourceAccountId() != null ? entity.getSourceAccountId() : entity.getDestinationAccountId();
+        return paidFromId != null ? accountNames.getOrDefault(paidFromId, "-") : "-";
     }
 
 

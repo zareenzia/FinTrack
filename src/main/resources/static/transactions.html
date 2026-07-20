@@ -26,6 +26,8 @@
         .rt-status-PAUSED { background: rgba(255, 193, 7, 0.2); color: #b8860b; }
         .rt-status-COMPLETED { background: rgba(108, 117, 125, 0.2); color: #6c757d; }
         .rt-empty { text-align: center; padding: 3rem 1rem; color: var(--text-muted-custom); }
+        .rt-total-row { border-top: 2px solid var(--border-color); background: var(--bg-table-stripe) !important; }
+        .rt-total-row td { padding-top: 0.85rem; padding-bottom: 0.85rem; }
 
         /* Plain, borderless row-action icon buttons */
         .rt-action-btn { width: 32px; height: 32px; border: none; background: transparent; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s ease; }
@@ -106,11 +108,11 @@
     <div class="card mb-3">
         <div class="card-body">
             <div class="row g-2 align-items-end">
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label small mb-1">Search</label>
                     <input type="text" class="form-control form-control-sm" id="rtSearch" placeholder="Search by name...">
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-1">
                     <label class="form-label small mb-1">Type</label>
                     <select class="form-select form-select-sm" id="rtFilterType">
                         <option value="">All</option>
@@ -118,6 +120,12 @@
                         <option value="expense">Expense</option>
                         <option value="savings">Savings</option>
                         <option value="transfer">Transfer</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small mb-1">Category</label>
+                    <select class="form-select form-select-sm" id="rtFilterCategory">
+                        <option value="">All</option>
                     </select>
                 </div>
                 <div class="col-md-2">
@@ -367,7 +375,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p class="text-muted small mb-3">Move money between any of your accounts — bank, MFS, cash wallet, or credit card. Balances update instantly.</p>
+                <p class="text-muted small mb-3">Move money between any of your accounts, or record money coming from / going to outside your tracked accounts using External Source / External Destination. Balances update instantly.</p>
                 <form id="transferForm">
                     <!-- From → To visual flow -->
                     <div class="transfer-flow mb-3">
@@ -405,8 +413,21 @@
                             <input type="date" class="form-control form-control-sm" id="transferDate" required>
                         </div>
                         <div class="col-6">
-                            <label class="form-label">Note <small class="text-muted">(optional)</small></label>
+                            <label class="form-label" id="transferNoteLabel">Note <small class="text-muted">(optional)</small></label>
                             <input type="text" class="form-control form-control-sm" id="transferNote" placeholder="e.g., Salary split">
+                        </div>
+                    </div>
+
+                    <div class="mb-3 d-none" id="transferCountsAsWrap">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="transferCountsAs">
+                            <label class="form-check-label" for="transferCountsAs" id="transferCountsAsLabel">Also count this as Income</label>
+                        </div>
+                        <div class="mt-2 d-none" id="transferCategoryWrap">
+                            <label class="form-label small mb-1">Category</label>
+                            <select class="form-select form-select-sm" id="transferCategory">
+                                <option value="">Select category</option>
+                            </select>
                         </div>
                     </div>
                 </form>
@@ -603,6 +624,11 @@
                                 <label class="form-check-label" for="recurNeverEnds">Never Ends</label>
                             </div>
                         </div>
+                        <div class="col-md-6 d-none" id="recurNextRunWrap">
+                            <label for="recurNextRun" class="form-label">Next Run</label>
+                            <input type="date" class="form-control form-control-sm" id="recurNextRun">
+                            <div class="form-text">Auto-calculated from Start Date — override here if you need a specific date.</div>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -745,6 +771,7 @@
     let filteredRecurring = [];
     let rtCurrentPage = 0;
     let editRecurringId = null;
+    let recurNextRunManuallyEdited = false;
     let deleteRecurringId = null;
     document.getElementById('date').valueAsDate = new Date();
 
@@ -823,15 +850,30 @@
         document.getElementById('openRecurringModalBtn').addEventListener('click', openCreateRecurringModal);
         document.getElementById('openAddTransactionModalBtn').addEventListener('click', openAddTransactionModal);
         document.getElementById('openTransferModalBtn').addEventListener('click', openTransferModal);
+        document.getElementById('transferFrom').addEventListener('change', function () {
+            updateTransferNoteLabel();
+            updateTransferCountsAsUI();
+        });
+        document.getElementById('transferTo').addEventListener('change', function () {
+            updateTransferNoteLabel();
+            updateTransferCountsAsUI();
+        });
+        document.getElementById('transferCountsAs').addEventListener('change', function () {
+            document.getElementById('transferCategoryWrap').classList.toggle('d-none', !this.checked);
+        });
         document.getElementById('saveTransactionBtn').addEventListener('click', () => document.getElementById('transactionForm').requestSubmit());
         document.getElementById('saveTransferBtn').addEventListener('click', () => document.getElementById('transferForm').requestSubmit());
-        document.getElementById('recurType').addEventListener('change', onRecurTypeChange);
+        document.getElementById('recurType').addEventListener('change', function () {
+            onRecurTypeChange().then(() => { document.getElementById('saveRecurringBtn').disabled = false; });
+        });
         document.getElementById('recurNeverEnds').addEventListener('change', onRecurNeverEndsChange);
+        document.getElementById('recurNextRun').addEventListener('input', function () { recurNextRunManuallyEdited = true; });
         document.getElementById('saveRecurringBtn').addEventListener('click', saveRecurringTransaction);
         document.getElementById('confirmDeleteRecurringBtn').addEventListener('click', confirmDeleteRecurring);
 
         document.getElementById('rtSearch').addEventListener('input', applyRtFilters);
         document.getElementById('rtFilterType').addEventListener('change', applyRtFilters);
+        document.getElementById('rtFilterCategory').addEventListener('change', applyRtFilters);
         document.getElementById('rtFilterFrequency').addEventListener('change', applyRtFilters);
         document.getElementById('rtFilterStatus').addEventListener('change', applyRtFilters);
         document.getElementById('rtSortBy').addEventListener('change', applyRtFilters);
@@ -866,7 +908,63 @@
     function openTransferModal() {
         document.getElementById('transferForm').reset();
         document.getElementById('transferDate').valueAsDate = new Date();
+        updateTransferNoteLabel();
+        updateTransferCountsAsUI();
         transferModal.show();
+    }
+
+    /** Relabels the Note field when either side of the transfer is External, to prompt a useful description. */
+    function updateTransferNoteLabel() {
+        const fromVal = document.getElementById('transferFrom').value;
+        const toVal = document.getElementById('transferTo').value;
+        const label = document.getElementById('transferNoteLabel');
+        const input = document.getElementById('transferNote');
+        if (fromVal === 'EXTERNAL' || toVal === 'EXTERNAL') {
+            label.innerHTML = 'Description / Source / Destination <small class="text-muted">(optional)</small>';
+            input.placeholder = 'e.g., ABC Company Salary, ATM Withdrawal, Friend John';
+        } else {
+            label.innerHTML = 'Note <small class="text-muted">(optional)</small>';
+            input.placeholder = 'e.g., Salary split';
+        }
+    }
+
+    /**
+     * Shows a checkbox to also log an External Source/Destination transfer as real Income/Expense
+     * (e.g. salary received) so it counts toward the Income/Expense totals without a separate entry.
+     * Hidden entirely for a normal account-to-account transfer, where that would double-count money
+     * the user already owns.
+     */
+    function updateTransferCountsAsUI() {
+        const fromVal = document.getElementById('transferFrom').value;
+        const toVal = document.getElementById('transferTo').value;
+        const wrap = document.getElementById('transferCountsAsWrap');
+        const label = document.getElementById('transferCountsAsLabel');
+        const checkbox = document.getElementById('transferCountsAs');
+        const catWrap = document.getElementById('transferCategoryWrap');
+
+        if (fromVal === 'EXTERNAL') {
+            wrap.classList.remove('d-none');
+            label.textContent = 'Also count this as Income';
+            loadTransferCategories('income');
+        } else if (toVal === 'EXTERNAL') {
+            wrap.classList.remove('d-none');
+            label.textContent = 'Also count this as Expense';
+            loadTransferCategories('expense');
+        } else {
+            wrap.classList.add('d-none');
+            checkbox.checked = false;
+            catWrap.classList.add('d-none');
+        }
+    }
+
+    async function loadTransferCategories(type) {
+        try {
+            const cats = await fetch(`/api/categories?type=${encodeURIComponent(type)}`).then(r => r.json());
+            document.getElementById('transferCategory').innerHTML =
+                '<option value="">Select category</option>' + cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        } catch (e) {
+            document.getElementById('transferCategory').innerHTML = '<option value="">Error loading</option>';
+        }
     }
 
     async function loadCategories(type) {
@@ -948,6 +1046,9 @@
         if (!fromId || !toId) {
             showTopNotification('Please select both From and To accounts.', 'error'); return;
         }
+        if (fromId === 'EXTERNAL' && toId === 'EXTERNAL') {
+            showTopNotification('From and To cannot both be External — one side must be one of your accounts.', 'error'); return;
+        }
         if (fromId === toId) {
             showTopNotification('Source and destination accounts must be different.', 'error'); return;
         }
@@ -955,15 +1056,46 @@
             showTopNotification('Enter a valid amount.', 'error'); return;
         }
 
-        const payload = {
-            description: note || 'Transfer',
-            amount: amount,
-            category_id: null,
-            transaction_type: 'transfer',
-            date: date,
-            sourceAccountId: parseInt(fromId, 10),
-            destinationAccountId: parseInt(toId, 10)
-        };
+        // If the user opted to also count an External Source/Destination transfer as real
+        // Income/Expense (e.g. salary received), submit it AS that type instead of as a transfer —
+        // it then reuses the existing income/expense logic end-to-end (totals, reports, editing)
+        // with zero special-casing, rather than inventing a parallel "counts toward income" concept.
+        const countsAs = document.getElementById('transferCountsAs').checked;
+        const categoryId = document.getElementById('transferCategory').value;
+        let payload;
+        if (countsAs && fromId === 'EXTERNAL') {
+            if (!categoryId) { showTopNotification('Select a category for this income.', 'error'); return; }
+            payload = {
+                description: note || 'Income',
+                amount: amount,
+                category_id: parseInt(categoryId, 10),
+                transaction_type: 'income',
+                date: date,
+                sourceAccountId: parseInt(toId, 10),
+                destinationAccountId: null
+            };
+        } else if (countsAs && toId === 'EXTERNAL') {
+            if (!categoryId) { showTopNotification('Select a category for this expense.', 'error'); return; }
+            payload = {
+                description: note || 'Expense',
+                amount: amount,
+                category_id: parseInt(categoryId, 10),
+                transaction_type: 'expense',
+                date: date,
+                sourceAccountId: parseInt(fromId, 10),
+                destinationAccountId: null
+            };
+        } else {
+            payload = {
+                description: note || 'Transfer',
+                amount: amount,
+                category_id: null,
+                transaction_type: 'transfer',
+                date: date,
+                sourceAccountId: fromId === 'EXTERNAL' ? null : parseInt(fromId, 10),
+                destinationAccountId: toId === 'EXTERNAL' ? null : parseInt(toId, 10)
+            };
+        }
 
         try {
             const response = await fetch('/api/transactions', {
@@ -976,11 +1108,15 @@
                 transferModal.hide();
                 document.getElementById('transferForm').reset();
                 document.getElementById('transferDate').valueAsDate = new Date();
+                updateTransferCountsAsUI();
                 loadRecentTransactions();
+                const successMessage = payload.transaction_type === 'transfer'
+                    ? 'Transfer logged successfully.'
+                    : `Logged as ${payload.transaction_type} — it now counts toward your totals.`;
                 if (data && data.warning) {
                     showTopNotification(data.warning, 'warning');
                 } else {
-                    showTopNotification('Transfer logged successfully.', 'success');
+                    showTopNotification(successMessage, 'success');
                 }
             } else {
                 showTopNotification((data && data.error) || 'Failed to log transfer.', 'error');
@@ -1203,9 +1339,18 @@
         const recurDestSel = document.getElementById('recurDestAccount');
         const srcOpts = '<option value="">-- No account --</option>' + accounts.map(a => `<option value="${a.id}">${label(a)}</option>`).join('');
         const txOpts  = '<option value="">Select…</option>' + accounts.map(a => `<option value="${a.id}">${label(a)}</option>`).join('');
+        const accountOptionsHtml = accounts.map(a => `<option value="${a.id}">${label(a)}</option>`).join('');
+        const fromOpts = '<option value="">Select source…</option>'
+            + '<option value="EXTERNAL">🌐 External Source</option>'
+            + (accounts.length ? '<option disabled>──────────</option>' : '')
+            + accountOptionsHtml;
+        const toOpts = '<option value="">Select destination…</option>'
+            + '<option value="EXTERNAL">🌐 External Destination</option>'
+            + (accounts.length ? '<option disabled>──────────</option>' : '')
+            + accountOptionsHtml;
         if (srcSel)  srcSel.innerHTML  = srcOpts;
-        if (fromSel) fromSel.innerHTML = txOpts;
-        if (toSel)   toSel.innerHTML   = txOpts;
+        if (fromSel) fromSel.innerHTML = fromOpts;
+        if (toSel)   toSel.innerHTML   = toOpts;
         if (recurSrcSel)  recurSrcSel.innerHTML  = srcOpts;
         if (recurDestSel) recurDestSel.innerHTML = txOpts;
         } catch(e) { console.warn('Could not load accounts for select:', e); }
@@ -1216,6 +1361,7 @@
         try {
             const response = await fetch('/api/recurring-transactions');
             allRecurring = await response.json();
+            populateRtCategoryFilter();
             applyRtFilters();
             renderForecast();
         } catch (e) {
@@ -1223,9 +1369,18 @@
         }
     }
 
+    function populateRtCategoryFilter() {
+        const select = document.getElementById('rtFilterCategory');
+        const previous = select.value;
+        const names = Array.from(new Set(allRecurring.map(r => r.categoryName).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+        select.innerHTML = '<option value="">All</option>' + names.map(name => `<option value="${name}">${name}</option>`).join('');
+        if (names.includes(previous)) select.value = previous;
+    }
+
     function applyRtFilters() {
         const search = document.getElementById('rtSearch').value.trim().toLowerCase();
         const type = document.getElementById('rtFilterType').value;
+        const category = document.getElementById('rtFilterCategory').value;
         const frequency = document.getElementById('rtFilterFrequency').value;
         const status = document.getElementById('rtFilterStatus').value;
         const sortBy = document.getElementById('rtSortBy').value;
@@ -1233,9 +1388,10 @@
         filteredRecurring = allRecurring.filter(r => {
             const searchOk = !search || r.transactionName.toLowerCase().includes(search);
             const typeOk = !type || r.transactionType === type;
+            const categoryOk = !category || r.categoryName === category;
             const frequencyOk = !frequency || r.frequency === frequency;
             const statusOk = !status || r.status === status;
-            return searchOk && typeOk && frequencyOk && statusOk;
+            return searchOk && typeOk && categoryOk && frequencyOk && statusOk;
         }).sort((a, b) => {
             if (sortBy === 'amount') return b.amount - a.amount;
             if (sortBy === 'transactionName') return a.transactionName.localeCompare(b.transactionName);
@@ -1244,6 +1400,12 @@
         });
         rtCurrentPage = 0;
         renderRtTable();
+    }
+
+    function formatDateDDMMYYYY(isoDate) {
+        if (!isoDate) return '';
+        const [y, m, d] = isoDate.split('-');
+        return `${d}-${m}-${y}`;
     }
 
     function renderRtTable() {
@@ -1257,6 +1419,7 @@
         if (pageItems.length === 0) {
             tbody.innerHTML = `<tr><td colspan="9"><div class="rt-empty"><i class="fas fa-sync-alt fa-2x mb-2"></i><p>No recurring transactions found.</p></div></td></tr>`;
         } else {
+            const totalAmount = filteredRecurring.reduce((sum, r) => sum + r.amount, 0);
             tbody.innerHTML = pageItems.map(r => `
                 <tr>
                     <td><strong>${r.transactionName}</strong></td>
@@ -1264,7 +1427,7 @@
                     <td>${r.categoryName || (r.transactionType === 'transfer' ? '—' : 'Uncategorized')}</td>
                     <td>${formatAmount(r.amount)}</td>
                     <td>${r.frequency.charAt(0) + r.frequency.slice(1).toLowerCase()}${r.intervalValue > 1 ? ' (every ' + r.intervalValue + ')' : ''}</td>
-                    <td>${r.nextExecutionDate}</td>
+                    <td>${formatDateDDMMYYYY(r.nextExecutionDate)}</td>
                     <td>${r.lastExecutionDate || '—'}</td>
                     <td><span class="rt-status-badge rt-status-${r.status}">${r.status}</span></td>
                     <td class="text-end">
@@ -1275,7 +1438,13 @@
                         <button class="rt-action-btn rt-action-delete" title="Delete" onclick="deleteRecurring(${r.id})"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>
-            `).join('');
+            `).join('') + `
+                <tr class="rt-total-row">
+                    <td colspan="3" class="text-end"><strong>Total (${filteredRecurring.length} filtered)</strong></td>
+                    <td><strong>${formatAmount(totalAmount)}</strong></td>
+                    <td colspan="5"></td>
+                </tr>
+            `;
         }
 
         const shown = Math.min(start + pageSize, filteredRecurring.length);
@@ -1339,7 +1508,9 @@
         document.getElementById('recurEndDate').value = '';
         document.getElementById('recurNeverEnds').checked = true;
         onRecurNeverEndsChange();
-        onRecurTypeChange();
+        document.getElementById('recurNextRunWrap').classList.add('d-none');
+        recurNextRunManuallyEdited = false;
+        onRecurTypeChange().then(() => { document.getElementById('saveRecurringBtn').disabled = false; });
         createRecurringModal.show();
     }
 
@@ -1361,11 +1532,19 @@
         document.getElementById('recurEndDate').value = r.endDate || '';
         document.getElementById('recurNeverEnds').checked = !r.endDate;
         onRecurNeverEndsChange();
+        document.getElementById('recurNextRunWrap').classList.remove('d-none');
+        const nextRunEl = document.getElementById('recurNextRun');
+        nextRunEl.value = r.nextExecutionDate;
+        nextRunEl.min = new Date().toISOString().slice(0, 10);
+        recurNextRunManuallyEdited = false;
 
+        // onRecurTypeChange() disables Save until the (async, type-filtered) category reload
+        // resolves — a quick click before then used to submit with an empty category and fail.
         onRecurTypeChange().then(() => {
             if (r.categoryId) document.getElementById('recurCategory').value = r.categoryId;
             if (r.sourceAccountId) document.getElementById('recurSourceAccount').value = r.sourceAccountId;
             if (r.destinationAccountId) document.getElementById('recurDestAccount').value = r.destinationAccountId;
+            document.getElementById('saveRecurringBtn').disabled = false;
         });
 
         createRecurringModal.show();
@@ -1401,6 +1580,10 @@
         };
         sourceLabel.textContent = labels[type] || 'Account';
 
+        // The category list reloads asynchronously (filtered by type) — callers must keep Save
+        // disabled until the returned promise resolves, otherwise a quick click can submit with
+        // an empty/stale category selection.
+        document.getElementById('saveRecurringBtn').disabled = true;
         return loadRecurCategories(type);
     }
 
@@ -1417,6 +1600,7 @@
         const destAccountEl = document.getElementById('recurDestAccount');
         const srcAccountEl = document.getElementById('recurSourceAccount');
         const categoryEl = document.getElementById('recurCategory');
+        const isEdit = editRecurringId !== null;
 
         const payload = {
             transactionName: document.getElementById('recurName').value.trim(),
@@ -1429,7 +1613,10 @@
             frequency: document.getElementById('recurFrequency').value,
             intervalValue: parseInt(document.getElementById('recurInterval').value, 10) || 1,
             startDate: document.getElementById('recurStartDate').value,
-            endDate: neverEnds ? null : (document.getElementById('recurEndDate').value || null)
+            endDate: neverEnds ? null : (document.getElementById('recurEndDate').value || null),
+            // Only sent when the user has actually typed into the Next Run field during an edit —
+            // otherwise omitted so the backend's own smart recalculation (from startDate) applies.
+            nextExecutionDate: (isEdit && recurNextRunManuallyEdited) ? (document.getElementById('recurNextRun').value || null) : null
         };
 
         if (!payload.transactionName) { showTopNotification('Transaction name is required.', 'error'); return; }
@@ -1438,7 +1625,6 @@
             showTopNotification('Select both From and To accounts for a transfer.', 'error'); return;
         }
 
-        const isEdit = editRecurringId !== null;
         const url = isEdit ? `/api/recurring-transactions/${editRecurringId}` : '/api/recurring-transactions';
         const method = isEdit ? 'PUT' : 'POST';
 
@@ -1685,7 +1871,11 @@
         } else {
             container.innerHTML = pageTransactions.map((tx, idx) => {
                 const catColor  = categoryColorMap[tx.category_name] || '#6c757d';
-                const isIncome  = tx.transaction_type === 'income';
+                // An External Source -> real account transfer is money entering the system, just
+                // like income — style it the same way rather than defaulting every transfer to
+                // expense-red (a real account -> External Destination correctly stays expense-red).
+                const isExternalIncoming = tx.transaction_type === 'transfer' && !tx.sourceAccountId && !!tx.destinationAccountId;
+                const isIncome  = tx.transaction_type === 'income' || isExternalIncoming;
                 const isSavings = tx.transaction_type === 'savings';
                 const txClass   = isIncome ? 'income' : (isSavings ? 'savings' : 'expense');
                 const dateObj   = new Date(tx.date);
@@ -1718,7 +1908,7 @@
                         </span>
                     </div>
                     <div class="tx-col-account">
-                        <span class="tx-account-name">${tx.account_name || '-'}</span>
+                        <span class="tx-account-name" title="${tx.account_name || '-'}">${tx.account_name || '-'}</span>
                     </div>
                     <div class="tx-col-type">
                         <span class="tx-type-badge type-${txClass}">
