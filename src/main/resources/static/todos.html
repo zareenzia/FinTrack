@@ -186,6 +186,7 @@
     </style>
 </head>
 <body>
+<div id="toastContainer" class="notification-toast-container" aria-live="polite" aria-atomic="true"></div>
 
 <div class="container-fluid mt-4">
     <div class="row mb-4">
@@ -578,21 +579,21 @@
         displayTodos(filtered);
     }
 
-    function showNotification(message, type = 'success') {
-        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-        const alertHTML = `
-            <div class="alert ${alertClass} alert-dismissible fade show" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        `;
-        const div = document.createElement('div');
-        div.innerHTML = alertHTML;
-        document.body.appendChild(div.firstElementChild);
+    const TOAST_ICONS = { success: 'fa-circle-check', error: 'fa-circle-exclamation', warning: 'fa-triangle-exclamation', info: 'fa-circle-info' };
 
-        setTimeout(() => {
-            div.firstElementChild?.remove();
-        }, 5000);
+    function showNotification(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `notification-toast notification-${type}`;
+        toast.innerHTML = `<i class="fas ${TOAST_ICONS[type] || TOAST_ICONS.success} notification-toast-icon"></i>` +
+            `<span class="notification-toast-message"></span>` +
+            `<button type="button" class="notification-toast-close" aria-label="Dismiss">&times;</button>`;
+        toast.querySelector('.notification-toast-message').textContent = message;
+        const dismiss = () => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); };
+        toast.querySelector('.notification-toast-close').addEventListener('click', dismiss);
+        container.appendChild(toast);
+        requestAnimationFrame(() => toast.classList.add('show'));
+        setTimeout(dismiss, 5000);
     }
 
     function escapeHtml(text) {

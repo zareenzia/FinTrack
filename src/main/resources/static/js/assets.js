@@ -246,17 +246,21 @@
         renderTable();
     };
 
-    window.renderTable = function () {
+    function getFilteredAssets() {
         const query   = (document.getElementById('searchInput')?.value || '').toLowerCase();
         const purity  = document.getElementById('filterPurity')?.value || '';
         const type    = document.getElementById('filterType')?.value || '';
 
-        let filtered = allAssets.filter(a => {
+        return allAssets.filter(a => {
             const matchSearch = !query || a.assetName.toLowerCase().includes(query) || (a.description || '').toLowerCase().includes(query);
             const matchPurity = !purity || a.purity === purity;
             const matchType   = !type   || a.goldType === type;
             return matchSearch && matchPurity && matchType;
         });
+    }
+
+    window.renderTable = function () {
+        let filtered = getFilteredAssets();
 
         const total = filtered.length;
         const pages = Math.ceil(total / PAGE_SIZE) || 1;
@@ -399,6 +403,169 @@
         currentPage = p;
         renderTable();
     };
+
+    // ── CSV EXPORT / IMPORT ──────────────────────────────────────────────────
+
+    const VALID_GOLD_TYPES = ['ORNAMENT', 'BAR', 'COIN', 'CUSTOM'];
+    const VALID_PURITIES   = ['22K', '21K', '18K', '24K', 'TRADITIONAL', 'CUSTOM'];
+    const VALID_WEIGHT_UNITS = ['GRAM', 'VORI', 'ANA', 'RATI', 'POINT'];
+
+    function csvEscape(val) {
+        const s = String(val == null ? '' : val);
+        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    }
+
+    window.exportFilteredAssetsToCsv = function () {
+        const filtered = getFilteredAssets();
+        if (!filtered.length) {
+            showToast('No assets to export.', 'error');
+            return;
+        }
+        const headers = ['Asset Name', 'Description', 'Gold Type', 'Purity', 'Weight', 'Weight Unit', 'Purchase Date', 'Purchase Price', 'Notes', 'Current Value', 'Gain/Loss', 'Gain/Loss %', 'Created At'];
+        const rows = filtered.map(a => [
+            a.assetName,
+            a.description || '',
+            a.goldType,
+            a.purity,
+            a.weight,
+            a.weightUnit,
+            a.purchaseDate || '',
+            a.purchasePrice != null ? a.purchasePrice : '',
+            a.notes || '',
+            a.currentValue != null ? a.currentValue : '',
+            a.gainLoss != null ? a.gainLoss : '',
+            a.gainLossPct != null ? a.gainLossPct : '',
+            a.createdAt || ''
+        ]);
+        const csvContent = [headers, ...rows].map(r => r.map(csvEscape).join(',')).join('\r\n');
+        const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const stamp = new Date().toISOString().slice(0, 10);
+        a.href = url;
+        a.download = `gold_assets_${stamp}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast(`Exported ${filtered.length} asset${filtered.length > 1 ? 's' : ''} to CSV.`, 'success');
+    };
+
+    function parseCsv(text) {
+        const rows = [];
+        let row = [], field = '', inQuotes = false;
+        for (let i = 0; i < text.length; i++) {
+            const c = text[i];
+            if (inQuotes) {
+                if (c === '"') {
+                    if (text[i + 1] === '"') { field += '"'; i++; }
+                    else inQuotes = false;
+                } else field += c;
+            } else if (c === '"') {
+                inQuotes = true;
+            } else if (c === ',') {
+                row.push(field); field = '';
+            } else if (c === '\r') {
+                // skip, \n handles the line break
+            } else if (c === '\n') {
+                row.push(field); rows.push(row); row = []; field = '';
+            } else {
+                field += c;
+            }
+        }
+        if (field.length || row.length) { row.push(field); rows.push(row); }
+        return rows.filter(r => r.some(c => c.trim() !== ''));
+    }
+
+    window.handleAssetImportFile = function (inputEl) {
+        const file = inputEl.files[0];
+        inputEl.value = '';
+        if (file) importAssetsFromCsv(file);
+    };
+
+    async function importAssetsFromCsv(file) {
+        const text = (await file.text()).replace(/^﻿/, '');
+        const rows = parseCsv(text);
+        if (rows.length < 2) {
+            showToast('CSV file has no data rows.', 'error');
+            return;
+        }
+        const header = rows[0].map(h => h.trim().toLowerCase());
+        const idx = {
+            name: header.indexOf('asset name'),
+            description: header.indexOf('description'),
+            goldType: header.indexOf('gold type'),
+            purity: header.indexOf('purity'),
+            weight: header.indexOf('weight'),
+            weightUnit: header.indexOf('weight unit'),
+            purchaseDate: header.indexOf('purchase date'),
+            purchasePrice: header.indexOf('purchase price'),
+            notes: header.indexOf('notes')
+        };
+        if (idx.name === -1 || idx.weight === -1) {
+            showToast('CSV is missing required columns (Asset Name, Weight).', 'error');
+            return;
+        }
+
+        showToast('Importing…', 'info');
+        let succeeded = 0, failed = 0;
+        const errors = [];
+        for (const r of rows.slice(1)) {
+            const name = (r[idx.name] || '').trim();
+            const weight = parseFloat(String(r[idx.weight] || '').replace(/[^\d.-]/g, ''));
+            const goldTypeRaw = idx.goldType !== -1 ? (r[idx.goldType] || '').trim().toUpperCase() : '';
+            const purityRaw = idx.purity !== -1 ? (r[idx.purity] || '').trim().toUpperCase() : '';
+            const weightUnitRaw = idx.weightUnit !== -1 ? (r[idx.weightUnit] || '').trim().toUpperCase() : '';
+            const description = idx.description !== -1 ? (r[idx.description] || '').trim() : '';
+            const purchaseDate = idx.purchaseDate !== -1 ? (r[idx.purchaseDate] || '').trim().slice(0, 10) : '';
+            const purchasePriceRaw = idx.purchasePrice !== -1 ? (r[idx.purchasePrice] || '').trim() : '';
+            const notes = idx.notes !== -1 ? (r[idx.notes] || '').trim() : '';
+
+            if (!name || !weight || weight <= 0) {
+                failed++; errors.push(`"${name || 'row'}" skipped — name and a positive weight are required.`);
+                continue;
+            }
+            if (goldTypeRaw && !VALID_GOLD_TYPES.includes(goldTypeRaw)) {
+                failed++; errors.push(`"${name}" skipped — invalid Gold Type "${r[idx.goldType]}".`);
+                continue;
+            }
+            if (purityRaw && !VALID_PURITIES.includes(purityRaw)) {
+                failed++; errors.push(`"${name}" skipped — invalid Purity "${r[idx.purity]}".`);
+                continue;
+            }
+            if (weightUnitRaw && !VALID_WEIGHT_UNITS.includes(weightUnitRaw)) {
+                failed++; errors.push(`"${name}" skipped — invalid Weight Unit "${r[idx.weightUnit]}".`);
+                continue;
+            }
+            const purchasePrice = purchasePriceRaw ? parseFloat(purchasePriceRaw.replace(/[^\d.-]/g, '')) : null;
+
+            const body = {
+                assetName: name,
+                description: description || null,
+                goldType: goldTypeRaw || 'ORNAMENT',
+                purity: purityRaw || '22K',
+                weight: weight,
+                weightUnit: weightUnitRaw || 'GRAM',
+                purchaseDate: purchaseDate || null,
+                purchasePrice: (purchasePrice && purchasePrice > 0) ? purchasePrice : null,
+                notes: notes || null
+            };
+
+            try {
+                await apiFetch('/api/gold/assets', { method: 'POST', body: JSON.stringify(body) });
+                succeeded++;
+            } catch (e) {
+                failed++; errors.push(`"${name}" failed — ${e.message || 'server error'}.`);
+            }
+        }
+
+        if (succeeded) loadAll();
+        if (failed === 0) {
+            showToast(`Imported ${succeeded} asset${succeeded > 1 ? 's' : ''} successfully.`, 'success');
+        } else {
+            showToast(`${succeeded} imported, ${failed} failed. ${errors.slice(0, 2).join(' ')}`, succeeded ? 'warning' : 'error');
+        }
+    }
 
     // ── ADD / EDIT ASSET MODAL ───────────────────────────────────────────────────
 
@@ -719,21 +886,23 @@
 
     // ── TOAST ──────────────────────────────────────────────────────────────────
 
+    const TOAST_ICONS = { success: 'fa-circle-check', error: 'fa-circle-exclamation', warning: 'fa-triangle-exclamation', info: 'fa-circle-info' };
+
     function showToast(message, type) {
         const container = document.getElementById('toastContainer');
         if (!container) return;
-        const id = 'toast-' + Date.now();
-        const iconMap = { success: 'fa-check-circle text-success', error: 'fa-exclamation-circle text-danger', info: 'fa-info-circle text-info' };
-        const icon = iconMap[type] || iconMap.info;
+        type = type || 'info';
         const el = document.createElement('div');
-        el.id = id;
-        el.className = 'notification-toast show';
-        el.innerHTML = `<div class="toast-body d-flex align-items-center gap-2">
-            <i class="fas ${icon}"></i><span>${escHtml(message)}</span>
-            <button type="button" class="btn-close btn-close-sm ms-auto" onclick="document.getElementById('${id}').remove()"></button>
-        </div>`;
+        el.className = `notification-toast notification-${type}`;
+        el.innerHTML = `<i class="fas ${TOAST_ICONS[type] || TOAST_ICONS.info} notification-toast-icon"></i>` +
+            `<span class="notification-toast-message"></span>` +
+            `<button type="button" class="notification-toast-close" aria-label="Dismiss">&times;</button>`;
+        el.querySelector('.notification-toast-message').textContent = message;
+        const dismiss = () => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); };
+        el.querySelector('.notification-toast-close').addEventListener('click', dismiss);
         container.appendChild(el);
-        setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 400); }, 4000);
+        requestAnimationFrame(() => el.classList.add('show'));
+        setTimeout(dismiss, 5000);
     }
 
 })();

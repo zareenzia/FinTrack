@@ -413,6 +413,21 @@
         </div>
     </div>
 
+    <!-- AI Financial Coach Summary -->
+    <div class="row mb-4" id="aiSummaryRow">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-robot me-2"></i>AI Financial Coach</h6>
+                    <a href="/ai-assistant" class="btn btn-sm btn-outline-primary"><i class="fas fa-comment-dots"></i> Open AI Assistant</a>
+                </div>
+                <div class="card-body" id="aiSummaryBody">
+                    <p class="text-muted small mb-0">Loading…</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Current Budget Widget -->
     <div class="row mb-4">
         <div class="col-md-12">
@@ -645,6 +660,21 @@
             </div>
         </div>
 
+        <!-- AI Financial Coach Summary -->
+        <div class="row mb-4" id="aiSummaryRowCompact">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="fas fa-robot me-2"></i>AI Financial Coach</h6>
+                        <a href="/ai-assistant" class="btn btn-sm btn-outline-primary"><i class="fas fa-comment-dots"></i> Open AI Assistant</a>
+                    </div>
+                    <div class="card-body" id="aiSummaryBodyCompact">
+                        <p class="text-muted small mb-0">Loading…</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Current Budget Widget -->
         <div class="row mb-4">
             <div class="col-12">
@@ -660,6 +690,53 @@
             </div>
         </div>
     </div><!-- /#dashboardCompactView -->
+
+    <!-- ═══════════ FINANCIAL PLANNER WIDGET ═══════════ -->
+    <div class="row mb-4" id="fpWidgetRow">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-bullseye me-2"></i>Financial Planner</h6>
+                    <a href="/financial-planner" class="btn btn-primary btn-sm">
+                        <i class="fas fa-arrow-right me-1"></i>Open Financial Planner
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3" id="fpWidgetCards">
+                        <div class="col-sm-6 col-xl-3">
+                            <div class="d-flex align-items-center gap-3 p-3 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);">
+                                <div style="width:40px;height:40px;border-radius:10px;background:rgba(31,125,83,0.15);color:var(--color-surface);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.1rem;"><i class="fas fa-chart-line"></i></div>
+                                <div><div style="font-weight:700;font-size:1rem;" id="fpwInvValue">—</div><div style="font-size:0.75rem;color:var(--text-muted-custom);">Investment Portfolio</div></div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-xl-3">
+                            <div class="d-flex align-items-center gap-3 p-3 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);">
+                                <div style="width:40px;height:40px;border-radius:10px;background:rgba(239,68,68,0.15);color:#ef4444;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.1rem;"><i class="fas fa-hand-holding-usd"></i></div>
+                                <div><div style="font-weight:700;font-size:1rem;" id="fpwLoans">—</div><div style="font-size:0.75rem;color:var(--text-muted-custom);">Active Loans</div></div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-xl-3">
+                            <div class="d-flex align-items-center gap-3 p-3 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);">
+                                <div style="width:40px;height:40px;border-radius:10px;background:rgba(249,115,22,0.15);color:#f97316;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.1rem;"><i class="fas fa-bell"></i></div>
+                                <div><div style="font-weight:700;font-size:1rem;" id="fpwRenewals">—</div><div style="font-size:0.75rem;color:var(--text-muted-custom);">Upcoming Renewals (30d)</div></div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-xl-3">
+                            <div class="d-flex align-items-center gap-3 p-3 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);">
+                                <div style="width:40px;height:40px;border-radius:10px;background:rgba(168,85,247,0.15);color:#a855f7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.1rem;"><i class="fas fa-star"></i></div>
+                                <div>
+                                    <div style="font-weight:700;font-size:1rem;" id="fpwGoalPct">—</div>
+                                    <div style="font-size:0.75rem;color:var(--text-muted-custom);">Wishlist Progress</div>
+                                    <div style="margin-top:4px;height:5px;border-radius:999px;background:var(--bg-input);overflow:hidden;min-width:80px;"><div id="fpwGoalBar" style="height:100%;background:#a855f7;border-radius:999px;width:0%;transition:width 0.4s ease;"></div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ═══════════════════════════════════════════════ -->
 
     <div class="row">
         <div class="col-md-12">
@@ -683,13 +760,25 @@
                             <option value="income">Income</option>
                             <option value="expense">Expense</option>
                             <option value="savings">Savings</option>
-                        </select>                        <select class="tx-filter-select" id="txLimitSelect" title="Transactions to show">
+                            <option value="transfer">Transfer</option>
+                        </select>
+                        <select class="tx-filter-select" id="txAccountFilter" title="Filter by paid from account">
+                            <option value="">All Accounts</option>
+                        </select>
+                        <select class="tx-filter-select" id="txLimitSelect" title="Transactions to show">
                             <option value="5" selected>Show 5</option>
                             <option value="10">Show 10</option>
                             <option value="20">Show 20</option>
                             <option value="50">Show 50</option>
                             <option value="100">Show 100</option>
                         </select>
+                        <button type="button" class="tx-export-btn" id="txImportBtn" title="Import transactions from CSV">
+                            <i class="fas fa-file-import"></i>
+                        </button>
+                        <input type="file" id="txImportFileInput" accept=".csv" style="display:none;">
+                        <button type="button" class="tx-export-btn" id="txExportBtn" title="Export filtered transactions to CSV">
+                            <i class="fas fa-file-export"></i>
+                        </button>
                         <a href="/transactions" class="btn btn-sm tx-view-all-btn">
                             <i class="fas fa-external-link-alt"></i> View All
                         </a>
@@ -705,6 +794,7 @@
                         <span class="tx-col-date"><i class="fas fa-calendar-alt"></i> Date</span>
                         <span class="tx-col-desc"><i class="fas fa-align-left"></i> Description</span>
                         <span class="tx-col-cat"><i class="fas fa-tag"></i> Category</span>
+                        <span class="tx-col-account"><i class="fas fa-wallet"></i> Paid From</span>
                         <span class="tx-col-type"><i class="fas fa-exchange-alt"></i> Type</span>
                         <span class="tx-col-amount"><i class="fas fa-coins"></i> Amount</span>
                         <span class="tx-col-action"></span>
@@ -750,11 +840,12 @@
     let pageSize           = parseInt(localStorage.getItem('tx_page_limit') || '5', 10);
     let txFilterCategory   = '';
     let txFilterType       = '';
+    let txFilterAccount    = ''; // '', 'SAVINGS', 'NONE', or an account id (string)
+    let cachedAccounts     = [];
     let txDeleteId         = null;
     let txDeleteModal      = null;
     let txEditId           = null;
     let txEditModal        = null;
-    let txAddModal         = null;
 
     let categoryChartData    = [];
     let monthlyChartData     = [];
@@ -997,9 +1088,16 @@
         let income = 0, expense = 0, savings = 0;
         txs.forEach(function (tx) {
             const amt = Number(tx.amount) || 0;
-            if (tx.transaction_type === 'income')       income  += amt;
-            else if (tx.transaction_type === 'expense') expense += amt;
-            else if (tx.transaction_type === 'savings') savings += amt;
+            if (tx.transaction_type === 'income') {
+                income += amt;
+            } else if (tx.transaction_type === 'expense') {
+                expense += amt;
+                // A "spend from savings" expense still counts fully as an expense, but also draws
+                // down this month's savings bucket — same netting rule the backend applies.
+                if (tx.fromSavings) savings -= amt;
+            } else if (tx.transaction_type === 'savings') {
+                savings += amt;
+            }
         });
         return { income: income, expense: expense, savings: savings, net: income - expense - savings, txs: txs };
     }
@@ -1098,14 +1196,20 @@
         txEditModal = new bootstrap.Modal(document.getElementById('dashboardEditTxModal'));
         document.getElementById('dashboardSaveEditTxBtn').addEventListener('click', saveEditTransaction);
 
-        // Initialise add-transaction modal
-        txAddModal = new bootstrap.Modal(document.getElementById('dashboardAddTxModal'));
+        // "Add Transaction" opens the shared bulk-capable modal on the Transactions page
         document.getElementById('openAddTxModalBtn').addEventListener('click', openAddTransactionModal);
-        document.getElementById('dashboardSaveAddTxBtn').addEventListener('click', saveAddTransaction);
 
         // When type changes in the edit modal, reload categories
         document.getElementById('editTxType').addEventListener('change', function () {
-            loadEditCategories(this.value);
+            if (this.value === 'transfer') {
+                showEditTransferFields();
+                loadEditTransferAccounts(document.getElementById('editTxTransferFrom'), document.getElementById('editTxTransferTo'), '', '');
+            } else {
+                showEditNormalFields();
+                loadEditCategories(this.value);
+                applyAccountFieldLabel('editTxAccountLabel', this.value);
+                applySavingsPseudoOption(document.getElementById('editTxAccount'), this.value);
+            }
         });
 
         // Restore saved limit and wire filter controls
@@ -1140,6 +1244,32 @@
             });
         }
 
+        const acctFilterEl = document.getElementById('txAccountFilter');
+        if (acctFilterEl) {
+            acctFilterEl.addEventListener('change', function () {
+                txFilterAccount = this.value;
+                currentPage = 0;
+                applyFiltersAndDisplay();
+            });
+        }
+
+        const importBtn = document.getElementById('txImportBtn');
+        if (importBtn) {
+            importBtn.addEventListener('click', function () {
+                document.getElementById('txImportFileInput').click();
+            });
+        }
+        const importFileEl = document.getElementById('txImportFileInput');
+        if (importFileEl) {
+            importFileEl.addEventListener('change', function (e) {
+                const file = e.target.files[0];
+                this.value = '';
+                if (file) importTransactionsFromCsv(file);
+            });
+        }
+        const exportBtn = document.getElementById('txExportBtn');
+        if (exportBtn) exportBtn.addEventListener('click', exportFilteredTransactionsToCsv);
+
         // Restore saved dashboard view (Default / Compact) before first paint of data
         const savedView = localStorage.getItem(getUserStorageKey('fintrack_dashboard_view')) || 'default';
         setDashboardView(savedView, true);
@@ -1149,6 +1279,8 @@
         loadAccountBalances();
         loadUpcomingRecurring();
         loadCurrentBudget();
+        loadAiSummary();
+        loadFpWidget();
     });
 
     async function loadUpcomingRecurring() {
@@ -1183,6 +1315,48 @@
         }
     }
 
+    function escapeAiSummaryText(text) {
+        const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+        return String(text == null ? '' : text).replace(/[&<>"']/g, m => map[m]);
+    }
+
+    async function loadAiSummary() {
+        const bodies = ['aiSummaryBody', 'aiSummaryBodyCompact'].map(id => document.getElementById(id)).filter(Boolean);
+        const rows = ['aiSummaryRow', 'aiSummaryRowCompact'].map(id => document.getElementById(id)).filter(Boolean);
+        if (!bodies.length) return;
+        try {
+            const data = await fetch('/api/ai/dashboard-summary').then(r => r.json());
+            if (!data.enabled) {
+                rows.forEach(r => r.classList.add('d-none'));
+                return;
+            }
+            const scoreColor = data.healthScore >= 75 ? '#28a745' : (data.healthScore >= 50 ? '#ffc107' : '#dc3545');
+            let html = '<div class="d-flex align-items-center gap-3 mb-2">';
+            html += `<div class="text-center" style="min-width:70px;"><div class="fw-bold" style="font-size:1.6rem;color:${scoreColor};">${data.healthScore}</div><div class="small text-muted">Health Score</div></div>`;
+            html += '<div class="flex-grow-1">';
+            if (data.todaysInsight) html += `<div class="small mb-1"><i class="fas fa-lightbulb me-1 text-warning"></i>${escapeAiSummaryText(data.todaysInsight)}</div>`;
+            if (data.aiRecommendation) html += `<div class="small mb-1"><i class="fas fa-wand-magic-sparkles me-1" style="color: var(--accent-color);"></i>${escapeAiSummaryText(data.aiRecommendation)}</div>`;
+            if (!data.todaysInsight && !data.aiRecommendation) html += '<div class="small text-muted">No new insights right now — check back after you log more activity.</div>';
+            html += '</div></div>';
+
+            html += '<div class="row g-2 small">';
+            if (data.biggestExpense) {
+                html += `<div class="col-md-4"><span class="text-muted">Biggest Expense:</span> <strong>${formatAmount(data.biggestExpense.amount)}</strong>${data.biggestExpense.category ? ' (' + escapeAiSummaryText(data.biggestExpense.category) + ')' : ''}</div>`;
+            }
+            if (data.budgetStatus) {
+                html += '<div class="col-md-4"><span class="text-muted">Budget:</span> ' +
+                    (data.budgetStatus.hasBudget ? `${data.budgetStatus.utilizationPercent.toFixed(0)}% used` : 'No active budget') + '</div>';
+            }
+            if (data.savingsProgress) {
+                html += `<div class="col-md-4"><span class="text-muted">Emergency Fund:</span> ${data.savingsProgress.emergencyFundProgressPercent.toFixed(0)}%</div>`;
+            }
+            html += '</div>';
+            bodies.forEach(b => b.innerHTML = html);
+        } catch (e) {
+            bodies.forEach(b => b.innerHTML = '<p class="text-muted small mb-0">Unable to load AI summary.</p>');
+        }
+    }
+
     async function loadCurrentBudget() {
         const containers = ['currentBudgetBody', 'currentBudgetBodyCompact']
             .map(id => document.getElementById(id))
@@ -1212,6 +1386,29 @@
         } catch (e) {
             containers.forEach(c => c.innerHTML = '<p class="text-muted small mb-0">Unable to load current budget.</p>');
         }
+    }
+
+    async function loadFpWidget() {
+        try {
+            const data = await fetch('/api/financial-planner/summary').then(r => r.ok ? r.json() : null);
+            if (!data) return;
+            const fmtC = (v) => {
+                const c = typeof getCurrencySettings === 'function' ? getCurrencySettings() : { symbol: '৳', position: 'before', decimals: 0 };
+                const num = Number(v || 0).toLocaleString('en-BD', { minimumFractionDigits: 0, maximumFractionDigits: c.decimals });
+                return c.position === 'before' ? c.symbol + num : num + '\u00a0' + c.symbol;
+            };
+            const el = id => document.getElementById(id);
+            if (el('fpwInvValue')) el('fpwInvValue').textContent = fmtC(data.investmentValue);
+            if (el('fpwLoans')) el('fpwLoans').textContent = data.activeLoans + ' loan' + (data.activeLoans !== 1 ? 's' : '') + (data.loanRemainingBalance ? ' · ' + fmtC(data.loanRemainingBalance) : '');
+            if (el('fpwRenewals')) el('fpwRenewals').textContent = data.upcomingRenewals + ' renewal' + (data.upcomingRenewals !== 1 ? 's' : '');
+            if (el('fpwGoalPct') && data.goalsTarget > 0) {
+                const pct = Math.min(100, Math.round((data.goalsSaved / data.goalsTarget) * 100));
+                el('fpwGoalPct').textContent = fmtC(data.goalsSaved) + ' / ' + fmtC(data.goalsTarget) + ' (' + pct + '%)';
+                if (el('fpwGoalBar')) el('fpwGoalBar').style.width = pct + '%';
+            } else if (el('fpwGoalPct')) {
+                el('fpwGoalPct').textContent = data.goalsCount + ' goal' + (data.goalsCount !== 1 ? 's' : '');
+            }
+        } catch (e) { /* silently ignore */ }
     }
 
     window.addEventListener('resize', fitStatAmounts);
@@ -1246,6 +1443,19 @@
                 catFilter.value = prevCat;
             }
 
+            const accounts = await fetch('/api/accounts').then(r => r.json()).catch(() => []);
+            cachedAccounts = accounts;
+            const acctFilter = document.getElementById('txAccountFilter');
+            if (acctFilter) {
+                const prevAcct = acctFilter.value;
+                const label = a => a.accountNickname + (a.bankName ? ' (' + a.bankName + ')' : a.provider ? ' (' + a.provider + ')' : '');
+                acctFilter.innerHTML = '<option value="">All Accounts</option>'
+                    + '<option value="SAVINGS">💰 Savings</option>'
+                    + '<option value="NONE">No Account</option>'
+                    + accounts.map(a => `<option value="${a.id}">${escHtml(label(a))}</option>`).join('');
+                acctFilter.value = prevAcct;
+            }
+
             // Load all transactions once — everything month-specific is derived client-side from this
             const transactions = await fetch('/api/transactions?limit=1000').then(r => r.json());
             allTransactions = transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -1270,12 +1480,21 @@
     }
 
     /* ── Filter logic ────────────────────────────────────────────────────── */
+    function txMatchesAccountFilter(tx) {
+        if (!txFilterAccount) return true;
+        if (txFilterAccount === 'SAVINGS') return !!tx.fromSavings;
+        if (txFilterAccount === 'NONE') return !tx.fromSavings && tx.sourceAccountId == null && tx.destinationAccountId == null;
+        const id = parseInt(txFilterAccount, 10);
+        return tx.sourceAccountId === id || tx.destinationAccountId === id;
+    }
+
     function applyFiltersAndDisplay() {
         filteredTransactions = allTransactions.filter(function (tx) {
             const catOk   = !txFilterCategory || tx.category_name === txFilterCategory;
             const typeOk  = !txFilterType     || tx.transaction_type === txFilterType;
             const monthOk = !selectedMonthKey || selectedMonthKey === 'ALL' || monthKeyOf(tx.date) === selectedMonthKey;
-            return catOk && typeOk && monthOk;
+            const acctOk  = txMatchesAccountFilter(tx);
+            return catOk && typeOk && monthOk && acctOk;
         });
         displayTransactionPage();
     }
@@ -1287,7 +1506,7 @@
         const pageTransactions = filteredTransactions.slice(start, end);
         const totalPages = Math.ceil(filteredTransactions.length / pageSize);
 
-        const typeIcon  = { income: 'fa-arrow-up', expense: 'fa-arrow-down', savings: 'fa-piggy-bank' };
+        const typeIcon  = { income: 'fa-arrow-up', expense: 'fa-arrow-down', savings: 'fa-piggy-bank', transfer: 'fa-right-left' };
         const txTypeIcon = (type) => `<i class="fas ${typeIcon[type] || 'fa-circle'}"></i>`;
 
         function getCatIcon(name) {
@@ -1321,7 +1540,11 @@
         } else {
             container.innerHTML = pageTransactions.map((tx, idx) => {
                 const catColor  = categoryColorMap[tx.category_name] || '#6c757d';
-                const isIncome  = tx.transaction_type === 'income';
+                // An External Source -> real account transfer is money entering the system, just
+                // like income — style it the same way rather than defaulting every transfer to
+                // expense-red (a real account -> External Destination correctly stays expense-red).
+                const isExternalIncoming = tx.transaction_type === 'transfer' && !tx.sourceAccountId && !!tx.destinationAccountId;
+                const isIncome  = tx.transaction_type === 'income' || isExternalIncoming;
                 const isSavings = tx.transaction_type === 'savings';
                 const txClass   = isIncome ? 'income' : (isSavings ? 'savings' : 'expense');
                 const dateObj   = new Date(tx.date);
@@ -1352,6 +1575,9 @@
                             <i class="fas ${catIcon}"></i>
                             ${tx.category_name || 'Uncategorized'}
                         </span>
+                    </div>
+                    <div class="tx-col-account">
+                        <span class="tx-account-name" title="${tx.account_name || '-'}">${tx.account_name || '-'}</span>
                     </div>
                     <div class="tx-col-type">
                         <span class="tx-type-badge type-${txClass}">
@@ -1419,17 +1645,265 @@
     function nextTransactionPage()     { if (currentPage < Math.ceil(filteredTransactions.length / pageSize) - 1) { currentPage++; displayTransactionPage(); } }
     function previousTransactionPage() { if (currentPage > 0) { currentPage--; displayTransactionPage(); } }
 
+    /* ── CSV export / import ─────────────────────────────────────────────── */
+    function csvEscape(val) {
+        const s = String(val == null ? '' : val);
+        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    }
+
+    function exportFilteredTransactionsToCsv() {
+        if (!filteredTransactions.length) {
+            showNotification('No transactions to export.', 'error');
+            return;
+        }
+        const headers = ['Date', 'Description', 'Category', 'Type', 'Amount', 'Account', 'From Savings', 'Transaction ID', 'Created At'];
+        const rows = filteredTransactions.map(tx => [
+            (tx.date || '').slice(0, 10),
+            tx.description || '',
+            tx.category_name || '',
+            tx.transaction_type || '',
+            tx.amount,
+            tx.account_name || '-',
+            tx.fromSavings ? 'Yes' : 'No',
+            tx.id,
+            tx.created_at || ''
+        ]);
+        const csvContent = [headers, ...rows].map(r => r.map(csvEscape).join(',')).join('\r\n');
+        const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const stamp = new Date().toISOString().slice(0, 10);
+        a.href = url;
+        a.download = `transactions_${stamp}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showNotification(`Exported ${filteredTransactions.length} transaction${filteredTransactions.length > 1 ? 's' : ''} to CSV.`, 'success');
+    }
+
+    function parseCsv(text) {
+        const rows = [];
+        let row = [], field = '', inQuotes = false;
+        for (let i = 0; i < text.length; i++) {
+            const c = text[i];
+            if (inQuotes) {
+                if (c === '"') {
+                    if (text[i + 1] === '"') { field += '"'; i++; }
+                    else inQuotes = false;
+                } else field += c;
+            } else if (c === '"') {
+                inQuotes = true;
+            } else if (c === ',') {
+                row.push(field); field = '';
+            } else if (c === '\r') {
+                // skip, \n handles the line break
+            } else if (c === '\n') {
+                row.push(field); rows.push(row); row = []; field = '';
+            } else {
+                field += c;
+            }
+        }
+        if (field.length || row.length) { row.push(field); rows.push(row); }
+        return rows.filter(r => r.some(c => c.trim() !== ''));
+    }
+
+    async function importTransactionsFromCsv(file) {
+        const text = (await file.text()).replace(/^﻿/, '');
+        const rows = parseCsv(text);
+        if (rows.length < 2) {
+            showNotification('CSV file has no data rows.', 'error');
+            return;
+        }
+        const header = rows[0].map(h => h.trim().toLowerCase());
+        const idx = {
+            date: header.indexOf('date'),
+            description: header.indexOf('description'),
+            category: header.indexOf('category'),
+            type: header.indexOf('type'),
+            amount: header.indexOf('amount'),
+            account: header.indexOf('account'),
+            fromSavings: header.indexOf('from savings')
+        };
+        if (idx.date === -1 || idx.description === -1 || idx.type === -1 || idx.amount === -1) {
+            showNotification('CSV is missing required columns (Date, Description, Type, Amount).', 'error');
+            return;
+        }
+
+        showNotification('Importing…', 'success');
+        const categories = await fetch('/api/categories').then(r => r.json()).catch(() => []);
+        const accounts = await fetch('/api/accounts').then(r => r.json()).catch(() => []);
+        cachedAccounts = accounts;
+
+        const IMPORT_CATEGORY_COLORS = ['#E53935','#F4511E','#FB8C00','#FDD835','#7CB342','#43A047','#00897B','#00ACC1','#1E88E5','#3949AB','#5E35B1','#8E24AA','#D81B60','#EC407A','#6D4C41','#757575','#546E7A','#90A4AE','#2E7D32','#1565C0'];
+        const createdCategoryNames = [];
+
+        let succeeded = 0, failed = 0;
+        const errors = [];
+        for (const r of rows.slice(1)) {
+            const type = (r[idx.type] || '').trim().toLowerCase();
+            const description = (r[idx.description] || '').trim();
+            const amount = parseFloat(String(r[idx.amount] || '').replace(/[^\d.-]/g, ''));
+            const date = (r[idx.date] || '').trim().slice(0, 10);
+            const categoryName = idx.category !== -1 ? (r[idx.category] || '').trim() : '';
+            const accountText = idx.account !== -1 ? (r[idx.account] || '').trim() : '';
+            const fromSavingsText = idx.fromSavings !== -1 ? (r[idx.fromSavings] || '').trim().toLowerCase() : '';
+
+            if (type === 'transfer') {
+                failed++; errors.push(`"${description || 'row'}" skipped — Transfer rows aren't supported for import; add them via Log Cash Transfer.`);
+                continue;
+            }
+            if (!['income', 'expense', 'savings'].includes(type)) {
+                failed++; errors.push(`"${description || 'row'}" skipped — invalid type "${r[idx.type]}".`);
+                continue;
+            }
+            if (!description || isNaN(amount) || amount <= 0 || !date) {
+                failed++; errors.push(`"${description || 'row'}" skipped — missing or invalid description, amount, or date.`);
+                continue;
+            }
+            if (!categoryName) {
+                failed++; errors.push(`"${description}" skipped — no category specified.`);
+                continue;
+            }
+            let cat = categories.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
+            if (!cat) {
+                try {
+                    const createResp = await fetch('/api/categories', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            name: categoryName,
+                            color: IMPORT_CATEGORY_COLORS[categories.length % IMPORT_CATEGORY_COLORS.length],
+                            icon: 'tag',
+                            categoryType: type
+                        })
+                    });
+                    if (createResp.ok) {
+                        cat = await createResp.json();
+                        categories.push(cat);
+                        createdCategoryNames.push(categoryName);
+                    } else {
+                        const errData = await createResp.json().catch(() => null);
+                        failed++; errors.push(`"${description}" skipped — could not create category "${categoryName}" (${(errData && errData.error) || 'server error'}).`);
+                        continue;
+                    }
+                } catch (e) {
+                    failed++; errors.push(`"${description}" skipped — could not create category "${categoryName}".`);
+                    continue;
+                }
+            }
+            const fromSavings = type === 'expense' && (fromSavingsText === 'yes' || accountText.toUpperCase() === 'SAVINGS');
+            let accountId = null;
+            if (!fromSavings && accountText && accountText !== '-') {
+                const acct = cachedAccounts.find(a => accountText.startsWith(a.accountNickname));
+                accountId = acct ? acct.id : null;
+            }
+
+            try {
+                const response = await fetch('/api/transactions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        description,
+                        amount,
+                        category_id: cat.id,
+                        transaction_type: type,
+                        date,
+                        sourceAccountId: accountId,
+                        destinationAccountId: null,
+                        fromSavings
+                    })
+                });
+                if (response.ok) {
+                    succeeded++;
+                } else {
+                    failed++;
+                    const data = await response.json().catch(() => null);
+                    errors.push(`"${description}" failed — ${(data && data.error) || 'server error'}.`);
+                }
+            } catch (e) {
+                failed++; errors.push(`"${description}" failed — network error.`);
+            }
+        }
+
+        if (succeeded) loadDashboard();
+        const uniqueCreated = [...new Set(createdCategoryNames)];
+        const createdNote = uniqueCreated.length
+            ? ` (${uniqueCreated.length} new categor${uniqueCreated.length > 1 ? 'ies' : 'y'} created: ${uniqueCreated.join(', ')})`
+            : '';
+        if (failed === 0) {
+            showNotification(`Imported ${succeeded} transaction${succeeded > 1 ? 's' : ''} successfully.${createdNote}`, 'success');
+        } else {
+            showNotification(`${succeeded} imported, ${failed} failed.${createdNote} ${errors.slice(0, 2).join(' ')}`, succeeded ? 'warning' : 'error');
+        }
+    }
+
     /* ── Edit transaction ────────────────────────────────────────────────── */
-    function editTransaction(id) {
+    function showEditTransferFields() {
+        document.getElementById('editTxAccountWrap').classList.add('d-none');
+        document.getElementById('editTxCategoryWrap').classList.add('d-none');
+        document.getElementById('editTxTransferWrap').classList.remove('d-none');
+    }
+
+    function showEditNormalFields() {
+        document.getElementById('editTxAccountWrap').classList.remove('d-none');
+        document.getElementById('editTxCategoryWrap').classList.remove('d-none');
+        document.getElementById('editTxTransferWrap').classList.add('d-none');
+    }
+
+    async function loadEditTransferAccounts(fromSel, toSel, selectedFrom, selectedTo) {
+        try {
+            const accounts = await fetch('/api/accounts').then(r => r.json());
+            const label = a => a.accountNickname + (a.bankName ? ' (' + a.bankName + ')' : a.provider ? ' (' + a.provider + ')' : '');
+            const accountOptionsHtml = accounts.map(a => `<option value="${a.id}">${label(a)}</option>`).join('');
+            fromSel.innerHTML = '<option value="">Select source…</option>' + '<option value="EXTERNAL">🌐 External Source</option>' +
+                (accounts.length ? '<option disabled>──────────</option>' : '') + accountOptionsHtml;
+            toSel.innerHTML = '<option value="">Select destination…</option>' + '<option value="EXTERNAL">🌐 External Destination</option>' +
+                (accounts.length ? '<option disabled>──────────</option>' : '') + accountOptionsHtml;
+        } catch (e) {
+            fromSel.innerHTML = '<option value="">Select source…</option>';
+            toSel.innerHTML = '<option value="">Select destination…</option>';
+        }
+        fromSel.value = selectedFrom || '';
+        toSel.value = selectedTo || '';
+    }
+
+    async function editTransaction(id) {
         const tx = allTransactions.find(t => t.id === id);
         if (!tx) return;
         txEditId = id;
         document.getElementById('editTxId').value          = id;
         document.getElementById('editTxDescription').value = tx.description;
         document.getElementById('editTxAmount').value      = Number(tx.amount).toFixed(2);
+        document.getElementById('editTxDate').value        = tx.date ? tx.date.slice(0, 10) : '';
         document.getElementById('editTxType').value        = tx.transaction_type;
-        loadEditCategories(tx.transaction_type, tx.category_id);
+
+        if (tx.transaction_type === 'transfer') {
+            showEditTransferFields();
+            const selectedFrom = tx.sourceAccountId != null ? String(tx.sourceAccountId) : 'EXTERNAL';
+            const selectedTo   = tx.destinationAccountId != null ? String(tx.destinationAccountId) : 'EXTERNAL';
+            await loadEditTransferAccounts(document.getElementById('editTxTransferFrom'), document.getElementById('editTxTransferTo'), selectedFrom, selectedTo);
+        } else {
+            showEditNormalFields();
+            loadEditCategories(tx.transaction_type, tx.category_id);
+            applyAccountFieldLabel('editTxAccountLabel', tx.transaction_type);
+            const selectedAccountValue = tx.fromSavings ? 'SAVINGS' : (tx.sourceAccountId != null ? String(tx.sourceAccountId) : '');
+            loadEditTxAccounts(selectedAccountValue, tx.transaction_type);
+        }
         txEditModal.show();
+    }
+
+    async function loadEditTxAccounts(selectedValue, type) {
+        const sel = document.getElementById('editTxAccount');
+        try {
+            const accounts = await fetch('/api/accounts').then(r => r.json());
+            const label = a => a.accountNickname + (a.bankName ? ' (' + a.bankName + ')' : a.provider ? ' (' + a.provider + ')' : '');
+            sel.innerHTML = '<option value="">-- No account --</option>' + accounts.map(a => `<option value="${a.id}">${label(a)}</option>`).join('');
+        } catch (e) {
+            sel.innerHTML = '<option value="">-- No account --</option>';
+        }
+        applySavingsPseudoOption(sel, type);
+        sel.value = selectedValue || '';
     }
 
     async function loadEditCategories(type, selectedId) {
@@ -1460,33 +1934,67 @@
         const id          = parseInt(document.getElementById('editTxId').value, 10);
         const description = document.getElementById('editTxDescription').value.trim();
         const amount      = parseFloat(document.getElementById('editTxAmount').value);
+        const date        = document.getElementById('editTxDate').value;
         const type        = document.getElementById('editTxType').value;
-        const categoryId  = parseInt(document.getElementById('editTxCategory').value, 10);
 
-        if (!description || isNaN(amount) || amount <= 0 || !categoryId) {
-            showNotification('Please fill all fields correctly.', 'error');
-            return;
+        let payload;
+        if (type === 'transfer') {
+            const fromVal = document.getElementById('editTxTransferFrom').value;
+            const toVal   = document.getElementById('editTxTransferTo').value;
+            if (!fromVal || !toVal) {
+                showNotification('Select both From and To accounts.', 'error'); return;
+            }
+            if (fromVal === 'EXTERNAL' && toVal === 'EXTERNAL') {
+                showNotification('From and To cannot both be External.', 'error'); return;
+            }
+            if (fromVal === toVal) {
+                showNotification('From and To accounts must be different.', 'error'); return;
+            }
+            if (isNaN(amount) || amount <= 0 || !date) {
+                showNotification('Please fill all fields correctly.', 'error'); return;
+            }
+            payload = {
+                description: description || 'Transfer',
+                amount,
+                date,
+                transaction_type: 'transfer',
+                category_id: null,
+                sourceAccountId: fromVal === 'EXTERNAL' ? null : parseInt(fromVal, 10),
+                destinationAccountId: toVal === 'EXTERNAL' ? null : parseInt(toVal, 10)
+            };
+        } else {
+            const categoryId = parseInt(document.getElementById('editTxCategory').value, 10);
+            const acctVal    = document.getElementById('editTxAccount').value;
+            if (!description || isNaN(amount) || amount <= 0 || !date || !categoryId) {
+                showNotification('Please fill all fields correctly.', 'error');
+                return;
+            }
+            payload = {
+                description,
+                amount,
+                date,
+                transaction_type: type,
+                category_id: categoryId,
+                sourceAccountId: acctVal && acctVal !== 'SAVINGS' ? parseInt(acctVal, 10) : null,
+                destinationAccountId: null,
+                fromSavings: acctVal === 'SAVINGS'
+            };
         }
 
         try {
             const response = await fetch(`/api/transactions/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    description,
-                    amount,
-                    transaction_type: type,
-                    category_id: categoryId
-                })
+                body: JSON.stringify(payload)
             });
+            const data = await response.json().catch(() => ({}));
             if (response.ok) {
                 txEditModal.hide();
                 txEditId = null;
-                showNotification('Transaction updated successfully', 'success');
+                showNotification(data.warning || 'Transaction updated successfully', data.warning ? 'warning' : 'success');
                 loadDashboard();
             } else {
-                const err = await response.json().catch(() => ({}));
-                showNotification(err.error || 'Failed to update transaction', 'error');
+                showNotification(data.error || 'Failed to update transaction', 'error');
             }
         } catch (e) {
             showNotification('Error updating transaction', 'error');
@@ -1495,76 +2003,28 @@
 
     /* ── Add transaction ─────────────────────────────────────────────────── */
     function openAddTransactionModal() {
-        document.getElementById('dashboardAddTxForm').reset();
-        document.getElementById('dashboardAddTxDate').valueAsDate = new Date();
-        loadAddTxCategories();
-        loadAddTxAccounts();
-        txAddModal.show();
+        window.location.href = 'transactions.html?openAddTx=1';
     }
 
-    async function loadAddTxCategories() {
-        const sel = document.getElementById('dashboardAddTxCategory');
-        sel.innerHTML = '<option value="">Loading…</option>';
-        try {
-            // Show every category regardless of the selected transaction type — categories aren't
-            // strictly tied to one type (e.g. an "income"-tagged category should still be pickable
-            // for an expense entry), and filtering by type was hiding income/savings categories.
-            const cats = await fetch('/api/categories').then(r => r.json());
-            sel.innerHTML = '<option value="">Select category</option>' +
-                (cats.length ? cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('') : '');
-        } catch (e) {
-            sel.innerHTML = '<option value="">Error loading</option>';
-        }
+    const ACCOUNT_FIELD_LABELS = { expense: 'Paid From', income: 'Received Into', savings: 'Savings Account' };
+    function applyAccountFieldLabel(labelElId, type) {
+        const labelEl = document.getElementById(labelElId);
+        if (!labelEl) return;
+        labelEl.innerHTML = (ACCOUNT_FIELD_LABELS[type] || 'Paid From') + ' <small class="text-muted">(optional)</small>';
     }
-
-    async function loadAddTxAccounts() {
-        const sel = document.getElementById('dashboardAddTxAccount');
-        try {
-            const accounts = await fetch('/api/accounts').then(r => r.json());
-            const label = a => a.accountNickname + (a.bankName ? ' (' + a.bankName + ')' : a.provider ? ' (' + a.provider + ')' : '');
-            sel.innerHTML = '<option value="">-- No account --</option>' + accounts.map(a => `<option value="${a.id}">${label(a)}</option>`).join('');
-        } catch (e) {
-            sel.innerHTML = '<option value="">-- No account --</option>';
-        }
-    }
-
-    async function saveAddTransaction() {
-        const description = document.getElementById('dashboardAddTxDescription').value.trim();
-        const amount      = parseFloat(document.getElementById('dashboardAddTxAmount').value);
-        const categoryId  = parseInt(document.getElementById('dashboardAddTxCategory').value, 10);
-        const type        = document.getElementById('dashboardAddTxType').value;
-        const date        = document.getElementById('dashboardAddTxDate').value;
-        const acctEl      = document.getElementById('dashboardAddTxAccount');
-
-        if (!description || isNaN(amount) || amount <= 0 || !categoryId || !date) {
-            showNotification('Please fill all fields correctly.', 'error');
-            return;
-        }
-
-        try {
-            const response = await fetch('/api/transactions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    description,
-                    amount,
-                    category_id: categoryId,
-                    transaction_type: type,
-                    date,
-                    sourceAccountId: acctEl && acctEl.value ? parseInt(acctEl.value, 10) : null,
-                    destinationAccountId: null
-                })
-            });
-            if (response.ok) {
-                txAddModal.hide();
-                showNotification('Transaction added successfully', 'success');
-                loadDashboard();
-            } else {
-                const err = await response.json().catch(() => ({}));
-                showNotification(err.error || 'Failed to add transaction', 'error');
+    function applySavingsPseudoOption(selectEl, type) {
+        if (!selectEl) return;
+        const existing = selectEl.querySelector('option[value="SAVINGS"]');
+        if (type === 'expense') {
+            if (!existing) {
+                const opt = document.createElement('option');
+                opt.value = 'SAVINGS';
+                opt.textContent = '💰 Savings (spend from savings)';
+                selectEl.insertBefore(opt, selectEl.options[1] || null);
             }
-        } catch (e) {
-            showNotification('Error adding transaction', 'error');
+        } else if (existing) {
+            if (selectEl.value === 'SAVINGS') selectEl.value = '';
+            existing.remove();
         }
     }
 
@@ -1771,78 +2231,23 @@
         drawMonthlyChart(monthlyChartData, activeSuffix());
     }
 
+    const TOAST_ICONS = { success: 'fa-circle-check', error: 'fa-circle-exclamation', warning: 'fa-triangle-exclamation', info: 'fa-circle-info' };
+
     function showNotification(message, type = 'success') {
         const container = document.getElementById('toastContainer');
         const toast = document.createElement('div');
-        toast.className = `notification-toast notification-${type === 'success' ? 'success' : 'error'}`;
-        toast.textContent = message;
+        toast.className = `notification-toast notification-${type}`;
+        toast.innerHTML = `<i class="fas ${TOAST_ICONS[type] || TOAST_ICONS.success} notification-toast-icon"></i>` +
+            `<span class="notification-toast-message"></span>` +
+            `<button type="button" class="notification-toast-close" aria-label="Dismiss">&times;</button>`;
+        toast.querySelector('.notification-toast-message').textContent = message;
+        const dismiss = () => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); };
+        toast.querySelector('.notification-toast-close').addEventListener('click', dismiss);
         container.appendChild(toast);
         requestAnimationFrame(() => toast.classList.add('show'));
-        setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 300);
-        }, 5000);
+        setTimeout(dismiss, 5000);
     }
 </script>
-<!-- Add New Transaction Modal -->
-<div class="modal fade" id="dashboardAddTxModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>Add New Transaction</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="dashboardAddTxForm">
-                    <div class="row g-3">
-                        <div class="col-md-6 mb-2">
-                            <label for="dashboardAddTxDescription" class="form-label">Description</label>
-                            <input type="text" class="form-control form-control-sm" id="dashboardAddTxDescription" required placeholder="e.g., Grocery shopping">
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <label for="dashboardAddTxAmount" class="form-label">Amount</label>
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text">৳</span>
-                                <input type="number" class="form-control" id="dashboardAddTxAmount" step="0.01" required placeholder="0.00">
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-2">
-                            <label for="dashboardAddTxCategory" class="form-label">Category</label>
-                            <select class="form-select form-select-sm" id="dashboardAddTxCategory" required>
-                                <option value="">Select category</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-2">
-                            <label for="dashboardAddTxType" class="form-label">Type</label>
-                            <select class="form-select form-select-sm" id="dashboardAddTxType" required>
-                                <option value="expense">Expense</option>
-                                <option value="income">Income</option>
-                                <option value="savings">Savings</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-2">
-                            <label for="dashboardAddTxDate" class="form-label">Date</label>
-                            <input type="date" class="form-control form-control-sm" id="dashboardAddTxDate" required>
-                        </div>
-                        <div class="col-md-12 mb-2">
-                            <label for="dashboardAddTxAccount" class="form-label">Account <small class="text-muted">(optional)</small></label>
-                            <select class="form-select form-select-sm" id="dashboardAddTxAccount">
-                                <option value="">-- No account --</option>
-                            </select>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="dashboardSaveAddTxBtn">
-                    <i class="fas fa-plus me-1"></i>Add Transaction
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- Edit Transaction Modal -->
 <div class="modal fade" id="dashboardEditTxModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width:460px">
@@ -1865,14 +2270,35 @@
                     </div>
                 </div>
                 <div class="mb-3">
+                    <label for="editTxDate" class="form-label">Date</label>
+                    <input type="date" class="form-control" id="editTxDate" required>
+                </div>
+                <div class="mb-3">
                     <label for="editTxType" class="form-label">Type</label>
                     <select class="form-select" id="editTxType">
                         <option value="expense">Expense</option>
                         <option value="income">Income</option>
                         <option value="savings">Savings</option>
+                        <option value="transfer">Transfer</option>
                     </select>
                 </div>
-                <div class="mb-3">
+                <div class="mb-3" id="editTxAccountWrap">
+                    <label for="editTxAccount" class="form-label" id="editTxAccountLabel">Paid From <small class="text-muted">(optional)</small></label>
+                    <select class="form-select" id="editTxAccount">
+                        <option value="">-- No account --</option>
+                    </select>
+                </div>
+                <div class="mb-3 d-none" id="editTxTransferWrap">
+                    <label for="editTxTransferFrom" class="form-label">From Account</label>
+                    <select class="form-select mb-2" id="editTxTransferFrom">
+                        <option value="">Select source…</option>
+                    </select>
+                    <label for="editTxTransferTo" class="form-label">To Account</label>
+                    <select class="form-select" id="editTxTransferTo">
+                        <option value="">Select destination…</option>
+                    </select>
+                </div>
+                <div class="mb-3" id="editTxCategoryWrap">
                     <label for="editTxCategory" class="form-label">Category</label>
                     <select class="form-select" id="editTxCategory" required>
                         <option value="">Loading…</option>

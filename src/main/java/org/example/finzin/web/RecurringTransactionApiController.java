@@ -94,8 +94,47 @@ public class RecurringTransactionApiController {
             return ResponseEntity.badRequest().body(Map.of("error", error));
         }
 
-        // Editing only affects future occurrences — nextExecutionDate/lastExecutionDate are left untouched here.
+        // An explicit nextExecutionDate from the client (the user directly editing the "Next Run"
+        // field) always wins outright — but the scheduler backfills in a loop whenever
+        // nextExecutionDate <= today (see RecurringTransactionExecutionService.processOne), so an
+        // unvalidated past date here would silently generate one real transaction per missed period.
+        // Reject anything before today, and anything that wouldn't be strictly after the last real
+        // execution (which would re-trigger/duplicate a period that already ran).
+        LocalDate explicitNextExecutionDate = parseDate(body.nextExecutionDate());
+        if (explicitNextExecutionDate != null) {
+            if (explicitNextExecutionDate.isBefore(LocalDate.now())) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Next Run cannot be set to a date in the past."));
+            }
+            if (entity.getLastExecutionDate() != null && !explicitNextExecutionDate.isAfter(entity.getLastExecutionDate())) {
+                return ResponseEntity.badRequest().body(Map.of("error",
+                        "Next Run must be after the last executed date (" + entity.getLastExecutionDate() + ")."));
+            }
+        }
+
+        LocalDate oldStartDate = entity.getStartDate();
+        String oldFrequency = entity.getFrequency();
+        Integer oldIntervalValue = entity.getIntervalValue();
+
         applyRequestToEntity(body, entity, startDate);
+
+        if (explicitNextExecutionDate != null) {
+            entity.setNextExecutionDate(explicitNextExecutionDate);
+        } else {
+            // Re-anchor nextExecutionDate to the new schedule ONLY when startDate/frequency/interval
+            // actually changed. A cosmetic edit (amount, description, category, account) must never
+            // move an already-established next-run date — including for a never-executed schedule:
+            // recomputing unconditionally there would silently fast-forward past a backdated
+            // startDate the scheduler simply hasn't caught up on yet, skipping its normal catch-up
+            // execution instead of just correctly re-anchoring an actually-changed schedule.
+            boolean scheduleChanged = !entity.getStartDate().equals(oldStartDate)
+                    || !entity.getFrequency().equals(oldFrequency)
+                    || !entity.getIntervalValue().equals(oldIntervalValue);
+            if (scheduleChanged) {
+                entity.setNextExecutionDate(recurringTransactionService.recalculateNextExecutionDateForEdit(
+                        entity.getStartDate(), entity.getFrequency(), entity.getIntervalValue(), entity.getLastExecutionDate()));
+            }
+        }
+
         RecurringTransactionEntity saved = recurringTransactionService.save(entity);
         return ResponseEntity.ok(toResponse(saved));
     }
@@ -193,7 +232,8 @@ public class RecurringTransactionApiController {
             String frequency,
             Integer intervalValue,
             String startDate,
-            String endDate
+            String endDate,
+            String nextExecutionDate
     ) {}
 
     private record StatusRequest(String status) {}

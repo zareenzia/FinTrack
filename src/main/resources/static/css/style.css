@@ -795,8 +795,9 @@ body.has-sidebar {
     padding-left: 5px;
 }
 
-/* Tooltip on collapsed hover */
-#sidebar.collapsed .sidebar-item:hover::after {
+/* Tooltip on collapsed hover (and always for icon-only items, since they never show a label) */
+#sidebar.collapsed .sidebar-item:hover::after,
+.sidebar-item.sidebar-icon-only:hover::after {
     content: attr(title);
     position: absolute;
     left: calc(100% + 10px);
@@ -834,6 +835,34 @@ body.has-sidebar {
 .sidebar-logout:hover {
     background: rgba(239, 68, 68, 0.1) !important;
     color: #ef4444 !important;
+}
+
+/* Icon-only pair (Notifications + AI Assistant) shown side by side above the other bottom items */
+.sidebar-icon-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 3px;
+}
+
+.sidebar-icon-row .sidebar-item {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.sidebar-item.sidebar-icon-only {
+    justify-content: center;
+    padding: 11px 8px;
+}
+
+.sidebar-item.sidebar-icon-only .sidebar-label {
+    /* Tooltip (title attr) carries the label instead — kept in the DOM for accessibility/testability. */
+    opacity: 0;
+    max-width: 0;
+    pointer-events: none;
+}
+
+#sidebar.collapsed .sidebar-icon-row {
+    flex-direction: column;
 }
 
 /* Avatar */
@@ -1513,58 +1542,89 @@ body.has-sidebar {
     animation: fadeIn 0.5s ease-out;
 }
 
-/* ===== NOTIFICATIONS ===== */
+/* ===== NOTIFICATIONS =====
+   Anchored bottom-right (not top) so it never overlaps a page's own header
+   controls (action buttons, period selectors, etc.), which vary per page and
+   can wrap unpredictably near the top of the viewport. */
 .notification-toast-container {
     position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 1100;
-    width: min(92vw, 450px);
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    width: min(92vw, 380px);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
     pointer-events: none;
 }
 
 .notification-toast {
-    margin-bottom: 12px;
-    padding: 16px 20px;
-    border-radius: 12px;
-    font-weight: 600;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
     opacity: 0;
-    transform: translateY(-20px);
-    transition: all 0.4s cubic-bezier(0.23, 1, 0.320, 1);
-    border-left: 5px solid transparent;
+    transform: translateX(40px);
+    transition: all 0.35s cubic-bezier(0.23, 1, 0.320, 1);
+    border-left: 4px solid transparent;
     background: var(--bg-notification);
     color: var(--text-notification);
-    letter-spacing: 0.3px;
-    animation: slideIn 0.4s ease-out;
-}
-
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(-30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    pointer-events: auto;
 }
 
 .notification-toast.show {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(0);
 }
 
-.notification-toast.notification-success {
-    border-left-color: #1F7D53;
-    background: linear-gradient(135deg, #f0f9f7 0%, #e8f5f1 100%);
+.notification-toast-icon {
+    flex-shrink: 0;
+    font-size: 1.1rem;
 }
 
-.notification-toast.notification-error {
-    border-left-color: #e74c3c;
-    background: linear-gradient(135deg, #fef5f5 0%, #fce8e6 100%);
+.notification-toast-message {
+    flex: 1;
+    word-break: break-word;
 }
+
+.notification-toast-close {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    padding: 4px;
+    margin: -4px -4px -4px 0;
+    cursor: pointer;
+    color: currentColor;
+    opacity: 0.55;
+    font-size: 0.95rem;
+    line-height: 1;
+    transition: opacity 0.15s ease;
+}
+
+.notification-toast-close:hover {
+    opacity: 1;
+}
+
+/* Card chrome (background/text) always comes from the active color theme via
+   --bg-notification / --text-notification — only the accent bar + icon carry
+   fixed semantic meaning (success/error/warning/info), so a toast always looks
+   native to whichever of the 9 themes is active instead of a foreign pastel box. */
+.notification-toast.notification-success { border-left-color: #1F7D53; }
+.notification-toast.notification-success .notification-toast-icon { color: #1F7D53; }
+
+.notification-toast.notification-error { border-left-color: #e74c3c; }
+.notification-toast.notification-error .notification-toast-icon { color: #e74c3c; }
+
+.notification-toast.notification-warning { border-left-color: #f59e0b; }
+.notification-toast.notification-warning .notification-toast-icon { color: #f59e0b; }
+
+.notification-toast.notification-info { border-left-color: #3b82f6; }
+.notification-toast.notification-info .notification-toast-icon { color: #3b82f6; }
 
 /* ===== COLLAPSE/ACCORDION ===== */
 .card-header[data-bs-toggle="collapse"] {
@@ -2019,15 +2079,6 @@ h3.stat-card-amount,
 
 /* Dark mode scrollbar (inherits from theme variables above — no extra rules needed) */
 
-/* Notification toast dark overrides */
-[data-theme="dark"] .notification-toast.notification-success {
-    background: linear-gradient(135deg, #162e18 0%, #1a3820 100%);
-}
-
-[data-theme="dark"] .notification-toast.notification-error {
-    background: linear-gradient(135deg, #2e1212 0%, #381818 100%);
-}
-
 /* =====================================================
    RECENT TRANSACTIONS â€” Modern Card-List
    ===================================================== */
@@ -2125,6 +2176,26 @@ h3.stat-card-amount,
     justify-content: flex-end;
 }
 
+.tx-export-btn {
+    width: 30px;
+    height: 30px;
+    background: rgba(255, 255, 255, 0.12) !important;
+    border: 1px solid rgba(255, 255, 255, 0.28) !important;
+    color: #fff !important;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+.tx-export-btn:hover {
+    background: rgba(255, 255, 255, 0.22) !important;
+    border-color: rgba(255, 255, 255, 0.55) !important;
+}
+
 .tx-header-icon {
     width: 36px;
     height: 36px;
@@ -2173,7 +2244,7 @@ h3.stat-card-amount,
 /* â”€â”€ Column labels row â”€â”€ */
 .tx-col-labels {
     display: grid;
-    grid-template-columns: 110px 1fr 160px 120px 130px 82px;
+    grid-template-columns: 110px 1fr 160px 140px 120px 130px 82px;
     padding: 8px 20px;
     font-size: 0.7rem;
     font-weight: 700;
@@ -2193,7 +2264,7 @@ h3.stat-card-amount,
 /* â”€â”€ Transaction row â”€â”€ */
 .tx-row {
     display: grid;
-    grid-template-columns: 110px 1fr 160px 120px 130px 82px;
+    grid-template-columns: 110px 1fr 160px 140px 120px 130px 82px;
     align-items: center;
     padding: 12px 20px;
     gap: 8px;
@@ -2269,6 +2340,17 @@ h3.stat-card-amount,
     font-size: 0.88rem;
     font-weight: 600;
     color: var(--tx-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+}
+
+/* Paid-from account column */
+.tx-account-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--tx-label-color);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -2374,7 +2456,21 @@ h3.stat-card-amount,
     display: flex;
     align-items: center;
     gap: 2px;
-}/* Empty state */
+}
+
+/* Net total row */
+.tx-total-row {
+    background: var(--bg-table-stripe, rgba(0, 0, 0, 0.03));
+    border-top: 2px solid var(--tx-row-border);
+    animation: none;
+}
+.tx-total-label {
+    grid-column: 1 / 6;
+    text-align: right;
+    padding-right: 10px;
+    color: var(--tx-text);
+}
+/* Empty state */
 .tx-empty {
     padding: 48px 24px;
     text-align: center;
@@ -2526,7 +2622,7 @@ h3.stat-card-amount,
 @media (max-width: 900px) {
     .tx-col-labels,
     .tx-row {
-        grid-template-columns: 90px 1fr 130px 100px 110px 68px;
+        grid-template-columns: 90px 1fr 130px 120px 100px 110px 68px;
         padding: 10px 14px;
     }
 }
@@ -2540,12 +2636,13 @@ h3.stat-card-amount,
         padding: 14px 16px;
         position: relative;
     }
-    .tx-col-date  { order: 1; }
-    .tx-col-desc  { order: 2; }
-    .tx-col-cat   { order: 3; }
-    .tx-col-type  { order: 4; }
+    .tx-col-date    { order: 1; }
+    .tx-col-desc    { order: 2; }
+    .tx-col-cat     { order: 3; }
+    .tx-col-account { order: 4; }
+    .tx-col-type    { order: 5; }
     .tx-col-amount {
-        order: 5;
+        order: 6;
         font-size: 1.1rem !important;
     }
     .tx-col-action {
@@ -3032,3 +3129,62 @@ h3.stat-card-amount,
 [data-theme="dark"] .balance-positive { color: #4ade80 !important; }
 [data-theme="dark"] .balance-credit { color: #f87171 !important; }
 [data-theme="dark"] .acct-breakdown-bal.bal-credit { color: #f87171; }
+
+/* ===== SIDEBAR COMPACT MODE ===== */
+body.sidebar-compact #sidebar:not(.collapsed) .sidebar-label {
+    opacity: 0;
+    max-width: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+body.sidebar-compact #sidebar:not(.collapsed) .sidebar-item {
+    justify-content: center;
+    padding: 11px 8px;
+}
+body.sidebar-compact #sidebar:not(.collapsed) .sidebar-item:hover::after {
+    content: attr(title);
+    position: absolute;
+    left: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--bg-card);
+    color: var(--text-body);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    z-index: 9999;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+}
+
+/* ===== SIDEBAR PIN DOT ===== */
+.sidebar-pin-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-accent, #255F38);
+    margin-left: auto;
+    flex-shrink: 0;
+    vertical-align: middle;
+}
+
+/* ===== SIDEBAR CUSTOMIZER DRAG & DROP ===== */
+#customizerList .list-group-item.dragging {
+    opacity: 0.5;
+    border: 2px dashed var(--color-accent, #255F38);
+}
+#customizerList .list-group-item.drag-over {
+    border-top: 2px solid var(--color-accent, #255F38);
+    background: rgba(37, 95, 56, 0.08);
+}
+#customizerList .drag-handle {
+    font-size: 0.95rem;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+#customizerList .list-group-item:hover .drag-handle {
+    opacity: 1;
+}
