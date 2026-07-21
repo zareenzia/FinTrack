@@ -115,7 +115,8 @@
 
     <div class="card mb-3">
         <div class="card-body">
-            <div class="row g-2 align-items-end">
+            <div class="d-flex align-items-end gap-2">
+            <div class="row g-2 align-items-end flex-grow-1">
                 <div class="col-md-2">
                     <label class="form-label small mb-1">Search</label>
                     <input type="text" class="form-control form-control-sm" id="rtSearch" placeholder="Search by name...">
@@ -173,6 +174,12 @@
                         <option value="50">50</option>
                     </select>
                 </div>
+            </div>
+            <div class="d-flex gap-1 flex-shrink-0">
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="rtImportBtn" title="Import recurring transactions from CSV"><i class="fas fa-file-import"></i></button>
+                <input type="file" id="rtImportFileInput" accept=".csv" style="display:none;">
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="rtExportBtn" title="Export filtered recurring transactions to CSV"><i class="fas fa-file-export"></i></button>
+            </div>
             </div>
         </div>
     </div>
@@ -267,6 +274,9 @@
                         <option value="expense">Expense</option>
                         <option value="savings">Savings</option>
                         <option value="transfer">Transfer</option>
+                    </select>
+                    <select class="tx-filter-select" id="txAccountFilter" title="Filter by paid from account">
+                        <option value="">All Accounts</option>
                     </select>
                     <select class="tx-filter-select" id="txLimitSelect" title="Transactions to show">
                         <option value="5">Show 5</option>
@@ -754,6 +764,7 @@
     let pageSize = parseInt(localStorage.getItem('tx_page_limit') || '5', 10);
     let txFilterCategory = '';
     let txFilterType = '';
+    let txFilterAccount = ''; // '', 'SAVINGS', 'NONE', or an account id (string)
     let txFilterMonth = null; // 'YYYY-MM' or 'ALL'
     let txDeleteId = null;
     let txDeleteModal = null;
@@ -845,6 +856,11 @@
             currentPage = 0;
             applyFiltersAndDisplay();
         });
+        document.getElementById('txAccountFilter').addEventListener('change', function () {
+            txFilterAccount = this.value;
+            currentPage = 0;
+            applyFiltersAndDisplay();
+        });
         document.getElementById('txMonthFilter').addEventListener('change', function () {
             txFilterMonth = this.value;
             currentPage = 0;
@@ -896,6 +912,15 @@
         document.getElementById('rtFilterStatus').addEventListener('change', applyRtFilters);
         document.getElementById('rtSortBy').addEventListener('change', applyRtFilters);
         document.getElementById('rtPageSize').addEventListener('change', function () { rtCurrentPage = 0; applyRtFilters(); });
+        document.getElementById('rtExportBtn').addEventListener('click', exportFilteredRecurringToCsv);
+        document.getElementById('rtImportBtn').addEventListener('click', function () {
+            document.getElementById('rtImportFileInput').click();
+        });
+        document.getElementById('rtImportFileInput').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            this.value = '';
+            if (file) importRecurringFromCsv(file);
+        });
 
         loadAccountsIntoSelect();
         applyCurrencySymbolToInputs();
@@ -1625,6 +1650,15 @@
         if (toSel)   toSel.innerHTML   = toOpts;
         if (recurSrcSel)  recurSrcSel.innerHTML  = srcOpts;
         if (recurDestSel) recurDestSel.innerHTML = txOpts;
+        const acctFilterSel = document.getElementById('txAccountFilter');
+        if (acctFilterSel) {
+            const prevVal = acctFilterSel.value;
+            acctFilterSel.innerHTML = '<option value="">All Accounts</option>'
+                + '<option value="SAVINGS">💰 Savings</option>'
+                + '<option value="NONE">No Account</option>'
+                + accountOptionsHtml;
+            acctFilterSel.value = prevVal;
+        }
         } catch(e) { console.warn('Could not load accounts for select:', e); }
     }
 
@@ -1728,6 +1762,198 @@
 
     function rtPreviousPage() { if (rtCurrentPage > 0) { rtCurrentPage--; renderRtTable(); } }
     function rtNextPage() { rtCurrentPage++; renderRtTable(); }
+
+    function accountLabelById(id) {
+        if (id == null) return null;
+        const acct = cachedAccounts.find(a => a.id === id);
+        if (!acct) return null;
+        return acct.accountNickname + (acct.bankName ? ' (' + acct.bankName + ')' : acct.provider ? ' (' + acct.provider + ')' : '');
+    }
+
+    async function exportFilteredRecurringToCsv() {
+        if (!filteredRecurring.length) {
+            showTopNotification('No recurring transactions to export.', 'error');
+            return;
+        }
+        await loadAccountsIntoSelect();
+        const headers = ['Name', 'Description', 'Type', 'Category', 'Amount', 'Frequency', 'Interval', 'Start Date', 'End Date', 'Next Run', 'Last Executed', 'Status', 'Account'];
+        const rows = filteredRecurring.map(r => {
+            const account = r.transactionType === 'transfer'
+                ? `${accountLabelById(r.sourceAccountId) || 'External'} → ${accountLabelById(r.destinationAccountId) || 'External'}`
+                : (accountLabelById(r.sourceAccountId) || '-');
+            return [
+                r.transactionName,
+                r.description || '',
+                r.transactionType,
+                r.categoryName || '',
+                r.amount,
+                r.frequency,
+                r.intervalValue,
+                r.startDate,
+                r.endDate || '',
+                r.nextExecutionDate || '',
+                r.lastExecutionDate || '',
+                r.status,
+                account
+            ];
+        });
+        const csvContent = [headers, ...rows].map(r => r.map(csvEscape).join(',')).join('\r\n');
+        const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const stamp = new Date().toISOString().slice(0, 10);
+        a.href = url;
+        a.download = `recurring_transactions_${stamp}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showTopNotification(`Exported ${filteredRecurring.length} recurring transaction${filteredRecurring.length > 1 ? 's' : ''} to CSV.`, 'success');
+    }
+
+    async function importRecurringFromCsv(file) {
+        const text = (await file.text()).replace(/^﻿/, '');
+        const rows = parseCsv(text);
+        if (rows.length < 2) {
+            showTopNotification('CSV file has no data rows.', 'error');
+            return;
+        }
+        const header = rows[0].map(h => h.trim().toLowerCase());
+        const idx = {
+            name: header.indexOf('name'),
+            description: header.indexOf('description'),
+            type: header.indexOf('type'),
+            category: header.indexOf('category'),
+            amount: header.indexOf('amount'),
+            frequency: header.indexOf('frequency'),
+            interval: header.indexOf('interval'),
+            startDate: header.indexOf('start date'),
+            endDate: header.indexOf('end date'),
+            account: header.indexOf('account')
+        };
+        if (idx.name === -1 || idx.type === -1 || idx.amount === -1 || idx.frequency === -1 || idx.startDate === -1) {
+            showTopNotification('CSV is missing required columns (Name, Type, Amount, Frequency, Start Date).', 'error');
+            return;
+        }
+
+        showTopNotification('Importing…', 'success');
+        const categories = await fetch('/api/categories').then(r => r.json()).catch(() => []);
+        await loadAccountsIntoSelect();
+
+        const IMPORT_CATEGORY_COLORS = ['#E53935','#F4511E','#FB8C00','#FDD835','#7CB342','#43A047','#00897B','#00ACC1','#1E88E5','#3949AB','#5E35B1','#8E24AA','#D81B60','#EC407A','#6D4C41','#757575','#546E7A','#90A4AE','#2E7D32','#1565C0'];
+        const createdCategoryNames = [];
+        const VALID_FREQUENCIES = ['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY'];
+
+        let succeeded = 0, failed = 0;
+        const errors = [];
+        for (const r of rows.slice(1)) {
+            const name = (r[idx.name] || '').trim();
+            const description = idx.description !== -1 ? (r[idx.description] || '').trim() : '';
+            const type = (r[idx.type] || '').trim().toLowerCase();
+            const categoryName = idx.category !== -1 ? (r[idx.category] || '').trim() : '';
+            const amount = parseFloat(String(r[idx.amount] || '').replace(/[^\d.-]/g, ''));
+            const frequency = (r[idx.frequency] || '').trim().toUpperCase();
+            const intervalValue = idx.interval !== -1 ? (parseInt(r[idx.interval], 10) || 1) : 1;
+            const startDate = (r[idx.startDate] || '').trim().slice(0, 10);
+            const endDate = idx.endDate !== -1 ? (r[idx.endDate] || '').trim().slice(0, 10) : '';
+            const accountText = idx.account !== -1 ? (r[idx.account] || '').trim() : '';
+
+            if (type === 'transfer') {
+                failed++; errors.push(`"${name || 'row'}" skipped — Transfer recurring transactions aren't supported for import; add them via Create Recurring Transaction.`);
+                continue;
+            }
+            if (!['income', 'expense', 'savings'].includes(type)) {
+                failed++; errors.push(`"${name || 'row'}" skipped — invalid type "${r[idx.type]}".`);
+                continue;
+            }
+            if (!name || isNaN(amount) || amount <= 0 || !startDate) {
+                failed++; errors.push(`"${name || 'row'}" skipped — missing or invalid name, amount, or start date.`);
+                continue;
+            }
+            if (!VALID_FREQUENCIES.includes(frequency)) {
+                failed++; errors.push(`"${name}" skipped — invalid frequency "${r[idx.frequency]}".`);
+                continue;
+            }
+            if (!categoryName) {
+                failed++; errors.push(`"${name}" skipped — no category specified.`);
+                continue;
+            }
+            let cat = categories.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
+            if (!cat) {
+                try {
+                    const createResp = await fetch('/api/categories', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            name: categoryName,
+                            color: IMPORT_CATEGORY_COLORS[categories.length % IMPORT_CATEGORY_COLORS.length],
+                            icon: 'tag',
+                            categoryType: type
+                        })
+                    });
+                    if (createResp.ok) {
+                        cat = await createResp.json();
+                        categories.push(cat);
+                        createdCategoryNames.push(categoryName);
+                    } else {
+                        const errData = await createResp.json().catch(() => null);
+                        failed++; errors.push(`"${name}" skipped — could not create category "${categoryName}" (${(errData && errData.error) || 'server error'}).`);
+                        continue;
+                    }
+                } catch (e) {
+                    failed++; errors.push(`"${name}" skipped — could not create category "${categoryName}".`);
+                    continue;
+                }
+            }
+
+            let accountId = null;
+            if (accountText && accountText !== '-') {
+                const acct = cachedAccounts.find(a => accountText.startsWith(a.accountNickname));
+                accountId = acct ? acct.id : null;
+            }
+
+            try {
+                const response = await fetch('/api/recurring-transactions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        transactionName: name,
+                        description,
+                        transactionType: type,
+                        categoryId: cat.id,
+                        amount,
+                        sourceAccountId: accountId,
+                        destinationAccountId: null,
+                        frequency,
+                        intervalValue,
+                        startDate,
+                        endDate: endDate || null,
+                        nextExecutionDate: null
+                    })
+                });
+                if (response.ok) {
+                    succeeded++;
+                } else {
+                    failed++;
+                    const data = await response.json().catch(() => null);
+                    errors.push(`"${name}" failed — ${(data && data.error) || 'server error'}.`);
+                }
+            } catch (e) {
+                failed++; errors.push(`"${name}" failed — network error.`);
+            }
+        }
+
+        if (succeeded) loadRecurring();
+        const uniqueCreated = [...new Set(createdCategoryNames)];
+        const createdNote = uniqueCreated.length
+            ? ` (${uniqueCreated.length} new categor${uniqueCreated.length > 1 ? 'ies' : 'y'} created: ${uniqueCreated.join(', ')})`
+            : '';
+        if (failed === 0) {
+            showTopNotification(`Imported ${succeeded} recurring transaction${succeeded > 1 ? 's' : ''} successfully.${createdNote}`, 'success');
+        } else {
+            showTopNotification(`${succeeded} imported, ${failed} failed.${createdNote} ${errors.slice(0, 2).join(' ')}`, succeeded ? 'warning' : 'error');
+        }
+    }
 
     async function toggleRecurringStatus(id, currentStatus) {
         const newStatus = currentStatus === 'PAUSED' ? 'ACTIVE' : 'PAUSED';
@@ -2093,12 +2319,21 @@
         }
     }
 
+    function txMatchesAccountFilter(tx) {
+        if (!txFilterAccount) return true;
+        if (txFilterAccount === 'SAVINGS') return !!tx.fromSavings;
+        if (txFilterAccount === 'NONE') return !tx.fromSavings && tx.sourceAccountId == null && tx.destinationAccountId == null;
+        const id = parseInt(txFilterAccount, 10);
+        return tx.sourceAccountId === id || tx.destinationAccountId === id;
+    }
+
     function applyFiltersAndDisplay() {
         filteredTransactions = allTransactions.filter(function (tx) {
-            const catOk   = !txFilterCategory || tx.category_name === txFilterCategory;
-            const typeOk  = !txFilterType     || tx.transaction_type === txFilterType;
-            const monthOk = !txFilterMonth    || txFilterMonth === 'ALL' || monthKeyOf(tx.date) === txFilterMonth;
-            return catOk && typeOk && monthOk;
+            const catOk    = !txFilterCategory || tx.category_name === txFilterCategory;
+            const typeOk   = !txFilterType     || tx.transaction_type === txFilterType;
+            const monthOk  = !txFilterMonth    || txFilterMonth === 'ALL' || monthKeyOf(tx.date) === txFilterMonth;
+            const acctOk   = txMatchesAccountFilter(tx);
+            return catOk && typeOk && monthOk && acctOk;
         });
         displayTransactionPage();
     }
@@ -2393,7 +2628,23 @@
                         </button>
                     </div>
                 </div>`;
-            }).join('');
+            }).join('') + (function () {
+                const netTotal = filteredTransactions.reduce((sum, tx) => {
+                    const isExternalIncoming = tx.transaction_type === 'transfer' && !tx.sourceAccountId && !!tx.destinationAccountId;
+                    const isIncome = tx.transaction_type === 'income' || isExternalIncoming;
+                    return sum + (isIncome ? tx.amount : -tx.amount);
+                }, 0);
+                const totalClass = netTotal >= 0 ? 'income' : 'expense';
+                const totalPrefix = netTotal >= 0 ? '+' : '−';
+                return `
+                <div class="tx-row tx-total-row">
+                    <div class="tx-total-label"><strong>Net Total (${filteredTransactions.length} transaction${filteredTransactions.length !== 1 ? 's' : ''})</strong></div>
+                    <div class="tx-col-amount">
+                        <span class="tx-amount amount-${totalClass}"><strong>${totalPrefix}${formatAmount(Math.abs(netTotal))}</strong></span>
+                    </div>
+                    <div class="tx-col-action"></div>
+                </div>`;
+            })();
         }
 
         const monthTransactions = allTransactions.filter(function (tx) {
