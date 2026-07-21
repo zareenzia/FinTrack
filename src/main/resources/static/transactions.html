@@ -878,7 +878,8 @@
         manageCategoriesModal.show();
     }
 
-    function openAddTransactionModal() {
+    async function openAddTransactionModal() {
+        await loadAccountsIntoSelect();
         txRows = [newTxRow()];
         renderTxRows();
         addTransactionModal.show();
@@ -970,6 +971,16 @@
             cachedAccounts.map(a => `<option value="${a.id}">${escHtml(label(a))}</option>`).join('');
     }
 
+    function updateTxRowAccountBalance(balanceEl, accountVal) {
+        if (!balanceEl) return;
+        if (!accountVal || accountVal === 'SAVINGS') { balanceEl.textContent = ''; return; }
+        const acct = cachedAccounts.find(a => String(a.id) === String(accountVal));
+        if (!acct) { balanceEl.textContent = ''; return; }
+        balanceEl.textContent = acct.accountType === 'CREDIT_CARD'
+            ? 'Available credit: ' + formatAmount(acct.availableCredit)
+            : 'Available balance: ' + formatAmount(acct.currentBalance);
+    }
+
     function newTxRow(data) {
         data = data || {};
         return {
@@ -1032,6 +1043,7 @@
                     <div class="col-md-6 mb-1">
                         <label class="form-label small mb-1 text-muted tx-row-account-label">Paid From <small class="text-muted">(optional)</small></label>
                         <select class="form-select form-select-sm tx-row-account"><option value="">-- No account --</option></select>
+                        <div class="tx-row-account-balance small text-muted mt-1"></div>
                     </div>
                     <div class="col-md-6 mb-1">
                         <label class="form-label small mb-1 text-muted">Date</label>
@@ -1069,10 +1081,13 @@
             loadCategoriesIntoSelect(categorySel, row.type).then(() => {
                 if (row.categoryId) categorySel.value = row.categoryId;
             });
+            const accountBalanceEl = rowEl.querySelector('.tx-row-account-balance');
+
             applyAccountFieldLabel(accountLabelId, row.type);
             populateTxRowAccountSelect(accountSel);
             applySavingsPseudoOption(accountSel, row.type);
             accountSel.value = row.accountVal;
+            updateTxRowAccountBalance(accountBalanceEl, accountSel.value);
 
             typeSel.addEventListener('change', function () {
                 row.type = this.value;
@@ -1082,9 +1097,13 @@
                 applyAccountFieldLabel(accountLabelId, row.type);
                 applySavingsPseudoOption(accountSel, row.type);
                 row.accountVal = accountSel.value;
+                updateTxRowAccountBalance(accountBalanceEl, accountSel.value);
             });
             categorySel.addEventListener('change', function () { row.categoryId = this.value; });
-            accountSel.addEventListener('change', function () { row.accountVal = this.value; });
+            accountSel.addEventListener('change', function () {
+                row.accountVal = this.value;
+                updateTxRowAccountBalance(accountBalanceEl, this.value);
+            });
 
             const dateEl = rowEl.querySelector('.tx-row-date');
             if (row.date) dateEl.value = row.date;
