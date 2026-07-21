@@ -1,157 +1,60 @@
 package org.example.finzin.service;
 
-import org.example.finzin.ai.rag.DocumentIndexer;
-import org.example.finzin.entity.AccountEntity;
 import org.example.finzin.entity.RecurringTransactionEntity;
-import org.example.finzin.entity.TransactionEntity;
-import org.example.finzin.repository.AccountRepository;
-import org.example.finzin.repository.CategoryRepository;
 import org.example.finzin.repository.RecurringTransactionRepository;
-import org.example.finzin.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Turns due RecurringTransaction definitions into real Transaction rows.
- * Kept isolated from FinanceApiController so existing manual transaction CRUD is never touched.
+ * Reminds users about due RecurringTransaction occurrences — it deliberately does NOT create
+ * Transaction rows or touch account balances on its own. Auto-posting on a schedule was misleading
+ * (the app would silently record money as spent/received on a date the user might not actually
+ * pay/receive it), so every occurrence now waits for an explicit confirm or skip via
+ * {@code RecurringTransactionApiController} (which posts through {@code AccountBalanceService}
+ * just like a manual transaction). This class only surfaces "this is due" notifications; it never
+ * advances {@code nextExecutionDate} itself — that only moves once the user confirms or skips.
  */
 @Service
 public class RecurringTransactionExecutionService {
 
     private final RecurringTransactionRepository recurringTransactionRepository;
-    private final TransactionRepository transactionRepository;
-    private final AccountRepository accountRepository;
-    private final CategoryRepository categoryRepository;
     private final NotificationService notificationService;
-    private final DocumentIndexer documentIndexer;
 
     public RecurringTransactionExecutionService(RecurringTransactionRepository recurringTransactionRepository,
-                                                 TransactionRepository transactionRepository,
-                                                 AccountRepository accountRepository,
-                                                 CategoryRepository categoryRepository,
-                                                 NotificationService notificationService,
-                                                 DocumentIndexer documentIndexer) {
+                                                 NotificationService notificationService) {
         this.recurringTransactionRepository = recurringTransactionRepository;
-        this.transactionRepository = transactionRepository;
-        this.accountRepository = accountRepository;
-        this.categoryRepository = categoryRepository;
         this.notificationService = notificationService;
-        this.documentIndexer = documentIndexer;
     }
 
     public void processAllDue() {
         LocalDate today = LocalDate.now();
         List<RecurringTransactionEntity> due = recurringTransactionRepository
                 .findByStatusAndNextExecutionDateLessThanEqual("ACTIVE", today);
-        due.forEach(this::processOne);
+        due.forEach(this::remindOne);
     }
 
     public void processDueForUser(Long userId) {
         LocalDate today = LocalDate.now();
         List<RecurringTransactionEntity> due = recurringTransactionRepository
                 .findByUserIdAndStatusAndNextExecutionDateLessThanEqual(userId, "ACTIVE", today);
-        due.forEach(this::processOne);
+        due.forEach(this::remindOne);
     }
 
-    private void processOne(RecurringTransactionEntity recurring) {
-        LocalDate today = LocalDate.now();
-
-        while (!recurring.getStatus().equals("COMPLETED") && !recurring.getNextExecutionDate().isAfter(today)) {
-            LocalDate occurrenceDate = recurring.getNextExecutionDate();
-
-            boolean generated = tryGenerateTransaction(recurring, occurrenceDate);
-            if (generated) {
-                recurring.setLastExecutionDate(occurrenceDate);
-            }
-
-            LocalDate next = computeNextDate(occurrenceDate, recurring.getFrequency(), recurring.getIntervalValue());
-            recurring.setNextExecutionDate(next);
-
-            if (recurring.getEndDate() != null && next.isAfter(recurring.getEndDate())) {
-                recurring.setStatus("COMPLETED");
-            }
-        }
-
-        recurringTransactionRepository.save(recurring);
-    }
-
-    private boolean tryGenerateTransaction(RecurringTransactionEntity recurring, LocalDate occurrenceDate) {
-        Long userId = recurring.getUserId();
-        String type = recurring.getTransactionType();
-        double amount = recurring.getAmount();
-        Long sourceAccountId = recurring.getSourceAccountId();
-
-        boolean debitsSource = type.equals("expense") || type.equals("savings") || type.equals("transfer");
-        if (debitsSource && sourceAccountId != null) {
-            AccountEntity source = accountRepository.findById(sourceAccountId).orElse(null);
-            if (source != null && source.getUserId().equals(userId) && source.getCurrentBalance() < amount) {
-                notificationService.create(
-                        userId,
-                        "RECURRING_INSUFFICIENT_BALANCE",
-                        recurring.getTransactionName() + " could not be completed",
-                        "Insufficient balance in " + source.getAccountNickname() + " to process \"" + recurring.getTransactionName() + "\" (" + amount + ") on " + occurrenceDate + ".",
-                        "RECURRING_TRANSACTION",
-                        recurring.getId()
-                );
-                return false;
-            }
-        }
-
-        TransactionEntity entity = new TransactionEntity(
-                userId,
-                amount,
-                recurring.getDescription() != null && !recurring.getDescription().isBlank() ? recurring.getDescription() : recurring.getTransactionName(),
-                recurring.getCategoryId() != null ? categoryRepository.findById(recurring.getCategoryId()).orElse(null) : null,
-                type,
-                occurrenceDate.atStartOfDay(),
-                LocalDateTime.now()
-        );
-        entity.setSourceAccountId(sourceAccountId);
-        entity.setDestinationAccountId(recurring.getDestinationAccountId());
-        entity.setIsAutoGenerated(true);
-        entity.setRecurringTransactionId(recurring.getId());
-        TransactionEntity saved = transactionRepository.save(entity);
-        documentIndexer.indexTransaction(saved);
-
-        applyBalanceChange(userId, sourceAccountId, recurring.getDestinationAccountId(), type, amount);
-
-        notificationService.create(
-                userId,
-                "RECURRING_GENERATED",
-                recurring.getTransactionName() + " added",
-                recurring.getTransactionName() + " (" + amount + ") was automatically posted on " + occurrenceDate + ".",
+    private void remindOne(RecurringTransactionEntity recurring) {
+        notificationService.createIfNotRecent(
+                recurring.getUserId(),
+                "RECURRING_PENDING",
+                recurring.getTransactionName() + " needs confirmation",
+                "\"" + recurring.getTransactionName() + "\" (" + recurring.getAmount() + ") was due on "
+                        + recurring.getNextExecutionDate() + ". Confirm it if it happened, or skip it, in Recurring Transactions.",
                 "RECURRING_TRANSACTION",
                 recurring.getId()
         );
-        return true;
     }
 
-    /** Mirrors FinanceApiController#applyBalanceChange (kept separate on purpose, see class Javadoc). */
-    private void applyBalanceChange(Long userId, Long sourceAccountId, Long destinationAccountId, String type, double amount) {
-        if (sourceAccountId != null) {
-            AccountEntity account = accountRepository.findById(sourceAccountId).orElse(null);
-            if (account != null && account.getUserId().equals(userId)) {
-                switch (type) {
-                    case "income" -> account.setCurrentBalance(account.getCurrentBalance() + amount);
-                    case "expense", "savings" -> account.setCurrentBalance(account.getCurrentBalance() - amount);
-                    case "transfer" -> account.setCurrentBalance(account.getCurrentBalance() - amount);
-                }
-                accountRepository.save(account);
-            }
-        }
-        if ("transfer".equals(type) && destinationAccountId != null) {
-            AccountEntity dest = accountRepository.findById(destinationAccountId).orElse(null);
-            if (dest != null && dest.getUserId().equals(userId)) {
-                dest.setCurrentBalance(dest.getCurrentBalance() + amount);
-                accountRepository.save(dest);
-            }
-        }
-    }
-
-    static LocalDate computeNextDate(LocalDate from, String frequency, int intervalValue) {
+    public static LocalDate computeNextDate(LocalDate from, String frequency, int intervalValue) {
         return switch (frequency) {
             case "DAILY" -> from.plusDays(intervalValue);
             case "WEEKLY" -> from.plusWeeks(intervalValue);
@@ -162,14 +65,15 @@ public class RecurringTransactionExecutionService {
         };
     }
 
-    /** Generates "due soon" reminder notifications (today / tomorrow / in 2 days) — avoids duplicate reminders per day. */
+    /** Generates "due soon" reminder notifications (tomorrow / in 2 days) — avoids duplicate reminders per day. */
     public void sendUpcomingReminders() {
         LocalDate today = LocalDate.now();
         List<RecurringTransactionEntity> upcoming = recurringTransactionRepository.findByStatusAndNextExecutionDateLessThanEqual("ACTIVE", today.plusDays(2));
         for (RecurringTransactionEntity recurring : upcoming) {
             long daysUntil = today.until(recurring.getNextExecutionDate()).getDays();
-            String when = daysUntil == 0 ? "today" : daysUntil == 1 ? "tomorrow" : "in " + daysUntil + " days";
-            notificationService.create(
+            if (daysUntil <= 0) continue; // already due/overdue — the "needs confirmation" reminder covers this instead
+            String when = daysUntil == 1 ? "tomorrow" : "in " + daysUntil + " days";
+            notificationService.createIfNotRecent(
                     recurring.getUserId(),
                     "RECURRING_UPCOMING",
                     recurring.getTransactionName() + " is due " + when,

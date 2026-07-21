@@ -42,6 +42,19 @@
         /* Icon-only modal footer buttons */
         .icon-btn { width: 38px; height: 38px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
 
+        /* Needs Confirmation (pending recurring occurrences) */
+        .rt-pending-header { background: linear-gradient(135deg, #b8860b, #8b6508); color: #fff; font-size: 0.95rem; }
+        .rt-pending-count { float: right; font-size: 0.8rem; opacity: 0.9; }
+        .rt-pending-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0.85rem 1rem; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; }
+        .rt-pending-row:last-child { border-bottom: none; }
+        .rt-pending-info { display: flex; flex-direction: column; gap: 2px; min-width: 220px; }
+        .rt-pending-name { font-weight: 600; }
+        .rt-pending-meta { font-size: 0.8rem; color: var(--text-muted-custom); }
+        .rt-pending-overdue { color: #b8860b; font-weight: 600; }
+        .rt-pending-actions { display: flex; gap: 6px; flex-shrink: 0; }
+        .rt-next-run-overdue { color: #b8860b; font-weight: 700; }
+        .rt-next-run-overdue small { display: block; font-weight: 600; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; }
+
         /* Next Month Forecast tab */
         .rt-forecast-total-card { background: linear-gradient(135deg, var(--accent-color), rgba(0,0,0,0.1)); color: #fff; border-radius: 12px; padding: 1.5rem; }
         .rt-forecast-total-amount { font-size: 2rem; font-weight: 700; }
@@ -112,6 +125,16 @@
 
     <div class="tab-content mb-4">
     <div class="tab-pane fade" id="rt-list-pane" role="tabpanel">
+
+    <div class="card mb-3 d-none" id="rtPendingCard">
+        <div class="card-header rt-pending-header">
+            <i class="fas fa-hourglass-half me-2"></i><strong>Needs Confirmation</strong>
+            <span class="rt-pending-count" id="rtPendingCount"></span>
+        </div>
+        <div class="card-body p-0">
+            <div id="rtPendingBody"></div>
+        </div>
+    </div>
 
     <div class="card mb-3">
         <div class="card-body">
@@ -649,6 +672,62 @@
     </div>
 </div>
 
+<!-- Skip Recurring Occurrence Modal -->
+<div class="modal fade" id="skipOccurrenceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-forward me-2"></i>Skip Occurrence</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="skipOccurrenceBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" id="confirmSkipOccurrenceBtn">Yes, Skip</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm Recurring Occurrence Modal -->
+<div class="modal fade" id="confirmOccurrenceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-check-circle me-2"></i>Confirm Payment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="confirmOccurrenceId">
+                <p class="mb-3" id="confirmOccurrenceIntro"></p>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="confirmAmount" class="form-label">Amount</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">৳</span>
+                            <input type="number" class="form-control" id="confirmAmount" step="0.01" min="0.01">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="confirmDate" class="form-label">Date it actually happened</label>
+                        <input type="date" class="form-control form-control-sm" id="confirmDate">
+                    </div>
+                    <div class="col-md-12">
+                        <label for="confirmAccount" class="form-label" id="confirmAccountLabel">Account <small class="text-muted">(optional)</small></label>
+                        <select class="form-select form-select-sm" id="confirmAccount">
+                            <option value="">-- No account --</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveConfirmOccurrenceBtn"><i class="fas fa-check me-1"></i>Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Edit Transaction Modal (Recent Transactions tab) -->
 <div class="modal fade" id="dashboardEditTxModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width:460px">
@@ -754,6 +833,9 @@
     let addCategoryModal = null;
     let createRecurringModal = null;
     let deleteRecurringModal = null;
+    let confirmOccurrenceModal = null;
+    let skipOccurrenceModal = null;
+    let skipOccurrenceId = null;
     let addTransactionModal = null;
     let transferModal = null;
 
@@ -814,6 +896,8 @@
         addCategoryModal = new bootstrap.Modal(document.getElementById('addCategoryModal'));
         createRecurringModal = new bootstrap.Modal(document.getElementById('createRecurringModal'));
         deleteRecurringModal = new bootstrap.Modal(document.getElementById('deleteRecurringModal'));
+        confirmOccurrenceModal = new bootstrap.Modal(document.getElementById('confirmOccurrenceModal'));
+        skipOccurrenceModal = new bootstrap.Modal(document.getElementById('skipOccurrenceModal'));
         addTransactionModal = new bootstrap.Modal(document.getElementById('addTransactionModal'));
         transferModal = new bootstrap.Modal(document.getElementById('transferModal'));
         txDeleteModal = new bootstrap.Modal(document.getElementById('dashboardDeleteTxModal'));
@@ -904,6 +988,8 @@
         document.getElementById('recurNextRun').addEventListener('input', function () { recurNextRunManuallyEdited = true; });
         document.getElementById('saveRecurringBtn').addEventListener('click', saveRecurringTransaction);
         document.getElementById('confirmDeleteRecurringBtn').addEventListener('click', confirmDeleteRecurring);
+        document.getElementById('saveConfirmOccurrenceBtn').addEventListener('click', saveConfirmOccurrence);
+        document.getElementById('confirmSkipOccurrenceBtn').addEventListener('click', performSkipOccurrence);
 
         document.getElementById('rtSearch').addEventListener('input', applyRtFilters);
         document.getElementById('rtFilterType').addEventListener('change', applyRtFilters);
@@ -1670,6 +1756,7 @@
             populateRtCategoryFilter();
             applyRtFilters();
             renderForecast();
+            renderPendingSection();
         } catch (e) {
             showTopNotification('Unable to load recurring transactions.', 'error');
         }
@@ -1733,7 +1820,7 @@
                     <td>${r.categoryName || (r.transactionType === 'transfer' ? '—' : 'Uncategorized')}</td>
                     <td>${formatAmount(r.amount)}</td>
                     <td>${r.frequency.charAt(0) + r.frequency.slice(1).toLowerCase()}${r.intervalValue > 1 ? ' (every ' + r.intervalValue + ')' : ''}</td>
-                    <td>${formatDateDDMMYYYY(r.nextExecutionDate)}</td>
+                    <td>${isRtPending(r) ? `<span class="rt-next-run-overdue"><small>Awaiting confirmation</small>${formatDateDDMMYYYY(r.nextExecutionDate)}</span>` : formatDateDDMMYYYY(r.nextExecutionDate)}</td>
                     <td>${r.lastExecutionDate || '—'}</td>
                     <td><span class="rt-status-badge rt-status-${r.status}">${r.status}</span></td>
                     <td class="text-end">
@@ -1762,6 +1849,127 @@
 
     function rtPreviousPage() { if (rtCurrentPage > 0) { rtCurrentPage--; renderRtTable(); } }
     function rtNextPage() { rtCurrentPage++; renderRtTable(); }
+
+    function isRtPending(r) {
+        return r.status === 'ACTIVE' && new Date(r.nextExecutionDate + 'T00:00:00') <= new Date(new Date().toDateString());
+    }
+
+    function renderPendingSection() {
+        const card = document.getElementById('rtPendingCard');
+        const body = document.getElementById('rtPendingBody');
+        const countEl = document.getElementById('rtPendingCount');
+        const pending = allRecurring.filter(isRtPending).sort((a, b) => new Date(a.nextExecutionDate) - new Date(b.nextExecutionDate));
+
+        if (pending.length === 0) {
+            card.classList.add('d-none');
+            body.innerHTML = '';
+            return;
+        }
+        card.classList.remove('d-none');
+        countEl.textContent = `${pending.length} item${pending.length > 1 ? 's' : ''}`;
+
+        const today = new Date(new Date().toDateString());
+        body.innerHTML = pending.map(r => {
+            const due = new Date(r.nextExecutionDate + 'T00:00:00');
+            const daysOverdue = Math.round((today - due) / 86400000);
+            const whenText = daysOverdue <= 0 ? 'due today' : `overdue by ${daysOverdue} day${daysOverdue > 1 ? 's' : ''}`;
+            return `
+            <div class="rt-pending-row" data-rt-id="${r.id}">
+                <div class="rt-pending-info">
+                    <span class="rt-pending-name">${escHtml(r.transactionName)}</span>
+                    <span class="rt-pending-meta">${formatAmount(r.amount)} · ${r.categoryName || (r.transactionType === 'transfer' ? 'Transfer' : 'Uncategorized')} · <span class="rt-pending-overdue">${formatDateDDMMYYYY(r.nextExecutionDate)} (${whenText})</span></span>
+                </div>
+                <div class="rt-pending-actions">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="skipOccurrence(${r.id})"><i class="fas fa-forward"></i> Skip</button>
+                    <button type="button" class="btn btn-sm btn-success" onclick="openConfirmOccurrenceModal(${r.id})"><i class="fas fa-check"></i> Confirm</button>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    async function openConfirmOccurrenceModal(id) {
+        const r = allRecurring.find(x => x.id === id);
+        if (!r) return;
+        document.getElementById('confirmOccurrenceId').value = id;
+        document.getElementById('confirmOccurrenceIntro').innerHTML =
+            `<strong>${escHtml(r.transactionName)}</strong> was due on ${formatDateDDMMYYYY(r.nextExecutionDate)}. Confirm the details of what actually happened.`;
+        document.getElementById('confirmAmount').value = r.amount;
+        document.getElementById('confirmDate').valueAsDate = new Date();
+
+        const label = { income: 'Received Into', expense: 'Paid From', savings: 'Savings Account', transfer: 'From Account' }[r.transactionType] || 'Account';
+        document.getElementById('confirmAccountLabel').innerHTML = label + ' <small class="text-muted">(optional)</small>';
+
+        await loadAccountsIntoSelect();
+        const acctSel = document.getElementById('confirmAccount');
+        populateTxRowAccountSelect(acctSel);
+        acctSel.value = r.sourceAccountId != null ? String(r.sourceAccountId) : '';
+
+        confirmOccurrenceModal.show();
+    }
+
+    async function saveConfirmOccurrence() {
+        const id = parseInt(document.getElementById('confirmOccurrenceId').value, 10);
+        const amount = parseFloat(document.getElementById('confirmAmount').value);
+        const date = document.getElementById('confirmDate').value;
+        const acctVal = document.getElementById('confirmAccount').value;
+
+        if (!amount || amount <= 0 || !date) {
+            showTopNotification('Enter a valid amount and date.', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/recurring-transactions/${id}/confirm`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    amount,
+                    date,
+                    sourceAccountId: acctVal ? parseInt(acctVal, 10) : null
+                })
+            });
+            const data = await response.json().catch(() => null);
+            if (response.ok) {
+                confirmOccurrenceModal.hide();
+                showTopNotification(data && data.warning ? data.warning : 'Confirmed — transaction recorded.', data && data.warning ? 'warning' : 'success');
+                loadRecurring();
+                loadRecentTransactions();
+            } else {
+                showTopNotification((data && data.error) || 'Failed to confirm.', 'error');
+            }
+        } catch (e) {
+            showTopNotification('Unable to confirm right now.', 'error');
+        }
+    }
+
+    function skipOccurrence(id) {
+        const r = allRecurring.find(x => x.id === id);
+        if (!r) return;
+        skipOccurrenceId = id;
+        document.getElementById('skipOccurrenceBody').innerHTML =
+            `Skip <strong>${escHtml(r.transactionName)}</strong>'s occurrence due ${formatDateDDMMYYYY(r.nextExecutionDate)}? No transaction will be recorded.`;
+        skipOccurrenceModal.show();
+    }
+
+    async function performSkipOccurrence() {
+        if (skipOccurrenceId === null) return;
+        const id = skipOccurrenceId;
+
+        try {
+            const response = await fetch(`/api/recurring-transactions/${id}/skip`, { method: 'POST' });
+            if (response.ok) {
+                skipOccurrenceModal.hide();
+                skipOccurrenceId = null;
+                showTopNotification('Occurrence skipped.', 'success');
+                loadRecurring();
+            } else {
+                const data = await response.json().catch(() => null);
+                showTopNotification((data && data.error) || 'Failed to skip.', 'error');
+            }
+        } catch (e) {
+            showTopNotification('Unable to skip right now.', 'error');
+        }
+    }
 
     function accountLabelById(id) {
         if (id == null) return null;
