@@ -1586,6 +1586,7 @@
         document.getElementById('editTxId').value          = id;
         document.getElementById('editTxDescription').value = tx.description;
         document.getElementById('editTxAmount').value      = Number(tx.amount).toFixed(2);
+        document.getElementById('editTxDate').value        = tx.date ? tx.date.slice(0, 10) : '';
         document.getElementById('editTxType').value        = tx.transaction_type;
         loadEditCategories(tx.transaction_type, tx.category_id);
         applyAccountFieldLabel('editTxAccountLabel', tx.transaction_type);
@@ -1635,11 +1636,12 @@
         const id          = parseInt(document.getElementById('editTxId').value, 10);
         const description = document.getElementById('editTxDescription').value.trim();
         const amount      = parseFloat(document.getElementById('editTxAmount').value);
+        const date        = document.getElementById('editTxDate').value;
         const type        = document.getElementById('editTxType').value;
         const categoryId  = parseInt(document.getElementById('editTxCategory').value, 10);
         const acctVal     = document.getElementById('editTxAccount').value;
 
-        if (!description || isNaN(amount) || amount <= 0 || !categoryId) {
+        if (!description || isNaN(amount) || amount <= 0 || !date || !categoryId) {
             showNotification('Please fill all fields correctly.', 'error');
             return;
         }
@@ -1651,6 +1653,7 @@
                 body: JSON.stringify({
                     description,
                     amount,
+                    date,
                     transaction_type: type,
                     category_id: categoryId,
                     sourceAccountId: acctVal && acctVal !== 'SAVINGS' ? parseInt(acctVal, 10) : null,
@@ -1939,6 +1942,10 @@
                         <span class="input-group-text">$</span>
                         <input type="number" class="form-control" id="editTxAmount" step="0.01" min="0.01" required>
                     </div>
+                </div>
+                <div class="mb-3">
+                    <label for="editTxDate" class="form-label">Date</label>
+                    <input type="date" class="form-control" id="editTxDate" required>
                 </div>
                 <div class="mb-3">
                     <label for="editTxType" class="form-label">Type</label>
