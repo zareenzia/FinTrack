@@ -8,9 +8,11 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface TransactionRepository extends JpaRepository<TransactionEntity, Long> {
+    Optional<TransactionEntity> findByIdAndUserId(Long id, Long userId);
     List<TransactionEntity> findByCategory_IdOrderByDateDesc(Long categoryId);
     List<TransactionEntity> findByTransactionTypeOrderByDateDesc(String type);
     List<TransactionEntity> findByUserId(Long userId);

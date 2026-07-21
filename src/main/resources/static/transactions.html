@@ -69,6 +69,9 @@
         @keyframes txRowIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes txRowOut { to { opacity: 0; transform: scale(.97); } }
         .tx-row-actions { gap: 4px; }
+
+        /* Receipt Scanner */
+        .rs-confidence-badge { font-size: .68rem; font-weight: 700; margin-left: 4px; }
     </style>
 </head>
 <body>
@@ -81,6 +84,9 @@
             <div class="d-flex flex-wrap gap-2">
                 <button type="button" class="btn btn-primary btn-sm" id="openAddTransactionModalBtn">
                     <i class="fas fa-plus-circle me-1"></i> Add New Transaction
+                </button>
+                <button type="button" class="btn btn-outline-primary btn-sm" id="openScanReceiptBtn">
+                    <i class="fas fa-camera me-1"></i> Scan Receipt
                 </button>
                 <button type="button" class="btn btn-success btn-sm" id="openTransferModalBtn">
                     <i class="fas fa-random me-1"></i> Log Cash Transfer
@@ -375,6 +381,113 @@
             </div>
         </div>
     </div>
+</div>
+
+<!-- Scan Receipt Modal -->
+<div class="modal fade" id="receiptScannerModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-camera me-2"></i>Scan Receipt</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="rs-step" id="rsStepUpload">
+          <input type="file" id="rsFileInput" accept="image/jpeg,image/png,image/webp" capture="environment" style="display:none">
+          <div class="text-center p-5">
+            <i class="fas fa-receipt fa-3x mb-3" style="color:var(--accent-color);opacity:.5"></i>
+            <p class="mb-3">Take a photo of a receipt, or choose an image file.<br>
+              <small class="text-muted">JPG, PNG or WEBP &middot; up to 10MB</small></p>
+            <button type="button" class="btn btn-primary" id="rsChooseFileBtn"><i class="fas fa-camera me-1"></i>Choose / Capture Photo</button>
+          </div>
+        </div>
+        <div class="rs-step d-none" id="rsStepProcessing">
+          <div class="text-center p-5">
+            <i class="fas fa-spinner fa-spin fa-3x mb-3" style="color:var(--accent-color)"></i>
+            <p class="fw-semibold" id="rsProcessingLabel">Uploading&hellip;</p>
+          </div>
+        </div>
+        <div class="rs-step d-none" id="rsStepConfirm">
+          <div class="row g-3">
+            <div class="col-md-5">
+              <img id="rsPreviewImg" src="" alt="Receipt" style="width:100%;border-radius:8px;border:1px solid var(--border-color);">
+              <div class="small mt-2" id="rsWarningNote"></div>
+              <div class="mt-2">
+                <button type="button" class="btn btn-sm btn-link p-0" id="rsToggleOcrTextBtn">View raw OCR text</button>
+                <pre class="small mt-1 p-2 d-none" id="rsOcrTextBox" style="max-height:150px;overflow-y:auto;background:var(--bg-table-stripe);border-radius:6px;white-space:pre-wrap;"></pre>
+              </div>
+            </div>
+            <div class="col-md-7">
+              <div class="mb-2 rs-field" data-field="merchantName">
+                <label class="form-label small mb-1 text-muted">Merchant Name <span class="rs-confidence-badge d-none"></span></label>
+                <input type="text" class="form-control form-control-sm" id="rsMerchant">
+              </div>
+              <div class="row g-2">
+                <div class="col-6 rs-field" data-field="totalAmount">
+                  <label class="form-label small mb-1 text-muted">Amount <span class="rs-confidence-badge d-none"></span></label>
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text">৳</span>
+                    <input type="number" class="form-control" id="rsAmount" step="0.01">
+                  </div>
+                </div>
+                <div class="col-6 rs-field" data-field="receiptDate">
+                  <label class="form-label small mb-1 text-muted">Date <span class="rs-confidence-badge d-none"></span></label>
+                  <input type="date" class="form-control form-control-sm" id="rsDate">
+                </div>
+              </div>
+              <div class="mb-2 mt-2">
+                <label class="form-label small mb-1 text-muted">Description</label>
+                <input type="text" class="form-control form-control-sm" id="rsDescription" placeholder="e.g., Grocery shopping">
+              </div>
+              <div class="mb-2 rs-field" data-field="predictedCategoryLabel">
+                <label class="form-label small mb-1 text-muted">Category</label>
+                <select class="form-select form-select-sm" id="rsCategory" autocomplete="off"><option value="">Select category</option></select>
+                <div class="small mt-1" id="rsCategoryHint"></div>
+              </div>
+              <div class="mb-2">
+                <label class="form-label small mb-1 text-muted">Paid From <small class="text-muted">(optional)</small></label>
+                <select class="form-select form-select-sm" id="rsAccount" autocomplete="off"><option value="">-- No account --</option></select>
+              </div>
+              <div class="mb-2">
+                <label class="form-label small mb-1 text-muted">Notes</label>
+                <textarea class="form-control form-control-sm" id="rsNotes" rows="2"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div class="rs-footer-step" id="rsFooterUpload"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button></div>
+        <div class="rs-footer-step d-none" id="rsFooterProcessing"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button></div>
+        <div class="rs-footer-step d-none" id="rsFooterConfirm">
+          <button type="button" class="btn btn-outline-secondary" id="rsBackBtn">Back</button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="rsConfirmSaveBtn"><i class="fas fa-check me-1"></i>Confirm &amp; Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Receipt Detail Modal -->
+<div class="modal fade" id="receiptDetailModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-receipt me-2"></i>Receipt</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center">
+        <img id="rdPreviewImg" src="" alt="Receipt" style="max-width:100%;max-height:60vh;border-radius:8px;border:1px solid var(--border-color);">
+        <input type="file" id="rdReplaceFileInput" accept="image/jpeg,image/png,image/webp" style="display:none">
+      </div>
+      <div class="modal-footer">
+        <a id="rdDownloadLink" href="#" download class="btn btn-outline-secondary icon-btn" title="Download"><i class="fas fa-download"></i></a>
+        <button type="button" class="btn btn-outline-primary icon-btn" id="rdReplaceBtn" title="Replace image"><i class="fas fa-file-image"></i></button>
+        <button type="button" class="btn btn-outline-danger icon-btn" id="rdDeleteBtn" title="Delete receipt"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Log Cash Transfer Modal -->
@@ -838,6 +951,13 @@
     let skipOccurrenceId = null;
     let addTransactionModal = null;
     let transferModal = null;
+    let receiptScannerModal = null;
+    let receiptDetailModal = null;
+    let rsSelectedFile = null;
+    let rsDraft = null;
+    let rsLabelInterval = null;
+    let rdCurrentReceiptId = null;
+    let receiptsByTransactionId = {};
 
     // Recent Transactions tab state
     let allTransactions = [];
@@ -900,6 +1020,8 @@
         skipOccurrenceModal = new bootstrap.Modal(document.getElementById('skipOccurrenceModal'));
         addTransactionModal = new bootstrap.Modal(document.getElementById('addTransactionModal'));
         transferModal = new bootstrap.Modal(document.getElementById('transferModal'));
+        receiptScannerModal = new bootstrap.Modal(document.getElementById('receiptScannerModal'));
+        receiptDetailModal = new bootstrap.Modal(document.getElementById('receiptDetailModal'));
         txDeleteModal = new bootstrap.Modal(document.getElementById('dashboardDeleteTxModal'));
         txEditModal = new bootstrap.Modal(document.getElementById('dashboardEditTxModal'));
 
@@ -968,6 +1090,28 @@
         document.getElementById('openRecurringModalBtn').addEventListener('click', openCreateRecurringModal);
         document.getElementById('openAddTransactionModalBtn').addEventListener('click', openAddTransactionModal);
         document.getElementById('openTransferModalBtn').addEventListener('click', openTransferModal);
+        document.getElementById('openScanReceiptBtn').addEventListener('click', openReceiptScannerModal);
+        document.getElementById('rsChooseFileBtn').addEventListener('click', () => document.getElementById('rsFileInput').click());
+        document.getElementById('rsFileInput').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            this.value = '';
+            if (file && validateReceiptFile(file)) startReceiptScan(file);
+        });
+        document.getElementById('rsBackBtn').addEventListener('click', () => goToRsStep('Upload'));
+        document.getElementById('rsConfirmSaveBtn').addEventListener('click', saveScannedTransaction);
+        document.getElementById('rsToggleOcrTextBtn').addEventListener('click', function () {
+            const box = document.getElementById('rsOcrTextBox');
+            const hidden = box.classList.toggle('d-none');
+            this.textContent = hidden ? 'View raw OCR text' : 'Hide raw OCR text';
+        });
+        document.getElementById('receiptScannerModal').addEventListener('hidden.bs.modal', resetReceiptScannerState);
+        document.getElementById('rdReplaceBtn').addEventListener('click', () => document.getElementById('rdReplaceFileInput').click());
+        document.getElementById('rdReplaceFileInput').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            this.value = '';
+            if (file && validateReceiptFile(file)) replaceReceiptImage(rdCurrentReceiptId, file);
+        });
+        document.getElementById('rdDeleteBtn').addEventListener('click', () => deleteReceipt(rdCurrentReceiptId));
         document.getElementById('transferFrom').addEventListener('change', function () {
             updateTransferNoteLabel();
             updateTransferCountsAsUI();
@@ -1013,11 +1157,17 @@
         document.getElementById('transferDate').valueAsDate = new Date();
         loadRecurring();
         loadRecentTransactions();
+        loadReceiptScannerAvailability();
 
         // Dashboard's "Add Transaction" button links here to open this shared modal
         if (new URLSearchParams(window.location.search).get('openAddTx') === '1') {
             history.replaceState(null, '', window.location.pathname);
             openAddTransactionModal();
+        }
+        // Dashboard's "Scan Receipt" button links here to open this shared modal
+        if (new URLSearchParams(window.location.search).get('openReceiptScanner') === '1') {
+            history.replaceState(null, '', window.location.pathname);
+            openReceiptScannerModal();
         }
     });
 
@@ -1032,6 +1182,275 @@
         txRows = [newTxRow()];
         renderTxRows();
         addTransactionModal.show();
+    }
+
+    // ============== RECEIPT SCANNER ==============
+    function loadReceiptScannerAvailability() {
+        fetch('/api/receipts/settings').then(r => r.ok ? r.json() : null).then(s => {
+            const btn = document.getElementById('openScanReceiptBtn');
+            if (btn) btn.classList.toggle('d-none', !!s && s.enabled === false);
+        }).catch(() => {});
+    }
+
+    const RECEIPT_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+    const RECEIPT_MAX_BYTES = 10 * 1024 * 1024;
+    const RS_PROCESSING_LABELS = ['Uploading…', 'Extracting Text…', 'Analyzing Receipt…', 'Preparing Transaction…'];
+
+    function validateReceiptFile(file) {
+        if (!RECEIPT_ALLOWED_TYPES.includes(file.type)) {
+            showTopNotification('Please choose a JPG, PNG, or WEBP image.', 'error');
+            return false;
+        }
+        if (file.size > RECEIPT_MAX_BYTES) {
+            showTopNotification('Image is too large — please choose a file under 10MB.', 'error');
+            return false;
+        }
+        return true;
+    }
+
+    async function openReceiptScannerModal() {
+        await loadAccountsIntoSelect();
+        goToRsStep('Upload');
+        receiptScannerModal.show();
+    }
+
+    function resetReceiptScannerState() {
+        stopProcessingLabels();
+        if (rsSelectedFile) {
+            const img = document.getElementById('rsPreviewImg');
+            if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
+        }
+        rsSelectedFile = null;
+        rsDraft = null;
+        document.getElementById('rsMerchant').value = '';
+        document.getElementById('rsAmount').value = '';
+        document.getElementById('rsDate').value = '';
+        document.getElementById('rsDescription').value = '';
+        document.getElementById('rsNotes').value = '';
+        document.getElementById('rsCategory').value = '';
+        document.getElementById('rsAccount').value = '';
+        document.getElementById('rsCategoryHint').innerHTML = '';
+        document.getElementById('rsWarningNote').innerHTML = '';
+        document.getElementById('rsOcrTextBox').textContent = '';
+        document.getElementById('rsOcrTextBox').classList.add('d-none');
+        document.getElementById('rsToggleOcrTextBtn').textContent = 'View raw OCR text';
+        goToRsStep('Upload');
+    }
+
+    function goToRsStep(step) {
+        ['Upload', 'Processing', 'Confirm'].forEach(s => {
+            document.getElementById('rsStep' + s).classList.toggle('d-none', s !== step);
+            document.getElementById('rsFooter' + s).classList.toggle('d-none', s !== step);
+        });
+    }
+
+    function startProcessingLabels() {
+        let i = 0;
+        document.getElementById('rsProcessingLabel').textContent = RS_PROCESSING_LABELS[0];
+        rsLabelInterval = setInterval(() => {
+            i = Math.min(i + 1, RS_PROCESSING_LABELS.length - 1);
+            document.getElementById('rsProcessingLabel').textContent = RS_PROCESSING_LABELS[i];
+        }, 1300);
+    }
+
+    function stopProcessingLabels() {
+        if (rsLabelInterval) clearInterval(rsLabelInterval);
+        rsLabelInterval = null;
+    }
+
+    async function startReceiptScan(file) {
+        rsSelectedFile = file;
+        goToRsStep('Processing');
+        startProcessingLabels();
+        try {
+            const fd = new FormData();
+            fd.append('file', file);
+            const res = await fetch('/api/receipts/scan', { method: 'POST', body: fd });
+            const data = await res.json().catch(() => null);
+            stopProcessingLabels();
+            if (!res.ok) {
+                showTopNotification((data && data.error) || 'Could not read this receipt.', 'error');
+                goToRsStep('Upload');
+                return;
+            }
+            rsDraft = data;
+            await populateConfirmStep(rsDraft);
+            goToRsStep('Confirm');
+        } catch (e) {
+            stopProcessingLabels();
+            showTopNotification('Unable to scan this receipt right now.', 'error');
+            goToRsStep('Upload');
+        }
+    }
+
+    async function populateConfirmStep(draft) {
+        const img = document.getElementById('rsPreviewImg');
+        if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
+        img.src = URL.createObjectURL(rsSelectedFile);
+
+        document.getElementById('rsMerchant').value = draft.merchantName || '';
+        document.getElementById('rsAmount').value = draft.totalAmount != null ? draft.totalAmount : '';
+        document.getElementById('rsDate').value = draft.receiptDate || '';
+        document.getElementById('rsDescription').value = draft.merchantName || '';
+        document.getElementById('rsNotes').value = draft.suggestedNotes || '';
+        document.getElementById('rsWarningNote').innerHTML = draft.warning
+            ? '<i class="fas fa-triangle-exclamation me-1" style="color:#f59e0b"></i>' + escHtml(draft.warning)
+            : '';
+        document.getElementById('rsOcrTextBox').textContent = draft.ocrText || '(no text found in this image)';
+
+        const rsCategoryEl = document.getElementById('rsCategory');
+        const rsAccountEl = document.getElementById('rsAccount');
+        rsCategoryEl.value = '';
+        await loadCategoriesIntoSelect(rsCategoryEl, 'expense');
+        populateTxRowAccountSelect(rsAccountEl);
+        rsAccountEl.value = ''; // some browsers restore a select's prior value after innerHTML is replaced — force blank
+        matchAndPreselectCategory(draft.predictedCategoryLabel);
+
+        const confidence = draft.fieldConfidence || {};
+        applyConfidenceStyle('merchantName', document.getElementById('rsMerchant'), confidence.merchantName);
+        applyConfidenceStyle('totalAmount', document.getElementById('rsAmount'), confidence.totalAmount);
+        applyConfidenceStyle('receiptDate', document.getElementById('rsDate'), confidence.receiptDate);
+    }
+
+    function applyConfidenceStyle(fieldName, inputEl, confidence) {
+        const badge = document.querySelector('.rs-field[data-field="' + fieldName + '"] .rs-confidence-badge');
+        if (confidence == null) {
+            inputEl.style.borderColor = '';
+            inputEl.style.borderWidth = '';
+            if (badge) badge.classList.add('d-none');
+            return;
+        }
+        const color = confidence >= 0.75 ? '#28a745' : (confidence >= 0.45 ? '#f59e0b' : '#dc3545');
+        const flagged = confidence < 0.75;
+        inputEl.style.borderColor = flagged ? color : '';
+        inputEl.style.borderWidth = flagged ? '2px' : '';
+        if (badge) {
+            badge.classList.toggle('d-none', !flagged);
+            badge.textContent = Math.round(confidence * 100) + '%';
+            badge.title = 'AI confidence: ' + Math.round(confidence * 100) + '%';
+            badge.style.color = color;
+        }
+    }
+
+    function matchAndPreselectCategory(predictedName) {
+        const selectEl = document.getElementById('rsCategory');
+        const hintEl = document.getElementById('rsCategoryHint');
+        if (!predictedName) { hintEl.innerHTML = ''; selectEl.value = ''; return; }
+        const exact = Array.from(selectEl.options).find(o => o.textContent.trim().toLowerCase() === predictedName.trim().toLowerCase());
+        if (exact) {
+            selectEl.value = exact.value;
+            hintEl.innerHTML = '<i class="fas fa-wand-magic-sparkles me-1" style="color:var(--accent-color)"></i>AI-suggested: ' + escHtml(predictedName);
+        } else {
+            selectEl.value = '';
+            hintEl.innerHTML = '<i class="fas fa-triangle-exclamation me-1" style="color:#f59e0b"></i>AI suggested "' + escHtml(predictedName) + '" — no matching category, please pick one.';
+        }
+    }
+
+    function buildReceiptTransactionPayload() {
+        const categoryId = document.getElementById('rsCategory').value;
+        const accountVal = document.getElementById('rsAccount').value;
+        return {
+            description: (document.getElementById('rsDescription').value || document.getElementById('rsMerchant').value || 'Receipt').trim(),
+            amount: parseFloat(document.getElementById('rsAmount').value),
+            category_id: categoryId ? parseInt(categoryId, 10) : null,
+            transaction_type: 'expense',
+            date: document.getElementById('rsDate').value,
+            sourceAccountId: accountVal && accountVal !== 'SAVINGS' ? parseInt(accountVal, 10) : null,
+            destinationAccountId: null,
+            fromSavings: accountVal === 'SAVINGS'
+        };
+    }
+
+    async function saveScannedTransaction() {
+        const payload = buildReceiptTransactionPayload();
+        if (!payload.description) { showTopNotification('Description is required.', 'error'); return; }
+        if (!payload.amount || isNaN(payload.amount) || payload.amount <= 0) { showTopNotification('Enter a valid amount.', 'error'); return; }
+        if (!payload.category_id) { showTopNotification('Select a category.', 'error'); return; }
+        if (!payload.date) { showTopNotification('Select a date.', 'error'); return; }
+
+        try {
+            const txRes = await fetch('/api/transactions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const txData = await txRes.json().catch(() => null);
+            if (!txRes.ok) {
+                showTopNotification((txData && txData.error) || 'Failed to save transaction.', 'error');
+                return;
+            }
+
+            const linkRes = await fetch(`/api/receipts/${rsDraft.id}/link`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    transactionId: txData.id,
+                    merchantName: document.getElementById('rsMerchant').value,
+                    notes: document.getElementById('rsNotes').value
+                })
+            });
+
+            receiptScannerModal.hide();
+            if (linkRes.ok) {
+                showTopNotification('Transaction saved from receipt.', 'success');
+            } else {
+                showTopNotification('Transaction saved, but the receipt could not be attached.', 'warning');
+            }
+            loadRecentTransactions();
+        } catch (e) {
+            showTopNotification('Unable to save this transaction right now.', 'error');
+        }
+    }
+
+    async function loadReceiptBadges(transactionIds) {
+        if (!transactionIds.length) { receiptsByTransactionId = {}; return; }
+        try {
+            const res = await fetch('/api/receipts/by-transaction?ids=' + transactionIds.join(','));
+            receiptsByTransactionId = res.ok ? await res.json() : {};
+        } catch (e) {
+            receiptsByTransactionId = {};
+        }
+    }
+
+    function openReceiptDetailModal(receiptId) {
+        rdCurrentReceiptId = receiptId;
+        const url = `/api/receipts/${receiptId}/image`;
+        document.getElementById('rdPreviewImg').src = url;
+        document.getElementById('rdDownloadLink').href = url;
+        receiptDetailModal.show();
+    }
+
+    async function replaceReceiptImage(receiptId, file) {
+        try {
+            const fd = new FormData();
+            fd.append('file', file);
+            const res = await fetch(`/api/receipts/${receiptId}/image`, { method: 'PUT', body: fd });
+            const data = await res.json().catch(() => null);
+            if (!res.ok) {
+                showTopNotification((data && data.error) || 'Failed to replace receipt image.', 'error');
+                return;
+            }
+            document.getElementById('rdPreviewImg').src = `/api/receipts/${receiptId}/image?t=` + Date.now();
+            showTopNotification('Receipt image replaced.', 'success');
+        } catch (e) {
+            showTopNotification('Unable to replace this receipt right now.', 'error');
+        }
+    }
+
+    async function deleteReceipt(receiptId) {
+        if (!confirm('Delete this receipt? The transaction itself will not be affected.')) return;
+        try {
+            const res = await fetch(`/api/receipts/${receiptId}`, { method: 'DELETE' });
+            if (!res.ok && res.status !== 204) {
+                showTopNotification('Failed to delete receipt.', 'error');
+                return;
+            }
+            receiptDetailModal.hide();
+            showTopNotification('Receipt deleted.', 'success');
+            loadRecentTransactions();
+        } catch (e) {
+            showTopNotification('Unable to delete this receipt right now.', 'error');
+        }
     }
 
     function openTransferModal() {
@@ -2518,6 +2937,7 @@
 
             const transactions = await fetch('/api/transactions?limit=1000').then(r => r.json());
             allTransactions = transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+            await loadReceiptBadges(allTransactions.map(tx => tx.id));
 
             populateMonthFilter();
             currentPage = 0;
@@ -2806,6 +3226,7 @@
                         <div class="tx-desc-text">
                             <span class="tx-desc-main">${tx.description}</span>
                         </div>
+                        ${receiptsByTransactionId[tx.id] ? `<button type="button" class="tx-receipt-badge" onclick="openReceiptDetailModal(${receiptsByTransactionId[tx.id]})" title="View receipt"><i class="fas fa-receipt"></i></button>` : ''}
                     </div>
                     <div class="tx-col-cat">
                         <span class="tx-category-chip" style="--cat-color: ${catColor}">

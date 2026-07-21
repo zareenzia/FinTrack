@@ -2458,6 +2458,26 @@ h3.stat-card-amount,
     gap: 2px;
 }
 
+/* Receipt attached indicator (Scan Receipt feature) */
+.tx-receipt-badge {
+    width: 22px;
+    height: 22px;
+    border: none;
+    border-radius: 6px;
+    background: rgba(37, 95, 56, 0.12);
+    color: var(--accent-color);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .7rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-left: 4px;
+}
+.tx-receipt-badge:hover {
+    background: rgba(37, 95, 56, 0.22);
+}
+
 /* Net total row */
 .tx-total-row {
     background: var(--bg-table-stripe, rgba(0, 0, 0, 0.03));

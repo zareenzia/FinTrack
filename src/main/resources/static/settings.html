@@ -177,6 +177,9 @@
         <a class="settings-nav-item" data-section="ai-assistant" href="#">
           <i class="fas fa-robot"></i> AI Assistant
         </a>
+        <a class="settings-nav-item" data-section="receipt-scanner" href="#">
+          <i class="fas fa-receipt"></i> Receipt Scanner
+        </a>
         <a class="settings-nav-item" data-section="security" href="#">
           <i class="fas fa-shield-alt"></i> Privacy &amp; Security
         </a>
@@ -780,6 +783,25 @@
           </div>
         </section>
 
+        <!-- ===== RECEIPT SCANNER ===== -->
+        <section class="settings-section" id="section-receipt-scanner">
+          <div class="settings-section-heading"><i class="fas fa-receipt" style="color:var(--accent-color)"></i> Receipt Scanner</div>
+          <p class="settings-section-desc">Configure the AI-powered receipt scanning feature on the Dashboard and Transactions pages.</p>
+
+          <div class="card">
+            <div class="card-body">
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="receiptScannerEnabled">
+                <label class="form-check-label" for="receiptScannerEnabled">Enable Receipt Scanner</label>
+                <div><small class="text-muted">Turns the "Scan Receipt" button on the Dashboard and Transactions pages on or off.</small></div>
+              </div>
+              <button type="button" class="btn btn-primary mt-3" id="receiptScannerSaveBtn">
+                <i class="fas fa-save me-1"></i>Save Receipt Scanner Settings
+              </button>
+            </div>
+          </div>
+        </section>
+
         <!-- ===== ABOUT ===== -->
         <section class="settings-section" id="section-about">
           <div class="settings-section-heading"><i class="fas fa-info-circle" style="color:var(--accent-color)"></i> About FinTrack</div>
@@ -1233,7 +1255,29 @@ document.querySelectorAll('.settings-nav-item').forEach(function(item){
     if (section === 'security') loadUserProfile();
     if (section === 'account-config') { if (typeof loadAll === 'function') loadAll(); }
     if (section === 'ai-assistant') loadAiSettings();
+    if (section === 'receipt-scanner') loadReceiptScannerSettings();
   });
+});
+
+// ============== Receipt Scanner Settings ==============
+function loadReceiptScannerSettings() {
+  fetch('/api/receipts/settings').then(function(r){ return r.json(); }).then(function(s){
+    document.getElementById('receiptScannerEnabled').checked = s.enabled !== false;
+  }).catch(function(){ showNotification('Unable to load Receipt Scanner settings.', 'danger'); });
+}
+
+document.getElementById('receiptScannerSaveBtn').addEventListener('click', function(){
+  fetch('/api/receipts/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enabled: document.getElementById('receiptScannerEnabled').checked })
+  }).then(function(r){
+    if (r.ok) {
+      showNotification('Receipt Scanner settings saved.', 'success');
+    } else {
+      return r.json().then(function(err){ showNotification((err && err.error) || 'Failed to save settings.', 'danger'); });
+    }
+  }).catch(function(){ showNotification('Unable to save settings right now.', 'danger'); });
 });
 
 // ============== AI Settings ==============
