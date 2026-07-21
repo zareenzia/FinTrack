@@ -413,31 +413,67 @@
         </div>
     </div>
 
-    <!-- AI Financial Coach Summary -->
-    <div class="row mb-4" id="aiSummaryRow">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
+    <!-- AI Financial Coach + Current Budget + Financial Planner (merged row) -->
+    <div class="row mb-4 g-3 align-items-stretch">
+        <div class="col-md-4" id="aiSummaryRow">
+            <div class="card h-100">
+                <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
                     <h6 class="mb-0"><i class="fas fa-robot me-2"></i>AI Financial Coach</h6>
-                    <a href="/ai-assistant" class="btn btn-sm btn-outline-primary"><i class="fas fa-comment-dots"></i> Open AI Assistant</a>
+                    <a href="/ai-assistant" class="btn btn-sm btn-outline-primary" title="Open AI Assistant"><i class="fas fa-comment-dots"></i></a>
                 </div>
                 <div class="card-body" id="aiSummaryBody">
                     <p class="text-muted small mb-0">Loading…</p>
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Current Budget Widget -->
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
                     <h6 class="mb-0"><i class="fas fa-wallet me-2"></i>Current Budget</h6>
-                    <a href="/budget-planner" class="btn btn-sm btn-outline-primary"><i class="fas fa-external-link-alt"></i> Open Budget Planner</a>
+                    <a href="/budget-planner" class="btn btn-sm btn-outline-primary" title="Open Budget Planner"><i class="fas fa-external-link-alt"></i></a>
                 </div>
                 <div class="card-body" id="currentBudgetBody">
                     <p class="text-muted small mb-0">Loading…</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-bullseye me-2"></i>Financial Planner</h6>
+                    <a href="/financial-planner" class="btn btn-sm btn-primary" title="Open Financial Planner"><i class="fas fa-arrow-right"></i></a>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2" id="fpWidgetCards">
+                        <div class="col-6">
+                            <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);">
+                                <div style="width:32px;height:32px;border-radius:8px;background:rgba(31,125,83,0.15);color:var(--color-surface);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-chart-line"></i></div>
+                                <div style="min-width:0;"><div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwInvValue">—</div><div style="font-size:0.68rem;color:var(--text-muted-custom);">Investments</div></div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);">
+                                <div style="width:32px;height:32px;border-radius:8px;background:rgba(239,68,68,0.15);color:#ef4444;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-hand-holding-usd"></i></div>
+                                <div style="min-width:0;"><div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwLoans">—</div><div style="font-size:0.68rem;color:var(--text-muted-custom);">Loans</div></div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);">
+                                <div style="width:32px;height:32px;border-radius:8px;background:rgba(249,115,22,0.15);color:#f97316;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-bell"></i></div>
+                                <div style="min-width:0;"><div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwRenewals">—</div><div style="font-size:0.68rem;color:var(--text-muted-custom);">Renewals</div></div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);">
+                                <div style="width:32px;height:32px;border-radius:8px;background:rgba(168,85,247,0.15);color:#a855f7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-star"></i></div>
+                                <div class="flex-grow-1" style="min-width:0;">
+                                    <div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwGoalPct">—</div>
+                                    <div style="font-size:0.68rem;color:var(--text-muted-custom);">Goals</div>
+                                    <div style="margin-top:3px;height:4px;border-radius:999px;background:var(--bg-input);overflow:hidden;"><div id="fpwGoalBar" style="height:100%;background:#a855f7;border-radius:999px;width:0%;transition:width 0.4s ease;"></div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -660,74 +696,64 @@
             </div>
         </div>
 
-        <!-- AI Financial Coach Summary -->
-        <div class="row mb-4" id="aiSummaryRowCompact">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
+        <!-- AI Financial Coach + Current Budget + Financial Planner (merged row) -->
+        <div class="row mb-4 g-3 align-items-stretch">
+            <div class="col-md-4" id="aiSummaryRowCompact">
+                <div class="card h-100">
+                    <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
                         <h6 class="mb-0"><i class="fas fa-robot me-2"></i>AI Financial Coach</h6>
-                        <a href="/ai-assistant" class="btn btn-sm btn-outline-primary"><i class="fas fa-comment-dots"></i> Open AI Assistant</a>
+                        <a href="/ai-assistant" class="btn btn-sm btn-outline-primary" title="Open AI Assistant"><i class="fas fa-comment-dots"></i></a>
                     </div>
                     <div class="card-body" id="aiSummaryBodyCompact">
                         <p class="text-muted small mb-0">Loading…</p>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Current Budget Widget -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
                         <h6 class="mb-0"><i class="fas fa-wallet me-2"></i>Current Budget</h6>
-                        <a href="/budget-planner" class="btn btn-sm btn-outline-primary"><i class="fas fa-external-link-alt"></i> Open Budget Planner</a>
+                        <a href="/budget-planner" class="btn btn-sm btn-outline-primary" title="Open Budget Planner"><i class="fas fa-external-link-alt"></i></a>
                     </div>
                     <div class="card-body" id="currentBudgetBodyCompact">
                         <p class="text-muted small mb-0">Loading…</p>
                     </div>
                 </div>
             </div>
-        </div>
-    </div><!-- /#dashboardCompactView -->
-
-    <!-- ═══════════ FINANCIAL PLANNER WIDGET ═══════════ -->
-    <div class="row mb-4" id="fpWidgetRow">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0"><i class="fas fa-bullseye me-2"></i>Financial Planner</h6>
-                    <a href="/financial-planner" class="btn btn-primary btn-sm">
-                        <i class="fas fa-arrow-right me-1"></i>Open Financial Planner
-                    </a>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3" id="fpWidgetCards">
-                        <div class="col-sm-6 col-xl-3">
-                            <div class="d-flex align-items-center gap-3 p-3 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);">
-                                <div style="width:40px;height:40px;border-radius:10px;background:rgba(31,125,83,0.15);color:var(--color-surface);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.1rem;"><i class="fas fa-chart-line"></i></div>
-                                <div><div style="font-weight:700;font-size:1rem;" id="fpwInvValue">—</div><div style="font-size:0.75rem;color:var(--text-muted-custom);">Investment Portfolio</div></div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="fas fa-bullseye me-2"></i>Financial Planner</h6>
+                        <a href="/financial-planner" class="btn btn-sm btn-primary" title="Open Financial Planner"><i class="fas fa-arrow-right"></i></a>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-2" id="fpWidgetCardsCompact">
+                            <div class="col-6">
+                                <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);">
+                                    <div style="width:32px;height:32px;border-radius:8px;background:rgba(31,125,83,0.15);color:var(--color-surface);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-chart-line"></i></div>
+                                    <div style="min-width:0;"><div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwInvValueCompact">—</div><div style="font-size:0.68rem;color:var(--text-muted-custom);">Investments</div></div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-sm-6 col-xl-3">
-                            <div class="d-flex align-items-center gap-3 p-3 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);">
-                                <div style="width:40px;height:40px;border-radius:10px;background:rgba(239,68,68,0.15);color:#ef4444;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.1rem;"><i class="fas fa-hand-holding-usd"></i></div>
-                                <div><div style="font-weight:700;font-size:1rem;" id="fpwLoans">—</div><div style="font-size:0.75rem;color:var(--text-muted-custom);">Active Loans</div></div>
+                            <div class="col-6">
+                                <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);">
+                                    <div style="width:32px;height:32px;border-radius:8px;background:rgba(239,68,68,0.15);color:#ef4444;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-hand-holding-usd"></i></div>
+                                    <div style="min-width:0;"><div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwLoansCompact">—</div><div style="font-size:0.68rem;color:var(--text-muted-custom);">Loans</div></div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-sm-6 col-xl-3">
-                            <div class="d-flex align-items-center gap-3 p-3 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);">
-                                <div style="width:40px;height:40px;border-radius:10px;background:rgba(249,115,22,0.15);color:#f97316;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.1rem;"><i class="fas fa-bell"></i></div>
-                                <div><div style="font-weight:700;font-size:1rem;" id="fpwRenewals">—</div><div style="font-size:0.75rem;color:var(--text-muted-custom);">Upcoming Renewals (30d)</div></div>
+                            <div class="col-6">
+                                <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);">
+                                    <div style="width:32px;height:32px;border-radius:8px;background:rgba(249,115,22,0.15);color:#f97316;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-bell"></i></div>
+                                    <div style="min-width:0;"><div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwRenewalsCompact">—</div><div style="font-size:0.68rem;color:var(--text-muted-custom);">Renewals</div></div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-sm-6 col-xl-3">
-                            <div class="d-flex align-items-center gap-3 p-3 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);">
-                                <div style="width:40px;height:40px;border-radius:10px;background:rgba(168,85,247,0.15);color:#a855f7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.1rem;"><i class="fas fa-star"></i></div>
-                                <div>
-                                    <div style="font-weight:700;font-size:1rem;" id="fpwGoalPct">—</div>
-                                    <div style="font-size:0.75rem;color:var(--text-muted-custom);">Wishlist Progress</div>
-                                    <div style="margin-top:4px;height:5px;border-radius:999px;background:var(--bg-input);overflow:hidden;min-width:80px;"><div id="fpwGoalBar" style="height:100%;background:#a855f7;border-radius:999px;width:0%;transition:width 0.4s ease;"></div></div>
+                            <div class="col-6">
+                                <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);">
+                                    <div style="width:32px;height:32px;border-radius:8px;background:rgba(168,85,247,0.15);color:#a855f7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-star"></i></div>
+                                    <div class="flex-grow-1" style="min-width:0;">
+                                        <div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwGoalPctCompact">—</div>
+                                        <div style="font-size:0.68rem;color:var(--text-muted-custom);">Goals</div>
+                                        <div style="margin-top:3px;height:4px;border-radius:999px;background:var(--bg-input);overflow:hidden;"><div id="fpwGoalBarCompact" style="height:100%;background:#a855f7;border-radius:999px;width:0%;transition:width 0.4s ease;"></div></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -735,8 +761,7 @@
                 </div>
             </div>
         </div>
-    </div>
-    <!-- ═══════════════════════════════════════════════ -->
+    </div><!-- /#dashboardCompactView -->
 
     <div class="row">
         <div class="col-md-12">
@@ -1339,16 +1364,16 @@
             if (!data.todaysInsight && !data.aiRecommendation) html += '<div class="small text-muted">No new insights right now — check back after you log more activity.</div>';
             html += '</div></div>';
 
-            html += '<div class="row g-2 small">';
+            html += '<div class="row g-1 small">';
             if (data.biggestExpense) {
-                html += `<div class="col-md-4"><span class="text-muted">Biggest Expense:</span> <strong>${formatAmount(data.biggestExpense.amount)}</strong>${data.biggestExpense.category ? ' (' + escapeAiSummaryText(data.biggestExpense.category) + ')' : ''}</div>`;
+                html += `<div class="col-12"><span class="text-muted">Biggest Expense:</span> <strong>${formatAmount(data.biggestExpense.amount)}</strong>${data.biggestExpense.category ? ' (' + escapeAiSummaryText(data.biggestExpense.category) + ')' : ''}</div>`;
             }
             if (data.budgetStatus) {
-                html += '<div class="col-md-4"><span class="text-muted">Budget:</span> ' +
+                html += '<div class="col-12"><span class="text-muted">Budget:</span> ' +
                     (data.budgetStatus.hasBudget ? `${data.budgetStatus.utilizationPercent.toFixed(0)}% used` : 'No active budget') + '</div>';
             }
             if (data.savingsProgress) {
-                html += `<div class="col-md-4"><span class="text-muted">Emergency Fund:</span> ${data.savingsProgress.emergencyFundProgressPercent.toFixed(0)}%</div>`;
+                html += `<div class="col-12"><span class="text-muted">Emergency Fund:</span> ${data.savingsProgress.emergencyFundProgressPercent.toFixed(0)}%</div>`;
             }
             html += '</div>';
             bodies.forEach(b => b.innerHTML = html);
@@ -1398,16 +1423,18 @@
                 return c.position === 'before' ? c.symbol + num : num + '\u00a0' + c.symbol;
             };
             const el = id => document.getElementById(id);
-            if (el('fpwInvValue')) el('fpwInvValue').textContent = fmtC(data.investmentValue);
-            if (el('fpwLoans')) el('fpwLoans').textContent = data.activeLoans + ' loan' + (data.activeLoans !== 1 ? 's' : '') + (data.loanRemainingBalance ? ' · ' + fmtC(data.loanRemainingBalance) : '');
-            if (el('fpwRenewals')) el('fpwRenewals').textContent = data.upcomingRenewals + ' renewal' + (data.upcomingRenewals !== 1 ? 's' : '');
-            if (el('fpwGoalPct') && data.goalsTarget > 0) {
-                const pct = Math.min(100, Math.round((data.goalsSaved / data.goalsTarget) * 100));
-                el('fpwGoalPct').textContent = fmtC(data.goalsSaved) + ' / ' + fmtC(data.goalsTarget) + ' (' + pct + '%)';
-                if (el('fpwGoalBar')) el('fpwGoalBar').style.width = pct + '%';
-            } else if (el('fpwGoalPct')) {
-                el('fpwGoalPct').textContent = data.goalsCount + ' goal' + (data.goalsCount !== 1 ? 's' : '');
-            }
+            ['', 'Compact'].forEach(suffix => {
+                if (el('fpwInvValue' + suffix)) el('fpwInvValue' + suffix).textContent = fmtC(data.investmentValue);
+                if (el('fpwLoans' + suffix)) el('fpwLoans' + suffix).textContent = data.activeLoans + ' loan' + (data.activeLoans !== 1 ? 's' : '') + (data.loanRemainingBalance ? ' · ' + fmtC(data.loanRemainingBalance) : '');
+                if (el('fpwRenewals' + suffix)) el('fpwRenewals' + suffix).textContent = data.upcomingRenewals + ' renewal' + (data.upcomingRenewals !== 1 ? 's' : '');
+                if (el('fpwGoalPct' + suffix) && data.goalsTarget > 0) {
+                    const pct = Math.min(100, Math.round((data.goalsSaved / data.goalsTarget) * 100));
+                    el('fpwGoalPct' + suffix).textContent = fmtC(data.goalsSaved) + ' / ' + fmtC(data.goalsTarget) + ' (' + pct + '%)';
+                    if (el('fpwGoalBar' + suffix)) el('fpwGoalBar' + suffix).style.width = pct + '%';
+                } else if (el('fpwGoalPct' + suffix)) {
+                    el('fpwGoalPct' + suffix).textContent = data.goalsCount + ' goal' + (data.goalsCount !== 1 ? 's' : '');
+                }
+            });
         } catch (e) { /* silently ignore */ }
     }
 
