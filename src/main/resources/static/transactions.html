@@ -971,6 +971,16 @@
             cachedAccounts.map(a => `<option value="${a.id}">${escHtml(label(a))}</option>`).join('');
     }
 
+    function populateTxRowTransferSelect(selectEl, placeholder, externalLabel) {
+        if (!selectEl) return;
+        const label = a => a.accountNickname + (a.bankName ? ' (' + a.bankName + ')' : a.provider ? ' (' + a.provider + ')' : '');
+        const accountOptionsHtml = cachedAccounts.map(a => `<option value="${a.id}">${escHtml(label(a))}</option>`).join('');
+        selectEl.innerHTML = `<option value="">${placeholder}</option>` +
+            `<option value="EXTERNAL">🌐 ${externalLabel}</option>` +
+            (cachedAccounts.length ? '<option disabled>──────────</option>' : '') +
+            accountOptionsHtml;
+    }
+
     function updateTxRowAccountBalance(balanceEl, accountVal) {
         if (!balanceEl) return;
         if (!accountVal || accountVal === 'SAVINGS') { balanceEl.textContent = ''; return; }
@@ -990,6 +1000,8 @@
             categoryId: data.categoryId || '',
             type: data.type || 'expense',
             accountVal: data.accountVal || '',
+            transferFrom: data.transferFrom || '',
+            transferTo: data.transferTo || '',
             date: data.date || '',
             error: null
         };
@@ -1007,11 +1019,36 @@
 
         container.innerHTML = txRows.map(row => {
             const canRemove = txRows.length > 1;
+            const isTransfer = row.type === 'transfer';
+            const row2Html = isTransfer ? `
+                    <div class="col-md-4 mb-1">
+                        <label class="form-label small mb-1 text-muted">From Account</label>
+                        <select class="form-select form-select-sm tx-row-transfer-from"><option value="">Select source…</option></select>
+                        <div class="tx-row-from-balance small text-muted mt-1"></div>
+                    </div>
+                    <div class="col-md-4 mb-1">
+                        <label class="form-label small mb-1 text-muted">To Account</label>
+                        <select class="form-select form-select-sm tx-row-transfer-to"><option value="">Select destination…</option></select>
+                        <div class="tx-row-to-balance small text-muted mt-1"></div>
+                    </div>
+                    <div class="col-md-4 mb-1">
+                        <label class="form-label small mb-1 text-muted">Date</label>
+                        <input type="date" class="form-control form-control-sm tx-row-date">
+                    </div>` : `
+                    <div class="col-md-6 mb-1">
+                        <label class="form-label small mb-1 text-muted tx-row-account-label">Paid From <small class="text-muted">(optional)</small></label>
+                        <select class="form-select form-select-sm tx-row-account"><option value="">-- No account --</option></select>
+                        <div class="tx-row-account-balance small text-muted mt-1"></div>
+                    </div>
+                    <div class="col-md-6 mb-1">
+                        <label class="form-label small mb-1 text-muted">Date</label>
+                        <input type="date" class="form-control form-control-sm tx-row-date">
+                    </div>`;
             return `
             <div class="tx-bulk-row${row.error ? ' has-error' : ''}" data-row-uid="${row.uid}">
                 <div class="row g-2">
                     <div class="col-md-3 mb-2">
-                        <label class="form-label small mb-1 text-muted">Description</label>
+                        <label class="form-label small mb-1 text-muted">Description ${isTransfer ? '<small class="text-muted">(optional)</small>' : ''}</label>
                         <input type="text" class="form-control form-control-sm tx-row-desc" placeholder="e.g., Grocery shopping" value="${escHtml(row.description)}">
                     </div>
                     <div class="col-md-2 mb-2">
@@ -1028,27 +1065,18 @@
                             <option value="expense">Expense</option>
                             <option value="income">Income</option>
                             <option value="savings">Savings</option>
+                            <option value="transfer">Transfer</option>
                         </select>
                     </div>
                     <div class="col-md-3 mb-2">
-                        <label class="form-label small mb-1 text-muted">Category</label>
-                        <select class="form-select form-select-sm tx-row-category"><option value="">Select category</option></select>
+                        ${isTransfer ? '' : '<label class="form-label small mb-1 text-muted">Category</label><select class="form-select form-select-sm tx-row-category"><option value="">Select category</option></select>'}
                     </div>
                     <div class="col-md-2 mb-2 d-flex align-items-end tx-row-actions">
                         <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 tx-row-dup" title="Duplicate"><i class="fas fa-copy"></i></button>
                         ${canRemove ? '<button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 tx-row-remove" title="Remove"><i class="fas fa-trash"></i></button>' : ''}
                     </div>
                 </div>
-                <div class="row g-2">
-                    <div class="col-md-6 mb-1">
-                        <label class="form-label small mb-1 text-muted tx-row-account-label">Paid From <small class="text-muted">(optional)</small></label>
-                        <select class="form-select form-select-sm tx-row-account"><option value="">-- No account --</option></select>
-                        <div class="tx-row-account-balance small text-muted mt-1"></div>
-                    </div>
-                    <div class="col-md-6 mb-1">
-                        <label class="form-label small mb-1 text-muted">Date</label>
-                        <input type="date" class="form-control form-control-sm tx-row-date">
-                    </div>
+                <div class="row g-2">${row2Html}
                 </div>
                 <div class="tx-row-error small text-danger mt-1${row.error ? '' : ' d-none'}">${escHtml(row.error || '')}</div>
             </div>`;
@@ -1073,36 +1101,56 @@
 
             const typeSel = rowEl.querySelector('.tx-row-type');
             typeSel.value = row.type;
-            const categorySel = rowEl.querySelector('.tx-row-category');
-            const accountSel = rowEl.querySelector('.tx-row-account');
-            const accountLabelEl = rowEl.querySelector('.tx-row-account-label');
-            accountLabelEl.id = accountLabelId;
 
-            loadCategoriesIntoSelect(categorySel, row.type).then(() => {
-                if (row.categoryId) categorySel.value = row.categoryId;
-            });
-            const accountBalanceEl = rowEl.querySelector('.tx-row-account-balance');
+            if (row.type === 'transfer') {
+                const fromSel = rowEl.querySelector('.tx-row-transfer-from');
+                const toSel = rowEl.querySelector('.tx-row-transfer-to');
+                const fromBalanceEl = rowEl.querySelector('.tx-row-from-balance');
+                const toBalanceEl = rowEl.querySelector('.tx-row-to-balance');
+                populateTxRowTransferSelect(fromSel, 'Select source…', 'External Source');
+                populateTxRowTransferSelect(toSel, 'Select destination…', 'External Destination');
+                fromSel.value = row.transferFrom;
+                toSel.value = row.transferTo;
+                updateTxRowAccountBalance(fromBalanceEl, fromSel.value);
+                updateTxRowAccountBalance(toBalanceEl, toSel.value);
+                fromSel.addEventListener('change', function () {
+                    row.transferFrom = this.value;
+                    updateTxRowAccountBalance(fromBalanceEl, this.value);
+                });
+                toSel.addEventListener('change', function () {
+                    row.transferTo = this.value;
+                    updateTxRowAccountBalance(toBalanceEl, this.value);
+                });
+            } else {
+                const categorySel = rowEl.querySelector('.tx-row-category');
+                const accountSel = rowEl.querySelector('.tx-row-account');
+                const accountLabelEl = rowEl.querySelector('.tx-row-account-label');
+                const accountBalanceEl = rowEl.querySelector('.tx-row-account-balance');
+                accountLabelEl.id = accountLabelId;
 
-            applyAccountFieldLabel(accountLabelId, row.type);
-            populateTxRowAccountSelect(accountSel);
-            applySavingsPseudoOption(accountSel, row.type);
-            accountSel.value = row.accountVal;
-            updateTxRowAccountBalance(accountBalanceEl, accountSel.value);
+                loadCategoriesIntoSelect(categorySel, row.type).then(() => {
+                    if (row.categoryId) categorySel.value = row.categoryId;
+                });
+                applyAccountFieldLabel(accountLabelId, row.type);
+                populateTxRowAccountSelect(accountSel);
+                applySavingsPseudoOption(accountSel, row.type);
+                accountSel.value = row.accountVal;
+                updateTxRowAccountBalance(accountBalanceEl, accountSel.value);
+
+                categorySel.addEventListener('change', function () { row.categoryId = this.value; });
+                accountSel.addEventListener('change', function () {
+                    row.accountVal = this.value;
+                    updateTxRowAccountBalance(accountBalanceEl, this.value);
+                });
+            }
 
             typeSel.addEventListener('change', function () {
                 row.type = this.value;
                 row.categoryId = '';
-                categorySel.value = '';
-                loadCategoriesIntoSelect(categorySel, row.type);
-                applyAccountFieldLabel(accountLabelId, row.type);
-                applySavingsPseudoOption(accountSel, row.type);
-                row.accountVal = accountSel.value;
-                updateTxRowAccountBalance(accountBalanceEl, accountSel.value);
-            });
-            categorySel.addEventListener('change', function () { row.categoryId = this.value; });
-            accountSel.addEventListener('change', function () {
-                row.accountVal = this.value;
-                updateTxRowAccountBalance(accountBalanceEl, this.value);
+                row.accountVal = '';
+                row.transferFrom = '';
+                row.transferTo = '';
+                renderTxRows();
             });
 
             const dateEl = rowEl.querySelector('.tx-row-date');
@@ -1114,7 +1162,7 @@
             const dupBtn = rowEl.querySelector('.tx-row-dup');
             dupBtn.addEventListener('click', function () {
                 const idx = txRows.indexOf(row);
-                const copy = newTxRow({ description: row.description, amount: row.amount, categoryId: row.categoryId, type: row.type, accountVal: row.accountVal, date: row.date });
+                const copy = newTxRow({ description: row.description, amount: row.amount, categoryId: row.categoryId, type: row.type, accountVal: row.accountVal, transferFrom: row.transferFrom, transferTo: row.transferTo, date: row.date });
                 txRows.splice(idx + 1, 0, copy);
                 renderTxRows();
                 focusTxRowDesc(copy.uid);
@@ -1150,10 +1198,18 @@
         txRows.forEach(row => {
             row.error = null;
             const amt = parseFloat(row.amount);
-            if (!row.description || !row.description.trim()) { row.error = 'Description is required.'; hasError = true; }
-            else if (!row.amount || isNaN(amt) || amt <= 0) { row.error = 'Enter a valid amount.'; hasError = true; }
-            else if (!row.categoryId) { row.error = 'Select a category.'; hasError = true; }
-            else if (!row.date) { row.error = 'Select a date.'; hasError = true; }
+            if (row.type === 'transfer') {
+                if (!row.transferFrom || !row.transferTo) { row.error = 'Select both From and To accounts.'; hasError = true; }
+                else if (row.transferFrom === 'EXTERNAL' && row.transferTo === 'EXTERNAL') { row.error = 'From and To cannot both be External.'; hasError = true; }
+                else if (row.transferFrom === row.transferTo) { row.error = 'From and To accounts must be different.'; hasError = true; }
+                else if (!row.amount || isNaN(amt) || amt <= 0) { row.error = 'Enter a valid amount.'; hasError = true; }
+                else if (!row.date) { row.error = 'Select a date.'; hasError = true; }
+            } else {
+                if (!row.description || !row.description.trim()) { row.error = 'Description is required.'; hasError = true; }
+                else if (!row.amount || isNaN(amt) || amt <= 0) { row.error = 'Enter a valid amount.'; hasError = true; }
+                else if (!row.categoryId) { row.error = 'Select a category.'; hasError = true; }
+                else if (!row.date) { row.error = 'Select a date.'; hasError = true; }
+            }
         });
         if (hasError) {
             renderTxRows();
@@ -1162,7 +1218,15 @@
         }
 
         const results = await Promise.all(txRows.map(async row => {
-            const payload = {
+            const payload = row.type === 'transfer' ? {
+                description: (row.description || '').trim() || 'Transfer',
+                amount: parseFloat(row.amount),
+                category_id: null,
+                transaction_type: 'transfer',
+                date: row.date,
+                sourceAccountId: row.transferFrom === 'EXTERNAL' ? null : parseInt(row.transferFrom, 10),
+                destinationAccountId: row.transferTo === 'EXTERNAL' ? null : parseInt(row.transferTo, 10)
+            } : {
                 description: row.description.trim(),
                 amount: parseFloat(row.amount),
                 category_id: parseInt(row.categoryId, 10),
