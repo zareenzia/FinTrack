@@ -1188,9 +1188,15 @@
 
         // When type changes in the edit modal, reload categories
         document.getElementById('editTxType').addEventListener('change', function () {
-            loadEditCategories(this.value);
-            applyAccountFieldLabel('editTxAccountLabel', this.value);
-            applySavingsPseudoOption(document.getElementById('editTxAccount'), this.value);
+            if (this.value === 'transfer') {
+                showEditTransferFields();
+                loadEditTransferAccounts(document.getElementById('editTxTransferFrom'), document.getElementById('editTxTransferTo'), '', '');
+            } else {
+                showEditNormalFields();
+                loadEditCategories(this.value);
+                applyAccountFieldLabel('editTxAccountLabel', this.value);
+                applySavingsPseudoOption(document.getElementById('editTxAccount'), this.value);
+            }
         });
 
         // Restore saved limit and wire filter controls
@@ -1579,7 +1585,36 @@
     function previousTransactionPage() { if (currentPage > 0) { currentPage--; displayTransactionPage(); } }
 
     /* ── Edit transaction ────────────────────────────────────────────────── */
-    function editTransaction(id) {
+    function showEditTransferFields() {
+        document.getElementById('editTxAccountWrap').classList.add('d-none');
+        document.getElementById('editTxCategoryWrap').classList.add('d-none');
+        document.getElementById('editTxTransferWrap').classList.remove('d-none');
+    }
+
+    function showEditNormalFields() {
+        document.getElementById('editTxAccountWrap').classList.remove('d-none');
+        document.getElementById('editTxCategoryWrap').classList.remove('d-none');
+        document.getElementById('editTxTransferWrap').classList.add('d-none');
+    }
+
+    async function loadEditTransferAccounts(fromSel, toSel, selectedFrom, selectedTo) {
+        try {
+            const accounts = await fetch('/api/accounts').then(r => r.json());
+            const label = a => a.accountNickname + (a.bankName ? ' (' + a.bankName + ')' : a.provider ? ' (' + a.provider + ')' : '');
+            const accountOptionsHtml = accounts.map(a => `<option value="${a.id}">${label(a)}</option>`).join('');
+            fromSel.innerHTML = '<option value="">Select source…</option>' + '<option value="EXTERNAL">🌐 External Source</option>' +
+                (accounts.length ? '<option disabled>──────────</option>' : '') + accountOptionsHtml;
+            toSel.innerHTML = '<option value="">Select destination…</option>' + '<option value="EXTERNAL">🌐 External Destination</option>' +
+                (accounts.length ? '<option disabled>──────────</option>' : '') + accountOptionsHtml;
+        } catch (e) {
+            fromSel.innerHTML = '<option value="">Select source…</option>';
+            toSel.innerHTML = '<option value="">Select destination…</option>';
+        }
+        fromSel.value = selectedFrom || '';
+        toSel.value = selectedTo || '';
+    }
+
+    async function editTransaction(id) {
         const tx = allTransactions.find(t => t.id === id);
         if (!tx) return;
         txEditId = id;
@@ -1588,10 +1623,19 @@
         document.getElementById('editTxAmount').value      = Number(tx.amount).toFixed(2);
         document.getElementById('editTxDate').value        = tx.date ? tx.date.slice(0, 10) : '';
         document.getElementById('editTxType').value        = tx.transaction_type;
-        loadEditCategories(tx.transaction_type, tx.category_id);
-        applyAccountFieldLabel('editTxAccountLabel', tx.transaction_type);
-        const selectedAccountValue = tx.fromSavings ? 'SAVINGS' : (tx.sourceAccountId != null ? String(tx.sourceAccountId) : '');
-        loadEditTxAccounts(selectedAccountValue, tx.transaction_type);
+
+        if (tx.transaction_type === 'transfer') {
+            showEditTransferFields();
+            const selectedFrom = tx.sourceAccountId != null ? String(tx.sourceAccountId) : 'EXTERNAL';
+            const selectedTo   = tx.destinationAccountId != null ? String(tx.destinationAccountId) : 'EXTERNAL';
+            await loadEditTransferAccounts(document.getElementById('editTxTransferFrom'), document.getElementById('editTxTransferTo'), selectedFrom, selectedTo);
+        } else {
+            showEditNormalFields();
+            loadEditCategories(tx.transaction_type, tx.category_id);
+            applyAccountFieldLabel('editTxAccountLabel', tx.transaction_type);
+            const selectedAccountValue = tx.fromSavings ? 'SAVINGS' : (tx.sourceAccountId != null ? String(tx.sourceAccountId) : '');
+            loadEditTxAccounts(selectedAccountValue, tx.transaction_type);
+        }
         txEditModal.show();
     }
 
@@ -1638,28 +1682,56 @@
         const amount      = parseFloat(document.getElementById('editTxAmount').value);
         const date        = document.getElementById('editTxDate').value;
         const type        = document.getElementById('editTxType').value;
-        const categoryId  = parseInt(document.getElementById('editTxCategory').value, 10);
-        const acctVal     = document.getElementById('editTxAccount').value;
 
-        if (!description || isNaN(amount) || amount <= 0 || !date || !categoryId) {
-            showNotification('Please fill all fields correctly.', 'error');
-            return;
+        let payload;
+        if (type === 'transfer') {
+            const fromVal = document.getElementById('editTxTransferFrom').value;
+            const toVal   = document.getElementById('editTxTransferTo').value;
+            if (!fromVal || !toVal) {
+                showNotification('Select both From and To accounts.', 'error'); return;
+            }
+            if (fromVal === 'EXTERNAL' && toVal === 'EXTERNAL') {
+                showNotification('From and To cannot both be External.', 'error'); return;
+            }
+            if (fromVal === toVal) {
+                showNotification('From and To accounts must be different.', 'error'); return;
+            }
+            if (isNaN(amount) || amount <= 0 || !date) {
+                showNotification('Please fill all fields correctly.', 'error'); return;
+            }
+            payload = {
+                description: description || 'Transfer',
+                amount,
+                date,
+                transaction_type: 'transfer',
+                category_id: null,
+                sourceAccountId: fromVal === 'EXTERNAL' ? null : parseInt(fromVal, 10),
+                destinationAccountId: toVal === 'EXTERNAL' ? null : parseInt(toVal, 10)
+            };
+        } else {
+            const categoryId = parseInt(document.getElementById('editTxCategory').value, 10);
+            const acctVal    = document.getElementById('editTxAccount').value;
+            if (!description || isNaN(amount) || amount <= 0 || !date || !categoryId) {
+                showNotification('Please fill all fields correctly.', 'error');
+                return;
+            }
+            payload = {
+                description,
+                amount,
+                date,
+                transaction_type: type,
+                category_id: categoryId,
+                sourceAccountId: acctVal && acctVal !== 'SAVINGS' ? parseInt(acctVal, 10) : null,
+                destinationAccountId: null,
+                fromSavings: acctVal === 'SAVINGS'
+            };
         }
 
         try {
             const response = await fetch(`/api/transactions/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    description,
-                    amount,
-                    date,
-                    transaction_type: type,
-                    category_id: categoryId,
-                    sourceAccountId: acctVal && acctVal !== 'SAVINGS' ? parseInt(acctVal, 10) : null,
-                    destinationAccountId: null,
-                    fromSavings: acctVal === 'SAVINGS'
-                })
+                body: JSON.stringify(payload)
             });
             const data = await response.json().catch(() => ({}));
             if (response.ok) {
@@ -1953,15 +2025,26 @@
                         <option value="expense">Expense</option>
                         <option value="income">Income</option>
                         <option value="savings">Savings</option>
+                        <option value="transfer">Transfer</option>
                     </select>
                 </div>
-                <div class="mb-3">
+                <div class="mb-3" id="editTxAccountWrap">
                     <label for="editTxAccount" class="form-label" id="editTxAccountLabel">Paid From <small class="text-muted">(optional)</small></label>
                     <select class="form-select" id="editTxAccount">
                         <option value="">-- No account --</option>
                     </select>
                 </div>
-                <div class="mb-3">
+                <div class="mb-3 d-none" id="editTxTransferWrap">
+                    <label for="editTxTransferFrom" class="form-label">From Account</label>
+                    <select class="form-select mb-2" id="editTxTransferFrom">
+                        <option value="">Select source…</option>
+                    </select>
+                    <label for="editTxTransferTo" class="form-label">To Account</label>
+                    <select class="form-select" id="editTxTransferTo">
+                        <option value="">Select destination…</option>
+                    </select>
+                </div>
+                <div class="mb-3" id="editTxCategoryWrap">
                     <label for="editTxCategory" class="form-label">Category</label>
                     <select class="form-select" id="editTxCategory" required>
                         <option value="">Loading…</option>

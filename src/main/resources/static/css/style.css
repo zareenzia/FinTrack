@@ -2176,6 +2176,26 @@ h3.stat-card-amount,
     justify-content: flex-end;
 }
 
+.tx-export-btn {
+    width: 30px;
+    height: 30px;
+    background: rgba(255, 255, 255, 0.12) !important;
+    border: 1px solid rgba(255, 255, 255, 0.28) !important;
+    color: #fff !important;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+.tx-export-btn:hover {
+    background: rgba(255, 255, 255, 0.22) !important;
+    border-color: rgba(255, 255, 255, 0.55) !important;
+}
+
 .tx-header-icon {
     width: 36px;
     height: 36px;

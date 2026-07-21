@@ -275,6 +275,13 @@
                         <option value="50">Show 50</option>
                         <option value="100">Show 100</option>
                     </select>
+                    <button type="button" class="tx-export-btn" id="txImportBtn" title="Import transactions from CSV">
+                        <i class="fas fa-file-import"></i>
+                    </button>
+                    <input type="file" id="txImportFileInput" accept=".csv" style="display:none;">
+                    <button type="button" class="tx-export-btn" id="txExportBtn" title="Export filtered transactions to CSV">
+                        <i class="fas fa-file-export"></i>
+                    </button>
                 </div>
             </div>
             <div class="card-body p-0">
@@ -663,15 +670,26 @@
                         <option value="expense">Expense</option>
                         <option value="income">Income</option>
                         <option value="savings">Savings</option>
+                        <option value="transfer">Transfer</option>
                     </select>
                 </div>
-                <div class="mb-3">
+                <div class="mb-3" id="editTxAccountWrap">
                     <label for="editTxAccount" class="form-label" id="editTxAccountLabel">Paid From <small class="text-muted">(optional)</small></label>
                     <select class="form-select" id="editTxAccount">
                         <option value="">-- No account --</option>
                     </select>
                 </div>
-                <div class="mb-3">
+                <div class="mb-3 d-none" id="editTxTransferWrap">
+                    <label for="editTxTransferFrom" class="form-label">From Account</label>
+                    <select class="form-select mb-2" id="editTxTransferFrom">
+                        <option value="">Select source…</option>
+                    </select>
+                    <label for="editTxTransferTo" class="form-label">To Account</label>
+                    <select class="form-select" id="editTxTransferTo">
+                        <option value="">Select destination…</option>
+                    </select>
+                </div>
+                <div class="mb-3" id="editTxCategoryWrap">
                     <label for="editTxCategory" class="form-label">Category</label>
                     <select class="form-select" id="editTxCategory" required>
                         <option value="">Loading…</option>
@@ -793,9 +811,16 @@
         document.getElementById('dashboardConfirmDeleteTxBtn').addEventListener('click', confirmDeleteTransaction);
         document.getElementById('dashboardSaveEditTxBtn').addEventListener('click', saveEditTransaction);
         document.getElementById('editTxType').addEventListener('change', function () {
-            loadEditCategories(this.value);
-            applyAccountFieldLabel('editTxAccountLabel', this.value);
-            applySavingsPseudoOption(document.getElementById('editTxAccount'), this.value);
+            if (this.value === 'transfer') {
+                showEditTransferFields();
+                populateTxRowTransferSelect(document.getElementById('editTxTransferFrom'), 'Select source…', 'External Source');
+                populateTxRowTransferSelect(document.getElementById('editTxTransferTo'), 'Select destination…', 'External Destination');
+            } else {
+                showEditNormalFields();
+                loadEditCategories(this.value);
+                applyAccountFieldLabel('editTxAccountLabel', this.value);
+                applySavingsPseudoOption(document.getElementById('editTxAccount'), this.value);
+            }
         });
 
         const savedLimit = localStorage.getItem('tx_page_limit') || '5';
@@ -824,6 +849,15 @@
             txFilterMonth = this.value;
             currentPage = 0;
             applyFiltersAndDisplay();
+        });
+        document.getElementById('txExportBtn').addEventListener('click', exportFilteredTransactionsToCsv);
+        document.getElementById('txImportBtn').addEventListener('click', function () {
+            document.getElementById('txImportFileInput').click();
+        });
+        document.getElementById('txImportFileInput').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            this.value = '';
+            if (file) importTransactionsFromCsv(file);
         });
 
         document.getElementById('openManageCategoriesModalBtn').addEventListener('click', openCategoryManagementModal);
@@ -2069,6 +2103,197 @@
         displayTransactionPage();
     }
 
+    function csvEscape(val) {
+        const s = String(val == null ? '' : val);
+        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    }
+
+    function exportFilteredTransactionsToCsv() {
+        if (!filteredTransactions.length) {
+            showTopNotification('No transactions to export.', 'error');
+            return;
+        }
+        const headers = ['Date', 'Description', 'Category', 'Type', 'Amount', 'Account', 'From Savings', 'Transaction ID', 'Created At'];
+        const rows = filteredTransactions.map(tx => [
+            (tx.date || '').slice(0, 10),
+            tx.description || '',
+            tx.category_name || '',
+            tx.transaction_type || '',
+            tx.amount,
+            tx.account_name || '-',
+            tx.fromSavings ? 'Yes' : 'No',
+            tx.id,
+            tx.created_at || ''
+        ]);
+        const csvContent = [headers, ...rows].map(r => r.map(csvEscape).join(',')).join('\r\n');
+        const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const stamp = new Date().toISOString().slice(0, 10);
+        a.href = url;
+        a.download = `transactions_${stamp}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showTopNotification(`Exported ${filteredTransactions.length} transaction${filteredTransactions.length > 1 ? 's' : ''} to CSV.`, 'success');
+    }
+
+    function parseCsv(text) {
+        const rows = [];
+        let row = [], field = '', inQuotes = false;
+        for (let i = 0; i < text.length; i++) {
+            const c = text[i];
+            if (inQuotes) {
+                if (c === '"') {
+                    if (text[i + 1] === '"') { field += '"'; i++; }
+                    else inQuotes = false;
+                } else field += c;
+            } else if (c === '"') {
+                inQuotes = true;
+            } else if (c === ',') {
+                row.push(field); field = '';
+            } else if (c === '\r') {
+                // skip, \n handles the line break
+            } else if (c === '\n') {
+                row.push(field); rows.push(row); row = []; field = '';
+            } else {
+                field += c;
+            }
+        }
+        if (field.length || row.length) { row.push(field); rows.push(row); }
+        return rows.filter(r => r.some(c => c.trim() !== ''));
+    }
+
+    async function importTransactionsFromCsv(file) {
+        const text = (await file.text()).replace(/^﻿/, '');
+        const rows = parseCsv(text);
+        if (rows.length < 2) {
+            showTopNotification('CSV file has no data rows.', 'error');
+            return;
+        }
+        const header = rows[0].map(h => h.trim().toLowerCase());
+        const idx = {
+            date: header.indexOf('date'),
+            description: header.indexOf('description'),
+            category: header.indexOf('category'),
+            type: header.indexOf('type'),
+            amount: header.indexOf('amount'),
+            account: header.indexOf('account'),
+            fromSavings: header.indexOf('from savings')
+        };
+        if (idx.date === -1 || idx.description === -1 || idx.type === -1 || idx.amount === -1) {
+            showTopNotification('CSV is missing required columns (Date, Description, Type, Amount).', 'error');
+            return;
+        }
+
+        showTopNotification('Importing…', 'success');
+        const categories = await fetch('/api/categories').then(r => r.json()).catch(() => []);
+        await loadAccountsIntoSelect();
+
+        const IMPORT_CATEGORY_COLORS = ['#E53935','#F4511E','#FB8C00','#FDD835','#7CB342','#43A047','#00897B','#00ACC1','#1E88E5','#3949AB','#5E35B1','#8E24AA','#D81B60','#EC407A','#6D4C41','#757575','#546E7A','#90A4AE','#2E7D32','#1565C0'];
+        const createdCategoryNames = [];
+
+        let succeeded = 0, failed = 0;
+        const errors = [];
+        for (const r of rows.slice(1)) {
+            const type = (r[idx.type] || '').trim().toLowerCase();
+            const description = (r[idx.description] || '').trim();
+            const amount = parseFloat(String(r[idx.amount] || '').replace(/[^\d.-]/g, ''));
+            const date = (r[idx.date] || '').trim().slice(0, 10);
+            const categoryName = idx.category !== -1 ? (r[idx.category] || '').trim() : '';
+            const accountText = idx.account !== -1 ? (r[idx.account] || '').trim() : '';
+            const fromSavingsText = idx.fromSavings !== -1 ? (r[idx.fromSavings] || '').trim().toLowerCase() : '';
+
+            if (type === 'transfer') {
+                failed++; errors.push(`"${description || 'row'}" skipped — Transfer rows aren't supported for import; add them via Log Cash Transfer.`);
+                continue;
+            }
+            if (!['income', 'expense', 'savings'].includes(type)) {
+                failed++; errors.push(`"${description || 'row'}" skipped — invalid type "${r[idx.type]}".`);
+                continue;
+            }
+            if (!description || isNaN(amount) || amount <= 0 || !date) {
+                failed++; errors.push(`"${description || 'row'}" skipped — missing or invalid description, amount, or date.`);
+                continue;
+            }
+            if (!categoryName) {
+                failed++; errors.push(`"${description}" skipped — no category specified.`);
+                continue;
+            }
+            let cat = categories.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
+            if (!cat) {
+                try {
+                    const createResp = await fetch('/api/categories', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            name: categoryName,
+                            color: IMPORT_CATEGORY_COLORS[categories.length % IMPORT_CATEGORY_COLORS.length],
+                            icon: 'tag',
+                            categoryType: type
+                        })
+                    });
+                    if (createResp.ok) {
+                        cat = await createResp.json();
+                        categories.push(cat);
+                        createdCategoryNames.push(categoryName);
+                    } else {
+                        const errData = await createResp.json().catch(() => null);
+                        failed++; errors.push(`"${description}" skipped — could not create category "${categoryName}" (${(errData && errData.error) || 'server error'}).`);
+                        continue;
+                    }
+                } catch (e) {
+                    failed++; errors.push(`"${description}" skipped — could not create category "${categoryName}".`);
+                    continue;
+                }
+            }
+            const fromSavings = type === 'expense' && (fromSavingsText === 'yes' || accountText.toUpperCase() === 'SAVINGS');
+            let accountId = null;
+            if (!fromSavings && accountText && accountText !== '-') {
+                const acct = cachedAccounts.find(a => accountText.startsWith(a.accountNickname));
+                accountId = acct ? acct.id : null;
+            }
+
+            try {
+                const response = await fetch('/api/transactions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        description,
+                        amount,
+                        category_id: cat.id,
+                        transaction_type: type,
+                        date,
+                        sourceAccountId: accountId,
+                        destinationAccountId: null,
+                        fromSavings
+                    })
+                });
+                if (response.ok) {
+                    succeeded++;
+                } else {
+                    failed++;
+                    const data = await response.json().catch(() => null);
+                    errors.push(`"${description}" failed — ${(data && data.error) || 'server error'}.`);
+                }
+            } catch (e) {
+                failed++; errors.push(`"${description}" failed — network error.`);
+            }
+        }
+
+        if (succeeded) loadRecentTransactions();
+        const uniqueCreated = [...new Set(createdCategoryNames)];
+        const createdNote = uniqueCreated.length
+            ? ` (${uniqueCreated.length} new categor${uniqueCreated.length > 1 ? 'ies' : 'y'} created: ${uniqueCreated.join(', ')})`
+            : '';
+        if (failed === 0) {
+            showTopNotification(`Imported ${succeeded} transaction${succeeded > 1 ? 's' : ''} successfully.${createdNote}`, 'success');
+        } else {
+            showTopNotification(`${succeeded} imported, ${failed} failed.${createdNote} ${errors.slice(0, 2).join(' ')}`, succeeded ? 'warning' : 'error');
+        }
+    }
+
     function displayTransactionPage() {
         const start = currentPage * pageSize;
         const end   = start + pageSize;
@@ -2211,7 +2436,19 @@
     function nextTransactionPage()     { if (currentPage < Math.ceil(filteredTransactions.length / pageSize) - 1) { currentPage++; displayTransactionPage(); } }
     function previousTransactionPage() { if (currentPage > 0) { currentPage--; displayTransactionPage(); } }
 
-    function editTransaction(id) {
+    function showEditTransferFields() {
+        document.getElementById('editTxAccountWrap').classList.add('d-none');
+        document.getElementById('editTxCategoryWrap').classList.add('d-none');
+        document.getElementById('editTxTransferWrap').classList.remove('d-none');
+    }
+
+    function showEditNormalFields() {
+        document.getElementById('editTxAccountWrap').classList.remove('d-none');
+        document.getElementById('editTxCategoryWrap').classList.remove('d-none');
+        document.getElementById('editTxTransferWrap').classList.add('d-none');
+    }
+
+    async function editTransaction(id) {
         const tx = allTransactions.find(t => t.id === id);
         if (!tx) return;
         txEditId = id;
@@ -2220,10 +2457,23 @@
         document.getElementById('editTxAmount').value      = Number(tx.amount).toFixed(2);
         document.getElementById('editTxDate').value        = tx.date ? tx.date.slice(0, 10) : '';
         document.getElementById('editTxType').value        = tx.transaction_type;
-        loadEditCategories(tx.transaction_type, tx.category_id);
-        applyAccountFieldLabel('editTxAccountLabel', tx.transaction_type);
-        const selectedAccountValue = tx.fromSavings ? 'SAVINGS' : (tx.sourceAccountId != null ? String(tx.sourceAccountId) : '');
-        loadEditTxAccounts(selectedAccountValue, tx.transaction_type);
+
+        if (tx.transaction_type === 'transfer') {
+            showEditTransferFields();
+            await loadAccountsIntoSelect();
+            const fromSel = document.getElementById('editTxTransferFrom');
+            const toSel   = document.getElementById('editTxTransferTo');
+            populateTxRowTransferSelect(fromSel, 'Select source…', 'External Source');
+            populateTxRowTransferSelect(toSel, 'Select destination…', 'External Destination');
+            fromSel.value = tx.sourceAccountId != null ? String(tx.sourceAccountId) : 'EXTERNAL';
+            toSel.value   = tx.destinationAccountId != null ? String(tx.destinationAccountId) : 'EXTERNAL';
+        } else {
+            showEditNormalFields();
+            loadEditCategories(tx.transaction_type, tx.category_id);
+            applyAccountFieldLabel('editTxAccountLabel', tx.transaction_type);
+            const selectedAccountValue = tx.fromSavings ? 'SAVINGS' : (tx.sourceAccountId != null ? String(tx.sourceAccountId) : '');
+            loadEditTxAccounts(selectedAccountValue, tx.transaction_type);
+        }
         txEditModal.show();
     }
 
@@ -2269,28 +2519,56 @@
         const amount      = parseFloat(document.getElementById('editTxAmount').value);
         const date        = document.getElementById('editTxDate').value;
         const type        = document.getElementById('editTxType').value;
-        const categoryId  = parseInt(document.getElementById('editTxCategory').value, 10);
-        const acctVal     = document.getElementById('editTxAccount').value;
 
-        if (!description || isNaN(amount) || amount <= 0 || !date || !categoryId) {
-            showTopNotification('Please fill all fields correctly.', 'error');
-            return;
+        let payload;
+        if (type === 'transfer') {
+            const fromVal = document.getElementById('editTxTransferFrom').value;
+            const toVal   = document.getElementById('editTxTransferTo').value;
+            if (!fromVal || !toVal) {
+                showTopNotification('Select both From and To accounts.', 'error'); return;
+            }
+            if (fromVal === 'EXTERNAL' && toVal === 'EXTERNAL') {
+                showTopNotification('From and To cannot both be External.', 'error'); return;
+            }
+            if (fromVal === toVal) {
+                showTopNotification('From and To accounts must be different.', 'error'); return;
+            }
+            if (isNaN(amount) || amount <= 0 || !date) {
+                showTopNotification('Please fill all fields correctly.', 'error'); return;
+            }
+            payload = {
+                description: description || 'Transfer',
+                amount,
+                date,
+                transaction_type: 'transfer',
+                category_id: null,
+                sourceAccountId: fromVal === 'EXTERNAL' ? null : parseInt(fromVal, 10),
+                destinationAccountId: toVal === 'EXTERNAL' ? null : parseInt(toVal, 10)
+            };
+        } else {
+            const categoryId = parseInt(document.getElementById('editTxCategory').value, 10);
+            const acctVal    = document.getElementById('editTxAccount').value;
+            if (!description || isNaN(amount) || amount <= 0 || !date || !categoryId) {
+                showTopNotification('Please fill all fields correctly.', 'error');
+                return;
+            }
+            payload = {
+                description,
+                amount,
+                date,
+                transaction_type: type,
+                category_id: categoryId,
+                sourceAccountId: acctVal && acctVal !== 'SAVINGS' ? parseInt(acctVal, 10) : null,
+                destinationAccountId: null,
+                fromSavings: acctVal === 'SAVINGS'
+            };
         }
 
         try {
             const response = await fetch(`/api/transactions/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    description,
-                    amount,
-                    date,
-                    transaction_type: type,
-                    category_id: categoryId,
-                    sourceAccountId: acctVal && acctVal !== 'SAVINGS' ? parseInt(acctVal, 10) : null,
-                    destinationAccountId: null,
-                    fromSavings: acctVal === 'SAVINGS'
-                })
+                body: JSON.stringify(payload)
             });
             const data = await response.json().catch(() => ({}));
             if (response.ok) {

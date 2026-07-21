@@ -338,19 +338,28 @@ public class FinanceApiController {
         if (body == null
                 || body.description == null || body.description.isBlank()
                 || body.amount == null
-                || body.category_id == null
                 || body.transaction_type == null || body.transaction_type.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Missing required fields"));
-        }
-
-        CategoryEntity category = categoryRepository.findById(body.category_id).orElse(null);
-        if (category == null || !category.getUserId().equals(userId)) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Invalid category"));
         }
 
         String normalizedType = body.transaction_type.toLowerCase(Locale.ROOT);
         if (!normalizedType.equals("income") && !normalizedType.equals("expense") && !normalizedType.equals("savings") && !normalizedType.equals("transfer")) {
             return ResponseEntity.badRequest().body(Map.of("error", "transaction_type must be income, expense, savings, or transfer"));
+        }
+
+        if (normalizedType.equals("transfer") && body.sourceAccountId() == null && body.destinationAccountId() == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "A transfer needs at least one tracked account — select a From or To account."));
+        }
+
+        CategoryEntity category = null;
+        if (!normalizedType.equals("transfer")) {
+            if (body.category_id == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Missing required fields"));
+            }
+            category = categoryRepository.findById(body.category_id).orElse(null);
+            if (category == null || !category.getUserId().equals(userId)) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Invalid category"));
+            }
         }
 
         boolean fromSavings = normalizedType.equals("expense") && Boolean.TRUE.equals(body.fromSavings());
