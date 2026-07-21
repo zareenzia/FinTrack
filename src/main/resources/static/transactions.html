@@ -864,6 +864,12 @@
         document.getElementById('transferDate').valueAsDate = new Date();
         loadRecurring();
         loadRecentTransactions();
+
+        // Dashboard's "Add Transaction" button links here to open this shared modal
+        if (new URLSearchParams(window.location.search).get('openAddTx') === '1') {
+            history.replaceState(null, '', window.location.pathname);
+            openAddTransactionModal();
+        }
     });
 
     function openCategoryManagementModal(e) {

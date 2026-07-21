@@ -833,7 +833,6 @@
     let txDeleteModal      = null;
     let txEditId           = null;
     let txEditModal        = null;
-    let txAddModal         = null;
 
     let categoryChartData    = [];
     let monthlyChartData     = [];
@@ -1184,16 +1183,8 @@
         txEditModal = new bootstrap.Modal(document.getElementById('dashboardEditTxModal'));
         document.getElementById('dashboardSaveEditTxBtn').addEventListener('click', saveEditTransaction);
 
-        // Initialise add-transaction modal
-        txAddModal = new bootstrap.Modal(document.getElementById('dashboardAddTxModal'));
+        // "Add Transaction" opens the shared bulk-capable modal on the Transactions page
         document.getElementById('openAddTxModalBtn').addEventListener('click', openAddTransactionModal);
-        document.getElementById('dashboardSaveAddTxBtn').addEventListener('click', saveAddTransaction);
-
-        // When type changes in the add modal, update the account field label and savings pseudo-option
-        document.getElementById('dashboardAddTxType').addEventListener('change', function () {
-            applyAccountFieldLabel('dashboardAddTxAccountLabel', this.value);
-            applySavingsPseudoOption(document.getElementById('dashboardAddTxAccount'), this.value);
-        });
 
         // When type changes in the edit modal, reload categories
         document.getElementById('editTxType').addEventListener('change', function () {
@@ -1683,27 +1674,7 @@
 
     /* ── Add transaction ─────────────────────────────────────────────────── */
     function openAddTransactionModal() {
-        document.getElementById('dashboardAddTxForm').reset();
-        document.getElementById('dashboardAddTxDate').valueAsDate = new Date();
-        loadAddTxCategories();
-        loadAddTxAccounts();
-        applyAccountFieldLabel('dashboardAddTxAccountLabel', document.getElementById('dashboardAddTxType').value);
-        txAddModal.show();
-    }
-
-    async function loadAddTxCategories() {
-        const sel = document.getElementById('dashboardAddTxCategory');
-        sel.innerHTML = '<option value="">Loading…</option>';
-        try {
-            // Show every category regardless of the selected transaction type — categories aren't
-            // strictly tied to one type (e.g. an "income"-tagged category should still be pickable
-            // for an expense entry), and filtering by type was hiding income/savings categories.
-            const cats = await fetch('/api/categories').then(r => r.json());
-            sel.innerHTML = '<option value="">Select category</option>' +
-                (cats.length ? cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('') : '');
-        } catch (e) {
-            sel.innerHTML = '<option value="">Error loading</option>';
-        }
+        window.location.href = 'transactions.html?openAddTx=1';
     }
 
     const ACCOUNT_FIELD_LABELS = { expense: 'Paid From', income: 'Received Into', savings: 'Savings Account' };
@@ -1725,60 +1696,6 @@
         } else if (existing) {
             if (selectEl.value === 'SAVINGS') selectEl.value = '';
             existing.remove();
-        }
-    }
-
-    async function loadAddTxAccounts() {
-        const sel = document.getElementById('dashboardAddTxAccount');
-        try {
-            const accounts = await fetch('/api/accounts').then(r => r.json());
-            const label = a => a.accountNickname + (a.bankName ? ' (' + a.bankName + ')' : a.provider ? ' (' + a.provider + ')' : '');
-            sel.innerHTML = '<option value="">-- No account --</option>' + accounts.map(a => `<option value="${a.id}">${label(a)}</option>`).join('');
-        } catch (e) {
-            sel.innerHTML = '<option value="">-- No account --</option>';
-        }
-        applySavingsPseudoOption(sel, document.getElementById('dashboardAddTxType').value);
-    }
-
-    async function saveAddTransaction() {
-        const description = document.getElementById('dashboardAddTxDescription').value.trim();
-        const amount      = parseFloat(document.getElementById('dashboardAddTxAmount').value);
-        const categoryId  = parseInt(document.getElementById('dashboardAddTxCategory').value, 10);
-        const type        = document.getElementById('dashboardAddTxType').value;
-        const date        = document.getElementById('dashboardAddTxDate').value;
-        const acctEl      = document.getElementById('dashboardAddTxAccount');
-        const acctVal     = acctEl ? acctEl.value : '';
-
-        if (!description || isNaN(amount) || amount <= 0 || !categoryId || !date) {
-            showNotification('Please fill all fields correctly.', 'error');
-            return;
-        }
-
-        try {
-            const response = await fetch('/api/transactions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    description,
-                    amount,
-                    category_id: categoryId,
-                    transaction_type: type,
-                    date,
-                    sourceAccountId: acctVal && acctVal !== 'SAVINGS' ? parseInt(acctVal, 10) : null,
-                    destinationAccountId: null,
-                    fromSavings: acctVal === 'SAVINGS'
-                })
-            });
-            const data = await response.json().catch(() => ({}));
-            if (response.ok) {
-                txAddModal.hide();
-                showNotification(data.warning || 'Transaction added successfully', data.warning ? 'warning' : 'success');
-                loadDashboard();
-            } else {
-                showNotification(data.error || 'Failed to add transaction', 'error');
-            }
-        } catch (e) {
-            showNotification('Error adding transaction', 'error');
         }
     }
 
@@ -2002,65 +1919,6 @@
         setTimeout(dismiss, 5000);
     }
 </script>
-<!-- Add New Transaction Modal -->
-<div class="modal fade" id="dashboardAddTxModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>Add New Transaction</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="dashboardAddTxForm">
-                    <div class="row g-3">
-                        <div class="col-md-6 mb-2">
-                            <label for="dashboardAddTxDescription" class="form-label">Description</label>
-                            <input type="text" class="form-control form-control-sm" id="dashboardAddTxDescription" required placeholder="e.g., Grocery shopping">
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <label for="dashboardAddTxAmount" class="form-label">Amount</label>
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text">৳</span>
-                                <input type="number" class="form-control" id="dashboardAddTxAmount" step="0.01" required placeholder="0.00">
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-2">
-                            <label for="dashboardAddTxCategory" class="form-label">Category</label>
-                            <select class="form-select form-select-sm" id="dashboardAddTxCategory" required>
-                                <option value="">Select category</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-2">
-                            <label for="dashboardAddTxType" class="form-label">Type</label>
-                            <select class="form-select form-select-sm" id="dashboardAddTxType" required>
-                                <option value="expense">Expense</option>
-                                <option value="income">Income</option>
-                                <option value="savings">Savings</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-2">
-                            <label for="dashboardAddTxDate" class="form-label">Date</label>
-                            <input type="date" class="form-control form-control-sm" id="dashboardAddTxDate" required>
-                        </div>
-                        <div class="col-md-12 mb-2">
-                            <label for="dashboardAddTxAccount" class="form-label" id="dashboardAddTxAccountLabel">Paid From <small class="text-muted">(optional)</small></label>
-                            <select class="form-select form-select-sm" id="dashboardAddTxAccount">
-                                <option value="">-- No account --</option>
-                            </select>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="dashboardSaveAddTxBtn">
-                    <i class="fas fa-plus me-1"></i>Add Transaction
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- Edit Transaction Modal -->
 <div class="modal fade" id="dashboardEditTxModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width:460px">
