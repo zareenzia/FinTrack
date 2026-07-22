@@ -1944,6 +1944,7 @@
         txEditId = id;
         document.getElementById('editTxId').value          = id;
         document.getElementById('editTxDescription').value = tx.description;
+        document.getElementById('editTxDetails').value      = tx.details || '';
         document.getElementById('editTxAmount').value      = Number(tx.amount).toFixed(2);
         document.getElementById('editTxDate').value        = tx.date ? tx.date.slice(0, 10) : '';
         document.getElementById('editTxType').value        = tx.transaction_type;
@@ -2003,6 +2004,7 @@
     async function saveEditTransaction() {
         const id          = parseInt(document.getElementById('editTxId').value, 10);
         const description = document.getElementById('editTxDescription').value.trim();
+        const details     = document.getElementById('editTxDetails').value.trim();
         const amount      = parseFloat(document.getElementById('editTxAmount').value);
         const date        = document.getElementById('editTxDate').value;
         const type        = document.getElementById('editTxType').value;
@@ -2025,6 +2027,7 @@
             }
             payload = {
                 description: description || 'Transfer',
+                details,
                 amount,
                 date,
                 transaction_type: 'transfer',
@@ -2041,6 +2044,7 @@
             }
             payload = {
                 description,
+                details,
                 amount,
                 date,
                 transaction_type: type,
@@ -2388,7 +2392,7 @@
 </script>
 <!-- Edit Transaction Modal -->
 <div class="modal fade" id="dashboardEditTxModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width:460px">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:700px">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title"><i class="fas fa-pen me-2"></i>Edit Transaction</h5>
@@ -2401,15 +2405,21 @@
                     <input type="text" class="form-control" id="editTxDescription" placeholder="e.g., Grocery shopping" required>
                 </div>
                 <div class="mb-3">
-                    <label for="editTxAmount" class="form-label">Amount</label>
-                    <div class="input-group">
-                        <span class="input-group-text">$</span>
-                        <input type="number" class="form-control" id="editTxAmount" step="0.01" min="0.01" required>
-                    </div>
+                    <label for="editTxDetails" class="form-label">Details <small class="text-muted">(optional)</small></label>
+                    <textarea class="form-control" id="editTxDetails" rows="3"></textarea>
                 </div>
-                <div class="mb-3">
-                    <label for="editTxDate" class="form-label">Date</label>
-                    <input type="date" class="form-control" id="editTxDate" required>
+                <div class="row g-3">
+                    <div class="col-md-6 mb-3">
+                        <label for="editTxAmount" class="form-label">Amount</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" id="editTxAmount" step="0.01" min="0.01" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="editTxDate" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="editTxDate" required>
+                    </div>
                 </div>
                 <div class="mb-3">
                     <label for="editTxType" class="form-label">Type</label>
@@ -2420,27 +2430,33 @@
                         <option value="transfer">Transfer</option>
                     </select>
                 </div>
-                <div class="mb-3" id="editTxAccountWrap">
-                    <label for="editTxAccount" class="form-label" id="editTxAccountLabel">Paid From <small class="text-muted">(optional)</small></label>
-                    <select class="form-select" id="editTxAccount">
-                        <option value="">-- No account --</option>
-                    </select>
+                <div class="row g-3">
+                    <div class="col-md-6 mb-3" id="editTxAccountWrap">
+                        <label for="editTxAccount" class="form-label" id="editTxAccountLabel">Paid From <small class="text-muted">(optional)</small></label>
+                        <select class="form-select" id="editTxAccount">
+                            <option value="">-- No account --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3" id="editTxCategoryWrap">
+                        <label for="editTxCategory" class="form-label">Category</label>
+                        <select class="form-select" id="editTxCategory" required>
+                            <option value="">Loading…</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="mb-3 d-none" id="editTxTransferWrap">
-                    <label for="editTxTransferFrom" class="form-label">From Account</label>
-                    <select class="form-select mb-2" id="editTxTransferFrom">
-                        <option value="">Select source…</option>
-                    </select>
-                    <label for="editTxTransferTo" class="form-label">To Account</label>
-                    <select class="form-select" id="editTxTransferTo">
-                        <option value="">Select destination…</option>
-                    </select>
-                </div>
-                <div class="mb-3" id="editTxCategoryWrap">
-                    <label for="editTxCategory" class="form-label">Category</label>
-                    <select class="form-select" id="editTxCategory" required>
-                        <option value="">Loading…</option>
-                    </select>
+                <div class="row g-3 d-none" id="editTxTransferWrap">
+                    <div class="col-md-6 mb-3">
+                        <label for="editTxTransferFrom" class="form-label">From Account</label>
+                        <select class="form-select" id="editTxTransferFrom">
+                            <option value="">Select source…</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="editTxTransferTo" class="form-label">To Account</label>
+                        <select class="form-select" id="editTxTransferTo">
+                            <option value="">Select destination…</option>
+                        </select>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
