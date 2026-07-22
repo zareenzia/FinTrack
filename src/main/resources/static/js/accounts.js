@@ -6,6 +6,7 @@
 
     let allAccounts = [];
     let editAccountId = null;
+    let editingOriginalCurrentBalance = null; // set when opening edit modal, used to detect an explicit override at save time
     let deleteAccountId = null;
     let accountModal = null;
     let deleteModal = null;
@@ -136,9 +137,7 @@
             : '<span class="status-badge-inactive">Inactive</span>';
         const toggleIcon  = a.status === 'ACTIVE' ? 'fa-toggle-off' : 'fa-toggle-on';
         const toggleLabel = a.status === 'ACTIVE' ? 'Deactivate' : 'Activate';
-        const ledgerBtn = isCreditCard
-            ? `<button class="btn btn-xs btn-outline-info" style="font-size:0.75rem;padding:2px 8px;" onclick="openLedgerModal(${a.id},'${escHtml(a.accountNickname)}')" title="View Ledger"><i class="fas fa-list-ul"></i></button>`
-            : '';
+        const ledgerBtn = `<button class="btn btn-xs btn-outline-info" style="font-size:0.75rem;padding:2px 8px;" onclick="openLedgerModal(${a.id},'${escHtml(a.accountNickname)}')" title="View Ledger"><i class="fas fa-list-ul"></i></button>`;
         const utilizationRow = isCreditCard ? renderUtilizationRow(a) : '';
         return `<tr>
             <td>
@@ -187,6 +186,8 @@
         document.getElementById('accountModalTitle').innerHTML = '<i class="fas fa-plus-circle me-2"></i>Add Account';
         document.getElementById('editAccountId').value = '';
         resetForm();
+        const curWrap = document.getElementById('currentBalanceWrap');
+        if (curWrap) curWrap.style.display = 'none';
         accountModal.show();
     };
 
@@ -209,7 +210,11 @@
         document.getElementById('acctDueDay').value         = a.dueDay || '';
         document.getElementById('acctCreditLimitBehavior').value = a.creditLimitBehavior || 'WARN';
         document.getElementById('acctOpeningBalance').value = a.openingBalance != null ? a.openingBalance : 0;
+        editingOriginalCurrentBalance = a.currentBalance != null ? a.currentBalance : 0;
+        document.getElementById('acctCurrentBalance').value = editingOriginalCurrentBalance;
         document.getElementById('acctStatus').value         = a.status || 'ACTIVE';
+        const curWrap = document.getElementById('currentBalanceWrap');
+        if (curWrap) curWrap.style.display = '';
         onAccountTypeChange();
         if (a.linkedAccountId) {
             loadBankAccountsForSelect('acctLinkedAccount', a.linkedAccountId);
@@ -252,14 +257,14 @@
             document.querySelectorAll('.field-bank.field-debit.field-credit.field-mfs').forEach(el => el.style.display = '');
         }
 
-        const label = document.getElementById('openingBalanceLabel');
-        const hint  = document.getElementById('openingBalanceHint');
+        const curLabel = document.getElementById('currentBalanceLabel');
+        const curHint  = document.getElementById('currentBalanceHint');
         if (type === 'CREDIT_CARD') {
-            if (label) label.textContent = 'Current Outstanding Balance';
-            if (hint)  hint.textContent  = 'Amount you currently owe on this card.';
+            if (curLabel) curLabel.textContent = 'Current Outstanding Balance';
+            if (curHint)  curHint.textContent  = 'Amount you currently owe on this card — edit to correct or reconcile.';
         } else {
-            if (label) label.textContent = 'Opening Balance';
-            if (hint)  hint.textContent  = 'Starting balance for this account.';
+            if (curLabel) curLabel.textContent = 'Current Balance';
+            if (curHint)  curHint.textContent  = 'The actual balance right now — edit to correct or reconcile.';
         }
 
         if (type === 'DEBIT_CARD') {
@@ -316,6 +321,16 @@
             openingBalance:   parseFloat(document.getElementById('acctOpeningBalance').value) || 0,
             status:           document.getElementById('acctStatus').value || 'ACTIVE'
         };
+
+        // Only sent when the user actually typed a different value — otherwise an untouched,
+        // merely-prefilled Current Balance field would override a concurrent Opening Balance edit
+        // (see AccountApiController#updateAccount for how an explicit currentBalance takes priority).
+        if (editAccountId) {
+            const curVal = parseFloat(document.getElementById('acctCurrentBalance').value);
+            if (!isNaN(curVal) && curVal !== editingOriginalCurrentBalance) {
+                body.currentBalance = curVal;
+            }
+        }
 
         const btn = document.getElementById('saveAccountBtn');
         btn.disabled = true;

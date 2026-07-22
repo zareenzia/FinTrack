@@ -98,9 +98,20 @@ public class AccountApiController {
         if (body == null || body.accountType() == null || body.accountNickname() == null || body.accountNickname().isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("error", "accountType and accountNickname are required"));
         }
-        double balanceDiff = (body.openingBalance() != null ? body.openingBalance() : entity.getOpeningBalance()) - entity.getOpeningBalance();
+        double oldOpeningBalance = entity.getOpeningBalance();
+        double oldCurrentBalance = entity.getCurrentBalance();
         mapRequestToEntity(body, entity);
-        entity.setCurrentBalance(entity.getCurrentBalance() + balanceDiff);
+        if (body.currentBalance() != null) {
+            // A direct correction to the live balance wins outright — shift openingBalance by the
+            // same amount so "openingBalance + ledger effect since" (e.g. the credit-card balance
+            // recompute that runs on every startup) still lands on exactly this corrected value,
+            // instead of silently reverting it on the next restart.
+            entity.setOpeningBalance(oldOpeningBalance + (body.currentBalance() - oldCurrentBalance));
+            entity.setCurrentBalance(body.currentBalance());
+        } else {
+            double balanceDiff = entity.getOpeningBalance() - oldOpeningBalance;
+            entity.setCurrentBalance(oldCurrentBalance + balanceDiff);
+        }
         AccountEntity saved = accountRepository.save(entity);
         documentIndexer.indexAccount(saved);
         return ResponseEntity.ok(toAccountResponse(saved));
@@ -214,6 +225,6 @@ public class AccountApiController {
             String accountNumber, String cardType, Long linkedAccountId,
             String provider, String mobileNumber, Double creditLimit,
             Integer statementDay, Integer dueDay, String creditLimitBehavior,
-            Double openingBalance, String status
+            Double openingBalance, String status, Double currentBalance
     ) {}
 }

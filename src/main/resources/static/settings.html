@@ -1018,6 +1018,13 @@
             </div>
             <div class="form-text" id="openingBalanceHint">Starting balance for this account.</div>
           </div>
+          <div class="mb-3" id="currentBalanceWrap" style="display:none">
+            <label class="form-label fw-semibold" id="currentBalanceLabel">Current Balance</label>
+            <div class="input-group"><span class="input-group-text">৳</span>
+              <input type="number" class="form-control" id="acctCurrentBalance" step="0.01" placeholder="0.00">
+            </div>
+            <div class="form-text" id="currentBalanceHint">The actual balance right now — edit to correct or reconcile.</div>
+          </div>
           <div class="mb-3">
             <label class="form-label">Status</label>
             <select class="form-select" id="acctStatus">
