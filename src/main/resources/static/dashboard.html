@@ -783,6 +783,7 @@
                         </div>
                     </div>
                     <div class="tx-header-actions">
+                        <input type="text" class="tx-filter-search" id="txSearchFilter" placeholder="Search transactions…" title="Search by description, category, account, or amount">
                         <select class="tx-filter-select" id="txCategoryFilter" title="Filter by category">
                             <option value="">All Categories</option>
                         </select>
@@ -872,6 +873,7 @@
     let txFilterCategory   = '';
     let txFilterType       = '';
     let txFilterAccount    = ''; // '', 'SAVINGS', 'NONE', or an account id (string)
+    let txFilterSearch     = '';
     let cachedAccounts     = [];
     let txDeleteId         = null;
     let txDeleteModal      = null;
@@ -1273,6 +1275,15 @@
             });
         }
 
+        const searchEl = document.getElementById('txSearchFilter');
+        if (searchEl) {
+            searchEl.addEventListener('input', function () {
+                txFilterSearch = this.value;
+                currentPage = 0;
+                applyFiltersAndDisplay();
+            });
+        }
+
         const catEl = document.getElementById('txCategoryFilter');
         if (catEl) {
             catEl.addEventListener('change', function () {
@@ -1547,12 +1558,18 @@
     }
 
     function applyFiltersAndDisplay() {
+        const search = txFilterSearch.trim().toLowerCase();
         filteredTransactions = allTransactions.filter(function (tx) {
-            const catOk   = !txFilterCategory || tx.category_name === txFilterCategory;
-            const typeOk  = !txFilterType     || tx.transaction_type === txFilterType;
-            const monthOk = !selectedMonthKey || selectedMonthKey === 'ALL' || monthKeyOf(tx.date) === selectedMonthKey;
-            const acctOk  = txMatchesAccountFilter(tx);
-            return catOk && typeOk && monthOk && acctOk;
+            const catOk    = !txFilterCategory || tx.category_name === txFilterCategory;
+            const typeOk   = !txFilterType     || tx.transaction_type === txFilterType;
+            const monthOk  = !selectedMonthKey || selectedMonthKey === 'ALL' || monthKeyOf(tx.date) === selectedMonthKey;
+            const acctOk   = txMatchesAccountFilter(tx);
+            const searchOk = !search
+                || (tx.description || '').toLowerCase().includes(search)
+                || (tx.category_name || '').toLowerCase().includes(search)
+                || (tx.account_name || '').toLowerCase().includes(search)
+                || String(tx.amount).includes(search);
+            return catOk && typeOk && monthOk && acctOk && searchOk;
         });
         displayTransactionPage();
     }
