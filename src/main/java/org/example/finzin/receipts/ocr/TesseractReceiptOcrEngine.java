@@ -13,8 +13,12 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Optional;
 import javax.imageio.ImageIO;
 
@@ -25,6 +29,11 @@ public class TesseractReceiptOcrEngine implements ReceiptOcrEngine {
     /** Screenshots/digital receipts under this width OCR very poorly with Tesseract — upscale them first. */
     private static final int MIN_TARGET_WIDTH_PX = 1800;
     private static final double MAX_UPSCALE_FACTOR = 4.0;
+
+    /** The real eng.traineddata (tessdata_fast) is ~4MB — anything much smaller means a previous
+     *  download was interrupted partway through, so treat it as absent and retry. */
+    private static final long MIN_VALID_TRAINEDDATA_BYTES = 1_000_000L;
+    private static final String TESSDATA_FAST_BASE_URL = "https://github.com/tesseract-ocr/tessdata_fast/raw/main/";
 
     private final String datapath;
     private final String language;
@@ -38,8 +47,42 @@ public class TesseractReceiptOcrEngine implements ReceiptOcrEngine {
     @PostConstruct
     void checkConfigured() {
         if (!isAvailable()) {
+            // build.gradle's downloadTessdata task fetches this at build time, but on hosts that
+            // build and run in separate stages/containers (e.g. Railway's Railpack builder) a
+            // file written into the project directory during the build never reaches the runtime
+            // filesystem. Retry the same fetch here so it also works when that assumption breaks.
+            ensureTraineddata();
+        }
+        if (!isAvailable()) {
             log.warn("Tesseract OCR is not configured (tesseract.datapath='{}', language='{}') — " +
                     "Receipt Scanner will return 503 until a native Tesseract install + tessdata is available.", datapath, language);
+        }
+    }
+
+    private void ensureTraineddata() {
+        if (datapath == null || datapath.isBlank()) return;
+        Path dir = Path.of(datapath);
+        Path dest = dir.resolve(language + ".traineddata");
+        Path tmp = dir.resolve(language + ".traineddata.tmp");
+        try {
+            Files.createDirectories(dir);
+            URLConnection connection = new URL(TESSDATA_FAST_BASE_URL + language + ".traineddata").openConnection();
+            connection.setConnectTimeout(15_000);
+            connection.setReadTimeout(60_000);
+            try (InputStream in = connection.getInputStream()) {
+                Files.copy(in, tmp, StandardCopyOption.REPLACE_EXISTING);
+            }
+            if (Files.size(tmp) < MIN_VALID_TRAINEDDATA_BYTES) {
+                throw new IOException("download looked incomplete (" + Files.size(tmp) + " bytes)");
+            }
+            Files.move(tmp, dest, StandardCopyOption.REPLACE_EXISTING);
+            log.info("Downloaded Tesseract {}.traineddata into '{}' at startup", language, datapath);
+        } catch (Exception e) {
+            try {
+                Files.deleteIfExists(tmp);
+            } catch (IOException ignored) {
+            }
+            log.warn("Could not auto-download {}.traineddata into '{}': {}", language, datapath, e.getMessage());
         }
     }
 
