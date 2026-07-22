@@ -100,12 +100,19 @@
         } catch (e) { /* silently ignore */ }
     })();
 
+    const COLOR_THEME_KEY = getUserStorageKey('fintrack_color_theme');
+
+    function applyColorTheme(key) {
+        if (!key || key === 'forest') {
+            document.documentElement.removeAttribute('data-color-theme');
+        } else {
+            document.documentElement.setAttribute('data-color-theme', key);
+        }
+    }
+
     // ── Apply saved color theme immediately (before first paint)
     (function applyColorThemeEarly() {
-        var ct = localStorage.getItem(getUserStorageKey('fintrack_color_theme')) || 'forest';
-        if (ct !== 'forest') {
-            document.documentElement.setAttribute('data-color-theme', ct);
-        }
+        applyColorTheme(localStorage.getItem(COLOR_THEME_KEY) || 'forest');
     })();
 
     // Apply theme immediately on script load to prevent flash of wrong theme
@@ -155,6 +162,7 @@
         const next = (current === 'dark') ? 'light' : 'dark';
         localStorage.setItem(THEME_KEY, next);
         applyTheme(next);
+        syncAppearanceToServer({ theme: next });
     }
 
     function initTheme() {
@@ -168,6 +176,42 @@
                 }
             });
         }
+    }
+
+    // ── Cross-device sync ─────────────────────────────────────────
+    // Theme/color-theme are cached in localStorage (per-browser) so the page can apply
+    // them before first paint with no flash, but the source of truth is per-user on the
+    // server — otherwise the same account shows a different theme in every browser/device.
+    function syncAppearanceToServer(patch) {
+        fetch('/api/appearance-preferences', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(patch)
+        }).catch(function () {});
+    }
+
+    function syncAppearanceFromServer() {
+        fetch('/api/appearance-preferences')
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (data) {
+                if (!data) return;
+                var changed = false;
+                if (data.theme && data.theme !== localStorage.getItem(THEME_KEY)) {
+                    localStorage.setItem(THEME_KEY, data.theme);
+                    applyTheme(data.theme);
+                    changed = true;
+                }
+                if (data.colorTheme && data.colorTheme !== localStorage.getItem(COLOR_THEME_KEY)) {
+                    localStorage.setItem(COLOR_THEME_KEY, data.colorTheme);
+                    applyColorTheme(data.colorTheme);
+                    changed = true;
+                }
+                if (changed) {
+                    if (typeof window.reloadSidebar === 'function') window.reloadSidebar();
+                    window.dispatchEvent(new CustomEvent('finzin:appearance-synced', { detail: data }));
+                }
+            })
+            .catch(function () {});
     }
 
     /* ── User helpers ──────────────────────────────────────────── */
@@ -830,6 +874,8 @@
     function init() {
         // Apply theme immediately to prevent flash of wrong theme
         initTheme();
+        // Reconcile with the server's per-user value (e.g. this is a new browser/device)
+        syncAppearanceFromServer();
 
         const sidebar = buildSidebar();
 

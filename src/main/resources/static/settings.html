@@ -1338,6 +1338,20 @@ document.getElementById('aiSettingsSaveBtn').addEventListener('click', function(
 function COLOR_THEME_KEY() { return getUserStorageKey('fintrack_color_theme'); }
 function THEME_KEY()       { return getUserStorageKey('fintrack_theme'); }
 
+// Theme + color theme are per-user, not per-browser — best-effort sync to the server so
+// switching devices/browsers shows the same appearance instead of each one defaulting fresh.
+function syncAppearanceToServer(patch) {
+  fetch('/api/appearance-preferences', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(patch)
+  }).catch(function(){});
+}
+
+// Pure DOM/localStorage apply — no network. Used both for a genuine user pick (see the click
+// handler below, which separately syncs to the server) and for passively re-rendering an
+// already-known value (e.g. page load, or reconciling with the server's value) — that second
+// case must NOT re-PUT, or a stale/default local value would clobber the real server value.
 function applyColorTheme(key) {
   if (!key || key === 'forest') {
     document.documentElement.removeAttribute('data-color-theme');
@@ -1360,17 +1374,24 @@ function initThemeGrid() {
     opt.addEventListener('click', function(){
       applyColorTheme(opt.dataset.themeKey);
       syncThemeGrid();
+      syncAppearanceToServer({ colorTheme: opt.dataset.themeKey });
     });
   });
 }
 
 // ============== Display Mode ==============
-function initDisplayMode() {
+function syncDisplayModeButtons() {
   var saved = localStorage.getItem(THEME_KEY()) || 'light';
   document.querySelectorAll('.display-mode-btn').forEach(function(btn){
     btn.classList.toggle('active', btn.dataset.mode === saved);
     btn.classList.toggle('btn-primary', btn.dataset.mode === saved);
     btn.classList.toggle('btn-outline-secondary', btn.dataset.mode !== saved);
+  });
+}
+
+function initDisplayMode() {
+  syncDisplayModeButtons();
+  document.querySelectorAll('.display-mode-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
       document.querySelectorAll('.display-mode-btn').forEach(function(b){
         b.classList.remove('active','btn-primary');
@@ -1385,9 +1406,18 @@ function initDisplayMode() {
       }
       document.documentElement.setAttribute('data-theme', mode);
       localStorage.setItem(THEME_KEY(), mode);
+      syncAppearanceToServer({ theme: mode });
     });
   });
 }
+
+// Sidebar.js resolves the server's per-user theme/color-theme asynchronously (it must not
+// block first paint); when it lands after our own localStorage-based initial render, re-sync
+// this page's controls so they don't show a stale value from before the reconcile.
+window.addEventListener('finzin:appearance-synced', function() {
+  syncThemeGrid();
+  syncDisplayModeButtons();
+});
 
 // ============== Appearance ==============
 function initAppearanceUI() {
