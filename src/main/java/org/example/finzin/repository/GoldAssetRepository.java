@@ -22,4 +22,6 @@ public interface GoldAssetRepository extends JpaRepository<GoldAssetEntity, Long
            "WHEN 'POINT' THEN 0.02430 " +
            "ELSE 1.0 END) FROM GoldAssetEntity a WHERE a.userId = :userId")
     Double sumWeightInGramsByUserId(@Param("userId") Long userId);
+
+    void deleteByUserId(Long userId);
 }

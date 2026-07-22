@@ -10,4 +10,5 @@ import java.util.Optional;
 public interface AiDocumentEmbeddingRepository extends JpaRepository<AiDocumentEmbeddingEntity, Long> {
     Optional<AiDocumentEmbeddingEntity> findByUserIdAndEntityTypeAndEntityId(Long userId, String entityType, Long entityId);
     void deleteByUserIdAndEntityTypeAndEntityId(Long userId, String entityType, Long entityId);
+    void deleteByUserId(Long userId);
 }

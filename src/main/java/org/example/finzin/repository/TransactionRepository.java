@@ -49,5 +49,7 @@ public interface TransactionRepository extends JpaRepository<TransactionEntity, 
                                                       @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     List<TransactionEntity> findBySourceAccountIdOrDestinationAccountIdOrderByDateAsc(Long sourceAccountId, Long destinationAccountId);
+
+    void deleteByUserId(Long userId);
 }
 

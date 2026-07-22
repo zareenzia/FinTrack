@@ -13,4 +13,5 @@ public interface RecurringTransactionRepository extends JpaRepository<RecurringT
     List<RecurringTransactionEntity> findByUserIdAndStatus(Long userId, String status);
     List<RecurringTransactionEntity> findByStatusAndNextExecutionDateLessThanEqual(String status, LocalDate date);
     List<RecurringTransactionEntity> findByUserIdAndStatusAndNextExecutionDateLessThanEqual(Long userId, String status, LocalDate date);
+    void deleteByUserId(Long userId);
 }

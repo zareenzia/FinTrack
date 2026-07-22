@@ -19,5 +19,7 @@ public interface AssetRepository extends JpaRepository<AssetEntity, Long> {
     
     @Query("SELECT SUM(a.value) FROM AssetEntity a WHERE a.userId = :userId")
     Double sumValuesByUserId(@Param("userId") Long userId);
+
+    void deleteByUserId(Long userId);
 }
 

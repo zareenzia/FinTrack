@@ -10,4 +10,5 @@ import java.util.List;
 public interface AiMessageRepository extends JpaRepository<AiMessageEntity, Long> {
     List<AiMessageEntity> findByConversationIdOrderByCreatedAtAsc(Long conversationId);
     void deleteByConversationId(Long conversationId);
+    void deleteByUserId(Long userId);
 }

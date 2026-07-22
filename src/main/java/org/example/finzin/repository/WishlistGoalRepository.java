@@ -9,4 +9,5 @@ import java.util.List;
 public interface WishlistGoalRepository extends JpaRepository<WishlistGoalEntity, Long> {
     List<WishlistGoalEntity> findByUserId(Long userId);
     List<WishlistGoalEntity> findByUserIdAndStatus(Long userId, String status);
+    void deleteByUserId(Long userId);
 }

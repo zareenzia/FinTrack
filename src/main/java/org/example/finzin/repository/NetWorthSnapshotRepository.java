@@ -10,4 +10,5 @@ import java.util.Optional;
 public interface NetWorthSnapshotRepository extends JpaRepository<NetWorthSnapshotEntity, Long> {
     Optional<NetWorthSnapshotEntity> findByUserIdAndSnapshotMonth(Long userId, String snapshotMonth);
     Optional<NetWorthSnapshotEntity> findTopByUserIdAndSnapshotMonthLessThanOrderBySnapshotMonthDesc(Long userId, String snapshotMonth);
+    void deleteByUserId(Long userId);
 }

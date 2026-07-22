@@ -2252,10 +2252,25 @@ if (deleteConfirmInput) {
 var btnConfirmDeleteAccount = document.getElementById('btnConfirmDeleteAccount');
 if (btnConfirmDeleteAccount) {
   btnConfirmDeleteAccount.addEventListener('click', function(){
-    showNotification('Account deletion initiated. You will be redirected...', 'warning');
-    var modal = bootstrap.Modal.getInstance(document.getElementById('deleteAccountModal'));
-    if (modal) modal.hide();
-    setTimeout(function(){ window.location.href = '/login.html'; }, 2000);
+    btnConfirmDeleteAccount.disabled = true;
+    var originalHtml = btnConfirmDeleteAccount.innerHTML;
+    btnConfirmDeleteAccount.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Deleting…';
+    fetch('/api/auth/account', { method: 'DELETE', headers: authHeaders() })
+      .then(function(res){
+        if (!res.ok) return res.json().then(function(err){ throw new Error((err && err.error) || 'Failed to delete account.'); });
+        var modal = bootstrap.Modal.getInstance(document.getElementById('deleteAccountModal'));
+        if (modal) modal.hide();
+        showNotification('Account deleted. Redirecting…', 'warning');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        document.cookie = 'Authorization=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        setTimeout(function(){ window.location.href = '/login.html'; }, 1500);
+      })
+      .catch(function(err){
+        showNotification(err.message || 'Unable to delete account right now.', 'danger');
+        btnConfirmDeleteAccount.disabled = false;
+        btnConfirmDeleteAccount.innerHTML = originalHtml;
+      });
   });
 }
 

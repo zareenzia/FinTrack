@@ -7,4 +7,5 @@ import java.util.Optional;
 
 public interface AppearancePreferenceRepository extends JpaRepository<AppearancePreferenceEntity, Long> {
     Optional<AppearancePreferenceEntity> findByUserId(Long userId);
+    void deleteByUserId(Long userId);
 }

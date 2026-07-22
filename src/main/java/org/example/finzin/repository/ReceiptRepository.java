@@ -13,4 +13,6 @@ public interface ReceiptRepository extends JpaRepository<ReceiptEntity, Long> {
     Optional<ReceiptEntity> findByIdAndUserId(Long id, Long userId);
     List<ReceiptEntity> findByUserIdAndTransactionIdIn(Long userId, List<Long> transactionIds);
     List<ReceiptEntity> findByCreatedAtBefore(LocalDateTime cutoff);
+    List<ReceiptEntity> findByUserId(Long userId);
+    void deleteByUserId(Long userId);
 }

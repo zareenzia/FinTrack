@@ -9,4 +9,5 @@ import java.util.List;
 public interface InvestmentRepository extends JpaRepository<InvestmentEntity, Long> {
     List<InvestmentEntity> findByUserId(Long userId);
     List<InvestmentEntity> findByUserIdAndInvestmentType(Long userId, String investmentType);
+    void deleteByUserId(Long userId);
 }

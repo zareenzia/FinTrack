@@ -43,5 +43,7 @@ public interface TodoRepository extends JpaRepository<TodoEntity, Long> {
     
     @Query("SELECT t FROM TodoEntity t WHERE t.userId = :userId AND t.status != 'completed' AND t.dueDate < :date ORDER BY t.dueDate ASC, t.priority DESC")
     List<TodoEntity> findOverdueTodosByUserId(@Param("userId") Long userId, @Param("date") LocalDate date);
+
+    void deleteByUserId(Long userId);
 }
 

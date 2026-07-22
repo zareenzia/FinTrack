@@ -13,4 +13,5 @@ public interface BudgetPlanRepository extends JpaRepository<BudgetPlanEntity, Lo
     List<BudgetPlanEntity> findByUserIdAndStatus(Long userId, String status);
     List<BudgetPlanEntity> findByUserIdAndStatusAndStartDateLessThanEqualAndEndDateGreaterThanEqualOrderByCreatedAtDesc(
             Long userId, String status, LocalDate startDate, LocalDate endDate);
+    void deleteByUserId(Long userId);
 }

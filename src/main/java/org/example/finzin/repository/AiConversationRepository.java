@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface AiConversationRepository extends JpaRepository<AiConversationEntity, Long> {
     List<AiConversationEntity> findByUserIdOrderByUpdatedAtDesc(Long userId);
+    void deleteByUserId(Long userId);
 }

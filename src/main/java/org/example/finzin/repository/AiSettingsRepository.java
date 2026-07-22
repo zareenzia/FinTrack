@@ -9,4 +9,5 @@ import java.util.Optional;
 @Repository
 public interface AiSettingsRepository extends JpaRepository<AiSettingsEntity, Long> {
     Optional<AiSettingsEntity> findByUserId(Long userId);
+    void deleteByUserId(Long userId);
 }

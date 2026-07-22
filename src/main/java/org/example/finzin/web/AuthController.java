@@ -2,6 +2,7 @@ package org.example.finzin.web;
 
 import jakarta.servlet.http.HttpServletResponse;
 import org.example.finzin.entity.UserEntity;
+import org.example.finzin.service.AccountDeletionService;
 import org.example.finzin.service.AuthService;
 import org.example.finzin.service.JwtTokenProvider;
 import org.example.finzin.service.RecurringTransactionExecutionService;
@@ -32,17 +33,19 @@ public class AuthController {
     private final JwtTokenProvider jwtTokenProvider;
     private final RecurringTransactionExecutionService recurringTransactionExecutionService;
     private final BudgetScheduler budgetScheduler;
+    private final AccountDeletionService accountDeletionService;
 
     @Value("${app.upload.dir:user-uploads/profiles}")
     private String uploadDir;
 
     public AuthController(AuthService authService, JwtTokenProvider jwtTokenProvider,
                            RecurringTransactionExecutionService recurringTransactionExecutionService,
-                           BudgetScheduler budgetScheduler) {
+                           BudgetScheduler budgetScheduler, AccountDeletionService accountDeletionService) {
         this.authService = authService;
         this.jwtTokenProvider = jwtTokenProvider;
         this.recurringTransactionExecutionService = recurringTransactionExecutionService;
         this.budgetScheduler = budgetScheduler;
+        this.accountDeletionService = accountDeletionService;
     }
     
     // --- Helper: extract and validate userId from Authorization header -------
@@ -432,6 +435,22 @@ public class AuthController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Failed to remove picture"));
+        }
+    }
+
+    @DeleteMapping("/account")
+    public ResponseEntity<?> deleteAccount(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        try {
+            Long userId = extractUserIdFromHeader(authHeader);
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Unauthorized"));
+            }
+            accountDeletionService.deleteAccount(userId);
+            return ResponseEntity.ok(Map.of("message", "Account deleted"));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Failed to delete account"));
         }
     }
 }

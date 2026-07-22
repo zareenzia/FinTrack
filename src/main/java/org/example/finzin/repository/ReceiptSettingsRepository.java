@@ -9,4 +9,5 @@ import java.util.Optional;
 @Repository
 public interface ReceiptSettingsRepository extends JpaRepository<ReceiptSettingsEntity, Long> {
     Optional<ReceiptSettingsEntity> findByUserId(Long userId);
+    void deleteByUserId(Long userId);
 }
