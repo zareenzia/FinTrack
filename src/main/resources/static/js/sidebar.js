@@ -688,8 +688,9 @@
     function markAllNotificationsRead() {
         fetch('/api/notifications/read-all', { method: 'PATCH' })
             .then(function () {
-                loadNotificationList();
                 refreshUnreadBadge();
+                var panel = document.getElementById('notifDropdownPanel');
+                if (panel) panel.style.display = 'none';
             })
             .catch(function () {});
     }
@@ -709,6 +710,67 @@
             })
             .catch(function () {});
     }
+
+    // ── Global confirmation modal ─────────────────────────────────────────────
+    // Replaces the native confirm() dialog (a browser/localhost-styled alert, not part of the
+    // app's UI) with an in-app Bootstrap modal so confirmations look and feel consistent with
+    // the rest of FinTrack. Usage: `if (await confirmAction('Delete this?')) { ... }`.
+    function injectConfirmModal() {
+        if (document.getElementById('appConfirmModal')) return;
+        var wrapper = document.createElement('div');
+        wrapper.innerHTML =
+            '<div class="modal fade" id="appConfirmModal" tabindex="-1" aria-hidden="true">' +
+              '<div class="modal-dialog modal-dialog-centered">' +
+                '<div class="modal-content">' +
+                  '<div class="modal-header">' +
+                    '<h5 class="modal-title" id="appConfirmModalTitle"><i class="fas fa-circle-question me-2"></i>Confirm</h5>' +
+                    '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>' +
+                  '</div>' +
+                  '<div class="modal-body" id="appConfirmModalBody">Are you sure?</div>' +
+                  '<div class="modal-footer">' +
+                    '<button type="button" class="btn btn-secondary" id="appConfirmModalCancelBtn" data-bs-dismiss="modal">Cancel</button>' +
+                    '<button type="button" class="btn btn-primary" id="appConfirmModalOkBtn">Confirm</button>' +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
+            '</div>';
+        document.body.appendChild(wrapper.firstElementChild);
+    }
+
+    function confirmAction(message, opts) {
+        opts = opts || {};
+        injectConfirmModal();
+        var modalEl = document.getElementById('appConfirmModal');
+        document.getElementById('appConfirmModalTitle').innerHTML =
+            '<i class="fas fa-circle-question me-2"></i>' + (opts.title || 'Confirm');
+        document.getElementById('appConfirmModalBody').textContent = message;
+        var okBtn = document.getElementById('appConfirmModalOkBtn');
+        okBtn.textContent = opts.confirmText || 'Confirm';
+        okBtn.className = 'btn ' + (opts.confirmClass || 'btn-primary');
+        var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+        return new Promise(function (resolve) {
+            var settled = false;
+            function cleanup() {
+                okBtn.removeEventListener('click', onOk);
+                modalEl.removeEventListener('hidden.bs.modal', onHidden);
+            }
+            function onOk() {
+                settled = true;
+                cleanup();
+                modal.hide();
+                resolve(true);
+            }
+            function onHidden() {
+                cleanup();
+                if (!settled) resolve(false);
+            }
+            okBtn.addEventListener('click', onOk);
+            modalEl.addEventListener('hidden.bs.modal', onHidden);
+            modal.show();
+        });
+    }
+    window.confirmAction = confirmAction;
 
     // ── Sidebar Customizer Modal ──────────────────────────────────────────────
     function injectSidebarCustomizerModal() {
@@ -931,6 +993,7 @@
         injectProfileModal();
         injectCalculator();
         injectNotificationPanel();
+        injectConfirmModal();
 
         // Wire up calculator sidebar button
         var calcBtn = document.getElementById('calcSidebarBtn');

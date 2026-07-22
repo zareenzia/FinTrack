@@ -929,6 +929,7 @@ body.has-sidebar {
         left: 0;
         top: 0;
         height: 100vh;
+        height: 100dvh; /* real mobile browsers: 100vh can extend behind the address bar, clipping the bottom of the drawer */
         width: 240px !important;
         min-width: 240px !important;
         transform: translateX(-100%);
@@ -938,6 +939,16 @@ body.has-sidebar {
 
     #sidebar.mobile-open {
         transform: translateX(0);
+    }
+
+    /* .sidebar-nav is flex:1 so it shrinks to fill whatever space is left above .sidebar-bottom —
+       correct, since that's what keeps Logout/Profile/theme toggle pinned and always visible
+       without scrolling. But it also had overflow:hidden, so on shorter phones or with more
+       sidebar modules enabled, whatever didn't fit was silently clipped with no way to reach it.
+       Scroll the nav list itself instead of clipping it. */
+    #sidebar .sidebar-nav {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     /* Always show labels on mobile drawer */
@@ -950,6 +961,20 @@ body.has-sidebar {
     #sidebar .sidebar-item {
         justify-content: flex-start !important;
         padding: 11px 12px !important;
+    }
+
+    /* ...except the Notifications/AI Assistant icon-only pair — they only have room for an
+       icon (see .sidebar-icon-row above), so the "always show labels" rule above squeezed
+       "Notifica…"/"AI Assist…" into a truncated, unreadable label instead of leaving them as
+       clean icon buttons like on desktop. Re-hide the label and keep them centered. */
+    #sidebar .sidebar-item.sidebar-icon-only {
+        justify-content: center !important;
+        padding: 11px 8px !important;
+    }
+
+    #sidebar .sidebar-item.sidebar-icon-only .sidebar-label {
+        opacity: 0 !important;
+        max-width: 0 !important;
     }
 
     #main-content {
@@ -1407,6 +1432,37 @@ body.has-sidebar {
 
 .btn-link:active {
     transform: scale(0.95);
+}
+
+/* Shared header action-button style — used for the top-of-page action row on dashboard.html
+   and transactions.html so both pages present the same buttons the same way, instead of one
+   page's plain-text-color, uppercase Bootstrap buttons vs. the other's solid custom style. */
+.btn-add-transaction {
+    background: var(--color-surface);
+    color: #f5f5f0;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(31, 125, 83, 0.2);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.btn-add-transaction:hover {
+    background: var(--color-accent);
+    color: #f5f5f0;
+    box-shadow: 0 4px 12px rgba(31, 125, 83, 0.35);
+    transform: translateY(-1px);
+}
+
+.btn-add-transaction:active {
+    transform: translateY(0);
 }
 
 .btn-outline-primary {
@@ -3006,6 +3062,27 @@ h3.stat-card-amount,
     flex-shrink: 0;
 }
 .dashboard-card-header h6 { color: #f0f0e8; margin: 0; font-size: 0.9rem; }
+
+/* "View All" / open-in-new-tab links in a card header (AI Financial Coach, Current Budget,
+   Financial Planner, Upcoming Recurring Transactions). Every color theme sets --color-accent
+   (this header's background) and --accent-color (what .btn-outline-primary/.btn-primary use
+   for border/background) to the same value, so the themed button becomes invisible against
+   its own header. Just the icon/text in white, no button box, no border. */
+.dashboard-card-header .btn-outline-primary,
+.dashboard-card-header .btn-primary {
+    border: none;
+    background: transparent;
+    color: #fff;
+    padding: 4px 6px;
+    box-shadow: none;
+}
+.dashboard-card-header .btn-outline-primary:hover,
+.dashboard-card-header .btn-primary:hover {
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    transform: none;
+    box-shadow: none;
+}
 
 /* Compact toggle buttons — same size in every header */
 .dashboard-chart-toggle { display: flex; gap: 0; }

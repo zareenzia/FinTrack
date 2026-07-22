@@ -82,20 +82,20 @@
         <div class="col-md-12 d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
             <h2 class="mb-0"><i class="fas fa-exchange-alt"></i> Transactions</h2>
             <div class="d-flex flex-wrap gap-2">
-                <button type="button" class="btn btn-primary btn-sm" id="openAddTransactionModalBtn">
-                    <i class="fas fa-plus-circle me-1"></i> Add New Transaction
+                <button type="button" class="btn-add-transaction" id="openAddTransactionModalBtn">
+                    <i class="fas fa-plus-circle"></i>Add New Transaction
                 </button>
-                <button type="button" class="btn btn-outline-primary btn-sm" id="openScanReceiptBtn">
-                    <i class="fas fa-camera me-1"></i> Scan Receipt
+                <button type="button" class="btn-add-transaction" id="openScanReceiptBtn">
+                    <i class="fas fa-camera"></i>Scan Receipt
                 </button>
-                <button type="button" class="btn btn-success btn-sm" id="openTransferModalBtn">
-                    <i class="fas fa-random me-1"></i> Log Cash Transfer
+                <button type="button" class="btn-add-transaction" id="openTransferModalBtn">
+                    <i class="fas fa-random"></i>Log Cash Transfer
                 </button>
-                <button type="button" class="btn btn-outline-primary btn-sm" id="openRecurringModalBtn">
-                    <i class="fas fa-sync-alt me-1"></i> Create Recurring Transaction
+                <button type="button" class="btn-add-transaction" id="openRecurringModalBtn">
+                    <i class="fas fa-sync-alt"></i>Create Recurring Transaction
                 </button>
-                <button type="button" class="btn btn-outline-secondary btn-sm" id="openManageCategoriesModalBtn">
-                    <i class="fas fa-tags me-1"></i> Manage Categories
+                <button type="button" class="btn-add-transaction" id="openManageCategoriesModalBtn">
+                    <i class="fas fa-tags"></i>Manage Categories
                 </button>
             </div>
         </div>
@@ -2409,6 +2409,8 @@
             showTopNotification('No recurring transactions to export.', 'error');
             return;
         }
+        const ok = await confirmAction(`Export ${filteredRecurring.length} recurring transaction${filteredRecurring.length > 1 ? 's' : ''} to CSV?`, { title: 'Export to CSV', confirmText: 'Export' });
+        if (!ok) return;
         await loadAccountsIntoSelect();
         const headers = ['Name', 'Description', 'Type', 'Category', 'Amount', 'Frequency', 'Interval', 'Start Date', 'End Date', 'Next Run', 'Last Executed', 'Status', 'Account'];
         const rows = filteredRecurring.map(r => {
@@ -2984,11 +2986,13 @@
         return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
     }
 
-    function exportFilteredTransactionsToCsv() {
+    async function exportFilteredTransactionsToCsv() {
         if (!filteredTransactions.length) {
             showTopNotification('No transactions to export.', 'error');
             return;
         }
+        const ok = await confirmAction(`Export ${filteredTransactions.length} transaction${filteredTransactions.length > 1 ? 's' : ''} to CSV?`, { title: 'Export to CSV', confirmText: 'Export' });
+        if (!ok) return;
         const headers = ['Date', 'Description', 'Category', 'Type', 'Amount', 'Account', 'From Savings', 'Transaction ID', 'Created At'];
         const rows = filteredTransactions.map(tx => [
             (tx.date || '').slice(0, 10),

@@ -68,46 +68,22 @@
         .dashboard-view-panel { display: none; }
         .dashboard-view-panel.active { display: block; }
 
-        /* Add Transaction Button */
-        .btn-add-transaction {
-            background: var(--color-surface);
-            color: #f5f5f0;
-            border: none;
-            padding: 8px 18px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 2px 8px rgba(31, 125, 83, 0.2);
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-        }
-
-        .btn-add-transaction:hover {
-            background: var(--color-accent);
-            color: #f5f5f0;
-            box-shadow: 0 4px 12px rgba(31, 125, 83, 0.35);
-            transform: translateY(-1px);
-        }
-
-        .btn-add-transaction:active {
-            transform: translateY(0);
-        }
+        /* .btn-add-transaction lives in the shared style.css so transactions.html can use the
+           same header-button style — kept out of this page-scoped block to avoid duplicating it. */
 
         /* Greeting section styling */
         .dashboard-header-greeting {
-            font-size: 0.95rem;
+            font-size: 1.4rem;
+            font-weight: 700;
             color: var(--text-body);
             margin: 0;
         }
         .dashboard-header-greeting small {
             display: block;
-            font-size: 0.8rem;
+            font-size: 0.95rem;
+            font-weight: 400;
             color: var(--text-muted-custom);
-            margin-top: 2px;
+            margin-top: 4px;
         }
 
         /* Shortened side-by-side widgets (default view): Account Balances + Upcoming Recurring */
@@ -147,7 +123,7 @@
     <div class="row mb-3">
         <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div class="dashboard-header-greeting">
-                <div id="dashboardGreeting" style="font-weight: 600;">Dashboard</div>
+                <div id="dashboardGreeting">Dashboard</div>
                 <small id="monthViewSubtitle">Loading...</small>
             </div>
              <div class="d-flex align-items-center gap-2 flex-wrap">
@@ -452,25 +428,25 @@
                 <div class="card-body">
                     <div class="row g-2" id="fpWidgetCards">
                         <div class="col-6">
-                            <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);">
+                            <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);height:64px;">
                                 <div style="width:32px;height:32px;border-radius:8px;background:rgba(31,125,83,0.15);color:var(--color-surface);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-chart-line"></i></div>
                                 <div style="min-width:0;"><div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwInvValue">—</div><div style="font-size:0.68rem;color:var(--text-muted-custom);">Investments</div></div>
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);">
+                            <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);height:64px;">
                                 <div style="width:32px;height:32px;border-radius:8px;background:rgba(239,68,68,0.15);color:#ef4444;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-hand-holding-usd"></i></div>
                                 <div style="min-width:0;"><div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwLoans">—</div><div style="font-size:0.68rem;color:var(--text-muted-custom);">Loans</div></div>
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);">
+                            <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);height:64px;">
                                 <div style="width:32px;height:32px;border-radius:8px;background:rgba(249,115,22,0.15);color:#f97316;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-bell"></i></div>
                                 <div style="min-width:0;"><div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwRenewals">—</div><div style="font-size:0.68rem;color:var(--text-muted-custom);">Renewals</div></div>
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);">
+                            <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);height:64px;">
                                 <div style="width:32px;height:32px;border-radius:8px;background:rgba(168,85,247,0.15);color:#a855f7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-star"></i></div>
                                 <div class="flex-grow-1" style="min-width:0;">
                                     <div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwGoalPct">—</div>
@@ -735,25 +711,25 @@
                     <div class="card-body">
                         <div class="row g-2" id="fpWidgetCardsCompact">
                             <div class="col-6">
-                                <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);">
+                                <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);height:64px;">
                                     <div style="width:32px;height:32px;border-radius:8px;background:rgba(31,125,83,0.15);color:var(--color-surface);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-chart-line"></i></div>
                                     <div style="min-width:0;"><div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwInvValueCompact">—</div><div style="font-size:0.68rem;color:var(--text-muted-custom);">Investments</div></div>
                                 </div>
                             </div>
                             <div class="col-6">
-                                <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);">
+                                <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);height:64px;">
                                     <div style="width:32px;height:32px;border-radius:8px;background:rgba(239,68,68,0.15);color:#ef4444;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-hand-holding-usd"></i></div>
                                     <div style="min-width:0;"><div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwLoansCompact">—</div><div style="font-size:0.68rem;color:var(--text-muted-custom);">Loans</div></div>
                                 </div>
                             </div>
                             <div class="col-6">
-                                <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);">
+                                <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);height:64px;">
                                     <div style="width:32px;height:32px;border-radius:8px;background:rgba(249,115,22,0.15);color:#f97316;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-bell"></i></div>
                                     <div style="min-width:0;"><div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwRenewalsCompact">—</div><div style="font-size:0.68rem;color:var(--text-muted-custom);">Renewals</div></div>
                                 </div>
                             </div>
                             <div class="col-6">
-                                <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);">
+                                <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);height:64px;">
                                     <div style="width:32px;height:32px;border-radius:8px;background:rgba(168,85,247,0.15);color:#a855f7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-star"></i></div>
                                     <div class="flex-grow-1" style="min-width:0;">
                                         <div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwGoalPctCompact">—</div>
@@ -1675,7 +1651,23 @@
                         </button>
                     </div>
                 </div>`;
-            }).join('');
+            }).join('') + (function () {
+                const netTotal = filteredTransactions.reduce((sum, tx) => {
+                    const isExternalIncoming = tx.transaction_type === 'transfer' && !tx.sourceAccountId && !!tx.destinationAccountId;
+                    const isIncome = tx.transaction_type === 'income' || isExternalIncoming;
+                    return sum + (isIncome ? tx.amount : -tx.amount);
+                }, 0);
+                const totalClass = netTotal >= 0 ? 'income' : 'expense';
+                const totalPrefix = netTotal >= 0 ? '+' : '−';
+                return `
+                <div class="tx-row tx-total-row">
+                    <div class="tx-total-label"><strong>Net Total (${filteredTransactions.length} transaction${filteredTransactions.length !== 1 ? 's' : ''})</strong></div>
+                    <div class="tx-col-amount">
+                        <span class="tx-amount amount-${totalClass}"><strong>${totalPrefix}${formatAmount(Math.abs(netTotal))}</strong></span>
+                    </div>
+                    <div class="tx-col-action"></div>
+                </div>`;
+            })();
         }
 
         // Sub-heading: show filtered count vs total for the selected month (or all time)
@@ -1727,11 +1719,13 @@
         return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
     }
 
-    function exportFilteredTransactionsToCsv() {
+    async function exportFilteredTransactionsToCsv() {
         if (!filteredTransactions.length) {
             showNotification('No transactions to export.', 'error');
             return;
         }
+        const ok = await confirmAction(`Export ${filteredTransactions.length} transaction${filteredTransactions.length > 1 ? 's' : ''} to CSV?`, { title: 'Export to CSV', confirmText: 'Export' });
+        if (!ok) return;
         const headers = ['Date', 'Description', 'Category', 'Type', 'Amount', 'Account', 'From Savings', 'Transaction ID', 'Created At'];
         const rows = filteredTransactions.map(tx => [
             (tx.date || '').slice(0, 10),

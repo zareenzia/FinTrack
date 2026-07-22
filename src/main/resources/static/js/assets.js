@@ -415,12 +415,14 @@
         return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
     }
 
-    window.exportFilteredAssetsToCsv = function () {
+    window.exportFilteredAssetsToCsv = async function () {
         const filtered = getFilteredAssets();
         if (!filtered.length) {
             showToast('No assets to export.', 'error');
             return;
         }
+        const ok = await confirmAction(`Export ${filtered.length} asset${filtered.length > 1 ? 's' : ''} to CSV?`, { title: 'Export to CSV', confirmText: 'Export' });
+        if (!ok) return;
         const headers = ['Asset Name', 'Description', 'Gold Type', 'Purity', 'Weight', 'Weight Unit', 'Purchase Date', 'Purchase Price', 'Notes', 'Current Value', 'Gain/Loss', 'Gain/Loss %', 'Created At'];
         const rows = filtered.map(a => [
             a.assetName,
