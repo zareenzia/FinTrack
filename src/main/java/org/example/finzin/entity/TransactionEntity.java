@@ -27,6 +27,11 @@ public class TransactionEntity {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
+    /** Longer free-form context (e.g. the raw OCR text from a scanned receipt) — description stays
+     *  short and human-readable (merchant name), this holds the rest. Optional. */
+    @Column(nullable = true, columnDefinition = "TEXT")
+    private String details;
+
     @ManyToOne
     @JoinColumn(name = "category_id", nullable = true, foreignKey = @ForeignKey(name = "fk_transaction_category"))
     private CategoryEntity category;
@@ -83,6 +88,14 @@ public class TransactionEntity {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getDetails() {
+        return details;
+    }
+
+    public void setDetails(String details) {
+        this.details = details;
     }
 
     public CategoryEntity getCategory() {

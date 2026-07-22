@@ -440,6 +440,10 @@
                 <label class="form-label small mb-1 text-muted">Description</label>
                 <input type="text" class="form-control form-control-sm" id="rsDescription" placeholder="e.g., Grocery shopping">
               </div>
+              <div class="mb-2">
+                <label class="form-label small mb-1 text-muted">Details <small class="text-muted">(raw text extracted from the receipt)</small></label>
+                <textarea class="form-control form-control-sm" id="rsDetails" rows="4"></textarea>
+              </div>
               <div class="mb-2 rs-field" data-field="predictedCategoryLabel">
                 <label class="form-label small mb-1 text-muted">Category</label>
                 <select class="form-select form-select-sm" id="rsCategory" autocomplete="off"><option value="">Select category</option></select>
@@ -844,7 +848,7 @@
 
 <!-- Edit Transaction Modal (Recent Transactions tab) -->
 <div class="modal fade" id="dashboardEditTxModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width:460px">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:700px">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title"><i class="fas fa-pen me-2"></i>Edit Transaction</h5>
@@ -857,15 +861,21 @@
                     <input type="text" class="form-control" id="editTxDescription" placeholder="e.g., Grocery shopping" required>
                 </div>
                 <div class="mb-3">
-                    <label for="editTxAmount" class="form-label">Amount</label>
-                    <div class="input-group">
-                        <span class="input-group-text">৳</span>
-                        <input type="number" class="form-control" id="editTxAmount" step="0.01" min="0.01" required>
-                    </div>
+                    <label for="editTxDetails" class="form-label">Details <small class="text-muted">(optional)</small></label>
+                    <textarea class="form-control" id="editTxDetails" rows="3"></textarea>
                 </div>
-                <div class="mb-3">
-                    <label for="editTxDate" class="form-label">Date</label>
-                    <input type="date" class="form-control" id="editTxDate" required>
+                <div class="row g-3">
+                    <div class="col-md-6 mb-3">
+                        <label for="editTxAmount" class="form-label">Amount</label>
+                        <div class="input-group">
+                            <span class="input-group-text">৳</span>
+                            <input type="number" class="form-control" id="editTxAmount" step="0.01" min="0.01" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="editTxDate" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="editTxDate" required>
+                    </div>
                 </div>
                 <div class="mb-3">
                     <label for="editTxType" class="form-label">Type</label>
@@ -876,27 +886,33 @@
                         <option value="transfer">Transfer</option>
                     </select>
                 </div>
-                <div class="mb-3" id="editTxAccountWrap">
-                    <label for="editTxAccount" class="form-label" id="editTxAccountLabel">Paid From <small class="text-muted">(optional)</small></label>
-                    <select class="form-select" id="editTxAccount">
-                        <option value="">-- No account --</option>
-                    </select>
+                <div class="row g-3">
+                    <div class="col-md-6 mb-3" id="editTxAccountWrap">
+                        <label for="editTxAccount" class="form-label" id="editTxAccountLabel">Paid From <small class="text-muted">(optional)</small></label>
+                        <select class="form-select" id="editTxAccount">
+                            <option value="">-- No account --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3" id="editTxCategoryWrap">
+                        <label for="editTxCategory" class="form-label">Category</label>
+                        <select class="form-select" id="editTxCategory" required>
+                            <option value="">Loading…</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="mb-3 d-none" id="editTxTransferWrap">
-                    <label for="editTxTransferFrom" class="form-label">From Account</label>
-                    <select class="form-select mb-2" id="editTxTransferFrom">
-                        <option value="">Select source…</option>
-                    </select>
-                    <label for="editTxTransferTo" class="form-label">To Account</label>
-                    <select class="form-select" id="editTxTransferTo">
-                        <option value="">Select destination…</option>
-                    </select>
-                </div>
-                <div class="mb-3" id="editTxCategoryWrap">
-                    <label for="editTxCategory" class="form-label">Category</label>
-                    <select class="form-select" id="editTxCategory" required>
-                        <option value="">Loading…</option>
-                    </select>
+                <div class="row g-3 d-none" id="editTxTransferWrap">
+                    <div class="col-md-6 mb-3">
+                        <label for="editTxTransferFrom" class="form-label">From Account</label>
+                        <select class="form-select" id="editTxTransferFrom">
+                            <option value="">Select source…</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="editTxTransferTo" class="form-label">To Account</label>
+                        <select class="form-select" id="editTxTransferTo">
+                            <option value="">Select destination…</option>
+                        </select>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -1233,6 +1249,7 @@
         document.getElementById('rsAmount').value = '';
         document.getElementById('rsDate').value = '';
         document.getElementById('rsDescription').value = '';
+        document.getElementById('rsDetails').value = '';
         document.getElementById('rsNotes').value = '';
         document.getElementById('rsCategory').value = '';
         document.getElementById('rsAccount').value = '';
@@ -1299,6 +1316,7 @@
         document.getElementById('rsAmount').value = draft.totalAmount != null ? draft.totalAmount : '';
         document.getElementById('rsDate').value = draft.receiptDate || '';
         document.getElementById('rsDescription').value = draft.merchantName || '';
+        document.getElementById('rsDetails').value = draft.ocrText || '';
         document.getElementById('rsNotes').value = draft.suggestedNotes || '';
         document.getElementById('rsWarningNote').innerHTML = draft.warning
             ? '<i class="fas fa-triangle-exclamation me-1" style="color:#f59e0b"></i>' + escHtml(draft.warning)
@@ -1358,6 +1376,7 @@
         const accountVal = document.getElementById('rsAccount').value;
         return {
             description: (document.getElementById('rsDescription').value || document.getElementById('rsMerchant').value || 'Receipt').trim(),
+            details: document.getElementById('rsDetails').value.trim(),
             amount: parseFloat(document.getElementById('rsAmount').value),
             category_id: categoryId ? parseInt(categoryId, 10) : null,
             transaction_type: 'expense',
@@ -3351,6 +3370,7 @@
         txEditId = id;
         document.getElementById('editTxId').value          = id;
         document.getElementById('editTxDescription').value = tx.description;
+        document.getElementById('editTxDetails').value      = tx.details || '';
         document.getElementById('editTxAmount').value      = Number(tx.amount).toFixed(2);
         document.getElementById('editTxDate').value        = tx.date ? tx.date.slice(0, 10) : '';
         document.getElementById('editTxType').value        = tx.transaction_type;
@@ -3413,6 +3433,7 @@
     async function saveEditTransaction() {
         const id          = parseInt(document.getElementById('editTxId').value, 10);
         const description = document.getElementById('editTxDescription').value.trim();
+        const details     = document.getElementById('editTxDetails').value.trim();
         const amount      = parseFloat(document.getElementById('editTxAmount').value);
         const date        = document.getElementById('editTxDate').value;
         const type        = document.getElementById('editTxType').value;
@@ -3435,6 +3456,7 @@
             }
             payload = {
                 description: description || 'Transfer',
+                details,
                 amount,
                 date,
                 transaction_type: 'transfer',
@@ -3451,6 +3473,7 @@
             }
             payload = {
                 description,
+                details,
                 amount,
                 date,
                 transaction_type: type,

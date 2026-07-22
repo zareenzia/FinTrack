@@ -312,6 +312,9 @@ public class FinanceApiController {
         entity.setSourceAccountId(fromSavings ? null : body.sourceAccountId());
         entity.setDestinationAccountId(body.destinationAccountId());
         entity.setFromSavings(fromSavings);
+        if (body.details != null) {
+            entity.setDetails(body.details);
+        }
 
         AccountBalanceService.TransactionSaveResult result;
         try {
@@ -379,6 +382,9 @@ public class FinanceApiController {
         entity.setSourceAccountId(fromSavings ? null : body.sourceAccountId());
         entity.setDestinationAccountId(body.destinationAccountId());
         entity.setFromSavings(fromSavings);
+        if (body.details != null) {
+            entity.setDetails(body.details);
+        }
 
         AccountBalanceService.TransactionSaveResult result;
         try {
@@ -721,6 +727,7 @@ public class FinanceApiController {
         map.put("id", entity.getId());
         map.put("amount", entity.getAmount());
         map.put("description", entity.getDescription());
+        map.put("details", entity.getDetails());
         map.put("category_id",   entity.getCategory() != null ? entity.getCategory().getId()   : null);
         map.put("category_name", entity.getCategory() != null ? entity.getCategory().getName() : "Transfer");
         map.put("transaction_type", entity.getTransactionType());
@@ -799,6 +806,7 @@ public class FinanceApiController {
     private record TransactionRequest(
             Double amount,
             String description,
+            String details,
             Long category_id,
             String transaction_type,
             String date,
