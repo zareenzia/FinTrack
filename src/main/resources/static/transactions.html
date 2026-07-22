@@ -291,6 +291,7 @@
                     </div>
                 </div>
                 <div class="tx-header-actions">
+                    <input type="text" class="tx-filter-search" id="txSearchFilter" placeholder="Search transactions…" title="Search by description, category, account, or amount">
                     <select class="tx-filter-select" id="txMonthFilter" title="Filter by month">
                         <option value="">Loading…</option>
                     </select>
@@ -967,6 +968,7 @@
     let txFilterCategory = '';
     let txFilterType = '';
     let txFilterAccount = ''; // '', 'SAVINGS', 'NONE', or an account id (string)
+    let txFilterSearch = '';
     let txFilterMonth = null; // 'YYYY-MM' or 'ALL'
     let txDeleteId = null;
     let txDeleteModal = null;
@@ -1052,6 +1054,11 @@
                 applyFiltersAndDisplay();
             });
         }
+        document.getElementById('txSearchFilter').addEventListener('input', function () {
+            txFilterSearch = this.value;
+            currentPage = 0;
+            applyFiltersAndDisplay();
+        });
         document.getElementById('txCategoryFilter').addEventListener('change', function () {
             txFilterCategory = this.value;
             currentPage = 0;
@@ -2956,12 +2963,18 @@
     }
 
     function applyFiltersAndDisplay() {
+        const search = txFilterSearch.trim().toLowerCase();
         filteredTransactions = allTransactions.filter(function (tx) {
             const catOk    = !txFilterCategory || tx.category_name === txFilterCategory;
             const typeOk   = !txFilterType     || tx.transaction_type === txFilterType;
             const monthOk  = !txFilterMonth    || txFilterMonth === 'ALL' || monthKeyOf(tx.date) === txFilterMonth;
             const acctOk   = txMatchesAccountFilter(tx);
-            return catOk && typeOk && monthOk && acctOk;
+            const searchOk = !search
+                || (tx.description || '').toLowerCase().includes(search)
+                || (tx.category_name || '').toLowerCase().includes(search)
+                || (tx.account_name || '').toLowerCase().includes(search)
+                || String(tx.amount).includes(search);
+            return catOk && typeOk && monthOk && acctOk && searchOk;
         });
         displayTransactionPage();
     }
