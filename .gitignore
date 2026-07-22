@@ -43,3 +43,7 @@ out/
 
 # Secrets - never commit these
 .env
+
+# User-uploaded files - real user data, never commit these
+/user-uploads/
+/secure-uploads/
