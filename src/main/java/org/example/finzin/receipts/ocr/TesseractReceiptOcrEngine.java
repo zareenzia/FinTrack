@@ -38,6 +38,11 @@ public class TesseractReceiptOcrEngine implements ReceiptOcrEngine {
     private final String datapath;
     private final String language;
 
+    /** Set once a LinkageError proves the native library can't load on this machine — the JVM
+     *  permanently poisons that class after the first failed static init, so every later attempt
+     *  would fail again anyway; this lets isAvailable() short-circuit instead of retrying. */
+    private volatile boolean nativeLoadFailed = false;
+
     public TesseractReceiptOcrEngine(@Value("${tesseract.datapath:}") String datapath,
                                       @Value("${tesseract.language:eng}") String language) {
         this.datapath = datapath;
@@ -88,6 +93,7 @@ public class TesseractReceiptOcrEngine implements ReceiptOcrEngine {
 
     @Override
     public boolean isAvailable() {
+        if (nativeLoadFailed) return false;
         if (datapath == null || datapath.isBlank()) return false;
         Path traineddata = Path.of(datapath, language + ".traineddata");
         return Files.isRegularFile(traineddata);
@@ -104,7 +110,13 @@ public class TesseractReceiptOcrEngine implements ReceiptOcrEngine {
                     .map(image -> doOcr(tesseract, image))
                     .orElseGet(() -> doOcr(tesseract, imageFile));
             return new OcrResult(text == null ? "" : text.trim());
-        } catch (UnsatisfiedLinkError e) {
+        } catch (LinkageError e) {
+            // UnsatisfiedLinkError (JNA couldn't find the native lib) and NoClassDefFoundError
+            // (JNA found it, but a *later* static initializer that needs it, e.g. TessAPI, blew up
+            // and the JVM now refuses to re-initialize that class) are siblings under LinkageError,
+            // not one a subtype of the other — both mean the same thing here: no usable native
+            // Tesseract on this machine. Convert either into the same clean "not configured" error
+            // instead of letting it surface as an unhandled 500.
             log.error("Tesseract native library could not be loaded — is it installed on this machine?", e);
             throw ReceiptException.ocrNotConfigured();
         }

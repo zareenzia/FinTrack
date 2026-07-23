@@ -1,0 +1,15 @@
+.git
+.gradle
+build
+out
+bin
+.idea
+.vscode
+*.iml
+
+# Local-only data — never belongs in an image; runtime writes its own copies under /app
+tessdata
+secure-uploads
+user-uploads
+
+*.log
