@@ -89,6 +89,84 @@ class HeuristicReceiptFieldExtractorTest {
     }
 
     @Test
+    void extractsTotalAmountFromPosStyleReceiptWithNoCurrencySymbolAtAll() {
+        // A dine-in POS ticket — unlike delivery-app receipts, nothing here is prefixed with a
+        // currency marker (no "Tk"/"BDT"/"৳"), just bare decimal figures next to each label.
+        String ocrText = """
+                TABAQ COFFEE
+                Airport Centre Point
+                Dhaka,Bangladesh
+                Phone:+8801794243436
+
+                BIN:006492854-0101
+                Mushak-6.3
+                Govt.Invoice
+                Date:22-Jul-26                Time:6:36 PM
+                Ticket Token Number 132
+
+                -1 Hot Chocolate            420.00 420.00
+                -1 Lime Fizz                250.00 250.00
+
+                Ticket Total:                        670.00
+                Vat.-5.00%:                            31.90
+
+                Gross Total:                          670.00
+                -Visa Card:                           670.00
+                -TOTAL PAYMENT:                        670.00
+                -RETURNED AMOUNT:                        0.00
+                """;
+
+        ReceiptFieldExtractionResult result = extractor.extract(ocrText);
+
+        assertEquals(670.0, result.totalAmount(), "must match a bare 'Ticket Total:'/'Gross Total:' figure even with zero currency markers anywhere on the receipt");
+        assertEquals(LocalDate.of(2026, 7, 22), result.receiptDate(), "must parse 'Date:22-Jul-26' — hyphens instead of spaces, 2-digit year instead of 4");
+    }
+
+    @Test
+    void extractsAmountAndDateFromVerbatimGarbledOcrOfPosReceipt() {
+        // Actual Tesseract output for the same physical receipt as the test above — OCR mangled
+        // much more of it ("Ticket Total" became "Sekepe Total", stray "=", "—", "~", "|", "Zé"
+        // noise throughout) but the total/date lines survived legibly enough to still extract.
+        String ocrText = """
+                Airport Centre Point
+                Dhaka Bangladesh
+                Phone : +8801794243436 yn :
+                KIN:006492854-0101
+                Mushak-6 .3 =
+                Govt. Invoice . —
+                Code-SCL 7938358256
+                ee ee
+                Date :22-Jul-26 Time :6:36 PM
+                ~ Number Of Guests :0
+                CHALAN No:92361
+                | Ticket Token Number 132
+                caty Teen Name Price T.Price
+                eter chocolate 420.00 420.00
+                -~] Lime Fizz 250.00 250.00
+                -] FUDGE BROWNIE LOYALTY GIFT 0.00 0,00
+                Sekepe Total aa 670.00
+                Included:
+                Yat.-5.00%: ; _ etd
+                (ee SS Se ee ee TTT
+                | Gross Total: 670.00
+                Payments:
+                -Visa Card: 670.00
+                -TOTAL PAYMENT: 670.00
+                -RETURNED AMOUNT: 0.00
+                PALD
+                -ottery Cupon NO:SCL7938358256
+                Powerd by: www.3ssoftltd.com
+                Phone ; 01329692488
+                Zé
+                """;
+
+        ReceiptFieldExtractionResult result = extractor.extract(ocrText);
+
+        assertEquals(670.0, result.totalAmount(), "'Sekepe Total' still contains the bare word 'Total', so the bare-decimal match must still fire");
+        assertEquals(LocalDate.of(2026, 7, 22), result.receiptDate());
+    }
+
+    @Test
     void neverThrowsAndReturnsNullFieldsForUnrecognizableText() {
         ReceiptFieldExtractionResult result = extractor.extract("asdf qwer zxcv");
 

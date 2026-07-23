@@ -22,8 +22,13 @@ public class HeuristicReceiptFieldExtractor implements ReceiptFieldExtractor {
 
     // Requires a currency marker so we never mistake an order number, phone number, or time
     // (e.g. "18:34") for an amount — decimals are optional since many receipts show whole Taka.
-    private static final Pattern AMOUNT_PATTERN =
+    private static final Pattern CURRENCY_AMOUNT_PATTERN =
             Pattern.compile("(?:BDT|Tk\\.?|USD|\\$|৳)\\s*(\\d{1,3}(?:,\\d{3})*(?:\\.\\d{1,2})?)\\b");
+    // Many POS printouts (e.g. restaurant tickets) never print a currency symbol at all — just a
+    // label like "Ticket Total:" followed by a bare "670.00". Without a currency marker to lean
+    // on, only trust a bare number when it's on a line that already reads as a total (below), and
+    // require a decimal fraction so we don't grab a plain integer like an order/reference number.
+    private static final Pattern BARE_AMOUNT_PATTERN = Pattern.compile("(\\d{1,3}(?:,\\d{3})*\\.\\d{2})\\b");
     private static final Pattern TOTAL_LINE_PATTERN = Pattern.compile("(?i)\\b(grand\\s*total|total\\s*amount|total|amount\\s*due)\\b");
 
     private static final Pattern[] DATE_PATTERNS = {
@@ -37,9 +42,12 @@ public class HeuristicReceiptFieldExtractor implements ReceiptFieldExtractor {
             DateTimeFormatter.ofPattern("M/d/yyyy"),
             DateTimeFormatter.ofPattern("d-M-yyyy"),
     };
-    // "20 Jun", "20 Jun 2026" — common on order-confirmation receipts that omit the year.
+    // "20 Jun", "20 Jun 2026" (order-confirmation receipts that omit the year) and
+    // "22-Jul-26" (POS tickets using hyphens with a 2-digit year instead of spaces + 4 digits).
+    // The trailing (?!\s*:) keeps a following time (e.g. the "18:34" in "20 Jun 18:34") from being
+    // misread as a 2-digit year — a real year is never immediately followed by a colon.
     private static final Pattern MONTH_NAME_DATE_PATTERN =
-            Pattern.compile("(?i)\\b(\\d{1,2})\\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\\b(?:\\s+(\\d{4}))?");
+            Pattern.compile("(?i)\\b(\\d{1,2})[\\s-]+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\\b(?:[\\s-]+(\\d{2,4})\\b(?!\\s*:))?");
 
     // Lines introducing the merchant/store name, either inline ("Store    Al Kareem Restaurant")
     // or as a label whose value is on the next line ("Order from" / "Pizza Burg - Uttara").
@@ -109,18 +117,35 @@ public class HeuristicReceiptFieldExtractor implements ReceiptFieldExtractor {
     }
 
     private Double guessTotalAmount(String[] lines) {
-        Double best = null;
+        Double bestOnTotalLine = null;
+        Double bestAnywhere = null;
         for (String line : lines) {
             boolean looksLikeTotal = TOTAL_LINE_PATTERN.matcher(line).find();
-            Matcher m = AMOUNT_PATTERN.matcher(line);
-            while (m.find()) {
-                Double value = parseAmount(m.group(1));
+
+            Matcher currency = CURRENCY_AMOUNT_PATTERN.matcher(line);
+            while (currency.find()) {
+                Double value = parseAmount(currency.group(1));
                 if (value == null) continue;
-                if (looksLikeTotal) return value; // an explicit "total" line wins outright
-                if (best == null || value > best) best = value; // otherwise, best guess = largest figure on the receipt
+                if (looksLikeTotal) {
+                    if (bestOnTotalLine == null || value > bestOnTotalLine) bestOnTotalLine = value;
+                } else if (bestAnywhere == null || value > bestAnywhere) {
+                    bestAnywhere = value;
+                }
+            }
+
+            // No currency symbol on this line — only trust a bare decimal when the "total" label
+            // itself is the signal that it's an amount, not an ID/phone/time.
+            if (looksLikeTotal) {
+                Matcher bare = BARE_AMOUNT_PATTERN.matcher(line);
+                while (bare.find()) {
+                    Double value = parseAmount(bare.group(1));
+                    if (value != null && (bestOnTotalLine == null || value > bestOnTotalLine)) bestOnTotalLine = value;
+                }
             }
         }
-        return best;
+        // An explicit "total" line always wins over the largest currency-marked figure elsewhere
+        // on the receipt (e.g. a delivery fee or item price that happens to be numerically bigger).
+        return bestOnTotalLine != null ? bestOnTotalLine : bestAnywhere;
     }
 
     private Double parseAmount(String raw) {
@@ -151,13 +176,20 @@ public class HeuristicReceiptFieldExtractor implements ReceiptFieldExtractor {
             try {
                 int day = Integer.parseInt(monthName.group(1));
                 int month = parseMonthAbbreviation(monthName.group(2));
-                int year = monthName.group(3) != null ? Integer.parseInt(monthName.group(3)) : Year.now().getValue();
+                int year = parseYear(monthName.group(3));
                 if (month > 0) return LocalDate.of(year, month, day);
             } catch (Exception ignored) {
                 // fall through to null below
             }
         }
         return null;
+    }
+
+    /** A 2-digit year ("26") means 2026, not literally year 26 AD — assume the current century. */
+    private int parseYear(String rawYear) {
+        if (rawYear == null) return Year.now().getValue();
+        int year = Integer.parseInt(rawYear);
+        return rawYear.length() <= 2 ? 2000 + year : year;
     }
 
     private int parseMonthAbbreviation(String abbrev) {
