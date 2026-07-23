@@ -294,6 +294,11 @@
                         <i class="fas fa-robot sidebar-icon"></i>
                         <span class="sidebar-label">AI Assistant</span>
                     </a>
+                    <button class="sidebar-item sidebar-icon-only" id="userManualBtn" title="User Manual &amp; Getting Started" aria-label="User Manual and Getting Started Guide" style="background:none;border:none;position:relative;">
+                        <i class="fas fa-book-open sidebar-icon"></i>
+                        <span class="sidebar-label">User Manual</span>
+                        <span id="manualBadgeDot" class="manual-badge-dot d-none" aria-hidden="true"></span>
+                    </button>
                 </div>
                 <button class="sidebar-item sidebar-theme-toggle" id="themeToggleBtn" title="Toggle theme" aria-label="Toggle theme">
                     <span class="theme-icon-wrap">
@@ -772,6 +777,266 @@
     }
     window.confirmAction = confirmAction;
 
+    // ── User Manual / Getting Started Guide ───────────────────────────────────
+    const MANUAL_CHECKLIST = [
+        { id: 'accounts',     icon: 'fa-building-columns', title: 'Set up your accounts',
+          desc: 'Add your Bank, Mobile Money (MFS), Cash, and Credit Card accounts with their starting balances — everything else builds on this.',
+          linkLabel: 'Open Account Settings', href: '/settings?section=account-config' },
+        { id: 'transactions', icon: 'fa-right-left', title: 'Log your first transactions',
+          desc: 'Add income & expenses manually, import a CSV in bulk, or scan a receipt with OCR.',
+          linkLabel: 'Open Transactions', href: '/transactions' },
+        { id: 'recurring',    icon: 'fa-rotate', title: 'Set up recurring bills',
+          desc: 'Add subscriptions, EMIs, and credit card due dates so forecasts and reminders stay accurate.',
+          linkLabel: 'Open Transactions', href: '/transactions' },
+        { id: 'budget',       icon: 'fa-wallet', title: "Create this month's budget",
+          desc: 'Allocate a planned amount per category and track what you have left to spend, in real time.',
+          linkLabel: 'Open Budget Planner', href: '/budget-planner' },
+        { id: 'planner',      icon: 'fa-bullseye', title: 'Set your financial goals',
+          desc: 'Plan investments, loans, renewals, and long-term savings goals in the Financial Planner.',
+          linkLabel: 'Open Financial Planner', href: '/financial-planner' },
+        { id: 'ai',           icon: 'fa-robot', title: 'Meet your AI Financial Coach',
+          desc: 'Once you have a bit of history, ask the AI for a health score, insights, and personalized recommendations.',
+          linkLabel: 'Open AI Assistant', href: '/ai-assistant' },
+        { id: 'personalize',  icon: 'fa-palette', title: 'Personalize FinTrack',
+          desc: 'Pick a color theme, reorder your sidebar, and choose your currency & date format.',
+          linkLabel: 'Open Appearance Settings', href: '/settings?section=appearance' }
+    ];
+
+    const MANUAL_WORKFLOW = [
+        { icon: 'fa-building-columns', title: 'Set Up Accounts',   desc: 'Bank, MFS, Cash & Credit Cards — the foundation everything else builds on.' },
+        { icon: 'fa-right-left',       title: 'Track Transactions', desc: 'Log as you spend, import in bulk, or scan receipts — daily upkeep takes seconds.' },
+        { icon: 'fa-wallet',           title: 'Plan Your Budget',   desc: 'Set a per-category budget each month and watch the dashboard track your progress.' },
+        { icon: 'fa-robot',            title: 'Get AI Insights',    desc: 'The AI Coach reads your real data to flag risks and suggest where to cut back.' },
+        { icon: 'fa-bullseye',         title: 'Grow Your Wealth',   desc: 'Use the Financial Planner for goals, investments, loans, and long-term renewals.' }
+    ];
+
+    const MANUAL_FEATURES = [
+        { icon: 'fa-home',        title: 'Dashboard',          desc: 'Your financial command center — balances, recent activity, budget status, forecasts, and AI insights at a glance.', href: '/dashboard' },
+        { icon: 'fa-right-left',  title: 'Transactions',       desc: 'Log income, expenses & transfers. Bulk CSV import/export, receipt OCR scanning, and recurring bills.', href: '/transactions' },
+        { icon: 'fa-wallet',      title: 'Budget Planner',     desc: 'Set monthly, quarterly, or yearly budgets per category and track what is left to spend.', href: '/budget-planner' },
+        { icon: 'fa-bullseye',    title: 'Financial Planner',  desc: 'Plan investments, loans, renewals, and long-term savings goals.', href: '/financial-planner' },
+        { icon: 'fa-sticky-note', title: 'Notes',              desc: 'Jot down financial notes and reminders tied to your money management.', href: '/notes' },
+        { icon: 'fa-tasks',       title: 'To-Do',              desc: 'Track financial tasks — bills to pay, documents to file, calls to make.', href: '/todos' },
+        { icon: 'fa-coins',       title: 'Assets',             desc: 'Track gold and other valuable assets alongside your cash accounts.', href: '/assets' },
+        { icon: 'fa-robot',       title: 'AI Financial Coach', desc: 'Chat for a health score, personalized insights, and spending recommendations.', href: '/ai-assistant' },
+        { icon: 'fa-calculator',  title: 'Calculator',         desc: 'A quick on-screen calculator with history, available from any page.', action: 'calculator' },
+        { icon: 'fa-bell',        title: 'Notifications',      desc: 'Budget alerts, bill reminders, and account activity — always one click away.', action: 'notifications' },
+        { icon: 'fa-cog',         title: 'Settings',           desc: 'Manage accounts, categories, profile, appearance, and sidebar layout.', href: '/settings' }
+    ];
+
+    function getManualChecklistKey() { return getUserStorageKey('finzin_manual_checklist'); }
+    function getManualSeenKey() { return getUserStorageKey('finzin_manual_seen'); }
+
+    function loadManualChecklistDone() {
+        try { return JSON.parse(localStorage.getItem(getManualChecklistKey()) || '[]'); } catch (e) { return []; }
+    }
+    function saveManualChecklistDone(arr) {
+        try { localStorage.setItem(getManualChecklistKey(), JSON.stringify(arr)); } catch (e) {}
+    }
+
+    function injectUserManualModal() {
+        if (document.getElementById('userManualModal')) return;
+
+        var featureCardsHtml = MANUAL_FEATURES.map(function (f) {
+            return '<div class="um-feature-card" data-href="' + (f.href || '') + '" data-action="' + (f.action || '') + '" tabindex="0" role="button" aria-label="' + f.title + '">' +
+                '<div class="um-feature-icon"><i class="fas ' + f.icon + '"></i></div>' +
+                '<div class="um-feature-title">' + f.title + '</div>' +
+                '<div class="um-feature-desc">' + f.desc + '</div>' +
+                '<span class="um-feature-link">Open <i class="fas fa-arrow-right ms-1"></i></span>' +
+                '</div>';
+        }).join('');
+
+        var workflowHtml = MANUAL_WORKFLOW.map(function (w, i) {
+            var arrow = i < MANUAL_WORKFLOW.length - 1 ? '<div class="um-flow-arrow"><i class="fas fa-chevron-right"></i></div>' : '';
+            return '<div class="um-flow-step" style="--um-d:' + i + '">' +
+                '<div class="um-flow-num">' + (i + 1) + '</div>' +
+                '<div class="um-flow-icon"><i class="fas ' + w.icon + '"></i></div>' +
+                '<div class="um-flow-title">' + w.title + '</div>' +
+                '<div class="um-flow-desc">' + w.desc + '</div>' +
+                '</div>' + arrow;
+        }).join('');
+
+        var wrapper = document.createElement('div');
+        wrapper.innerHTML = `
+        <div class="modal fade" id="userManualModal" tabindex="-1" aria-labelledby="userManualModalTitle" aria-modal="true" role="dialog">
+          <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="userManualModalTitle"><i class="fas fa-book-open me-2"></i>User Manual &amp; Getting Started</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body p-0">
+                <div class="um-layout">
+                  <div class="um-nav" role="tablist" aria-orientation="vertical">
+                    <button class="um-nav-item active" data-um-tab="welcome" type="button" role="tab"><i class="fas fa-hand-sparkles"></i><span>Welcome</span></button>
+                    <button class="um-nav-item" data-um-tab="checklist" type="button" role="tab"><i class="fas fa-list-check"></i><span>Getting Started</span><span class="um-nav-badge" id="umChecklistBadge"></span></button>
+                    <button class="um-nav-item" data-um-tab="workflow" type="button" role="tab"><i class="fas fa-diagram-project"></i><span>How It Works</span></button>
+                    <button class="um-nav-item" data-um-tab="features" type="button" role="tab"><i class="fas fa-shapes"></i><span>Features &amp; Quick Links</span></button>
+                  </div>
+                  <div class="um-content">
+                    <div class="um-pane active" data-um-pane="welcome">
+                      <div class="um-welcome-hero">
+                        <i class="fas fa-seedling um-hero-icon"></i>
+                        <h4>Welcome to FinTrack!</h4>
+                        <p class="text-muted">Your all-in-one personal finance companion — track spending, plan budgets, manage assets, and get AI-powered coaching, all in one place.</p>
+                      </div>
+                      <div class="um-welcome-grid">
+                        <div class="um-welcome-item"><i class="fas fa-bolt"></i><div><strong>Built for speed</strong><span>Bulk import, receipt scanning, and quick-add shortcuts.</span></div></div>
+                        <div class="um-welcome-item"><i class="fas fa-chart-line"></i><div><strong>Always in view</strong><span>One dashboard for balances, budgets, and forecasts.</span></div></div>
+                        <div class="um-welcome-item"><i class="fas fa-robot"></i><div><strong>AI on your side</strong><span>Personalized insights as soon as you have a bit of history.</span></div></div>
+                      </div>
+                      <button class="btn btn-primary mt-2" id="umGoToChecklistBtn" type="button"><i class="fas fa-list-check me-1"></i>Start the Getting Started Checklist <i class="fas fa-arrow-right ms-1"></i></button>
+                    </div>
+                    <div class="um-pane" data-um-pane="checklist">
+                      <div class="um-checklist-head">
+                        <h5><i class="fas fa-flag-checkered me-2"></i>What to set up first</h5>
+                        <p class="text-muted small mb-2">New here? Follow this order — each step builds on the last, so your budgets and AI insights stay accurate from day one.</p>
+                        <div class="um-progress-track"><div class="um-progress-fill" id="umProgressFill" style="width:0%"></div></div>
+                        <div class="um-progress-label" id="umProgressLabel">0 of ${MANUAL_CHECKLIST.length} complete</div>
+                      </div>
+                      <div class="um-checklist" id="umChecklist"></div>
+                    </div>
+                    <div class="um-pane" data-um-pane="workflow">
+                      <h5><i class="fas fa-diagram-project me-2"></i>How FinTrack Fits Together</h5>
+                      <p class="text-muted small">The typical flow through the app, month after month:</p>
+                      <div class="um-flow">${workflowHtml}</div>
+                      <div class="um-flow-note"><i class="fas fa-lightbulb me-2"></i>At the start of each month: review last month in the AI Coach, set a fresh Budget Plan, then just keep logging as you go — the dashboard and forecasts stay current automatically.</div>
+                    </div>
+                    <div class="um-pane" data-um-pane="features">
+                      <h5><i class="fas fa-shapes me-2"></i>Features &amp; Quick Links</h5>
+                      <p class="text-muted small">Click any card to jump straight there.</p>
+                      <div class="um-feature-grid">${featureCardsHtml}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+        document.body.appendChild(wrapper.firstElementChild);
+        wireUserManualModal();
+    }
+
+    function wireUserManualModal() {
+        var modalEl = document.getElementById('userManualModal');
+        if (!modalEl) return;
+
+        modalEl.querySelectorAll('.um-nav-item').forEach(function (btn) {
+            btn.addEventListener('click', function () { switchManualTab(btn.dataset.umTab); });
+        });
+
+        var goBtn = document.getElementById('umGoToChecklistBtn');
+        if (goBtn) goBtn.addEventListener('click', function () { switchManualTab('checklist'); });
+
+        modalEl.querySelectorAll('.um-feature-card').forEach(function (card) {
+            function activate() {
+                var action = card.dataset.action;
+                var href = card.dataset.href;
+                if (action === 'calculator') {
+                    bootstrap.Modal.getInstance(modalEl).hide();
+                    if (typeof window.toggleCalc === 'function') window.toggleCalc();
+                } else if (action === 'notifications') {
+                    bootstrap.Modal.getInstance(modalEl).hide();
+                    toggleNotificationPanel();
+                } else if (href) {
+                    window.location.href = href;
+                }
+            }
+            card.addEventListener('click', activate);
+            card.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
+            });
+        });
+    }
+
+    function switchManualTab(tab) {
+        var modalEl = document.getElementById('userManualModal');
+        if (!modalEl) return;
+        modalEl.querySelectorAll('.um-nav-item').forEach(function (btn) {
+            btn.classList.toggle('active', btn.dataset.umTab === tab);
+        });
+        modalEl.querySelectorAll('.um-pane').forEach(function (pane) {
+            pane.classList.toggle('active', pane.dataset.umPane === tab);
+        });
+    }
+
+    function renderManualChecklist() {
+        var container = document.getElementById('umChecklist');
+        if (!container) return;
+        var done = loadManualChecklistDone();
+        container.innerHTML = MANUAL_CHECKLIST.map(function (step, i) {
+            var isDone = done.indexOf(step.id) !== -1;
+            return '<div class="um-check-item' + (isDone ? ' done' : '') + '" data-step="' + step.id + '">' +
+                '<button type="button" class="um-check-box" aria-label="Mark ' + step.title + '" aria-pressed="' + isDone + '"><i class="fas fa-check"></i></button>' +
+                '<div class="um-check-num">' + (i + 1) + '</div>' +
+                '<div class="um-check-icon"><i class="fas ' + step.icon + '"></i></div>' +
+                '<div class="um-check-text"><div class="um-check-title">' + step.title + '</div><div class="um-check-desc">' + step.desc + '</div></div>' +
+                '<a href="' + step.href + '" class="btn btn-sm btn-outline-primary um-check-link">' + step.linkLabel + ' <i class="fas fa-arrow-right ms-1"></i></a>' +
+                '</div>';
+        }).join('');
+
+        container.querySelectorAll('.um-check-box').forEach(function (box) {
+            box.addEventListener('click', function () {
+                var item = box.closest('.um-check-item');
+                toggleManualStep(item.dataset.step, item);
+            });
+        });
+
+        updateManualProgress(done);
+    }
+
+    function toggleManualStep(stepId, itemEl) {
+        var done = loadManualChecklistDone();
+        var idx = done.indexOf(stepId);
+        if (idx === -1) { done.push(stepId); } else { done.splice(idx, 1); }
+        saveManualChecklistDone(done);
+
+        var nowDone = done.indexOf(stepId) !== -1;
+        if (itemEl) {
+            itemEl.classList.toggle('done', nowDone);
+            var box = itemEl.querySelector('.um-check-box');
+            if (box) box.setAttribute('aria-pressed', nowDone);
+            if (nowDone) {
+                itemEl.classList.add('um-pop');
+                setTimeout(function () { itemEl.classList.remove('um-pop'); }, 400);
+            }
+        }
+        updateManualProgress(done);
+    }
+
+    function updateManualProgress(done) {
+        var total = MANUAL_CHECKLIST.length;
+        var count = done.length;
+        var pct = total ? Math.round((count / total) * 100) : 0;
+        var fill = document.getElementById('umProgressFill');
+        var label = document.getElementById('umProgressLabel');
+        var navBadge = document.getElementById('umChecklistBadge');
+        if (fill) fill.style.width = pct + '%';
+        if (label) label.textContent = count + ' of ' + total + ' complete' + (count === total ? ' 🎉' : '');
+        if (navBadge) navBadge.textContent = count > 0 ? (count + '/' + total) : '';
+    }
+
+    function updateManualBadgeVisibility() {
+        var dot = document.getElementById('manualBadgeDot');
+        if (!dot) return;
+        var seen = localStorage.getItem(getManualSeenKey()) === 'true';
+        dot.classList.toggle('d-none', seen);
+    }
+
+    function markManualSeen() {
+        try { localStorage.setItem(getManualSeenKey(), 'true'); } catch (e) {}
+        updateManualBadgeVisibility();
+    }
+
+    function openUserManual() {
+        injectUserManualModal();
+        renderManualChecklist();
+        markManualSeen();
+        var modalEl = document.getElementById('userManualModal');
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+    window.openUserManual = openUserManual;
+
     // ── Sidebar Customizer Modal ──────────────────────────────────────────────
     function injectSidebarCustomizerModal() {
         if (document.getElementById('sidebarCustomizerModal')) return;
@@ -994,6 +1259,7 @@
         injectCalculator();
         injectNotificationPanel();
         injectConfirmModal();
+        injectUserManualModal();
 
         // Wire up calculator sidebar button
         var calcBtn = document.getElementById('calcSidebarBtn');
@@ -1014,6 +1280,23 @@
             });
         }
         refreshUnreadBadge();
+
+        // Wire up User Manual button
+        var manualBtn = document.getElementById('userManualBtn');
+        if (manualBtn) {
+            manualBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                openUserManual();
+            });
+        }
+        updateManualBadgeVisibility();
+
+        // First-time visitors landing on the dashboard get a one-time automatic
+        // intro to the User Manual, answering "what should I set up first?"
+        var landingPath = window.location.pathname.replace(/^\//, '');
+        if ((landingPath === 'dashboard' || landingPath === '') && localStorage.getItem(getManualSeenKey()) !== 'true') {
+            setTimeout(function () { openUserManual(); }, 1200);
+        }
 
         // Apply compact mode
         if (localStorage.getItem(COMPACT_KEY) === 'true') {
@@ -1051,6 +1334,9 @@
         var notifBtn = document.getElementById('notificationBellBtn');
         if (notifBtn) notifBtn.addEventListener('click', function(e) { e.stopPropagation(); toggleNotificationPanel(); });
         refreshUnreadBadge();
+        var manualBtn = document.getElementById('userManualBtn');
+        if (manualBtn) manualBtn.addEventListener('click', function(e) { e.stopPropagation(); openUserManual(); });
+        updateManualBadgeVisibility();
     }
 
     // Expose for debugging/external use

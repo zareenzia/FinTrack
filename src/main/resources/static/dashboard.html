@@ -97,6 +97,9 @@
         .cb-progress-bar { height: 100%; transition: width 0.3s ease; background: #28a745; }
         .cb-progress-bar.warn { background: #fd7e14; }
         .cb-progress-bar.over { background: #dc3545; }
+        .cb-progress-sm { height: 6px; }
+        .cb-category-list { max-height: 130px; overflow-y: auto; margin-top: 4px; padding-right: 2px; }
+        .cb-category-row:not(:last-child) { margin-bottom: 8px; }
 
         /* Recent Transactions collapse toggle */
         .tx-collapse-toggle {
@@ -1406,9 +1409,25 @@
             }
             const pct = Math.min(100, data.summary.utilizationPercent);
             const barClass = data.summary.utilizationPercent > 100 ? 'over' : (data.summary.utilizationPercent >= 80 ? 'warn' : '');
+            const categories = data.categories || [];
+            const categoriesHtml = categories.length
+                ? `<div class="small text-muted mt-2 mb-1">By Category</div>
+                   <div class="cb-category-list">${categories.map(c => {
+                       const catPct = Math.min(100, c.percentUsed);
+                       const catBarClass = c.percentUsed > 100 ? 'over' : (c.percentUsed >= 80 ? 'warn' : '');
+                       return `
+                        <div class="cb-category-row">
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span><i class="fas fa-${c.categoryIcon || 'tag'} me-1" style="color:${c.categoryColor || '#6c757d'}"></i>${escHtml(c.categoryName)}</span>
+                                <span class="text-muted">${formatAmount(c.actualAmount)} / ${formatAmount(c.budgetAmount)}</span>
+                            </div>
+                            <div class="cb-progress cb-progress-sm"><div class="cb-progress-bar ${catBarClass}" style="width:${catPct}%"></div></div>
+                        </div>`;
+                   }).join('')}</div>`
+                : '';
             const html = `
                 <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="fw-semibold">${data.name}</span>
+                    <span class="fw-semibold">${escHtml(data.name)}</span>
                     <span class="text-muted small">${data.period}</span>
                 </div>
                 <div class="d-flex justify-content-between small text-muted mb-1">
@@ -1416,7 +1435,8 @@
                     <span>${data.summary.utilizationPercent.toFixed(0)}%</span>
                 </div>
                 <div class="cb-progress mb-2"><div class="cb-progress-bar ${barClass}" style="width:${pct}%"></div></div>
-                <div class="small text-muted">Remaining: <strong style="color: var(--accent-color);">${formatAmount(data.summary.remaining)}</strong></div>`;
+                <div class="small text-muted">Remaining: <strong style="color: var(--accent-color);">${formatAmount(data.summary.remaining)}</strong></div>
+                ${categoriesHtml}`;
             containers.forEach(c => c.innerHTML = html);
         } catch (e) {
             containers.forEach(c => c.innerHTML = '<p class="text-muted small mb-0">Unable to load current budget.</p>');

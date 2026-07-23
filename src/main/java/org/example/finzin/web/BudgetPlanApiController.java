@@ -316,6 +316,7 @@ public class BudgetPlanApiController {
         map.put("summary", summary);
         map.put("score", score);
         map.put("categoryCount", categories.size());
+        map.put("categories", categories);
         return map;
     }
 

@@ -865,6 +865,19 @@ body.has-sidebar {
     flex-direction: column;
 }
 
+/* "New" pulse dot on the User Manual icon until a user has opened it once */
+.manual-badge-dot {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ffc107;
+    box-shadow: 0 0 0 rgba(255, 193, 7, 0.6);
+    animation: umDotPing 1.8s ease-out infinite;
+}
+
 /* Avatar */
 .sidebar-avatar {
     width: 32px;
@@ -3332,4 +3345,429 @@ body.sidebar-compact #sidebar:not(.collapsed) .sidebar-item:hover::after {
 }
 #customizerList .list-group-item:hover .drag-handle {
     opacity: 1;
+}
+
+/* ===== USER MANUAL / GETTING STARTED MODAL ===== */
+@keyframes umDotPing {
+    0%   { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.55); }
+    70%  { box-shadow: 0 0 0 7px rgba(255, 193, 7, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+}
+
+@keyframes umCheckPop {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.12); }
+    100% { transform: scale(1); }
+}
+
+@keyframes umFlowIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+#userManualModal .um-layout {
+    display: flex;
+    min-height: 460px;
+}
+
+#userManualModal .um-nav {
+    flex: 0 0 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 16px 10px;
+    border-right: 1px solid var(--border-color);
+    background: var(--bg-table-stripe);
+}
+
+#userManualModal .um-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    background: none;
+    border-radius: 8px;
+    color: var(--text-secondary-custom);
+    font-size: 0.88rem;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+#userManualModal .um-nav-item i:first-child {
+    width: 18px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+#userManualModal .um-nav-item span {
+    flex: 1;
+}
+
+#userManualModal .um-nav-item:hover {
+    background: var(--bg-card);
+    color: var(--text-primary-custom);
+}
+
+#userManualModal .um-nav-item.active {
+    background: var(--accent-color);
+    color: #fff;
+}
+
+#userManualModal .um-nav-badge {
+    flex: 0 0 auto !important;
+    font-size: 0.68rem;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 999px;
+    padding: 1px 6px;
+}
+
+#userManualModal .um-nav-item:not(.active) .um-nav-badge {
+    background: var(--accent-color);
+    color: #fff;
+}
+
+#userManualModal .um-content {
+    flex: 1;
+    padding: 22px 26px;
+    overflow-y: auto;
+    color: var(--text-primary-custom);
+}
+
+#userManualModal .um-pane {
+    display: none;
+    animation: fadeIn 0.25s ease-out;
+}
+
+#userManualModal .um-pane.active {
+    display: block;
+}
+
+/* Welcome pane */
+#userManualModal .um-welcome-hero {
+    text-align: center;
+    padding: 8px 10px 18px;
+}
+
+#userManualModal .um-hero-icon {
+    font-size: 2.6rem;
+    color: var(--accent-color);
+    margin-bottom: 10px;
+    animation: pulse 2.4s ease-in-out infinite;
+    display: inline-block;
+}
+
+#userManualModal .um-welcome-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+#userManualModal .um-welcome-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: var(--bg-table-stripe);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 12px;
+}
+
+#userManualModal .um-welcome-item i {
+    color: var(--accent-color);
+    font-size: 1.1rem;
+    margin-top: 2px;
+}
+
+#userManualModal .um-welcome-item strong {
+    display: block;
+    font-size: 0.85rem;
+    margin-bottom: 2px;
+}
+
+#userManualModal .um-welcome-item span {
+    font-size: 0.8rem;
+    color: var(--text-secondary-custom);
+}
+
+/* Checklist pane */
+#userManualModal .um-progress-track {
+    height: 8px;
+    border-radius: 999px;
+    background: var(--bg-table-stripe);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    margin-top: 8px;
+}
+
+#userManualModal .um-progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--accent-color);
+    transition: width 0.4s ease;
+}
+
+#userManualModal .um-progress-label {
+    font-size: 0.78rem;
+    color: var(--text-secondary-custom);
+    margin-top: 6px;
+    margin-bottom: 4px;
+}
+
+#userManualModal .um-check-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 8px;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+#userManualModal .um-check-item.done {
+    background: var(--bg-table-stripe);
+    border-color: var(--accent-color);
+}
+
+#userManualModal .um-check-item.um-pop {
+    animation: umCheckPop 0.4s ease;
+}
+
+#userManualModal .um-check-box {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid var(--border-color);
+    background: none;
+    color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+#userManualModal .um-check-item.done .um-check-box {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    color: #fff;
+}
+
+#userManualModal .um-check-num {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--bg-table-stripe);
+    color: var(--text-secondary-custom);
+    font-size: 0.72rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#userManualModal .um-check-icon {
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: var(--bg-table-stripe);
+    color: var(--accent-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+}
+
+#userManualModal .um-check-text {
+    flex: 1;
+    min-width: 0;
+}
+
+#userManualModal .um-check-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+#userManualModal .um-check-desc {
+    font-size: 0.78rem;
+    color: var(--text-secondary-custom);
+    margin-top: 2px;
+}
+
+#userManualModal .um-check-link {
+    flex-shrink: 0;
+    white-space: nowrap;
+    font-size: 0.78rem;
+}
+
+/* Workflow pane */
+#userManualModal .um-flow {
+    display: flex;
+    align-items: stretch;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 18px 0;
+}
+
+#userManualModal .um-flow-step {
+    flex: 1 1 150px;
+    position: relative;
+    background: var(--bg-table-stripe);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px 12px;
+    text-align: center;
+    opacity: 0;
+    animation: umFlowIn 0.4s ease forwards;
+    animation-delay: calc(var(--um-d, 0) * 120ms);
+}
+
+#userManualModal .um-flow-num {
+    position: absolute;
+    top: 8px;
+    left: 10px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-secondary-custom);
+}
+
+#userManualModal .um-flow-icon {
+    font-size: 1.4rem;
+    color: var(--accent-color);
+    margin-bottom: 8px;
+}
+
+#userManualModal .um-flow-title {
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+}
+
+#userManualModal .um-flow-desc {
+    font-size: 0.75rem;
+    color: var(--text-secondary-custom);
+}
+
+#userManualModal .um-flow-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-color);
+    opacity: 0.6;
+    flex: 0 0 auto;
+}
+
+#userManualModal .um-flow-note {
+    background: var(--bg-table-stripe);
+    border-left: 3px solid var(--accent-color);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 0.85rem;
+    color: var(--text-secondary-custom);
+}
+
+/* Features pane */
+#userManualModal .um-feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 14px;
+    margin-top: 12px;
+}
+
+#userManualModal .um-feature-card {
+    background: var(--bg-table-stripe);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+#userManualModal .um-feature-card:hover,
+#userManualModal .um-feature-card:focus-visible {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    border-color: var(--accent-color);
+    outline: none;
+}
+
+#userManualModal .um-feature-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 9px;
+    background: var(--accent-color);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    margin-bottom: 10px;
+}
+
+#userManualModal .um-feature-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+}
+
+#userManualModal .um-feature-desc {
+    font-size: 0.78rem;
+    color: var(--text-secondary-custom);
+    margin-bottom: 10px;
+    min-height: 48px;
+}
+
+#userManualModal .um-feature-link {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--accent-color);
+}
+
+/* Responsive: stack nav above content on small screens */
+@media (max-width: 768px) {
+    #userManualModal .um-layout {
+        flex-direction: column;
+        min-height: 0;
+    }
+    #userManualModal .um-nav {
+        flex-direction: row;
+        overflow-x: auto;
+        flex: 0 0 auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+    }
+    #userManualModal .um-nav-item {
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+    #userManualModal .um-welcome-grid {
+        grid-template-columns: 1fr;
+    }
+    #userManualModal .um-flow-arrow {
+        transform: rotate(90deg);
+        flex-basis: 100%;
+    }
+    #userManualModal .um-check-item {
+        flex-wrap: wrap;
+        row-gap: 8px;
+    }
+    #userManualModal .um-check-text {
+        flex: 1 1 100%;
+        order: 1;
+    }
+    #userManualModal .um-check-link {
+        flex: 1 1 100%;
+        order: 2;
+        text-align: center;
+    }
 }

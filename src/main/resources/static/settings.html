@@ -1266,6 +1266,14 @@ document.querySelectorAll('.settings-nav-item').forEach(function(item){
   });
 });
 
+// Jump straight to a section when linked as /settings?section=account-config (e.g. from the User Manual's quick links)
+(function openSectionFromQuery(){
+  var section = new URLSearchParams(window.location.search).get('section');
+  if (!section) return;
+  var navItem = document.querySelector('.settings-nav-item[data-section="' + section + '"]');
+  if (navItem) navItem.click();
+})();
+
 // ============== Receipt Scanner Settings ==============
 function loadReceiptScannerSettings() {
   fetch('/api/receipts/settings').then(function(r){ return r.json(); }).then(function(s){
