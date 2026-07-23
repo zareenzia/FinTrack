@@ -2829,7 +2829,7 @@
         return count;
     }
 
-    function renderForecast() {
+    async function renderForecast() {
         const now = new Date();
         const rangeStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
         const rangeEnd = new Date(now.getFullYear(), now.getMonth() + 2, 0);
@@ -2862,6 +2862,35 @@
             });
             sections[sectionKey].subtotal += subtotal;
         });
+
+        // Credit card bills aren't recurring-transaction records — every active card carrying a
+        // balance will have a bill due sometime next month, so show all of them rather than
+        // trying to pin down exact due-date arithmetic (which broke down for cards whose due day
+        // rolls into a different month, or that never had a due day configured at all). Fetch
+        // fresh rather than relying on cachedAccounts, which loads independently/concurrently and
+        // isn't guaranteed populated yet the first time this runs on page load.
+        try {
+            const accountsResp = await fetch('/api/accounts');
+            const accounts = accountsResp.ok ? await accountsResp.json() : [];
+            accounts
+                .filter(a => a.accountType === 'CREDIT_CARD' && a.status === 'ACTIVE' && a.currentBalance > 0)
+                .forEach(cc => {
+                    const amount = cc.currentBalance;
+                    totalDue += amount;
+                    const sectionKey = 'Credit Card Bills';
+                    if (!sections[sectionKey]) sections[sectionKey] = { label: sectionKey, items: [], subtotal: 0 };
+                    const bankSuffix = cc.bankName && !cc.accountNickname.includes(cc.bankName) ? ' (' + cc.bankName + ')' : '';
+                    sections[sectionKey].items.push({
+                        name: cc.accountNickname + bankSuffix,
+                        frequency: 'Monthly',
+                        occurrences: 1,
+                        subtotal: amount
+                    });
+                    sections[sectionKey].subtotal += amount;
+                });
+        } catch (e) {
+            console.warn('Could not include credit card bills in forecast:', e);
+        }
 
         document.getElementById('rtForecastTotalDue').textContent = formatAmount(totalDue);
         document.getElementById('rtForecastIncome').textContent = formatAmount(totalIncome);

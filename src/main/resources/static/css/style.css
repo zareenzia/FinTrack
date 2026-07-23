@@ -1034,32 +1034,45 @@ body.has-sidebar {
 .stat-card {
     border: none !important;
     border-radius: 20px !important;
-    height: auto !important;
-    min-height: 160px !important;
-    max-height: none !important;
+    /* A true fixed height (not min-height) so every card is identical regardless of how many
+       lines its title/subtitle wrap to — .sc-title below is clamped to 2 lines specifically so
+       its content always fits within this. */
+    height: 176px !important;
+    min-height: 176px !important;
+    max-height: 176px !important;
     position: relative;
     overflow: hidden;
     box-shadow: 0 8px 32px rgba(0,0,0,0.18) !important;
     transition: transform 0.28s cubic-bezier(.23,1,.32,1), box-shadow 0.28s ease !important;
     animation: none !important;
 }
+/* Glossy corner sheen — same treatment on every card so they all read as one consistent family. */
+.stat-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(130% 100% at 100% 0%, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0) 55%);
+    pointer-events: none;
+}
 .stat-card:hover {
     transform: translateY(-6px) scale(1.025) !important;
     box-shadow: 0 16px 48px rgba(0,0,0,0.28) !important;
 }
 
-/* Per-card gradient backgrounds */
-.stat-card--income  { background: linear-gradient(135deg,#1a9e5c 0%,#27c572 100%) !important; }
-.stat-card--expense { background: linear-gradient(135deg,#e03c3c 0%,#f87171 100%) !important; }
-.stat-card--savings { background: linear-gradient(135deg,#2563eb 0%,#60a5fa 100%) !important; }
-.stat-card--balance { background: linear-gradient(135deg,#d97706 0%,#fbbf24 100%) !important; }
-.stat-card--assets  { background: linear-gradient(135deg,#7c3aed 0%,#a78bfa 100%) !important; }
-.stat-card--networth{ background: linear-gradient(135deg,#0e7490 0%,#22d3ee 100%) !important; }
+/* Per-card gradient backgrounds — a darker anchor stop added to each for more depth/richness
+   than a flat two-tone gradient, while keeping the same hue family as their .sc-icon-circle color. */
+.stat-card--income  { background: linear-gradient(135deg,#0f7a45 0%,#1a9e5c 45%,#34d399 100%) !important; }
+.stat-card--expense { background: linear-gradient(135deg,#b91c1c 0%,#e03c3c 45%,#f87171 100%) !important; }
+.stat-card--savings { background: linear-gradient(135deg,#1d4ed8 0%,#2563eb 45%,#60a5fa 100%) !important; }
+.stat-card--balance { background: linear-gradient(135deg,#b45309 0%,#d97706 45%,#fbbf24 100%) !important; }
+.stat-card--assets  { background: linear-gradient(135deg,#6d28d9 0%,#7c3aed 45%,#a78bfa 100%) !important; }
+.stat-card--networth{ background: linear-gradient(135deg,#0c5c73 0%,#0e7490 45%,#22d3ee 100%) !important; }
 
 .stat-card .card-body {
     padding: 18px 18px 16px 18px !important;
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
     gap: 0;
     height: 100%;
 }
@@ -1103,13 +1116,21 @@ body.has-sidebar {
     min-width: 0;
 }
 .sc-title {
-    font-size: 0.95rem;
+    font-size: 0.88rem;
     font-weight: 700;
     color: #fff;
-    white-space: nowrap;
+    line-height: 1.25;
+    /* Clamp to 2 whole-word lines instead of an unbounded wrap (which, combined with the fixed
+       card height above, could otherwise overflow) or a mid-word break (which used to split
+       "Expense" into "Expens"/"e" on narrower cards) — word-break:normal keeps whole words
+       together, wrapping "Total Expense" as "Total"/"Expense" and only falling back to an
+       ellipsis on a label too long to fit even that way. */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.3;
+    word-break: normal;
+    overflow-wrap: normal;
 }
 .sc-subtitle {
     font-size: 0.72rem;
@@ -1947,13 +1968,10 @@ canvas {
     color: var(--text-body);
 }
 
-/* â”€â”€ Stat cards: force Surface palette in BOTH themes â”€â”€ */
-/* These rules have higher specificity and must come AFTER the generic dark overrides */
-[data-theme="dark"] .stat-card,
-[data-theme="light"] .stat-card,
-.stat-card {
-    background: var(--stat-card-bg) !important;
-}
+/* NOTE: no generic `.stat-card { background: ... }` override here on purpose — every stat card
+   in the app always carries a --type modifier (stat-card--income, --expense, etc., see below),
+   and a same-specificity rule this late in the file would silently beat their per-type gradients
+   (that's exactly what used to flatten every card, regardless of type, to one solid color). */
 
 [data-theme="dark"] .stat-card .card-title,
 .stat-card .card-title {
@@ -3113,7 +3131,12 @@ h3.stat-card-amount,
     border: none !important;
     border-bottom: 1px solid var(--border-color, rgba(0,0,0,.08)) !important;
     margin: 0 !important;
+    /* The gradient dashboard cards fix .stat-card to a specific height so all 6 measure
+       identically — this compact list-row variant needs its own natural (short) height back,
+       since the base rule doesn't otherwise know to leave these rows alone. */
+    height: auto !important;
     min-height: unset !important;
+    max-height: none !important;
     transition: background 0.18s ease !important;
 }
 .summary-stat-row.stat-card:last-child { border-bottom: none !important; }
