@@ -180,6 +180,9 @@
         <a class="settings-nav-item" data-section="receipt-scanner" href="#">
           <i class="fas fa-receipt"></i> Receipt Scanner
         </a>
+        <a class="settings-nav-item" data-section="voice-assistant" href="#">
+          <i class="fas fa-microphone"></i> Voice Assistant
+        </a>
         <a class="settings-nav-item" data-section="security" href="#">
           <i class="fas fa-shield-alt"></i> Privacy &amp; Security
         </a>
@@ -802,6 +805,79 @@
           </div>
         </section>
 
+        <!-- ===== VOICE ASSISTANT ===== -->
+        <section class="settings-section" id="section-voice-assistant">
+          <div class="settings-section-heading"><i class="fas fa-microphone" style="color:var(--accent-color)"></i> Voice Assistant</div>
+          <p class="settings-section-desc">Configure voice-driven commands for logging transactions, notes, and to-dos — accessible from the floating microphone button or Ctrl+Shift+V on any page.</p>
+
+          <div class="card mb-3">
+            <div class="card-body">
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" role="switch" id="voiceSettingsEnabled">
+                <label class="form-check-label" for="voiceSettingsEnabled">Enable Voice Commands</label>
+                <div><small class="text-muted">Turns the floating microphone button and the Ctrl+Shift+V shortcut on or off everywhere in the app.</small></div>
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label">Language</label>
+                  <select class="form-select" id="voiceSettingsLanguage">
+                    <option value="en-US">English (US)</option>
+                  </select>
+                  <small class="text-muted">Bangla and mixed Bangla-English are planned for a future update.</small>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Speech Provider</label>
+                  <select class="form-select" id="voiceSettingsProvider" disabled>
+                    <option value="browser" selected>Browser (built-in, free)</option>
+                  </select>
+                  <small class="text-muted">OpenAI Whisper, Azure, and Google Speech are planned for a future update.</small>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Auto-stop After Silence <small class="text-muted">(seconds)</small></label>
+                  <input type="number" class="form-control" id="voiceSettingsSilence" min="1" max="10" step="1">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Max Recording Length <small class="text-muted">(seconds)</small></label>
+                  <input type="number" class="form-control" id="voiceSettingsMaxLength" min="10" max="300" step="10">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Speech Speed <span class="badge bg-secondary">Coming soon</span></label>
+                  <input type="range" class="form-range" id="voiceSettingsSpeed" min="0.5" max="2" step="0.1" disabled>
+                </div>
+              </div>
+
+              <hr class="my-3">
+
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="voiceSettingsNoiseReduction" disabled>
+                <label class="form-check-label" for="voiceSettingsNoiseReduction">Noise Reduction <span class="badge bg-secondary">Coming soon</span></label>
+              </div>
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" role="switch" id="voiceSettingsSaveAudio" disabled>
+                <label class="form-check-label" for="voiceSettingsSaveAudio">Save Audio Recordings <span class="badge bg-secondary">Coming soon</span></label>
+              </div>
+              <div class="mb-2">
+                <small class="text-muted"><i class="fas fa-shield-alt me-1"></i>Every voice command is always reviewed on a confirmation screen before anything is saved — this can't be turned off.</small>
+              </div>
+
+              <button type="button" class="btn btn-primary mt-3" id="voiceSettingsSaveBtn">
+                <i class="fas fa-save me-1"></i>Save Voice Assistant Settings
+              </button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span><i class="fas fa-clock-rotate-left me-2"></i>Voice Command History</span>
+              <button type="button" class="btn btn-sm btn-outline-danger" id="voiceHistoryClearBtn"><i class="fas fa-trash-alt me-1"></i>Clear All</button>
+            </div>
+            <div class="card-body">
+              <div id="voiceHistoryList"><p class="text-muted small mb-0">Loading…</p></div>
+            </div>
+          </div>
+        </section>
+
         <!-- ===== ABOUT ===== -->
         <section class="settings-section" id="section-about">
           <div class="settings-section-heading"><i class="fas fa-info-circle" style="color:var(--accent-color)"></i> About FinTrack</div>
@@ -1263,6 +1339,7 @@ document.querySelectorAll('.settings-nav-item').forEach(function(item){
     if (section === 'account-config') { if (typeof loadAll === 'function') loadAll(); }
     if (section === 'ai-assistant') loadAiSettings();
     if (section === 'receipt-scanner') loadReceiptScannerSettings();
+    if (section === 'voice-assistant') { loadVoiceAssistantSettings(); loadVoiceHistory(); }
   });
 });
 
@@ -1340,6 +1417,96 @@ document.getElementById('aiSettingsSaveBtn').addEventListener('click', function(
       return r.json().then(function(err){ showNotification((err && err.error) || 'Failed to save AI settings.', 'danger'); });
     }
   }).catch(function(){ showNotification('Unable to save AI settings right now.', 'danger'); });
+});
+
+// ============== Voice Assistant Settings ==============
+function loadVoiceAssistantSettings() {
+  fetch('/api/voice/settings').then(function(r){ return r.json(); }).then(function(s){
+    document.getElementById('voiceSettingsEnabled').checked = s.enabled !== false;
+    document.getElementById('voiceSettingsLanguage').value = s.language || 'en-US';
+    document.getElementById('voiceSettingsSilence').value = s.autoStopSilenceSeconds || 3;
+    document.getElementById('voiceSettingsMaxLength').value = s.maxRecordingLengthSeconds || 60;
+    document.getElementById('voiceSettingsSpeed').value = s.speechSpeed || 1.0;
+    document.getElementById('voiceSettingsNoiseReduction').checked = s.noiseReduction === true;
+    document.getElementById('voiceSettingsSaveAudio').checked = s.saveAudioRecordings === true;
+  }).catch(function(){ showNotification('Unable to load Voice Assistant settings.', 'danger'); });
+}
+
+document.getElementById('voiceSettingsSaveBtn').addEventListener('click', function(){
+  var body = {
+    enabled: document.getElementById('voiceSettingsEnabled').checked,
+    language: document.getElementById('voiceSettingsLanguage').value,
+    autoStopSilenceSeconds: parseInt(document.getElementById('voiceSettingsSilence').value, 10),
+    maxRecordingLengthSeconds: parseInt(document.getElementById('voiceSettingsMaxLength').value, 10)
+  };
+  fetch('/api/voice/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  }).then(function(r){
+    if (r.ok) {
+      showNotification('Voice Assistant settings saved.', 'success');
+    } else {
+      return r.json().then(function(err){ showNotification((err && err.error) || 'Failed to save Voice Assistant settings.', 'danger'); });
+    }
+  }).catch(function(){ showNotification('Unable to save Voice Assistant settings right now.', 'danger'); });
+});
+
+var VOICE_INTENT_ICONS = {
+  EXPENSE: 'fa-money-bill-wave', INCOME: 'fa-hand-holding-dollar', SAVINGS: 'fa-piggy-bank',
+  TRANSFER: 'fa-right-left', NOTE: 'fa-sticky-note', TODO: 'fa-list-check',
+  QUERY: 'fa-comment-dots', UNKNOWN: 'fa-question'
+};
+var VOICE_STATUS_LABELS = {
+  completed: 'Completed', pending: 'Not confirmed', awaiting_followup: 'Awaiting follow-up',
+  unresolved: 'Unresolved', routed_to_chat: 'Sent to AI chat'
+};
+
+function loadVoiceHistory() {
+  var container = document.getElementById('voiceHistoryList');
+  container.innerHTML = '<p class="text-muted small mb-0">Loading…</p>';
+  fetch('/api/voice/history').then(function(r){ return r.json(); }).then(function(items){
+    if (!items.length) {
+      container.innerHTML = '<p class="text-muted small mb-0">No voice commands yet — try the microphone button on any page.</p>';
+      return;
+    }
+    container.innerHTML = items.map(function(item){
+      var icon = VOICE_INTENT_ICONS[item.intent] || 'fa-microphone';
+      var statusLabel = VOICE_STATUS_LABELS[item.status] || item.status;
+      var statusBadgeClass = item.status === 'completed' ? 'bg-success' : (item.status === 'unresolved' ? 'bg-secondary' : 'bg-warning text-dark');
+      var when = item.createdAt ? new Date(item.createdAt).toLocaleString() : '';
+      return '<div class="d-flex justify-content-between align-items-start py-2 border-bottom voice-history-row" data-id="' + item.id + '">' +
+        '<div class="d-flex gap-2">' +
+          '<i class="fas ' + icon + ' mt-1" style="color:var(--accent-color)"></i>' +
+          '<div>' +
+            '<div class="small">' + escHtml(item.originalTranscript) + '</div>' +
+            '<div class="text-muted" style="font-size:0.75rem">' + escHtml(when) + ' &middot; <span class="badge ' + statusBadgeClass + '">' + escHtml(statusLabel) + '</span></div>' +
+          '</div>' +
+        '</div>' +
+        '<button type="button" class="btn btn-sm btn-link text-danger voice-history-delete-btn" title="Delete" aria-label="Delete"><i class="fas fa-trash-alt"></i></button>' +
+      '</div>';
+    }).join('');
+    container.querySelectorAll('.voice-history-delete-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var row = btn.closest('.voice-history-row');
+        var id = row.getAttribute('data-id');
+        fetch('/api/voice/history/' + id, { method: 'DELETE' }).then(function(r){
+          if (r.ok) { row.remove(); if (!container.querySelector('.voice-history-row')) loadVoiceHistory(); }
+          else showNotification('Failed to delete that entry.', 'danger');
+        }).catch(function(){ showNotification('Unable to delete that entry right now.', 'danger'); });
+      });
+    });
+  }).catch(function(){ container.innerHTML = '<p class="text-muted small mb-0">Unable to load voice command history.</p>'; });
+}
+
+document.getElementById('voiceHistoryClearBtn').addEventListener('click', function(){
+  confirmAction('Delete all voice command history? This cannot be undone.', { title: 'Clear Voice History', confirmText: 'Clear All', confirmClass: 'btn-danger' }).then(function(confirmed){
+    if (!confirmed) return;
+    fetch('/api/voice/history', { method: 'DELETE' }).then(function(r){
+      if (r.ok) { showNotification('Voice command history cleared.', 'success'); loadVoiceHistory(); }
+      else showNotification('Failed to clear history.', 'danger');
+    }).catch(function(){ showNotification('Unable to clear history right now.', 'danger'); });
+  });
 });
 
 // ============== Color Theme ==============

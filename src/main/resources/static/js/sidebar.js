@@ -615,6 +615,70 @@
         }
     }
 
+    /* ── Voice Assistant ───────────────────────────────────────── */
+
+    function injectVoiceAssistantWidget() {
+        if (!document.querySelector('link[href="/css/voice-assistant.css"]')) {
+            var link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = '/css/voice-assistant.css';
+            document.head.appendChild(link);
+        }
+
+        if (document.getElementById('voiceAssistantFab')) return;
+
+        var fab = document.createElement('button');
+        fab.id = 'voiceAssistantFab';
+        fab.className = 'va-fab';
+        fab.type = 'button';
+        fab.title = 'Voice Assistant (Ctrl+Shift+V)';
+        fab.setAttribute('aria-label', 'Voice Assistant');
+        fab.innerHTML = '<i class="fas fa-microphone"></i>';
+        document.body.appendChild(fab);
+
+        var modalHtml =
+            '<div class="modal fade" id="voiceAssistantModal" tabindex="-1" aria-labelledby="voiceAssistantModalTitle" aria-modal="true" role="dialog">' +
+              '<div class="modal-dialog modal-dialog-centered modal-lg">' +
+                '<div class="modal-content">' +
+                  '<div class="modal-header">' +
+                    '<h5 class="modal-title" id="voiceAssistantModalTitle"><i class="fas fa-microphone me-2"></i>Voice Assistant</h5>' +
+                    '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>' +
+                  '</div>' +
+                  '<div class="modal-body">' +
+                    '<div id="vaScreenRecording" class="va-screen active">' +
+                      '<div class="va-mic-wrap">' +
+                        '<div class="va-mic-pulse"></div>' +
+                        '<button type="button" id="vaMicButton" class="va-mic-btn" aria-label="Start or stop recording"><i class="fas fa-microphone"></i></button>' +
+                      '</div>' +
+                      '<canvas id="vaWaveformCanvas" class="va-waveform" width="400" height="60"></canvas>' +
+                      '<div class="va-timer" id="vaTimer">00:00</div>' +
+                      '<div class="va-status" id="vaStatus">Tap the mic to start</div>' +
+                      '<div class="va-transcript" id="vaTranscript"></div>' +
+                      '<div class="va-followup d-none" id="vaFollowupBanner"></div>' +
+                      '<div class="va-controls">' +
+                        '<button type="button" class="btn btn-outline-secondary va-ctrl-btn d-none" id="vaPauseBtn"><i class="fas fa-pause"></i> Pause</button>' +
+                        '<button type="button" class="btn btn-outline-secondary va-ctrl-btn d-none" id="vaResumeBtn"><i class="fas fa-play"></i> Resume</button>' +
+                        '<button type="button" class="btn btn-danger va-ctrl-btn d-none" id="vaStopBtn"><i class="fas fa-stop"></i> Stop</button>' +
+                        '<button type="button" class="btn btn-outline-secondary va-ctrl-btn" id="vaCancelBtn"><i class="fas fa-times"></i> Cancel</button>' +
+                      '</div>' +
+                    '</div>' +
+                    '<div id="vaScreenConfirm" class="va-screen"></div>' +
+                    '<div id="vaScreenSuccess" class="va-screen"></div>' +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
+            '</div>';
+        var wrapper = document.createElement('div');
+        wrapper.innerHTML = modalHtml;
+        document.body.appendChild(wrapper.firstElementChild);
+
+        if (!document.querySelector('script[src="/js/voice-assistant.js"]')) {
+            var script = document.createElement('script');
+            script.src = '/js/voice-assistant.js';
+            document.body.appendChild(script);
+        }
+    }
+
     /* ── Notifications ─────────────────────────────────────────── */
 
     function injectNotificationPanel() {
@@ -1257,6 +1321,7 @@
         });
         injectProfileModal();
         injectCalculator();
+        injectVoiceAssistantWidget();
         injectNotificationPanel();
         injectConfirmModal();
         injectUserManualModal();
@@ -1290,6 +1355,20 @@
             });
         }
         updateManualBadgeVisibility();
+
+        // Wire up Voice Assistant FAB + keyboard shortcut
+        var voiceFab = document.getElementById('voiceAssistantFab');
+        if (voiceFab) {
+            voiceFab.addEventListener('click', function () {
+                if (typeof window.openVoiceAssistant === 'function') window.openVoiceAssistant();
+            });
+        }
+        document.addEventListener('keydown', function (e) {
+            if (e.ctrlKey && e.shiftKey && (e.key === 'V' || e.key === 'v')) {
+                e.preventDefault();
+                if (typeof window.openVoiceAssistant === 'function') window.openVoiceAssistant();
+            }
+        });
 
         // First-time visitors landing on the dashboard get a one-time automatic
         // intro to the User Manual, answering "what should I set up first?"

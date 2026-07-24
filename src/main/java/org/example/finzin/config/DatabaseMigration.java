@@ -323,6 +323,39 @@ public class DatabaseMigration implements BeanPostProcessor {
                 "FROM transactions t WHERE t.source_account_id = a.id OR t.destination_account_id = a.id" +
                 "), 0) " +
                 "WHERE a.account_type = 'CREDIT_CARD'");
+
+        // ============== Voice Assistant ==============
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS voice_command_history (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "user_id BIGINT NOT NULL, " +
+                "audio_path VARCHAR(500), " +
+                "original_transcript TEXT NOT NULL, " +
+                "corrected_text TEXT, " +
+                "intent VARCHAR(20) NOT NULL, " +
+                "parsed_json TEXT, " +
+                "source VARCHAR(10) NOT NULL DEFAULT 'AI', " +
+                "status VARCHAR(20) NOT NULL DEFAULT 'pending', " +
+                "resolved_entity_type VARCHAR(20), " +
+                "resolved_entity_id BIGINT, " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW()" +
+                ")");
+        runSilently(dataSource, "CREATE INDEX IF NOT EXISTS idx_voice_history_user_created ON voice_command_history (user_id, created_at DESC)");
+
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS voice_settings (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "user_id BIGINT NOT NULL, " +
+                "enabled BOOLEAN NOT NULL DEFAULT TRUE, " +
+                "language VARCHAR(10) NOT NULL DEFAULT 'en-US', " +
+                "speech_provider VARCHAR(30) NOT NULL DEFAULT 'browser', " +
+                "auto_stop_silence_seconds INTEGER NOT NULL DEFAULT 3, " +
+                "noise_reduction BOOLEAN NOT NULL DEFAULT FALSE, " +
+                "save_audio_recordings BOOLEAN NOT NULL DEFAULT FALSE, " +
+                "max_recording_length_seconds INTEGER NOT NULL DEFAULT 60, " +
+                "speech_speed DOUBLE PRECISION NOT NULL DEFAULT 1.0, " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "updated_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "CONSTRAINT uk_voice_settings_user UNIQUE (user_id)" +
+                ")");
     }
 
     private void runSilently(DataSource dataSource, String sql) {
