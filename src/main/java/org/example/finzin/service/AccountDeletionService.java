@@ -58,6 +58,8 @@ public class AccountDeletionService {
     private final AiMessageRepository aiMessageRepository;
     private final AiDocumentEmbeddingRepository aiDocumentEmbeddingRepository;
     private final AiSettingsRepository aiSettingsRepository;
+    private final VoiceCommandHistoryRepository voiceCommandHistoryRepository;
+    private final VoiceSettingsRepository voiceSettingsRepository;
 
     @Value("${app.upload.dir:user-uploads/profiles}")
     private String profileUploadDir;
@@ -75,7 +77,8 @@ public class AccountDeletionService {
             NetWorthSnapshotRepository netWorthSnapshotRepository, NoteRepository noteRepository, TodoRepository todoRepository,
             SidebarPreferenceRepository sidebarPreferenceRepository, AppearancePreferenceRepository appearancePreferenceRepository,
             AiConversationRepository aiConversationRepository, AiMessageRepository aiMessageRepository,
-            AiDocumentEmbeddingRepository aiDocumentEmbeddingRepository, AiSettingsRepository aiSettingsRepository) {
+            AiDocumentEmbeddingRepository aiDocumentEmbeddingRepository, AiSettingsRepository aiSettingsRepository,
+            VoiceCommandHistoryRepository voiceCommandHistoryRepository, VoiceSettingsRepository voiceSettingsRepository) {
         this.userRepository = userRepository;
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
@@ -106,6 +109,8 @@ public class AccountDeletionService {
         this.aiMessageRepository = aiMessageRepository;
         this.aiDocumentEmbeddingRepository = aiDocumentEmbeddingRepository;
         this.aiSettingsRepository = aiSettingsRepository;
+        this.voiceCommandHistoryRepository = voiceCommandHistoryRepository;
+        this.voiceSettingsRepository = voiceSettingsRepository;
     }
 
     @Transactional
@@ -121,6 +126,8 @@ public class AccountDeletionService {
         aiConversationRepository.deleteByUserId(userId);
         aiDocumentEmbeddingRepository.deleteByUserId(userId);
         aiSettingsRepository.deleteByUserId(userId);
+        voiceCommandHistoryRepository.deleteByUserId(userId);
+        voiceSettingsRepository.deleteByUserId(userId);
 
         notificationRepository.deleteByUserId(userId);
 
