@@ -356,6 +356,179 @@ public class DatabaseMigration implements BeanPostProcessor {
                 "updated_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
                 "CONSTRAINT uk_voice_settings_user UNIQUE (user_id)" +
                 ")");
+
+        // ============== Gamification ==============
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS gamification_settings (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "user_id BIGINT NOT NULL, " +
+                "enabled BOOLEAN NOT NULL DEFAULT TRUE, " +
+                "enable_notifications BOOLEAN NOT NULL DEFAULT TRUE, " +
+                "show_dashboard_widget BOOLEAN NOT NULL DEFAULT TRUE, " +
+                "enable_celebrations BOOLEAN NOT NULL DEFAULT TRUE, " +
+                "enable_challenges BOOLEAN NOT NULL DEFAULT TRUE, " +
+                "enable_streak_tracking BOOLEAN NOT NULL DEFAULT TRUE, " +
+                "show_xp BOOLEAN NOT NULL DEFAULT TRUE, " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "updated_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "CONSTRAINT uk_gamification_settings_user UNIQUE (user_id)" +
+                ")");
+
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS user_xp (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "user_id BIGINT NOT NULL, " +
+                "total_xp BIGINT NOT NULL DEFAULT 0, " +
+                "current_level INTEGER NOT NULL DEFAULT 1, " +
+                "updated_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "CONSTRAINT uk_user_xp_user UNIQUE (user_id)" +
+                ")");
+
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS xp_history (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "user_id BIGINT NOT NULL, " +
+                "amount INTEGER NOT NULL, " +
+                "reason VARCHAR(60) NOT NULL, " +
+                "source_type VARCHAR(30) NOT NULL, " +
+                "source_id VARCHAR(60) NOT NULL, " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "CONSTRAINT uk_xp_history_source UNIQUE (user_id, source_type, source_id, reason)" +
+                ")");
+        runSilently(dataSource, "CREATE INDEX IF NOT EXISTS idx_xp_history_user_created ON xp_history (user_id, created_at DESC)");
+
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS achievement_definitions (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "code VARCHAR(60) NOT NULL, " +
+                "category VARCHAR(30) NOT NULL, " +
+                "name VARCHAR(100) NOT NULL, " +
+                "description VARCHAR(255) NOT NULL, " +
+                "icon VARCHAR(60) NOT NULL, " +
+                "tier_color VARCHAR(20) NOT NULL DEFAULT 'bronze', " +
+                "criteria_type VARCHAR(30) NOT NULL, " +
+                "metric_key VARCHAR(60) NOT NULL, " +
+                "threshold DOUBLE PRECISION NOT NULL, " +
+                "window_days INTEGER, " +
+                "xp_reward INTEGER NOT NULL DEFAULT 0, " +
+                "is_milestone BOOLEAN NOT NULL DEFAULT FALSE, " +
+                "active BOOLEAN NOT NULL DEFAULT TRUE, " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "CONSTRAINT uk_achievement_code UNIQUE (code)" +
+                ")");
+
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS user_achievements (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "user_id BIGINT NOT NULL, " +
+                "achievement_id BIGINT NOT NULL, " +
+                "status VARCHAR(20) NOT NULL DEFAULT 'LOCKED', " +
+                "progress_current DOUBLE PRECISION NOT NULL DEFAULT 0, " +
+                "progress_target DOUBLE PRECISION NOT NULL DEFAULT 0, " +
+                "unlocked_at TIMESTAMP, " +
+                "updated_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "CONSTRAINT uk_user_achievement UNIQUE (user_id, achievement_id)" +
+                ")");
+        runSilently(dataSource, "CREATE INDEX IF NOT EXISTS idx_user_achievements_user ON user_achievements (user_id)");
+
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS user_stat_counters (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "user_id BIGINT NOT NULL, " +
+                "counter_key VARCHAR(60) NOT NULL, " +
+                "counter_value DOUBLE PRECISION NOT NULL DEFAULT 0, " +
+                "updated_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "CONSTRAINT uk_user_stat_counter UNIQUE (user_id, counter_key)" +
+                ")");
+
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS streaks (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "user_id BIGINT NOT NULL, " +
+                "streak_type VARCHAR(30) NOT NULL, " +
+                "current_streak INTEGER NOT NULL DEFAULT 0, " +
+                "longest_streak INTEGER NOT NULL DEFAULT 0, " +
+                "last_activity_date DATE, " +
+                "updated_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "CONSTRAINT uk_streaks_user_type UNIQUE (user_id, streak_type)" +
+                ")");
+
+        // Seed data — a curated, illustrative starting set; more can be added later via pure
+        // inserts at existing metrics/thresholds, no code changes required. ON CONFLICT DO NOTHING
+        // (raw SQL against this JDBC-migration file only, not a new pattern for application code)
+        // keeps this idempotent across every restart.
+        runSilently(dataSource, "INSERT INTO achievement_definitions " +
+                "(code, category, name, description, icon, tier_color, criteria_type, metric_key, threshold, xp_reward, is_milestone) VALUES " +
+                "('TXN_FIRST','Transactions','First Transaction','Log your very first transaction','fa-receipt','bronze','COUNT','transactions.count',1,10,TRUE)," +
+                "('TXN_100','Transactions','Century Logger','Log 100 transactions','fa-receipt','bronze','COUNT','transactions.count',100,20,FALSE)," +
+                "('TXN_500','Transactions','Transaction Veteran','Log 500 transactions','fa-receipt','silver','COUNT','transactions.count',500,40,FALSE)," +
+                "('TXN_1000','Transactions','Transaction Master','Log 1000 transactions','fa-receipt','gold','COUNT','transactions.count',1000,80,FALSE)," +
+                "('SAV_10K','Savings','Bronze Saver','Save ৳ 10,000 in total','fa-piggy-bank','bronze','CUMULATIVE_SUM','savings.total',10000,30,FALSE)," +
+                "('SAV_50K','Savings','Silver Saver','Save ৳ 50,000 in total','fa-piggy-bank','silver','CUMULATIVE_SUM','savings.total',50000,60,FALSE)," +
+                "('SAV_100K','Savings','Gold Saver','Save ৳ 1,00,000 in total','fa-piggy-bank','gold','CUMULATIVE_SUM','savings.total',100000,100,FALSE)," +
+                "('BUDGET_FIRST','Budget','Budget Beginner','Create your first budget','fa-wallet','bronze','COUNT','budget.plans_created',1,20,TRUE)," +
+                "('BUDGET_3MO','Budget','Budget Disciplined','Stay within budget for 3 consecutive months','fa-wallet','silver','CONSECUTIVE_PERIODS','budget.consecutive_months_within',3,100,FALSE)," +
+                "('BUDGET_6MO','Budget','Budget Master','Stay within budget for 6 consecutive months','fa-wallet','gold','CONSECUTIVE_PERIODS','budget.consecutive_months_within',6,150,FALSE)," +
+                "('BUDGET_12MO','Budget','Budget Legend','Stay within budget for 12 consecutive months','fa-wallet','diamond','CONSECUTIVE_PERIODS','budget.consecutive_months_within',12,300,FALSE)," +
+                "('NW_1L','Net Worth','Six Figures','Reach ৳ 1,00,000 net worth','fa-chart-line','bronze','SINGLE_VALUE_REACHED','networth.value',100000,40,FALSE)," +
+                "('NW_5L','Net Worth','Half Millionaire','Reach ৳ 5,00,000 net worth','fa-chart-line','silver','SINGLE_VALUE_REACHED','networth.value',500000,80,FALSE)," +
+                "('NW_10L','Net Worth','Millionaire','Reach ৳ 10,00,000 net worth','fa-chart-line','gold','SINGLE_VALUE_REACHED','networth.value',1000000,150,TRUE)," +
+                "('NW_GROWTH25','Net Worth','Rising Star','Grow your net worth by 25%','fa-arrow-trend-up','silver','SINGLE_VALUE_REACHED','networth.growth_percent',25,60,FALSE)," +
+                "('INV_FIRST','Investments','First Investment','Log your first investment','fa-coins','bronze','COUNT','investments.count',1,30,TRUE)," +
+                "('INV_50K','Investments','Growing Portfolio','Reach ৳ 50,000 portfolio value','fa-coins','silver','SINGLE_VALUE_REACHED','investments.portfolio_value',50000,60,FALSE)," +
+                "('INV_100K','Investments','Serious Investor','Reach ৳ 1,00,000 portfolio value','fa-coins','gold','SINGLE_VALUE_REACHED','investments.portfolio_value',100000,100,FALSE)," +
+                "('INV_DIVERSIFIED','Investments','Diversified Investor','Invest in 3 or more different asset types','fa-layer-group','gold','COUNT','investments.distinct_types',3,50,FALSE)," +
+                "('LOAN_FIRST_PAID','Loans','Debt Payer','Pay off your first loan','fa-hand-holding-dollar','bronze','COUNT','loans.paid_off_count',1,40,TRUE)," +
+                "('LOAN_50PCT','Loans','Halfway There','Reduce total debt by 50%','fa-hand-holding-dollar','silver','SINGLE_VALUE_REACHED','loans.debt_reduced_percent',50,60,FALSE)," +
+                "('LOAN_DEBT_FREE','Loans','Debt Free','Pay off all your loans','fa-hand-holding-dollar','diamond','SINGLE_VALUE_REACHED','loans.debt_free',1,200,TRUE)," +
+                "('CC_UTIL_30','Credit Cards','Credit Conscious','Keep credit utilization below 30%','fa-credit-card','silver','SINGLE_VALUE_REACHED','creditcard.headroom_percent',70,50,FALSE)," +
+                "('ASSET_FIRST_GOLD','Assets','Gold Beginner','Purchase your first gold asset','fa-gem','bronze','COUNT','assets.count',1,20,TRUE)," +
+                "('ASSET_50K','Assets','Asset Builder','Reach ৳ 50,000 in total asset value','fa-gem','silver','SINGLE_VALUE_REACHED','assets.total_value',50000,50,FALSE)," +
+                "('GOAL_FIRST','Goals','Goal Getter','Complete your first goal','fa-bullseye','bronze','COUNT','goals.completed_count',1,50,TRUE)," +
+                "('GOAL_5','Goals','Goal Crusher','Complete 5 goals','fa-bullseye','gold','COUNT','goals.completed_count',5,150,FALSE)," +
+                "('AI_10','AI Usage','AI Curious','Use the AI Assistant 10 times','fa-robot','bronze','COUNT','ai.conversations_count',10,20,FALSE)," +
+                "('AI_100','AI Usage','AI Power User','Use the AI Assistant 100 times','fa-robot','gold','COUNT','ai.conversations_count',100,80,FALSE)," +
+                "('NOTE_10','Notes','Note Taker','Create 10 notes','fa-sticky-note','bronze','COUNT','notes.count',10,15,FALSE)," +
+                "('NOTE_100','Notes','Prolific Writer','Create 100 notes','fa-sticky-note','gold','COUNT','notes.count',100,60,FALSE)," +
+                "('TODO_10','Productivity','Getting Things Done','Complete 10 to-dos','fa-list-check','bronze','COUNT','todos.completed_count',10,15,FALSE)," +
+                "('TODO_100','Productivity','Productivity Pro','Complete 100 to-dos','fa-list-check','gold','COUNT','todos.completed_count',100,60,FALSE)," +
+                "('RECEIPT_10','Productivity','Receipt Rookie','Scan 10 receipts','fa-camera','bronze','COUNT','receipts.scanned_count',10,15,FALSE)," +
+                "('RECEIPT_100','Productivity','Receipt Master','Scan 100 receipts','fa-camera','gold','COUNT','receipts.scanned_count',100,60,FALSE)," +
+                "('STREAK_7','Consistency','Week Warrior','Stay active 7 days in a row','fa-fire','bronze','STREAK_DAYS','streak.daily_active',7,30,FALSE)," +
+                "('STREAK_30','Consistency','Monthly Habit','Stay active 30 days in a row','fa-fire','silver','STREAK_DAYS','streak.daily_active',30,80,FALSE)," +
+                "('STREAK_100','Consistency','Centurion','Stay active 100 days in a row','fa-fire','gold','STREAK_DAYS','streak.daily_active',100,200,FALSE) " +
+                "ON CONFLICT (code) DO NOTHING");
+
+        // ============== Gamification: Monthly Challenges (Stage 2) ==============
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS challenge_definitions (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "code VARCHAR(40) NOT NULL, " +
+                "scope VARCHAR(10) NOT NULL DEFAULT 'MONTHLY', " +
+                "name VARCHAR(100) NOT NULL, " +
+                "description VARCHAR(255) NOT NULL, " +
+                "metric_key VARCHAR(60) NOT NULL, " +
+                "target_value DOUBLE PRECISION NOT NULL, " +
+                "xp_reward INTEGER NOT NULL, " +
+                "active BOOLEAN NOT NULL DEFAULT TRUE, " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "CONSTRAINT uk_challenge_code UNIQUE (code)" +
+                ")");
+
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS user_challenges (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "user_id BIGINT NOT NULL, " +
+                "challenge_id BIGINT NOT NULL, " +
+                "period_key VARCHAR(10) NOT NULL, " +
+                "progress_current DOUBLE PRECISION NOT NULL DEFAULT 0, " +
+                "target_value DOUBLE PRECISION NOT NULL, " +
+                "status VARCHAR(15) NOT NULL DEFAULT 'IN_PROGRESS', " +
+                "completed_at TIMESTAMP, " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "updated_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "CONSTRAINT uk_user_challenge_period UNIQUE (user_id, challenge_id, period_key)" +
+                ")");
+
+        runSilently(dataSource, "INSERT INTO challenge_definitions " +
+                "(code, name, description, metric_key, target_value, xp_reward) VALUES " +
+                "('CH_TXN_20','Transaction Tracker','Log 20 transactions this month','transactions.count',20,30)," +
+                "('CH_SAVE_2K','Savings Sprint','Save ৳ 2,000 this month','savings.total',2000,40)," +
+                "('CH_TODO_10','Todo Finisher','Complete 10 to-dos this month','todos.completed_count',10,25)," +
+                "('CH_RECEIPT_3','Receipt Ready','Scan 3 receipts this month','receipts.scanned_count',3,20)," +
+                "('CH_NOTE_5','Note Taker','Create 5 notes this month','notes.count',5,15) " +
+                "ON CONFLICT (code) DO NOTHING");
     }
 
     private void runSilently(DataSource dataSource, String sql) {

@@ -8,9 +8,12 @@ import org.example.finzin.ai.rag.SemanticSearchService;
 import org.example.finzin.entity.AiConversationEntity;
 import org.example.finzin.entity.AiMessageEntity;
 import org.example.finzin.entity.AiSettingsEntity;
+import org.example.finzin.gamification.GamificationEvent;
+import org.example.finzin.gamification.GamificationEventType;
 import org.jsoup.Jsoup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -49,13 +52,15 @@ public class AIService {
     private final SemanticSearchService semanticSearchService;
     private final RetrievalContextBuilder retrievalContextBuilder;
     private final QueryEmbeddingCache queryEmbeddingCache;
+    private final ApplicationEventPublisher eventPublisher;
 
     private final Map<Long, Deque<Instant>> userRequestTimestamps = new ConcurrentHashMap<>();
 
     public AIService(PromptBuilder promptBuilder, OpenAIClient openAIClient, FinancialToolExecutor toolExecutor,
                       ConversationService conversationService, AiSettingsService aiSettingsService, ObjectMapper objectMapper,
                       EmbeddingClient embeddingClient, SemanticSearchService semanticSearchService,
-                      RetrievalContextBuilder retrievalContextBuilder, QueryEmbeddingCache queryEmbeddingCache) {
+                      RetrievalContextBuilder retrievalContextBuilder, QueryEmbeddingCache queryEmbeddingCache,
+                      ApplicationEventPublisher eventPublisher) {
         this.promptBuilder = promptBuilder;
         this.openAIClient = openAIClient;
         this.toolExecutor = toolExecutor;
@@ -66,6 +71,7 @@ public class AIService {
         this.semanticSearchService = semanticSearchService;
         this.retrievalContextBuilder = retrievalContextBuilder;
         this.queryEmbeddingCache = queryEmbeddingCache;
+        this.eventPublisher = eventPublisher;
     }
 
     public static class ChatResult {
@@ -152,6 +158,8 @@ public class AIService {
             }
 
             conversationService.appendMessage(convId, userId, "assistant", assistantText, null);
+            eventPublisher.publishEvent(new GamificationEvent(userId, GamificationEventType.AI_CONVERSATION_COMPLETED,
+                    Map.of("conversationId", convId)));
 
             long durationMs = Duration.between(startedAt, Instant.now()).toMillis();
             Map<String, Integer> usage = extractUsage(response);

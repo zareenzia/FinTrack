@@ -60,6 +60,13 @@ public class AccountDeletionService {
     private final AiSettingsRepository aiSettingsRepository;
     private final VoiceCommandHistoryRepository voiceCommandHistoryRepository;
     private final VoiceSettingsRepository voiceSettingsRepository;
+    private final org.example.finzin.repository.GamificationSettingsRepository gamificationSettingsRepository;
+    private final org.example.finzin.repository.UserXpRepository userXpRepository;
+    private final org.example.finzin.repository.XpHistoryRepository xpHistoryRepository;
+    private final org.example.finzin.repository.UserAchievementRepository userAchievementRepository;
+    private final org.example.finzin.repository.UserStatCounterRepository userStatCounterRepository;
+    private final org.example.finzin.repository.StreakRepository streakRepository;
+    private final org.example.finzin.repository.UserChallengeRepository userChallengeRepository;
 
     @Value("${app.upload.dir:user-uploads/profiles}")
     private String profileUploadDir;
@@ -78,7 +85,14 @@ public class AccountDeletionService {
             SidebarPreferenceRepository sidebarPreferenceRepository, AppearancePreferenceRepository appearancePreferenceRepository,
             AiConversationRepository aiConversationRepository, AiMessageRepository aiMessageRepository,
             AiDocumentEmbeddingRepository aiDocumentEmbeddingRepository, AiSettingsRepository aiSettingsRepository,
-            VoiceCommandHistoryRepository voiceCommandHistoryRepository, VoiceSettingsRepository voiceSettingsRepository) {
+            VoiceCommandHistoryRepository voiceCommandHistoryRepository, VoiceSettingsRepository voiceSettingsRepository,
+            org.example.finzin.repository.GamificationSettingsRepository gamificationSettingsRepository,
+            org.example.finzin.repository.UserXpRepository userXpRepository,
+            org.example.finzin.repository.XpHistoryRepository xpHistoryRepository,
+            org.example.finzin.repository.UserAchievementRepository userAchievementRepository,
+            org.example.finzin.repository.UserStatCounterRepository userStatCounterRepository,
+            org.example.finzin.repository.StreakRepository streakRepository,
+            org.example.finzin.repository.UserChallengeRepository userChallengeRepository) {
         this.userRepository = userRepository;
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
@@ -111,6 +125,13 @@ public class AccountDeletionService {
         this.aiSettingsRepository = aiSettingsRepository;
         this.voiceCommandHistoryRepository = voiceCommandHistoryRepository;
         this.voiceSettingsRepository = voiceSettingsRepository;
+        this.gamificationSettingsRepository = gamificationSettingsRepository;
+        this.userXpRepository = userXpRepository;
+        this.xpHistoryRepository = xpHistoryRepository;
+        this.userAchievementRepository = userAchievementRepository;
+        this.userStatCounterRepository = userStatCounterRepository;
+        this.streakRepository = streakRepository;
+        this.userChallengeRepository = userChallengeRepository;
     }
 
     @Transactional
@@ -165,6 +186,14 @@ public class AccountDeletionService {
 
         sidebarPreferenceRepository.deleteByUserId(userId);
         appearancePreferenceRepository.deleteByUserId(userId);
+
+        xpHistoryRepository.deleteByUserId(userId);
+        userXpRepository.deleteByUserId(userId);
+        userAchievementRepository.deleteByUserId(userId);
+        userStatCounterRepository.deleteByUserId(userId);
+        streakRepository.deleteByUserId(userId);
+        userChallengeRepository.deleteByUserId(userId);
+        gamificationSettingsRepository.deleteByUserId(userId);
 
         userRepository.findById(userId).ifPresent(user -> deleteProfilePictureFile(user));
         userRepository.deleteById(userId);

@@ -17,6 +17,9 @@ import org.example.finzin.service.FinancialSummaryService;
 import org.example.finzin.service.AccountBalanceService;
 import org.example.finzin.service.CreditCardValidationException;
 import org.example.finzin.ai.rag.DocumentIndexer;
+import org.example.finzin.gamification.GamificationEvent;
+import org.example.finzin.gamification.GamificationEventType;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -54,8 +57,9 @@ public class FinanceApiController {
     private final DocumentIndexer documentIndexer;
     private final AccountBalanceService accountBalanceService;
     private final AccountRepository accountRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public FinanceApiController(CategoryRepository categoryRepository, TransactionRepository transactionRepository, AssetRepository assetRepository, NoteRepository noteRepository, TodoRepository todoRepository, FinancialSummaryService financialSummaryService, DocumentIndexer documentIndexer, AccountBalanceService accountBalanceService, AccountRepository accountRepository) {
+    public FinanceApiController(CategoryRepository categoryRepository, TransactionRepository transactionRepository, AssetRepository assetRepository, NoteRepository noteRepository, TodoRepository todoRepository, FinancialSummaryService financialSummaryService, DocumentIndexer documentIndexer, AccountBalanceService accountBalanceService, AccountRepository accountRepository, ApplicationEventPublisher eventPublisher) {
         this.categoryRepository = categoryRepository;
         this.transactionRepository = transactionRepository;
         this.assetRepository = assetRepository;
@@ -65,6 +69,7 @@ public class FinanceApiController {
         this.documentIndexer = documentIndexer;
         this.accountBalanceService = accountBalanceService;
         this.accountRepository = accountRepository;
+        this.eventPublisher = eventPublisher;
     }
     
     private Long getUserId(HttpServletRequest request) {
@@ -448,6 +453,8 @@ public class FinanceApiController {
 
         NoteEntity saved = noteRepository.save(entity);
         documentIndexer.indexNote(saved);
+        eventPublisher.publishEvent(new GamificationEvent(userId, GamificationEventType.NOTE_CREATED,
+                Map.of("noteId", saved.getId())));
         return ResponseEntity.status(HttpStatus.CREATED).body(toNoteResponse(saved));
     }
 
@@ -559,6 +566,8 @@ public class FinanceApiController {
             return ResponseEntity.notFound().build();
         }
 
+        boolean wasCompleted = Boolean.TRUE.equals(entity.getCompleted());
+
         if (body.title != null && !body.title.isBlank()) {
             entity.setTitle(body.title.trim());
         }
@@ -592,6 +601,10 @@ public class FinanceApiController {
 
         TodoEntity updated = todoRepository.save(entity);
         documentIndexer.indexTodo(updated);
+        if (!wasCompleted && Boolean.TRUE.equals(updated.getCompleted())) {
+            eventPublisher.publishEvent(new GamificationEvent(userId, GamificationEventType.TODO_COMPLETED,
+                    Map.of("todoId", updated.getId())));
+        }
         return ResponseEntity.ok(toTodoResponse(updated));
     }
 

@@ -5,10 +5,13 @@ import org.example.finzin.entity.InvestmentEntity;
 import org.example.finzin.entity.LoanEntity;
 import org.example.finzin.entity.SubscriptionEntity;
 import org.example.finzin.entity.WishlistGoalEntity;
+import org.example.finzin.gamification.GamificationEvent;
+import org.example.finzin.gamification.GamificationEventType;
 import org.example.finzin.repository.InvestmentRepository;
 import org.example.finzin.repository.LoanRepository;
 import org.example.finzin.repository.SubscriptionRepository;
 import org.example.finzin.repository.WishlistGoalRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,15 +29,18 @@ public class FinancialPlannerApiController {
     private final LoanRepository loanRepository;
     private final SubscriptionRepository subscriptionRepository;
     private final WishlistGoalRepository wishlistGoalRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public FinancialPlannerApiController(InvestmentRepository investmentRepository,
                                          LoanRepository loanRepository,
                                          SubscriptionRepository subscriptionRepository,
-                                         WishlistGoalRepository wishlistGoalRepository) {
+                                         WishlistGoalRepository wishlistGoalRepository,
+                                         ApplicationEventPublisher eventPublisher) {
         this.investmentRepository = investmentRepository;
         this.loanRepository = loanRepository;
         this.subscriptionRepository = subscriptionRepository;
         this.wishlistGoalRepository = wishlistGoalRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     private Long getUserId(HttpServletRequest request) {
@@ -108,6 +114,8 @@ public class FinancialPlannerApiController {
             entity.setUserId(userId);
             mapToInvestment(body, entity);
             InvestmentEntity saved = investmentRepository.save(entity);
+            eventPublisher.publishEvent(new GamificationEvent(userId, GamificationEventType.INVESTMENT_CREATED,
+                    Map.of("investmentId", saved.getId())));
             return ResponseEntity.status(HttpStatus.CREATED).body(toInvestmentMap(saved));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -230,9 +238,16 @@ public class FinancialPlannerApiController {
                 .map(entity -> {
                     double payment = entity.getEmiAmount() != null ? entity.getEmiAmount() : 0;
                     double newBalance = Math.max(0, entity.getRemainingBalance() - payment);
+                    boolean paidOff = newBalance == 0;
                     entity.setRemainingBalance(newBalance);
-                    if (newBalance == 0) entity.setStatus("CLOSED");
-                    return ResponseEntity.ok(toLoanMap(loanRepository.save(entity)));
+                    if (paidOff) entity.setStatus("CLOSED");
+                    LoanEntity saved = loanRepository.save(entity);
+                    eventPublisher.publishEvent(new GamificationEvent(userId, GamificationEventType.LOAN_EMI_PAID, Map.of(
+                            "loanId", saved.getId(),
+                            "newBalance", newBalance,
+                            "paidOff", paidOff
+                    )));
+                    return ResponseEntity.ok(toLoanMap(saved));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -412,8 +427,14 @@ public class FinancialPlannerApiController {
         return wishlistGoalRepository.findById(id)
                 .filter(e -> e.getUserId().equals(userId))
                 .map(entity -> {
+                    boolean wasCompleted = "COMPLETED".equals(entity.getStatus());
                     mapToGoal(body, entity);
-                    return ResponseEntity.ok(toGoalMap(wishlistGoalRepository.save(entity)));
+                    WishlistGoalEntity saved = wishlistGoalRepository.save(entity);
+                    if (!wasCompleted && "COMPLETED".equals(saved.getStatus())) {
+                        eventPublisher.publishEvent(new GamificationEvent(userId, GamificationEventType.GOAL_COMPLETED,
+                                Map.of("goalId", saved.getId())));
+                    }
+                    return ResponseEntity.ok(toGoalMap(saved));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -437,9 +458,15 @@ public class FinancialPlannerApiController {
         return wishlistGoalRepository.findById(id)
                 .filter(e -> e.getUserId().equals(userId))
                 .map(entity -> {
+                    boolean wasCompleted = "COMPLETED".equals(entity.getStatus());
                     entity.setStatus("COMPLETED");
                     entity.setSavedAmount(entity.getTargetAmount());
-                    return ResponseEntity.ok(toGoalMap(wishlistGoalRepository.save(entity)));
+                    WishlistGoalEntity saved = wishlistGoalRepository.save(entity);
+                    if (!wasCompleted) {
+                        eventPublisher.publishEvent(new GamificationEvent(userId, GamificationEventType.GOAL_COMPLETED,
+                                Map.of("goalId", saved.getId())));
+                    }
+                    return ResponseEntity.ok(toGoalMap(saved));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -452,7 +479,17 @@ public class FinancialPlannerApiController {
         String td = (String) body.get("targetDate");
         entity.setTargetDate(td != null && !td.isBlank() ? LocalDate.parse(td) : null);
         entity.setPriority(body.get("priority") != null ? (String) body.get("priority") : "MEDIUM");
-        entity.setStatus(body.get("status") != null ? (String) body.get("status") : "IN_PROGRESS");
+        // Bug fix (found while wiring the gamification GOAL_COMPLETED hook): this used to
+        // unconditionally default to "IN_PROGRESS" whenever the request omitted status, which
+        // silently reset an already-COMPLETED goal back to IN_PROGRESS on any generic PUT that
+        // didn't resend it. Only a brand-new entity (status still null before this call) should
+        // get the default; an existing entity's status is left alone unless the request actually
+        // changes it — matching the partial-update convention already used by updateTodo.
+        if (body.get("status") != null) {
+            entity.setStatus((String) body.get("status"));
+        } else if (entity.getStatus() == null) {
+            entity.setStatus("IN_PROGRESS");
+        }
         entity.setIcon((String) body.get("icon"));
         entity.setNotes((String) body.get("notes"));
     }
