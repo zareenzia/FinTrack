@@ -3,6 +3,8 @@ package org.example.finzin.ai;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.example.finzin.gamification.ChallengeService;
+import org.example.finzin.gamification.GamificationQueryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -30,16 +32,21 @@ public class FinancialToolExecutor {
     private final InsightService insightService;
     private final RecommendationService recommendationService;
     private final MonthlyReportService monthlyReportService;
+    private final GamificationQueryService gamificationQueryService;
+    private final ChallengeService challengeService;
     private final ObjectMapper objectMapper;
 
     public FinancialToolExecutor(FinancialContextService financialContextService, FinancialHealthService financialHealthService,
                                   InsightService insightService, RecommendationService recommendationService,
-                                  MonthlyReportService monthlyReportService, ObjectMapper objectMapper) {
+                                  MonthlyReportService monthlyReportService, GamificationQueryService gamificationQueryService,
+                                  ChallengeService challengeService, ObjectMapper objectMapper) {
         this.financialContextService = financialContextService;
         this.financialHealthService = financialHealthService;
         this.insightService = insightService;
         this.recommendationService = recommendationService;
         this.monthlyReportService = monthlyReportService;
+        this.gamificationQueryService = gamificationQueryService;
+        this.challengeService = challengeService;
         this.objectMapper = objectMapper;
     }
 
@@ -80,7 +87,16 @@ public class FinancialToolExecutor {
                         Map.of()),
                 tool("getMonthlyReport", "Returns a structured monthly report: income/expense/savings summary, asset growth, budget performance, " +
                                 "category analysis, top purchases, financial health, recommendations, and goals for next month.",
-                        Map.of("month", strParam("Month in YYYY-MM format. Omit for the current month.")), List.of())
+                        Map.of("month", strParam("Month in YYYY-MM format. Omit for the current month.")), List.of()),
+                tool("getGamificationStatus", "Returns the user's gamification status: level, XP, XP needed for the next level, " +
+                                "daily-active streak, and how many achievements they've unlocked out of the total.",
+                        Map.of()),
+                tool("getAchievementProgress", "Returns the achievements the user is closest to unlocking next, with their current progress " +
+                                "toward each one's threshold. Use this to answer \"what achievements am I close to?\" or \"how do I level up?\".",
+                        Map.of("limit", intParam("How many nearest achievements to return (default 5, max 20).")), List.of()),
+                tool("suggestChallenges", "Returns the user's active monthly challenges and current progress toward each — use this to suggest " +
+                                "what the user could focus on this month.",
+                        Map.of())
         );
     }
 
@@ -106,6 +122,9 @@ public class FinancialToolExecutor {
                 case "getBudgetCoachAdvice" -> toMap(recommendationService.getBudgetCoachAdvice(userId));
                 case "getSavingsCoachAdvice" -> toMap(recommendationService.getSavingsCoachAdvice(userId));
                 case "getMonthlyReport" -> toMap(monthlyReportService.generate(userId, textOrNull(args, "month")));
+                case "getGamificationStatus" -> gamificationQueryService.summary(userId);
+                case "getAchievementProgress" -> Map.of("achievements", gamificationQueryService.nearestToUnlocking(userId, intOrDefault(args, "limit", 5)));
+                case "suggestChallenges" -> Map.of("challenges", challengeService.getCurrentChallengesWithDefinitions(userId));
                 default -> Map.of("error", "Unknown tool: " + toolName);
             };
         } catch (Exception e) {

@@ -3,10 +3,13 @@ package org.example.finzin.web;
 import jakarta.servlet.http.HttpServletRequest;
 import org.example.finzin.entity.GoldAssetEntity;
 import org.example.finzin.entity.GoldPriceEntity;
+import org.example.finzin.gamification.GamificationEvent;
+import org.example.finzin.gamification.GamificationEventType;
 import org.example.finzin.repository.GoldPriceRepository;
 import org.example.finzin.service.gold.GoldAssetService;
 import org.example.finzin.service.gold.GoldPriceSyncService;
 import org.example.finzin.service.gold.GoldWeightConverter;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,13 +28,16 @@ public class GoldAssetApiController {
     private final GoldAssetService assetService;
     private final GoldPriceSyncService syncService;
     private final GoldPriceRepository priceRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public GoldAssetApiController(GoldAssetService assetService,
                                   GoldPriceSyncService syncService,
-                                  GoldPriceRepository priceRepository) {
+                                  GoldPriceRepository priceRepository,
+                                  ApplicationEventPublisher eventPublisher) {
         this.assetService    = assetService;
         this.syncService     = syncService;
         this.priceRepository = priceRepository;
+        this.eventPublisher  = eventPublisher;
     }
 
     private Long getUserId(HttpServletRequest request) {
@@ -67,6 +73,8 @@ public class GoldAssetApiController {
 
         GoldAssetEntity entity = fromRequest(body, userId);
         GoldAssetEntity saved = assetService.createAsset(entity);
+        eventPublisher.publishEvent(new GamificationEvent(userId, GamificationEventType.GOLD_ASSET_CREATED,
+                Map.of("assetId", saved.getId())));
         return ResponseEntity.status(HttpStatus.CREATED).body(toAssetResponse(saved, userId));
     }
 

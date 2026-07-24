@@ -17,6 +17,12 @@
     --light-color:     #ecf0f1;
     --dark-color:      #18230F;
 
+    /* ===== Gamification Tier Colors (constant - a gold badge stays gold in every theme) ===== */
+    --tier-bronze:  #CD7F32;
+    --tier-silver:  #A8A9AD;
+    --tier-gold:    #D4AF37;
+    --tier-diamond: #7DD3FC;
+
     /* ===== Stat Card Palette (always Surface-based, theme-agnostic) ===== */
     --stat-card-bg:          var(--color-surface);
     --stat-card-border:      var(--color-accent);

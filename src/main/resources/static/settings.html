@@ -183,6 +183,9 @@
         <a class="settings-nav-item" data-section="voice-assistant" href="#">
           <i class="fas fa-microphone"></i> Voice Assistant
         </a>
+        <a class="settings-nav-item" data-section="gamification" href="#">
+          <i class="fas fa-trophy"></i> Achievements
+        </a>
         <a class="settings-nav-item" data-section="security" href="#">
           <i class="fas fa-shield-alt"></i> Privacy &amp; Security
         </a>
@@ -878,6 +881,58 @@
           </div>
         </section>
 
+        <!-- ===== ACHIEVEMENTS (Gamification) ===== -->
+        <section class="settings-section" id="section-gamification">
+          <div class="settings-section-heading"><i class="fas fa-trophy" style="color:var(--accent-color)"></i> Achievements</div>
+          <p class="settings-section-desc">Control XP, levels, achievements, streaks, and monthly challenges — purely observational, never affects your financial data.</p>
+
+          <div class="card mb-3">
+            <div class="card-body">
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" role="switch" id="gamificationSettingsEnabled">
+                <label class="form-check-label" for="gamificationSettingsEnabled">Enable Gamification</label>
+                <div><small class="text-muted">Turns off XP, achievements, streaks, and challenges entirely.</small></div>
+              </div>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="gamificationSettingsNotifications">
+                <label class="form-check-label" for="gamificationSettingsNotifications">Achievement Notifications</label>
+              </div>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="gamificationSettingsDashboardWidget">
+                <label class="form-check-label" for="gamificationSettingsDashboardWidget">Show Dashboard Widget</label>
+              </div>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="gamificationSettingsCelebrations">
+                <label class="form-check-label" for="gamificationSettingsCelebrations">Milestone Celebrations</label>
+              </div>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="gamificationSettingsChallenges">
+                <label class="form-check-label" for="gamificationSettingsChallenges">Enable Monthly Challenges</label>
+              </div>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="gamificationSettingsStreakTracking">
+                <label class="form-check-label" for="gamificationSettingsStreakTracking">Enable Streak Tracking</label>
+              </div>
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" role="switch" id="gamificationSettingsShowXp">
+                <label class="form-check-label" for="gamificationSettingsShowXp">Show XP Numbers</label>
+              </div>
+
+              <button type="button" class="btn btn-primary mt-1" id="gamificationSettingsSaveBtn">
+                <i class="fas fa-save me-1"></i>Save Achievement Settings
+              </button>
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <div class="settings-card-title"><i class="fas fa-exclamation-triangle"></i> Reset Progress</div>
+            <p class="text-muted small">Permanently clears all XP, levels, unlocked achievements, streaks, and challenge progress. This cannot be undone.</p>
+            <button class="btn btn-danger" id="gamificationResetBtn">
+              <i class="fas fa-rotate-left me-1"></i>Reset My Progress
+            </button>
+          </div>
+        </section>
+
         <!-- ===== ABOUT ===== -->
         <section class="settings-section" id="section-about">
           <div class="settings-section-heading"><i class="fas fa-info-circle" style="color:var(--accent-color)"></i> About FinTrack</div>
@@ -1340,6 +1395,7 @@ document.querySelectorAll('.settings-nav-item').forEach(function(item){
     if (section === 'ai-assistant') loadAiSettings();
     if (section === 'receipt-scanner') loadReceiptScannerSettings();
     if (section === 'voice-assistant') { loadVoiceAssistantSettings(); loadVoiceHistory(); }
+    if (section === 'gamification') loadGamificationSettings();
   });
 });
 
@@ -1450,6 +1506,53 @@ document.getElementById('voiceSettingsSaveBtn').addEventListener('click', functi
       return r.json().then(function(err){ showNotification((err && err.error) || 'Failed to save Voice Assistant settings.', 'danger'); });
     }
   }).catch(function(){ showNotification('Unable to save Voice Assistant settings right now.', 'danger'); });
+});
+
+// ============== Achievements (Gamification) ==============
+function loadGamificationSettings() {
+  fetch('/api/gamification/settings').then(function(r){ return r.json(); }).then(function(s){
+    document.getElementById('gamificationSettingsEnabled').checked = s.enabled !== false;
+    document.getElementById('gamificationSettingsNotifications').checked = s.enableNotifications !== false;
+    document.getElementById('gamificationSettingsDashboardWidget').checked = s.showDashboardWidget !== false;
+    document.getElementById('gamificationSettingsCelebrations').checked = s.enableCelebrations !== false;
+    document.getElementById('gamificationSettingsChallenges').checked = s.enableChallenges !== false;
+    document.getElementById('gamificationSettingsStreakTracking').checked = s.enableStreakTracking !== false;
+    document.getElementById('gamificationSettingsShowXp').checked = s.showXp !== false;
+  }).catch(function(){ showNotification('Unable to load Achievement settings.', 'danger'); });
+}
+
+document.getElementById('gamificationSettingsSaveBtn').addEventListener('click', function(){
+  var body = {
+    enabled: document.getElementById('gamificationSettingsEnabled').checked,
+    enableNotifications: document.getElementById('gamificationSettingsNotifications').checked,
+    showDashboardWidget: document.getElementById('gamificationSettingsDashboardWidget').checked,
+    enableCelebrations: document.getElementById('gamificationSettingsCelebrations').checked,
+    enableChallenges: document.getElementById('gamificationSettingsChallenges').checked,
+    enableStreakTracking: document.getElementById('gamificationSettingsStreakTracking').checked,
+    showXp: document.getElementById('gamificationSettingsShowXp').checked
+  };
+  fetch('/api/gamification/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  }).then(function(r){
+    if (r.ok) {
+      showNotification('Achievement settings saved.', 'success');
+    } else {
+      return r.json().then(function(err){ showNotification((err && err.error) || 'Failed to save Achievement settings.', 'danger'); });
+    }
+  }).catch(function(){ showNotification('Unable to save Achievement settings right now.', 'danger'); });
+});
+
+document.getElementById('gamificationResetBtn').addEventListener('click', function(){
+  confirmAction('Permanently reset all XP, levels, achievements, streaks, and challenge progress? This cannot be undone.',
+      { title: 'Reset Progress', confirmText: 'Reset Progress', confirmClass: 'btn-danger' }).then(function(confirmed){
+    if (!confirmed) return;
+    fetch('/api/gamification/reset', { method: 'DELETE' }).then(function(r){
+      if (r.ok) showNotification('Achievement progress reset.', 'success');
+      else showNotification('Failed to reset progress.', 'danger');
+    }).catch(function(){ showNotification('Unable to reset progress right now.', 'danger'); });
+  });
 });
 
 var VOICE_INTENT_ICONS = {

@@ -5,18 +5,32 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.example.finzin.gamification.GamificationEvent;
+import org.example.finzin.gamification.GamificationEventType;
 import org.example.finzin.service.JwtTokenProvider;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtTokenProvider jwtTokenProvider;
-    
-    public JwtAuthFilter(JwtTokenProvider jwtTokenProvider) {
+    private final ApplicationEventPublisher eventPublisher;
+
+    // Guards the DAILY_ACTIVE publish so it only does real work once per user per day, keeping
+    // this cheap on the hot request path — the DB-level xp_history unique constraint is the
+    // actual source of truth for dedup (this map isn't persisted, an app restart re-arms it,
+    // which is harmless for exactly that reason).
+    private final Map<Long, LocalDate> lastActiveDayByUser = new ConcurrentHashMap<>();
+
+    public JwtAuthFilter(JwtTokenProvider jwtTokenProvider, ApplicationEventPublisher eventPublisher) {
         this.jwtTokenProvider = jwtTokenProvider;
+        this.eventPublisher = eventPublisher;
     }
     
     @Override
@@ -72,6 +86,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 if (userId != null) {
                     request.setAttribute("userId", userId);
                     System.out.println("✓ UserId set to: " + userId + " for: " + requestURI);
+                    markDailyActive(userId);
                 } else {
                     System.out.println("⚠️ Could not extract userId from token for: " + requestURI);
                 }
@@ -83,5 +98,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
         
         filterChain.doFilter(request, response);
+    }
+
+    private void markDailyActive(Long userId) {
+        LocalDate today = LocalDate.now();
+        LocalDate previous = lastActiveDayByUser.put(userId, today);
+        if (today.equals(previous)) return; // already recorded today, skip without touching the DB
+        eventPublisher.publishEvent(new GamificationEvent(userId, GamificationEventType.DAILY_ACTIVE, Map.of()));
     }
 }
