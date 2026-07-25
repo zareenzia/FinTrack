@@ -75,44 +75,158 @@
             z-index: 1;
         }
 
-        .stat-item {
+        .d-none { display: none !important; }
+
+        /* ── App Insights Slideshow ─────────────────────────────────── */
+        .app-slideshow {
+            z-index: 1;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            margin-top: 30px;
+        }
+
+        .slideshow-frame {
+            position: relative;
+            flex: 1;
+            min-height: 220px;
+            border-radius: 14px;
+            overflow: hidden;
+            border: 1px solid rgba(37, 95, 56, 0.25);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .slide {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: top center;
+            opacity: 0;
+            transform: scale(1.02);
+            transition: opacity 1s ease, transform 6s ease;
+        }
+
+        .slide.active {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .slideshow-frame::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(24,35,15,0) 55%, rgba(24,35,15,0.92) 100%);
+            pointer-events: none;
+        }
+
+        .slideshow-caption {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1;
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 15px;
-            padding: 12px;
-            background: rgba(37, 95, 56, 0.1);
+            padding: 16px;
+        }
+
+        .caption-icon {
+            width: 38px;
+            height: 38px;
             border-radius: 10px;
-            border: 1px solid rgba(37, 95, 56, 0.2);
-        }
-
-        .stat-icon {
-            font-size: 20px;
-            color: #255F38;
-            width: 30px;
-        }
-
-        .stat-content {
-            flex: 1;
-        }
-
-        .stat-label {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.6);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .stat-value {
-            font-size: 14px;
+            background: #255F38;
             color: white;
-            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
         }
 
-        .stat-change {
+        .caption-title {
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .caption-desc {
+            color: rgba(255, 255, 255, 0.65);
             font-size: 12px;
-            color: #1F7D53;
-            margin-left: auto;
+            margin-top: 2px;
+        }
+
+        .slideshow-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .slideshow-dots .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.25);
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .slideshow-dots .dot.active {
+            background: #255F38;
+            width: 22px;
+            border-radius: 4px;
+        }
+
+        /* ── Caps Lock warning ──────────────────────────────────────── */
+        .capslock-hint {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #f39c12;
+        }
+
+        .capslock-hint.show {
+            display: flex;
+        }
+
+        /* ── Biometric quick-login ──────────────────────────────────── */
+        .biometric-enable-row label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        button.btn-biometric {
+            width: 100%;
+            padding: 13px 20px;
+            margin-top: 12px;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(37, 95, 56, 0.4);
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button.btn-biometric:hover {
+            background: rgba(37, 95, 56, 0.15);
+            border-color: #255F38;
+        }
+
+        button.btn-biometric:disabled {
+            opacity: 0.6;
+            cursor: default;
         }
 
         /* Right Section - Form */
@@ -468,26 +582,6 @@
             pointer-events: none;
             z-index: 0;
         }
-        /* SVG chart + stat-card animations */
-        @keyframes chartDraw {
-            from { stroke-dashoffset: 600; }
-            to   { stroke-dashoffset: 0; }
-        }
-        @keyframes chartFadeIn {
-            from { opacity: 0; }
-            to   { opacity: 1; }
-        }
-        @keyframes statSlideUp {
-            from { opacity: 0; transform: translateY(12px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        .stat-item:nth-child(1) { animation: statSlideUp 0.5s ease-out 1.6s both; }
-        .stat-item:nth-child(2) { animation: statSlideUp 0.5s ease-out 1.7s both; }
-        .portfolio-chart { z-index: 1; padding: 16px 0 24px; flex: 1; display: flex; flex-direction: column; justify-content: center; }
-        .portfolio-chart .chart-label { font-size: 11px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
-        .chart-line { animation: chartDraw 1.5s ease-out forwards; }
-        .chart-fill { animation: chartFadeIn 1.5s ease-out 0.3s both; }
-        .portfolio-chart circle { animation: chartFadeIn 0.4s ease-out 1.4s both; }
         @keyframes notifSlideDown {
             from { opacity: 0; transform: translateY(-8px); }
             to   { opacity: 1; transform: translateY(0); }
@@ -506,49 +600,24 @@
                 <img src="/images/logo.png" alt="FinTrack" style="width:36px;height:36px;object-fit:contain;border-radius:8px;vertical-align:middle;margin-right:8px;">FinTrack
             </div>
 
-            <!-- Portfolio trend chart -->
-            <div class="portfolio-chart" aria-hidden="true">
-                <div class="chart-label">Portfolio Performance</div>
-                <svg viewBox="0 0 260 80" xmlns="http://www.w3.org/2000/svg" style="width:100%;overflow:visible;">
-                    <defs>
-                        <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stop-color="#255F38" stop-opacity="0.35"/>
-                            <stop offset="100%" stop-color="#255F38" stop-opacity="0"/>
-                        </linearGradient>
-                        <clipPath id="chartClip">
-                            <rect x="0" y="0" width="260" height="80"/>
-                        </clipPath>
-                    </defs>
-                    <path class="chart-fill" d="M0,60 L30,52 L60,45 L90,48 L120,35 L150,28 L180,22 L210,15 L240,10 L260,8 L260,80 L0,80 Z"
-                          fill="url(#chartGrad)" clip-path="url(#chartClip)" opacity="0"/>
-                    <path class="chart-line" d="M0,60 L30,52 L60,45 L90,48 L120,35 L150,28 L180,22 L210,15 L240,10 L260,8"
-                          fill="none" stroke="#255F38" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
-                          stroke-dasharray="600" stroke-dashoffset="600"/>
-                    <circle cx="260" cy="8" r="4" fill="#1F7D53" opacity="0"/>
-                </svg>
-            </div>
-
-            <div class="stats-box">
-                <div class="stat-item">
-                    <div class="stat-icon">
-                        <i class="fab fa-ethereum"></i>
+            <!-- App insights slideshow -->
+            <div class="app-slideshow">
+                <div class="slideshow-frame">
+                    <div class="slide active" data-slide="0" style="background-image:url('/images/screenshots/shot-dashboard.png')"></div>
+                    <div class="slide" data-slide="1" style="background-image:url('/images/screenshots/shot-achievements.png')"></div>
+                    <div class="slide" data-slide="2" style="background-image:url('/images/screenshots/shot-transactions.png')"></div>
+                    <div class="slideshow-caption">
+                        <div class="caption-icon" id="slideCaptionIcon"><i class="fas fa-chart-line"></i></div>
+                        <div>
+                            <div class="caption-title" id="slideCaptionTitle">All Your Finances, One Dashboard</div>
+                            <div class="caption-desc" id="slideCaptionDesc">Real-time balances, spending trends, budgets, and net worth at a glance.</div>
+                        </div>
                     </div>
-                    <div class="stat-content">
-                        <div class="stat-label">ETH</div>
-                        <div class="stat-value">$2,456.78</div>
-                    </div>
-                    <div class="stat-change">+8.5%</div>
                 </div>
-
-                <div class="stat-item">
-                    <div class="stat-icon">
-                        <i class="fas fa-dollar-sign"></i>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-label">USD</div>
-                        <div class="stat-value">$45,230.12</div>
-                    </div>
-                    <div class="stat-change">+3.2%</div>
+                <div class="slideshow-dots" id="slideshowDots">
+                    <span class="dot active" onclick="goToSlide(0)" role="button" aria-label="Slide 1"></span>
+                    <span class="dot" onclick="goToSlide(1)" role="button" aria-label="Slide 2"></span>
+                    <span class="dot" onclick="goToSlide(2)" role="button" aria-label="Slide 3"></span>
                 </div>
             </div>
         </div>
@@ -576,6 +645,7 @@
                         <label>Password</label>
                         <input type="password" id="login-password" placeholder="Enter your password">
                         <button type="button" class="pwd-toggle" onclick="togglePwd('login-password', this)" tabindex="-1" aria-label="Show/hide password"><i class="fas fa-eye"></i></button>
+                        <div class="capslock-hint" id="capslock-login-password"><i class="fas fa-triangle-exclamation"></i> Caps Lock is on</div>
                     </div>
 
                     <div class="checkbox-group">
@@ -583,7 +653,16 @@
                         <label for="remember-me">Remember me</label>
                     </div>
 
+                    <div class="checkbox-group biometric-enable-row d-none" id="biometric-enable-row">
+                        <input type="checkbox" id="enable-biometric">
+                        <label for="enable-biometric"><i class="fas fa-fingerprint"></i>Enable fingerprint quick-login on this device</label>
+                    </div>
+
                     <button class="btn-submit" onclick="handleLogin()">Login</button>
+
+                    <button type="button" class="btn-biometric d-none" id="biometric-login-btn" onclick="handleBiometricLogin()">
+                        <i class="fas fa-fingerprint"></i> Login with Fingerprint
+                    </button>
 
                     <div class="footer-link">
                         Don't have an account? <a onclick="switchTab('signup'); return false;">Sign Up</a>
@@ -603,12 +682,14 @@
                         <label>Password</label>
                         <input type="password" id="signup-password" placeholder="Create a strong password">
                         <button type="button" class="pwd-toggle" onclick="togglePwd('signup-password', this)" tabindex="-1" aria-label="Show/hide password"><i class="fas fa-eye"></i></button>
+                        <div class="capslock-hint" id="capslock-signup-password"><i class="fas fa-triangle-exclamation"></i> Caps Lock is on</div>
                     </div>
 
                     <div class="form-group has-toggle">
                         <label>Confirm Password</label>
                         <input type="password" id="signup-confirm-password" placeholder="Confirm your password">
                         <button type="button" class="pwd-toggle" onclick="togglePwd('signup-confirm-password', this)" tabindex="-1" aria-label="Show/hide password"><i class="fas fa-eye"></i></button>
+                        <div class="capslock-hint" id="capslock-signup-confirm-password"><i class="fas fa-triangle-exclamation"></i> Caps Lock is on</div>
                     </div>
 
                     <button class="btn-submit" onclick="handleSignup()">Sign Up</button>
@@ -700,7 +781,14 @@
                 if (response.ok) {
                     if (data.token) localStorage.setItem('token', data.token);
                     if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
-                    showNotification(notification, '✅ Login successful! Redirecting...', 'success');
+
+                    const enableBiometricEl = document.getElementById('enable-biometric');
+                    if (enableBiometricEl && enableBiometricEl.checked) {
+                        showNotification(notification, '✅ Login successful! Setting up fingerprint login...', 'success');
+                        await registerBiometric(usernameOrEmail);
+                    } else {
+                        showNotification(notification, '✅ Login successful! Redirecting...', 'success');
+                    }
                     setTimeout(() => {
                         window.location.href = '/dashboard.html';
                     }, 1000);
@@ -769,6 +857,175 @@
             element.classList.add(type);
         }
 
+        // ══════════════════════════════════════════════════════════════
+        // App insights slideshow
+        // ══════════════════════════════════════════════════════════════
+        const SLIDES = [
+            { icon: 'fa-chart-line', title: 'All Your Finances, One Dashboard', desc: 'Real-time balances, spending trends, budgets, and net worth at a glance.' },
+            { icon: 'fa-trophy', title: 'Gamified Money Habits', desc: 'Earn XP, unlock achievements, keep streaks alive, and complete monthly challenges.' },
+            { icon: 'fa-right-left', title: 'Effortless Transaction Tracking', desc: 'Log expenses, scan receipts with OCR, and set up recurring bills in seconds.' }
+        ];
+        let currentSlide = 0;
+        let slideshowTimer = null;
+
+        function renderSlide(index) {
+            document.querySelectorAll('.slide').forEach(function (el) {
+                el.classList.toggle('active', Number(el.dataset.slide) === index);
+            });
+            document.querySelectorAll('#slideshowDots .dot').forEach(function (dot, i) {
+                dot.classList.toggle('active', i === index);
+            });
+            const s = SLIDES[index];
+            if (s) {
+                document.getElementById('slideCaptionIcon').innerHTML = '<i class="fas ' + s.icon + '"></i>';
+                document.getElementById('slideCaptionTitle').textContent = s.title;
+                document.getElementById('slideCaptionDesc').textContent = s.desc;
+            }
+        }
+
+        function goToSlide(index) {
+            currentSlide = index;
+            renderSlide(currentSlide);
+            resetSlideshowTimer();
+        }
+
+        function nextSlide() {
+            currentSlide = (currentSlide + 1) % SLIDES.length;
+            renderSlide(currentSlide);
+        }
+
+        function resetSlideshowTimer() {
+            if (slideshowTimer) clearInterval(slideshowTimer);
+            slideshowTimer = setInterval(nextSlide, 4500);
+        }
+
+        function initSlideshow() {
+            if (!document.querySelector('.app-slideshow')) return;
+            renderSlide(0);
+            resetSlideshowTimer();
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        // Caps Lock warning
+        // ══════════════════════════════════════════════════════════════
+        function setupCapsLockWarning(inputId, warningId) {
+            const input = document.getElementById(inputId);
+            const warning = document.getElementById(warningId);
+            if (!input || !warning) return;
+
+            function check(e) {
+                if (typeof e.getModifierState === 'function') {
+                    warning.classList.toggle('show', e.getModifierState('CapsLock'));
+                }
+            }
+            input.addEventListener('keydown', check);
+            input.addEventListener('keyup', check);
+            input.addEventListener('blur', function () { warning.classList.remove('show'); });
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        // Fingerprint / biometric quick-login
+        // ══════════════════════════════════════════════════════════════
+        // This is a LOCAL device-unlock gate, not passwordless server authentication: the
+        // WebAuthn platform authenticator (Windows Hello / Touch ID / Android fingerprint) only
+        // proves "this device's OS-level user verification succeeded". On success it auto-fills
+        // and submits through the exact same /api/auth/login call as typing the password would —
+        // nothing about the actual authentication changes, and everything here fails silently
+        // and harmlessly on browsers/devices without biometric support.
+        const WEBAUTHN_SUPPORTED = !!(window.PublicKeyCredential && navigator.credentials);
+
+        function b64uToBuf(b64u) {
+            const b64 = b64u.replace(/-/g, '+').replace(/_/g, '/');
+            const pad = b64.length % 4 ? '='.repeat(4 - (b64.length % 4)) : '';
+            const bin = atob(b64 + pad);
+            const buf = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+            return buf.buffer;
+        }
+
+        function bufToB64u(buf) {
+            const bytes = new Uint8Array(buf);
+            let bin = '';
+            for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+            return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        }
+
+        function biometricCredKey(username) { return 'fintrack_biometric_cred_' + username.toLowerCase(); }
+
+        async function checkBiometricAvailability() {
+            if (!WEBAUTHN_SUPPORTED) return;
+            try {
+                const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+                if (!available) return;
+
+                const saved = JSON.parse(localStorage.getItem('fintrack_remember') || 'null');
+                if (!saved || !saved.username) return;
+
+                if (localStorage.getItem(biometricCredKey(saved.username))) {
+                    document.getElementById('biometric-login-btn').classList.remove('d-none');
+                } else {
+                    document.getElementById('biometric-enable-row').classList.remove('d-none');
+                }
+            } catch (e) { /* WebAuthn unsupported or blocked — no biometric UI shown */ }
+        }
+
+        async function registerBiometric(username) {
+            try {
+                const challenge = crypto.getRandomValues(new Uint8Array(32));
+                const userId = crypto.getRandomValues(new Uint8Array(16));
+                const credential = await navigator.credentials.create({
+                    publicKey: {
+                        challenge: challenge,
+                        rp: { name: 'FinTrack' },
+                        user: { id: userId, name: username, displayName: username },
+                        pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+                        authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required' },
+                        timeout: 60000
+                    }
+                });
+                if (credential) {
+                    localStorage.setItem(biometricCredKey(username), bufToB64u(credential.rawId));
+                }
+            } catch (e) {
+                // User cancelled or device doesn't support it — Remember Me still works as normal.
+            }
+        }
+
+        async function handleBiometricLogin() {
+            const saved = JSON.parse(localStorage.getItem('fintrack_remember') || 'null');
+            if (!saved || !saved.username) return;
+            const credId = localStorage.getItem(biometricCredKey(saved.username));
+            if (!credId) return;
+
+            const btn = document.getElementById('biometric-login-btn');
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+
+            try {
+                const challenge = crypto.getRandomValues(new Uint8Array(32));
+                const assertion = await navigator.credentials.get({
+                    publicKey: {
+                        challenge: challenge,
+                        allowCredentials: [{ id: b64uToBuf(credId), type: 'public-key' }],
+                        userVerification: 'required',
+                        timeout: 60000
+                    }
+                });
+                if (assertion) {
+                    document.getElementById('login-username').value = saved.username;
+                    document.getElementById('login-password').value = saved.password || '';
+                    document.getElementById('remember-me').checked = true;
+                    await handleLogin();
+                }
+            } catch (e) {
+                showNotification(document.getElementById('login-notification'), 'Fingerprint verification failed or was cancelled.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('input[type="email"], input[type="text"], input[type="password"]').forEach(input => {
                 input.addEventListener('blur', validateInput);
@@ -803,6 +1060,17 @@
                 document.getElementById('login-password').value = saved.password || '';
                 document.getElementById('remember-me').checked = true;
             }
+
+            // Caps Lock warnings
+            setupCapsLockWarning('login-password', 'capslock-login-password');
+            setupCapsLockWarning('signup-password', 'capslock-signup-password');
+            setupCapsLockWarning('signup-confirm-password', 'capslock-signup-confirm-password');
+
+            // Fingerprint / biometric quick-login (feature-detected, no-op if unsupported)
+            checkBiometricAvailability();
+
+            // App insights slideshow
+            initSlideshow();
         });
 
         function validateInput(e) {
