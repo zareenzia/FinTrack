@@ -34,6 +34,8 @@ public class TodoEntity {
 
     private Boolean completed = false;
 
+    private Boolean pinned = false;
+
     private String color;
 
     @Column(nullable = false, updatable = false)
@@ -83,6 +85,9 @@ public class TodoEntity {
 
     public Boolean getCompleted() { return completed; }
     public void setCompleted(Boolean completed) { this.completed = completed; }
+
+    public Boolean getPinned() { return pinned; }
+    public void setPinned(Boolean pinned) { this.pinned = pinned; }
 
     public String getColor() { return color; }
     public void setColor(String color) { this.color = color; }

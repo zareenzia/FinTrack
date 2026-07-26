@@ -232,13 +232,8 @@
 
         .wp-price-input { min-width: 90px; flex: 0 1 90px; }
 
-        .wp-board-layout { display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: flex-start; }
-        .wp-kanban-panel { flex: 0 1 40%; min-width: 0; }
-        .wp-timeline-panel { flex: 1 1 60%; min-width: 0; }
-        @media (max-width: 991px) {
-            .wp-board-layout { flex-direction: column; }
-            .wp-kanban-panel, .wp-timeline-panel { flex: 1 1 auto; width: 100%; }
-        }
+        .wp-board-layout { display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 1.5rem; }
+        .wp-kanban-panel, .wp-timeline-panel { width: 100%; min-width: 0; }
 
         .wp-kanban-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
         @media (max-width: 767px) {
@@ -314,199 +309,24 @@
 
     <!-- Tab Navigation -->
     <div class="fp-tab-nav" id="fpTabNav" role="tablist">
-        <button class="fp-tab-btn active" data-tab="investments" onclick="switchTab('investments')">
-            <i class="fas fa-chart-line"></i><span>Investment Portfolio</span>
-        </button>
-        <button class="fp-tab-btn" data-tab="loans" onclick="switchTab('loans')">
-            <i class="fas fa-hand-holding-usd"></i><span>Loan Manager</span>
+        <button class="fp-tab-btn active" data-tab="purchases" onclick="switchTab('purchases')">
+            <i class="fas fa-cart-shopping"></i><span>Wishlist &amp; Purchase Planner</span>
         </button>
         <button class="fp-tab-btn" data-tab="subscriptions" onclick="switchTab('subscriptions')">
             <i class="fas fa-repeat"></i><span>Subscriptions</span>
         </button>
-        <button class="fp-tab-btn" data-tab="purchases" onclick="switchTab('purchases')">
-            <i class="fas fa-cart-shopping"></i><span>Wishlist &amp; Purchase Planner</span>
+        <button class="fp-tab-btn" data-tab="loans" onclick="switchTab('loans')">
+            <i class="fas fa-hand-holding-usd"></i><span>Loan Manager</span>
         </button>
-    </div>
-
-    <!-- ══════════════════════════════════════════════
-         TAB 1: INVESTMENT PORTFOLIO
-    ══════════════════════════════════════════════ -->
-    <div id="tab-investments" class="fp-tab-pane active">
-        <!-- Summary Cards -->
-        <div class="fp-stat-row cols-4" id="invSummary">
-            <div class="fp-stat-card"><div class="fp-stat-icon green"><i class="fas fa-chart-line"></i></div><div><div class="fp-stat-value" id="invTotalValue">—</div><div class="fp-stat-label">Total Value</div></div></div>
-            <div class="fp-stat-card"><div class="fp-stat-icon blue"><i class="fas fa-arrow-trend-up"></i></div><div><div class="fp-stat-value" id="invProfitLoss">—</div><div class="fp-stat-label">Total Profit / Loss</div></div></div>
-            <div class="fp-stat-card"><div class="fp-stat-icon purple"><i class="fas fa-percent"></i></div><div><div class="fp-stat-value" id="invReturnPct">—</div><div class="fp-stat-label">Total Return %</div></div></div>
-            <div class="fp-stat-card"><div class="fp-stat-icon orange"><i class="fas fa-layer-group"></i></div><div><div class="fp-stat-value" id="invCount">—</div><div class="fp-stat-label">Active Investments</div></div></div>
-        </div>
-        <!-- Charts -->
-        <div class="fp-charts-row">
-            <div class="fp-chart-card">
-                <div class="fp-chart-title"><i class="fas fa-chart-pie me-1"></i>Portfolio Allocation</div>
-                <div style="position:relative; height:240px;"><canvas id="invAllocationChart"></canvas></div>
-            </div>
-            <div class="fp-chart-card">
-                <div class="fp-chart-title"><i class="fas fa-chart-bar me-1"></i>Profit / Loss by Investment</div>
-                <div style="position:relative; height:240px;"><canvas id="invProfitChart"></canvas></div>
-            </div>
-        </div>
-        <!-- Toolbar -->
-        <div class="fp-toolbar">
-            <div class="fp-search-wrap"><i class="fas fa-search"></i><input type="text" id="invSearch" placeholder="Search investments…" oninput="renderInvestments()"></div>
-            <select class="fp-filter-select" id="invTypeFilter" onchange="renderInvestments()">
-                <option value="">All Types</option>
-                <option value="STOCKS">Stocks</option>
-                <option value="MUTUAL_FUNDS">Mutual Funds</option>
-                <option value="ETF">ETFs</option>
-                <option value="BONDS">Bonds</option>
-                <option value="CRYPTO">Crypto</option>
-                <option value="FIXED_DEPOSIT">Fixed Deposits</option>
-                <option value="OTHER">Other</option>
-            </select>
-            <select class="fp-filter-select" id="invSort" onchange="renderInvestments()">
-                <option value="value_desc">Sort: Value ↓</option>
-                <option value="value_asc">Sort: Value ↑</option>
-                <option value="profit_desc">Sort: Profit ↓</option>
-                <option value="date_desc">Sort: Date ↓</option>
-            </select>
-            <button class="btn btn-primary btn-sm" onclick="openInvModal()"><i class="fas fa-plus me-1"></i>Add Investment</button>
-        </div>
-        <!-- Table -->
-        <div class="fp-table-wrap">
-            <table class="fp-table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Type</th>
-                        <th>Platform</th>
-                        <th>Purchase Date</th>
-                        <th>Qty</th>
-                        <th>Buy Price</th>
-                        <th>Current Price</th>
-                        <th>Current Value</th>
-                        <th>P&amp;L</th>
-                        <th>Return %</th>
-                        <th style="width:80px;text-align:center">Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="invTableBody"></tbody>
-            </table>
-        </div>
-        <div class="fp-pagination" id="invPagination"></div>
-    </div>
-
-    <!-- ══════════════════════════════════════════════
-         TAB 2: LOAN MANAGER
-    ══════════════════════════════════════════════ -->
-    <div id="tab-loans" class="fp-tab-pane">
-        <!-- Summary Cards -->
-        <div class="fp-stat-row cols-5" id="loanSummary">
-            <div class="fp-stat-card"><div class="fp-stat-icon red"><i class="fas fa-hand-holding-usd"></i></div><div><div class="fp-stat-value" id="loanTotal">—</div><div class="fp-stat-label">Total Loan Amount</div></div></div>
-            <div class="fp-stat-card"><div class="fp-stat-icon orange"><i class="fas fa-wallet"></i></div><div><div class="fp-stat-value" id="loanRemaining">—</div><div class="fp-stat-label">Remaining Balance</div></div></div>
-            <div class="fp-stat-card"><div class="fp-stat-icon blue"><i class="fas fa-calendar-check"></i></div><div><div class="fp-stat-value" id="loanEMI">—</div><div class="fp-stat-label">Monthly EMI</div></div></div>
-            <div class="fp-stat-card"><div class="fp-stat-icon purple"><i class="fas fa-percent"></i></div><div><div class="fp-stat-value" id="loanInterest">—</div><div class="fp-stat-label">Total Interest</div></div></div>
-            <div class="fp-stat-card"><div class="fp-stat-icon green"><i class="fas fa-list-check"></i></div><div><div class="fp-stat-value" id="loanCount">—</div><div class="fp-stat-label">Active Loans</div></div></div>
-        </div>
-        <!-- Toolbar -->
-        <div class="fp-toolbar">
-            <div class="fp-search-wrap"><i class="fas fa-search"></i><input type="text" id="loanSearch" placeholder="Search loans…" oninput="renderLoans()"></div>
-            <select class="fp-filter-select" id="loanTypeFilter" onchange="renderLoans()">
-                <option value="">All Types</option>
-                <option value="PERSONAL">Personal Loan</option>
-                <option value="HOME">Home Loan</option>
-                <option value="CAR">Car Loan</option>
-                <option value="EDUCATION">Education Loan</option>
-                <option value="BUSINESS">Business Loan</option>
-                <option value="BORROWED">Borrowed Money</option>
-                <option value="LENT">Lent Money</option>
-            </select>
-            <select class="fp-filter-select" id="loanStatusFilter" onchange="renderLoans()">
-                <option value="">All Status</option>
-                <option value="ACTIVE">Active</option>
-                <option value="CLOSED">Closed</option>
-                <option value="OVERDUE">Overdue</option>
-            </select>
-            <button class="btn btn-primary btn-sm" onclick="openLoanModal()"><i class="fas fa-plus me-1"></i>Add Loan</button>
-        </div>
-        <!-- Table -->
-        <div class="fp-table-wrap">
-            <table class="fp-table">
-                <thead>
-                    <tr>
-                        <th>Loan Name</th>
-                        <th>Type</th>
-                        <th>Lender / Borrower</th>
-                        <th>Principal</th>
-                        <th>EMI</th>
-                        <th>Remaining</th>
-                        <th>Progress</th>
-                        <th>End Date</th>
-                        <th>Status</th>
-                        <th style="width:100px;text-align:center">Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="loanTableBody"></tbody>
-            </table>
-        </div>
-        <div class="fp-pagination" id="loanPagination"></div>
-    </div>
-
-    <!-- ══════════════════════════════════════════════
-         TAB 3: SUBSCRIPTION MANAGER
-    ══════════════════════════════════════════════ -->
-    <div id="tab-subscriptions" class="fp-tab-pane">
-        <!-- Summary Cards -->
-        <div class="fp-stat-row cols-4" id="subSummary">
-            <div class="fp-stat-card"><div class="fp-stat-icon green"><i class="fas fa-check-circle"></i></div><div><div class="fp-stat-value" id="subActive">—</div><div class="fp-stat-label">Active Subscriptions</div></div></div>
-            <div class="fp-stat-card"><div class="fp-stat-icon blue"><i class="fas fa-calendar"></i></div><div><div class="fp-stat-value" id="subMonthly">—</div><div class="fp-stat-label">Monthly Cost</div></div></div>
-            <div class="fp-stat-card"><div class="fp-stat-icon orange"><i class="fas fa-calendar-alt"></i></div><div><div class="fp-stat-value" id="subYearly">—</div><div class="fp-stat-label">Yearly Cost</div></div></div>
-            <div class="fp-stat-card"><div class="fp-stat-icon red"><i class="fas fa-bell"></i></div><div><div class="fp-stat-value" id="subRenewals">—</div><div class="fp-stat-label">Upcoming Renewals (30d)</div></div></div>
-        </div>
-        <!-- Quick add templates -->
-        <div class="fp-template-chips" id="subTemplateChips"></div>
-        <!-- Toolbar -->
-        <div class="fp-toolbar">
-            <div class="fp-search-wrap"><i class="fas fa-search"></i><input type="text" id="subSearch" placeholder="Search subscriptions…" oninput="renderSubscriptions()"></div>
-            <select class="fp-filter-select" id="subStatusFilter" onchange="renderSubscriptions()">
-                <option value="">All Status</option>
-                <option value="ACTIVE">Active</option>
-                <option value="PAUSED">Paused</option>
-                <option value="CANCELLED">Cancelled</option>
-            </select>
-            <select class="fp-filter-select" id="subCycleFilter" onchange="renderSubscriptions()">
-                <option value="">All Billing</option>
-                <option value="MONTHLY">Monthly</option>
-                <option value="YEARLY">Yearly</option>
-            </select>
-            <button class="btn btn-primary btn-sm" onclick="openSubModal()"><i class="fas fa-plus me-1"></i>Add Subscription</button>
-        </div>
-        <!-- Table -->
-        <div class="fp-table-wrap">
-            <table class="fp-table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Category</th>
-                        <th>Billing</th>
-                        <th>Cost</th>
-                        <th>Monthly</th>
-                        <th>Yearly</th>
-                        <th>Next Renewal</th>
-                        <th>Auto-Renew</th>
-                        <th>Status</th>
-                        <th style="width:80px;text-align:center">Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="subTableBody"></tbody>
-            </table>
-        </div>
-        <div class="fp-pagination" id="subPagination"></div>
+        <button class="fp-tab-btn" data-tab="investments" onclick="switchTab('investments')">
+            <i class="fas fa-chart-line"></i><span>Investment Portfolio</span>
+        </button>
     </div>
 
     <!-- ══════════════════════════════════════════════
          TAB 4: WISHLIST & PURCHASE PLANNER
     ══════════════════════════════════════════════ -->
-    <div id="tab-purchases" class="fp-tab-pane">
+    <div id="tab-purchases" class="fp-tab-pane active">
         <!-- Summary Cards -->
         <div class="fp-stat-row cols-6" id="wpSummary">
             <div class="fp-stat-card"><div class="fp-stat-icon green"><i class="fas fa-sack-dollar"></i></div><div><div class="fp-stat-value" id="wpTotalValue">—</div><div class="fp-stat-label">Total Wishlist Value</div></div></div>
@@ -617,6 +437,181 @@
             </div>
         </div>
     </div>
+    <!-- ══════════════════════════════════════════════
+         TAB 3: SUBSCRIPTION MANAGER
+    ══════════════════════════════════════════════ -->
+    <div id="tab-subscriptions" class="fp-tab-pane">
+        <!-- Summary Cards -->
+        <div class="fp-stat-row cols-4" id="subSummary">
+            <div class="fp-stat-card"><div class="fp-stat-icon green"><i class="fas fa-check-circle"></i></div><div><div class="fp-stat-value" id="subActive">—</div><div class="fp-stat-label">Active Subscriptions</div></div></div>
+            <div class="fp-stat-card"><div class="fp-stat-icon blue"><i class="fas fa-calendar"></i></div><div><div class="fp-stat-value" id="subMonthly">—</div><div class="fp-stat-label">Monthly Cost</div></div></div>
+            <div class="fp-stat-card"><div class="fp-stat-icon orange"><i class="fas fa-calendar-alt"></i></div><div><div class="fp-stat-value" id="subYearly">—</div><div class="fp-stat-label">Yearly Cost</div></div></div>
+            <div class="fp-stat-card"><div class="fp-stat-icon red"><i class="fas fa-bell"></i></div><div><div class="fp-stat-value" id="subRenewals">—</div><div class="fp-stat-label">Upcoming Renewals (30d)</div></div></div>
+        </div>
+        <!-- Quick add templates -->
+        <div class="fp-template-chips" id="subTemplateChips"></div>
+        <!-- Toolbar -->
+        <div class="fp-toolbar">
+            <div class="fp-search-wrap"><i class="fas fa-search"></i><input type="text" id="subSearch" placeholder="Search subscriptions…" oninput="renderSubscriptions()"></div>
+            <select class="fp-filter-select" id="subStatusFilter" onchange="renderSubscriptions()">
+                <option value="">All Status</option>
+                <option value="ACTIVE">Active</option>
+                <option value="PAUSED">Paused</option>
+                <option value="CANCELLED">Cancelled</option>
+            </select>
+            <select class="fp-filter-select" id="subCycleFilter" onchange="renderSubscriptions()">
+                <option value="">All Billing</option>
+                <option value="MONTHLY">Monthly</option>
+                <option value="YEARLY">Yearly</option>
+            </select>
+            <button class="btn btn-primary btn-sm" onclick="openSubModal()"><i class="fas fa-plus me-1"></i>Add Subscription</button>
+        </div>
+        <!-- Table -->
+        <div class="fp-table-wrap">
+            <table class="fp-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Billing</th>
+                        <th>Cost</th>
+                        <th>Monthly</th>
+                        <th>Yearly</th>
+                        <th>Next Renewal</th>
+                        <th>Auto-Renew</th>
+                        <th>Status</th>
+                        <th style="width:80px;text-align:center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="subTableBody"></tbody>
+            </table>
+        </div>
+        <div class="fp-pagination" id="subPagination"></div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         TAB 2: LOAN MANAGER
+    ══════════════════════════════════════════════ -->
+    <div id="tab-loans" class="fp-tab-pane">
+        <!-- Summary Cards -->
+        <div class="fp-stat-row cols-5" id="loanSummary">
+            <div class="fp-stat-card"><div class="fp-stat-icon red"><i class="fas fa-hand-holding-usd"></i></div><div><div class="fp-stat-value" id="loanTotal">—</div><div class="fp-stat-label">Total Loan Amount</div></div></div>
+            <div class="fp-stat-card"><div class="fp-stat-icon orange"><i class="fas fa-wallet"></i></div><div><div class="fp-stat-value" id="loanRemaining">—</div><div class="fp-stat-label">Remaining Balance</div></div></div>
+            <div class="fp-stat-card"><div class="fp-stat-icon blue"><i class="fas fa-calendar-check"></i></div><div><div class="fp-stat-value" id="loanEMI">—</div><div class="fp-stat-label">Monthly EMI</div></div></div>
+            <div class="fp-stat-card"><div class="fp-stat-icon purple"><i class="fas fa-percent"></i></div><div><div class="fp-stat-value" id="loanInterest">—</div><div class="fp-stat-label">Total Interest</div></div></div>
+            <div class="fp-stat-card"><div class="fp-stat-icon green"><i class="fas fa-list-check"></i></div><div><div class="fp-stat-value" id="loanCount">—</div><div class="fp-stat-label">Active Loans</div></div></div>
+        </div>
+        <!-- Toolbar -->
+        <div class="fp-toolbar">
+            <div class="fp-search-wrap"><i class="fas fa-search"></i><input type="text" id="loanSearch" placeholder="Search loans…" oninput="renderLoans()"></div>
+            <select class="fp-filter-select" id="loanTypeFilter" onchange="renderLoans()">
+                <option value="">All Types</option>
+                <option value="PERSONAL">Personal Loan</option>
+                <option value="HOME">Home Loan</option>
+                <option value="CAR">Car Loan</option>
+                <option value="EDUCATION">Education Loan</option>
+                <option value="BUSINESS">Business Loan</option>
+                <option value="BORROWED">Borrowed Money</option>
+                <option value="LENT">Lent Money</option>
+            </select>
+            <select class="fp-filter-select" id="loanStatusFilter" onchange="renderLoans()">
+                <option value="">All Status</option>
+                <option value="ACTIVE">Active</option>
+                <option value="CLOSED">Closed</option>
+                <option value="OVERDUE">Overdue</option>
+            </select>
+            <button class="btn btn-primary btn-sm" onclick="openLoanModal()"><i class="fas fa-plus me-1"></i>Add Loan</button>
+        </div>
+        <!-- Table -->
+        <div class="fp-table-wrap">
+            <table class="fp-table">
+                <thead>
+                    <tr>
+                        <th>Loan Name</th>
+                        <th>Type</th>
+                        <th>Lender / Borrower</th>
+                        <th>Principal</th>
+                        <th>EMI</th>
+                        <th>Remaining</th>
+                        <th>Progress</th>
+                        <th>End Date</th>
+                        <th>Status</th>
+                        <th style="width:100px;text-align:center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="loanTableBody"></tbody>
+            </table>
+        </div>
+        <div class="fp-pagination" id="loanPagination"></div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         TAB 1: INVESTMENT PORTFOLIO
+    ══════════════════════════════════════════════ -->
+    <div id="tab-investments" class="fp-tab-pane">
+        <!-- Summary Cards -->
+        <div class="fp-stat-row cols-4" id="invSummary">
+            <div class="fp-stat-card"><div class="fp-stat-icon green"><i class="fas fa-chart-line"></i></div><div><div class="fp-stat-value" id="invTotalValue">—</div><div class="fp-stat-label">Total Value</div></div></div>
+            <div class="fp-stat-card"><div class="fp-stat-icon blue"><i class="fas fa-arrow-trend-up"></i></div><div><div class="fp-stat-value" id="invProfitLoss">—</div><div class="fp-stat-label">Total Profit / Loss</div></div></div>
+            <div class="fp-stat-card"><div class="fp-stat-icon purple"><i class="fas fa-percent"></i></div><div><div class="fp-stat-value" id="invReturnPct">—</div><div class="fp-stat-label">Total Return %</div></div></div>
+            <div class="fp-stat-card"><div class="fp-stat-icon orange"><i class="fas fa-layer-group"></i></div><div><div class="fp-stat-value" id="invCount">—</div><div class="fp-stat-label">Active Investments</div></div></div>
+        </div>
+        <!-- Charts -->
+        <div class="fp-charts-row">
+            <div class="fp-chart-card">
+                <div class="fp-chart-title"><i class="fas fa-chart-pie me-1"></i>Portfolio Allocation</div>
+                <div style="position:relative; height:240px;"><canvas id="invAllocationChart"></canvas></div>
+            </div>
+            <div class="fp-chart-card">
+                <div class="fp-chart-title"><i class="fas fa-chart-bar me-1"></i>Profit / Loss by Investment</div>
+                <div style="position:relative; height:240px;"><canvas id="invProfitChart"></canvas></div>
+            </div>
+        </div>
+        <!-- Toolbar -->
+        <div class="fp-toolbar">
+            <div class="fp-search-wrap"><i class="fas fa-search"></i><input type="text" id="invSearch" placeholder="Search investments…" oninput="renderInvestments()"></div>
+            <select class="fp-filter-select" id="invTypeFilter" onchange="renderInvestments()">
+                <option value="">All Types</option>
+                <option value="STOCKS">Stocks</option>
+                <option value="MUTUAL_FUNDS">Mutual Funds</option>
+                <option value="ETF">ETFs</option>
+                <option value="BONDS">Bonds</option>
+                <option value="CRYPTO">Crypto</option>
+                <option value="FIXED_DEPOSIT">Fixed Deposits</option>
+                <option value="OTHER">Other</option>
+            </select>
+            <select class="fp-filter-select" id="invSort" onchange="renderInvestments()">
+                <option value="value_desc">Sort: Value ↓</option>
+                <option value="value_asc">Sort: Value ↑</option>
+                <option value="profit_desc">Sort: Profit ↓</option>
+                <option value="date_desc">Sort: Date ↓</option>
+            </select>
+            <button class="btn btn-primary btn-sm" onclick="openInvModal()"><i class="fas fa-plus me-1"></i>Add Investment</button>
+        </div>
+        <!-- Table -->
+        <div class="fp-table-wrap">
+            <table class="fp-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Platform</th>
+                        <th>Purchase Date</th>
+                        <th>Qty</th>
+                        <th>Buy Price</th>
+                        <th>Current Price</th>
+                        <th>Current Value</th>
+                        <th>P&amp;L</th>
+                        <th>Return %</th>
+                        <th style="width:80px;text-align:center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="invTableBody"></tbody>
+            </table>
+        </div>
+        <div class="fp-pagination" id="invPagination"></div>
+    </div>
+
 </div><!-- /.container-fluid -->
 
 <!-- ════════════════════════════════════════════════
