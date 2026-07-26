@@ -186,6 +186,9 @@
         <a class="settings-nav-item" data-section="gamification" href="#">
           <i class="fas fa-trophy"></i> Achievements
         </a>
+        <a class="settings-nav-item" data-section="family-finance" href="#">
+          <i class="fas fa-users"></i> Family Finance
+        </a>
         <a class="settings-nav-item" data-section="security" href="#">
           <i class="fas fa-shield-alt"></i> Privacy &amp; Security
         </a>
@@ -933,6 +936,37 @@
           </div>
         </section>
 
+        <!-- ===== FAMILY FINANCE ===== -->
+        <section class="settings-section" id="section-family-finance">
+          <div class="settings-section-heading"><i class="fas fa-users" style="color:var(--accent-color)"></i> Family Finance</div>
+          <p class="settings-section-desc">Manage your household from here, or visit the <a href="/family-finance">Family Finance page</a> for members, shared expenses, and settlements. Personal financial data always stays private unless you explicitly share it.</p>
+
+          <div id="ffSettingsNoHousehold" class="settings-card" style="display:none;">
+            <p class="text-muted small mb-0">You don't belong to a household yet. <a href="/family-finance">Create or join one</a>.</p>
+          </div>
+
+          <div id="ffSettingsHousehold" style="display:none;">
+            <div class="card mb-3">
+              <div class="card-body">
+                <label class="form-label">Household Name</label>
+                <div class="d-flex gap-2">
+                  <input type="text" class="form-control" id="ffSettingsNameInput" disabled>
+                  <button class="btn btn-primary" id="ffSettingsRenameBtn" style="display:none;">Save</button>
+                </div>
+                <div class="mt-2"><small class="text-muted" id="ffSettingsRoleNote"></small></div>
+              </div>
+            </div>
+
+            <div class="settings-card danger-zone">
+              <div class="settings-card-title"><i class="fas fa-exclamation-triangle"></i> Danger Zone</div>
+              <div class="settings-card-sub">Irreversible actions &mdash; proceed with caution</div>
+              <p class="text-muted small">Leaving removes you from the household — your past shared expenses stay visible to other members for accountability. Deleting removes the household for everyone. Neither affects anyone's personal transactions.</p>
+              <button class="btn btn-outline-danger me-2" id="ffSettingsLeaveBtn"><i class="fas fa-right-from-bracket me-1"></i>Leave Household</button>
+              <button class="btn btn-danger" id="ffSettingsDeleteBtn" style="display:none;"><i class="fas fa-trash-alt me-1"></i>Delete Household</button>
+            </div>
+          </div>
+        </section>
+
         <!-- ===== ABOUT ===== -->
         <section class="settings-section" id="section-about">
           <div class="settings-section-heading"><i class="fas fa-info-circle" style="color:var(--accent-color)"></i> About FinTrack</div>
@@ -1396,6 +1430,7 @@ document.querySelectorAll('.settings-nav-item').forEach(function(item){
     if (section === 'receipt-scanner') loadReceiptScannerSettings();
     if (section === 'voice-assistant') { loadVoiceAssistantSettings(); loadVoiceHistory(); }
     if (section === 'gamification') loadGamificationSettings();
+    if (section === 'family-finance') loadFamilyFinanceSettings();
   });
 });
 
@@ -1552,6 +1587,64 @@ document.getElementById('gamificationResetBtn').addEventListener('click', functi
       if (r.ok) showNotification('Achievement progress reset.', 'success');
       else showNotification('Failed to reset progress.', 'danger');
     }).catch(function(){ showNotification('Unable to reset progress right now.', 'danger'); });
+  });
+});
+
+// ============== Family Finance ==============
+var ffSettingsHousehold = null;
+function loadFamilyFinanceSettings() {
+  fetch('/api/households/mine').then(function(r){ return r.json(); }).then(function(data){
+    ffSettingsHousehold = (data && data.hasHousehold) ? data : null;
+    document.getElementById('ffSettingsNoHousehold').style.display = ffSettingsHousehold ? 'none' : '';
+    document.getElementById('ffSettingsHousehold').style.display = ffSettingsHousehold ? '' : 'none';
+    if (!ffSettingsHousehold) return;
+    var isAdmin = ffSettingsHousehold.myRole === 'ADMIN';
+    var nameInput = document.getElementById('ffSettingsNameInput');
+    nameInput.value = ffSettingsHousehold.name || '';
+    nameInput.disabled = !isAdmin;
+    document.getElementById('ffSettingsRenameBtn').style.display = isAdmin ? '' : 'none';
+    document.getElementById('ffSettingsDeleteBtn').style.display = isAdmin ? '' : 'none';
+    document.getElementById('ffSettingsRoleNote').textContent = isAdmin
+      ? 'You are the administrator of this household.'
+      : 'Only the household administrator can rename or delete the household.';
+  }).catch(function(){ showNotification('Unable to load Family Finance settings.', 'danger'); });
+}
+
+document.getElementById('ffSettingsRenameBtn').addEventListener('click', function(){
+  if (!ffSettingsHousehold) return;
+  var name = document.getElementById('ffSettingsNameInput').value.trim();
+  if (!name) { showNotification('Household name cannot be empty.', 'danger'); return; }
+  fetch('/api/households/' + ffSettingsHousehold.id, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: name })
+  }).then(function(r){
+    if (r.ok) { showNotification('Household renamed.', 'success'); loadFamilyFinanceSettings(); }
+    else return r.json().then(function(err){ showNotification((err && err.error) || 'Failed to rename household.', 'danger'); });
+  }).catch(function(){ showNotification('Unable to rename household right now.', 'danger'); });
+});
+
+document.getElementById('ffSettingsLeaveBtn').addEventListener('click', function(){
+  if (!ffSettingsHousehold) return;
+  confirmAction('Leave "' + ffSettingsHousehold.name + '"? Your past shared expenses stay visible to the household for accountability.',
+      { title: 'Leave Household', confirmText: 'Leave Household', confirmClass: 'btn-danger' }).then(function(confirmed){
+    if (!confirmed) return;
+    fetch('/api/households/' + ffSettingsHousehold.id + '/leave', { method: 'POST' }).then(function(r){
+      if (r.ok) { showNotification('You left the household.', 'success'); loadFamilyFinanceSettings(); }
+      else return r.json().then(function(err){ showNotification((err && err.error) || 'Failed to leave household.', 'danger'); });
+    }).catch(function(){ showNotification('Unable to leave household right now.', 'danger'); });
+  });
+});
+
+document.getElementById('ffSettingsDeleteBtn').addEventListener('click', function(){
+  if (!ffSettingsHousehold) return;
+  confirmAction('Permanently delete "' + ffSettingsHousehold.name + '"? This removes it for every member. Nobody\'s personal transactions are affected.',
+      { title: 'Delete Household', confirmText: 'Delete Household', confirmClass: 'btn-danger' }).then(function(confirmed){
+    if (!confirmed) return;
+    fetch('/api/households/' + ffSettingsHousehold.id, { method: 'DELETE' }).then(function(r){
+      if (r.ok) { showNotification('Household deleted.', 'success'); loadFamilyFinanceSettings(); }
+      else return r.json().then(function(err){ showNotification((err && err.error) || 'Failed to delete household.', 'danger'); });
+    }).catch(function(){ showNotification('Unable to delete household right now.', 'danger'); });
   });
 });
 

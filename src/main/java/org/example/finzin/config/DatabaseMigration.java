@@ -558,6 +558,113 @@ public class DatabaseMigration implements BeanPostProcessor {
                 "('CH_RECEIPT_3','Receipt Ready','Scan 3 receipts this month','receipts.scanned_count',3,20)," +
                 "('CH_NOTE_5','Note Taker','Create 5 notes this month','notes.count',5,15) " +
                 "ON CONFLICT (code) DO NOTHING");
+
+        // ============== Family Finance (Phase 1: households, invitations, shared expenses, settlements) ==============
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS households (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "name VARCHAR(255) NOT NULL, " +
+                "owner_id BIGINT NOT NULL, " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "updated_at TIMESTAMP NOT NULL DEFAULT NOW()" +
+                ")");
+
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS household_members (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "household_id BIGINT NOT NULL, " +
+                "user_id BIGINT NOT NULL, " +
+                "role VARCHAR(20) NOT NULL DEFAULT 'MEMBER', " +
+                "relationship_label VARCHAR(50), " +
+                "joined_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "CONSTRAINT uk_household_member UNIQUE (household_id, user_id)" +
+                ")");
+        runSilently(dataSource, "CREATE INDEX IF NOT EXISTS idx_household_members_user ON household_members (user_id)");
+
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS household_invitations (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "household_id BIGINT NOT NULL, " +
+                "invited_by_user_id BIGINT NOT NULL, " +
+                "invitee_user_id BIGINT NOT NULL, " +
+                "relationship_label VARCHAR(50), " +
+                "status VARCHAR(20) NOT NULL DEFAULT 'PENDING', " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "responded_at TIMESTAMP" +
+                ")");
+        runSilently(dataSource, "CREATE INDEX IF NOT EXISTS idx_household_invitations_invitee ON household_invitations (invitee_user_id, status)");
+
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS shared_transactions (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "household_id BIGINT NOT NULL, " +
+                "transaction_id BIGINT NOT NULL, " +
+                "payer_user_id BIGINT NOT NULL, " +
+                "total_amount DOUBLE PRECISION NOT NULL, " +
+                "split_method VARCHAR(20) NOT NULL, " +
+                "description VARCHAR(255) NOT NULL, " +
+                "category VARCHAR(100), " +
+                "expense_date DATE NOT NULL, " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "CONSTRAINT uk_shared_transaction UNIQUE (transaction_id)" +
+                ")");
+        runSilently(dataSource, "CREATE INDEX IF NOT EXISTS idx_shared_transactions_household ON shared_transactions (household_id, expense_date)");
+
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS shared_transaction_shares (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "shared_transaction_id BIGINT NOT NULL, " +
+                "user_id BIGINT NOT NULL, " +
+                "share_amount DOUBLE PRECISION NOT NULL, " +
+                "share_percent DOUBLE PRECISION, " +
+                "is_payer BOOLEAN NOT NULL DEFAULT FALSE" +
+                ")");
+        runSilently(dataSource, "CREATE INDEX IF NOT EXISTS idx_shared_transaction_shares_tx ON shared_transaction_shares (shared_transaction_id)");
+
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS settlements (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "household_id BIGINT NOT NULL, " +
+                "from_user_id BIGINT NOT NULL, " +
+                "to_user_id BIGINT NOT NULL, " +
+                "amount DOUBLE PRECISION NOT NULL, " +
+                "note TEXT, " +
+                "settled_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW()" +
+                ")");
+        runSilently(dataSource, "CREATE INDEX IF NOT EXISTS idx_settlements_household ON settlements (household_id)");
+
+        // ============== Family Finance (Phase 2: household budgets & joint savings goals) ==============
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS household_budgets (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "household_id BIGINT NOT NULL, " +
+                "category_name VARCHAR(100) NOT NULL, " +
+                "monthly_limit DOUBLE PRECISION NOT NULL, " +
+                "created_by_user_id BIGINT NOT NULL, " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "updated_at TIMESTAMP NOT NULL DEFAULT NOW()" +
+                ")");
+        runSilently(dataSource, "CREATE UNIQUE INDEX IF NOT EXISTS uk_household_budget_category ON household_budgets (household_id, lower(trim(category_name)))");
+
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS household_goals (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "household_id BIGINT NOT NULL, " +
+                "name VARCHAR(150) NOT NULL, " +
+                "target_amount DOUBLE PRECISION NOT NULL, " +
+                "target_date DATE, " +
+                "created_by_user_id BIGINT NOT NULL, " +
+                "status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE', " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "updated_at TIMESTAMP NOT NULL DEFAULT NOW()" +
+                ")");
+        runSilently(dataSource, "CREATE INDEX IF NOT EXISTS idx_household_goals_household ON household_goals (household_id)");
+
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS household_goal_contributions (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "household_goal_id BIGINT NOT NULL, " +
+                "user_id BIGINT NOT NULL, " +
+                "transaction_id BIGINT NOT NULL, " +
+                "amount DOUBLE PRECISION NOT NULL, " +
+                "note TEXT, " +
+                "contributed_at DATE NOT NULL, " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
+                "CONSTRAINT uk_household_goal_contribution_tx UNIQUE (transaction_id)" +
+                ")");
+        runSilently(dataSource, "CREATE INDEX IF NOT EXISTS idx_household_goal_contributions_goal ON household_goal_contributions (household_goal_id)");
     }
 
     private void runSilently(DataSource dataSource, String sql) {
