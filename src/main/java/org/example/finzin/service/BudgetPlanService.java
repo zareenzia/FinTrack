@@ -21,6 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -378,6 +379,23 @@ public class BudgetPlanService {
 
         int score = (int) Math.round(categoryScore + savingsScore + incomeScore + bonus);
         return Math.max(0, Math.min(100, score));
+    }
+
+    // ============== Cross-module lookups ==============
+
+    /**
+     * Live-computed status for a single savings budget, scoped to its owning plan's user — for
+     * modules (Purchase Planner) that link to a savings goal but must not duplicate the
+     * initialAmount+contributed math computeSavingsStatuses already owns.
+     */
+    public Optional<Map<String, Object>> findSavingsBudgetStatus(Long userId, Long savingsBudgetId) {
+        SavingsBudgetEntity savings = savingsBudgetRepository.findById(savingsBudgetId).orElse(null);
+        if (savings == null) return Optional.empty();
+        BudgetPlanEntity plan = budgetPlanRepository.findById(savings.getBudgetPlanId()).orElse(null);
+        if (plan == null || !plan.getUserId().equals(userId)) return Optional.empty();
+        return computeSavingsStatuses(plan).stream()
+                .filter(s -> savingsBudgetId.equals(s.get("id")))
+                .findFirst();
     }
 
     // ============== Alerts ==============

@@ -6,6 +6,7 @@ import org.example.finzin.entity.AiMessageEntity;
 import org.example.finzin.entity.BudgetPlanEntity;
 import org.example.finzin.entity.GoldAssetEntity;
 import org.example.finzin.entity.NoteEntity;
+import org.example.finzin.entity.PurchaseItemEntity;
 import org.example.finzin.entity.TodoEntity;
 import org.example.finzin.entity.TransactionEntity;
 import org.springframework.stereotype.Component;
@@ -114,6 +115,20 @@ public class DocumentMapper {
         metadata.put("period", plan.getPeriod());
         metadata.put("status", plan.getStatus());
         return new MappedDocument(plan.getName(), content.toString(), metadata);
+    }
+
+    public MappedDocument mapPurchaseItem(PurchaseItemEntity p) {
+        String content = String.format("%s - ৳%.2f, need: %s, priority: %s, status: %s%s%s",
+                p.getItemName(), p.getEstimatedPrice(), p.getNeedLevel(), p.getPriority(), p.getStatus(),
+                p.getTargetMonth() != null ? ", target month: " + p.getTargetMonth() : "",
+                p.getNotes() != null && !p.getNotes().isBlank() ? ". Notes: " + p.getNotes() : "");
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("estimatedPrice", p.getEstimatedPrice());
+        metadata.put("needLevel", p.getNeedLevel());
+        metadata.put("priority", p.getPriority());
+        metadata.put("status", p.getStatus());
+        metadata.put("targetMonth", p.getTargetMonth());
+        return new MappedDocument(p.getItemName(), content, metadata);
     }
 
     public MappedDocument mapConversation(AiConversationEntity conversation, List<AiMessageEntity> recentMessages) {
