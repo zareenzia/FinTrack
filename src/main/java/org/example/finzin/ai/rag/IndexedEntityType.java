@@ -8,5 +8,6 @@ public enum IndexedEntityType {
     ACCOUNT,
     GOLD_ASSET,
     BUDGET_PLAN,
-    AI_CONVERSATION
+    AI_CONVERSATION,
+    PURCHASE_ITEM
 }

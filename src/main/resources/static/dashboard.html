@@ -450,11 +450,11 @@
                         </div>
                         <div class="col-6">
                             <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);height:64px;">
-                                <div style="width:32px;height:32px;border-radius:8px;background:rgba(168,85,247,0.15);color:#a855f7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-star"></i></div>
+                                <div style="width:32px;height:32px;border-radius:8px;background:rgba(168,85,247,0.15);color:#a855f7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-cart-shopping"></i></div>
                                 <div class="flex-grow-1" style="min-width:0;">
-                                    <div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwGoalPct">—</div>
-                                    <div style="font-size:0.68rem;color:var(--text-muted-custom);">Goals</div>
-                                    <div style="margin-top:3px;height:4px;border-radius:999px;background:var(--bg-input);overflow:hidden;"><div id="fpwGoalBar" style="height:100%;background:#a855f7;border-radius:999px;width:0%;transition:width 0.4s ease;"></div></div>
+                                    <div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwWishlistPct">—</div>
+                                    <div style="font-size:0.68rem;color:var(--text-muted-custom);">Wishlist</div>
+                                    <div style="margin-top:3px;height:4px;border-radius:999px;background:var(--bg-input);overflow:hidden;"><div id="fpwWishlistBar" style="height:100%;background:#a855f7;border-radius:999px;width:0%;transition:width 0.4s ease;"></div></div>
                                 </div>
                             </div>
                         </div>
@@ -748,11 +748,11 @@
                             </div>
                             <div class="col-6">
                                 <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);height:64px;">
-                                    <div style="width:32px;height:32px;border-radius:8px;background:rgba(168,85,247,0.15);color:#a855f7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-star"></i></div>
+                                    <div style="width:32px;height:32px;border-radius:8px;background:rgba(168,85,247,0.15);color:#a855f7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-cart-shopping"></i></div>
                                     <div class="flex-grow-1" style="min-width:0;">
-                                        <div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwGoalPctCompact">—</div>
-                                        <div style="font-size:0.68rem;color:var(--text-muted-custom);">Goals</div>
-                                        <div style="margin-top:3px;height:4px;border-radius:999px;background:var(--bg-input);overflow:hidden;"><div id="fpwGoalBarCompact" style="height:100%;background:#a855f7;border-radius:999px;width:0%;transition:width 0.4s ease;"></div></div>
+                                        <div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwWishlistPctCompact">—</div>
+                                        <div style="font-size:0.68rem;color:var(--text-muted-custom);">Wishlist</div>
+                                        <div style="margin-top:3px;height:4px;border-radius:999px;background:var(--bg-input);overflow:hidden;"><div id="fpwWishlistBarCompact" style="height:100%;background:#a855f7;border-radius:999px;width:0%;transition:width 0.4s ease;"></div></div>
                                     </div>
                                 </div>
                             </div>
@@ -1516,12 +1516,15 @@
                 if (el('fpwInvValue' + suffix)) el('fpwInvValue' + suffix).textContent = fmtC(data.investmentValue);
                 if (el('fpwLoans' + suffix)) el('fpwLoans' + suffix).textContent = data.activeLoans + ' loan' + (data.activeLoans !== 1 ? 's' : '') + (data.loanRemainingBalance ? ' · ' + fmtC(data.loanRemainingBalance) : '');
                 if (el('fpwRenewals' + suffix)) el('fpwRenewals' + suffix).textContent = data.upcomingRenewals + ' renewal' + (data.upcomingRenewals !== 1 ? 's' : '');
-                if (el('fpwGoalPct' + suffix) && data.goalsTarget > 0) {
-                    const pct = Math.min(100, Math.round((data.goalsSaved / data.goalsTarget) * 100));
-                    el('fpwGoalPct' + suffix).textContent = fmtC(data.goalsSaved) + ' / ' + fmtC(data.goalsTarget) + ' (' + pct + '%)';
-                    if (el('fpwGoalBar' + suffix)) el('fpwGoalBar' + suffix).style.width = pct + '%';
-                } else if (el('fpwGoalPct' + suffix)) {
-                    el('fpwGoalPct' + suffix).textContent = data.goalsCount + ' goal' + (data.goalsCount !== 1 ? 's' : '');
+                if (el('fpwWishlistPct' + suffix) && data.wishlistCount > 0) {
+                    const readyCount = data.wishlistReadyCount || 0;
+                    const pct = Math.min(100, Math.round((readyCount / data.wishlistCount) * 100));
+                    el('fpwWishlistPct' + suffix).textContent = readyCount > 0
+                        ? readyCount + ' ready to buy'
+                        : data.wishlistCount + ' item' + (data.wishlistCount !== 1 ? 's' : '') + ' planned';
+                    if (el('fpwWishlistBar' + suffix)) el('fpwWishlistBar' + suffix).style.width = pct + '%';
+                } else if (el('fpwWishlistPct' + suffix)) {
+                    el('fpwWishlistPct' + suffix).textContent = '0 items planned';
                 }
             });
         } catch (e) { /* silently ignore */ }

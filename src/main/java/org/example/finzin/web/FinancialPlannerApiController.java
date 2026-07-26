@@ -3,14 +3,14 @@ package org.example.finzin.web;
 import jakarta.servlet.http.HttpServletRequest;
 import org.example.finzin.entity.InvestmentEntity;
 import org.example.finzin.entity.LoanEntity;
+import org.example.finzin.entity.PurchaseItemEntity;
 import org.example.finzin.entity.SubscriptionEntity;
-import org.example.finzin.entity.WishlistGoalEntity;
 import org.example.finzin.gamification.GamificationEvent;
 import org.example.finzin.gamification.GamificationEventType;
 import org.example.finzin.repository.InvestmentRepository;
 import org.example.finzin.repository.LoanRepository;
+import org.example.finzin.repository.PurchaseItemRepository;
 import org.example.finzin.repository.SubscriptionRepository;
-import org.example.finzin.repository.WishlistGoalRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,19 +28,19 @@ public class FinancialPlannerApiController {
     private final InvestmentRepository investmentRepository;
     private final LoanRepository loanRepository;
     private final SubscriptionRepository subscriptionRepository;
-    private final WishlistGoalRepository wishlistGoalRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final PurchaseItemRepository purchaseItemRepository;
 
     public FinancialPlannerApiController(InvestmentRepository investmentRepository,
                                          LoanRepository loanRepository,
                                          SubscriptionRepository subscriptionRepository,
-                                         WishlistGoalRepository wishlistGoalRepository,
-                                         ApplicationEventPublisher eventPublisher) {
+                                         ApplicationEventPublisher eventPublisher,
+                                         PurchaseItemRepository purchaseItemRepository) {
         this.investmentRepository = investmentRepository;
         this.loanRepository = loanRepository;
         this.subscriptionRepository = subscriptionRepository;
-        this.wishlistGoalRepository = wishlistGoalRepository;
         this.eventPublisher = eventPublisher;
+        this.purchaseItemRepository = purchaseItemRepository;
     }
 
     private Long getUserId(HttpServletRequest request) {
@@ -76,10 +76,11 @@ public class FinancialPlannerApiController {
                         && !s.getRenewalDate().isAfter(nextMonth))
                 .count();
 
-        // Wishlist goals
-        List<WishlistGoalEntity> goals = wishlistGoalRepository.findByUserId(userId);
-        double totalSaved = goals.stream().mapToDouble(WishlistGoalEntity::getSavedAmount).sum();
-        double totalTarget = goals.stream().mapToDouble(WishlistGoalEntity::getTargetAmount).sum();
+        // Wishlist & Purchase Planner
+        List<PurchaseItemEntity> activeWishlist = purchaseItemRepository
+                .findByUserIdAndStatusIn(userId, List.of("PLANNING", "WAITING", "READY"));
+        double wishlistValue = activeWishlist.stream().mapToDouble(PurchaseItemEntity::getEstimatedPrice).sum();
+        long wishlistReadyCount = activeWishlist.stream().filter(i -> "READY".equals(i.getStatus())).count();
 
         Map<String, Object> summary = new LinkedHashMap<>();
         summary.put("investmentValue", totalInvestmentValue);
@@ -88,9 +89,9 @@ public class FinancialPlannerApiController {
         summary.put("loanRemainingBalance", activeLoans.stream().mapToDouble(LoanEntity::getRemainingBalance).sum());
         summary.put("activeSubscriptions", activeSubs.size());
         summary.put("upcomingRenewals", upcomingRenewals);
-        summary.put("goalsSaved", totalSaved);
-        summary.put("goalsTarget", totalTarget);
-        summary.put("goalsCount", goals.size());
+        summary.put("wishlistValue", wishlistValue);
+        summary.put("wishlistCount", activeWishlist.size());
+        summary.put("wishlistReadyCount", wishlistReadyCount);
         return summary;
     }
 
@@ -296,8 +297,20 @@ public class FinancialPlannerApiController {
 
     private double calculateTotalInterest(LoanEntity e) {
         if (e.getEmiAmount() == null || e.getLoanEndDate() == null) return 0;
-        long months = ChronoUnit.MONTHS.between(e.getLoanStartDate(), e.getLoanEndDate());
-        return Math.max(0, (e.getEmiAmount() * months) - e.getPrincipalAmount());
+        long payments = countPayments(e.getLoanStartDate(), e.getLoanEndDate(), e.getPaymentFrequency());
+        return Math.max(0, (e.getEmiAmount() * payments) - e.getPrincipalAmount());
+    }
+
+    /** Number of EMI installments paid over the loan term — must match paymentFrequency, since
+     * emiAmount is a per-period figure (e.g. per year for YEARLY loans), not always per-month. */
+    private long countPayments(LocalDate start, LocalDate end, String paymentFrequency) {
+        String frequency = paymentFrequency != null ? paymentFrequency : "MONTHLY";
+        return switch (frequency) {
+            case "WEEKLY" -> ChronoUnit.WEEKS.between(start, end);
+            case "YEARLY" -> ChronoUnit.YEARS.between(start, end);
+            case "ONE_TIME" -> 1;
+            default -> ChronoUnit.MONTHS.between(start, end); // MONTHLY or unrecognized
+        };
     }
 
     // ════════════════════════════════════════════════
@@ -395,126 +408,6 @@ public class FinancialPlannerApiController {
     }
 
     // ════════════════════════════════════════════════
-    // WISHLIST GOALS
-    // ════════════════════════════════════════════════
-
-    @GetMapping("/goals")
-    public List<Map<String, Object>> getGoals(HttpServletRequest request) {
-        Long userId = getUserId(request);
-        return wishlistGoalRepository.findByUserId(userId).stream()
-                .map(this::toGoalMap)
-                .collect(Collectors.toList());
-    }
-
-    @PostMapping("/goals")
-    public ResponseEntity<?> createGoal(HttpServletRequest request, @RequestBody Map<String, Object> body) {
-        Long userId = getUserId(request);
-        try {
-            WishlistGoalEntity entity = new WishlistGoalEntity();
-            entity.setUserId(userId);
-            mapToGoal(body, entity);
-            WishlistGoalEntity saved = wishlistGoalRepository.save(entity);
-            return ResponseEntity.status(HttpStatus.CREATED).body(toGoalMap(saved));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
-
-    @PutMapping("/goals/{id}")
-    public ResponseEntity<?> updateGoal(HttpServletRequest request, @PathVariable Long id,
-                                        @RequestBody Map<String, Object> body) {
-        Long userId = getUserId(request);
-        return wishlistGoalRepository.findById(id)
-                .filter(e -> e.getUserId().equals(userId))
-                .map(entity -> {
-                    boolean wasCompleted = "COMPLETED".equals(entity.getStatus());
-                    mapToGoal(body, entity);
-                    WishlistGoalEntity saved = wishlistGoalRepository.save(entity);
-                    if (!wasCompleted && "COMPLETED".equals(saved.getStatus())) {
-                        eventPublisher.publishEvent(new GamificationEvent(userId, GamificationEventType.GOAL_COMPLETED,
-                                Map.of("goalId", saved.getId())));
-                    }
-                    return ResponseEntity.ok(toGoalMap(saved));
-                })
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @DeleteMapping("/goals/{id}")
-    public ResponseEntity<?> deleteGoal(HttpServletRequest request, @PathVariable Long id) {
-        Long userId = getUserId(request);
-        return wishlistGoalRepository.findById(id)
-                .filter(e -> e.getUserId().equals(userId))
-                .map(entity -> {
-                    wishlistGoalRepository.delete(entity);
-                    return ResponseEntity.noContent().<Void>build();
-                })
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    /** Mark goal as completed */
-    @PostMapping("/goals/{id}/complete")
-    public ResponseEntity<?> completeGoal(HttpServletRequest request, @PathVariable Long id) {
-        Long userId = getUserId(request);
-        return wishlistGoalRepository.findById(id)
-                .filter(e -> e.getUserId().equals(userId))
-                .map(entity -> {
-                    boolean wasCompleted = "COMPLETED".equals(entity.getStatus());
-                    entity.setStatus("COMPLETED");
-                    entity.setSavedAmount(entity.getTargetAmount());
-                    WishlistGoalEntity saved = wishlistGoalRepository.save(entity);
-                    if (!wasCompleted) {
-                        eventPublisher.publishEvent(new GamificationEvent(userId, GamificationEventType.GOAL_COMPLETED,
-                                Map.of("goalId", saved.getId())));
-                    }
-                    return ResponseEntity.ok(toGoalMap(saved));
-                })
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    private void mapToGoal(Map<String, Object> body, WishlistGoalEntity entity) {
-        entity.setGoalName((String) body.get("goalName"));
-        entity.setCategory((String) body.get("category"));
-        entity.setTargetAmount(toDouble(body.get("targetAmount")));
-        entity.setSavedAmount(toDoubleOrDefault(body.get("savedAmount"), 0.0));
-        String td = (String) body.get("targetDate");
-        entity.setTargetDate(td != null && !td.isBlank() ? LocalDate.parse(td) : null);
-        entity.setPriority(body.get("priority") != null ? (String) body.get("priority") : "MEDIUM");
-        // Bug fix (found while wiring the gamification GOAL_COMPLETED hook): this used to
-        // unconditionally default to "IN_PROGRESS" whenever the request omitted status, which
-        // silently reset an already-COMPLETED goal back to IN_PROGRESS on any generic PUT that
-        // didn't resend it. Only a brand-new entity (status still null before this call) should
-        // get the default; an existing entity's status is left alone unless the request actually
-        // changes it — matching the partial-update convention already used by updateTodo.
-        if (body.get("status") != null) {
-            entity.setStatus((String) body.get("status"));
-        } else if (entity.getStatus() == null) {
-            entity.setStatus("IN_PROGRESS");
-        }
-        entity.setIcon((String) body.get("icon"));
-        entity.setNotes((String) body.get("notes"));
-    }
-
-    private Map<String, Object> toGoalMap(WishlistGoalEntity e) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("id", e.getId());
-        m.put("goalName", e.getGoalName());
-        m.put("category", e.getCategory());
-        m.put("targetAmount", e.getTargetAmount());
-        m.put("savedAmount", e.getSavedAmount());
-        double remaining = Math.max(0, e.getTargetAmount() - e.getSavedAmount());
-        m.put("remainingAmount", remaining);
-        double pct = e.getTargetAmount() > 0 ? Math.min(100, (e.getSavedAmount() / e.getTargetAmount()) * 100) : 0;
-        m.put("progressPercent", pct);
-        m.put("targetDate", e.getTargetDate() != null ? e.getTargetDate().toString() : null);
-        m.put("priority", e.getPriority());
-        m.put("status", e.getStatus());
-        m.put("icon", e.getIcon());
-        m.put("notes", e.getNotes());
-        m.put("createdAt", e.getCreatedAt() != null ? e.getCreatedAt().toString() : null);
-        return m;
-    }
-
-    // ════════════════════════════════════════════════
     // Helpers
     // ════════════════════════════════════════════════
 
@@ -528,11 +421,5 @@ public class FinancialPlannerApiController {
         if (v == null || v.toString().isBlank()) return null;
         if (v instanceof Number) return ((Number) v).doubleValue();
         try { return Double.parseDouble(v.toString()); } catch (NumberFormatException e) { return null; }
-    }
-
-    private double toDoubleOrDefault(Object v, double def) {
-        if (v == null) return def;
-        if (v instanceof Number) return ((Number) v).doubleValue();
-        try { return Double.parseDouble(v.toString()); } catch (NumberFormatException e) { return def; }
     }
 }

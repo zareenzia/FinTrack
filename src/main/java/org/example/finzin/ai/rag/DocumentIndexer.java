@@ -8,6 +8,7 @@ import org.example.finzin.entity.BudgetPlanEntity;
 import org.example.finzin.entity.CategoryEntity;
 import org.example.finzin.entity.GoldAssetEntity;
 import org.example.finzin.entity.NoteEntity;
+import org.example.finzin.entity.PurchaseItemEntity;
 import org.example.finzin.entity.SavingsBudgetEntity;
 import org.example.finzin.entity.TodoEntity;
 import org.example.finzin.entity.TransactionEntity;
@@ -144,6 +145,19 @@ public class DocumentIndexer {
     @Async("indexingTaskExecutor")
     public void deleteBudgetPlan(Long userId, Long planId) {
         safely("BUDGET_PLAN", planId, () -> embeddingService.deleteDocument(userId, IndexedEntityType.BUDGET_PLAN, planId));
+    }
+
+    @Async("indexingTaskExecutor")
+    public void indexPurchaseItem(PurchaseItemEntity p) {
+        safely("PURCHASE_ITEM", p.getId(), () -> {
+            var doc = documentMapper.mapPurchaseItem(p);
+            embeddingService.indexDocument(p.getUserId(), IndexedEntityType.PURCHASE_ITEM, p.getId(), doc.title(), doc.content(), doc.metadata());
+        });
+    }
+
+    @Async("indexingTaskExecutor")
+    public void deletePurchaseItem(Long userId, Long purchaseItemId) {
+        safely("PURCHASE_ITEM", purchaseItemId, () -> embeddingService.deleteDocument(userId, IndexedEntityType.PURCHASE_ITEM, purchaseItemId));
     }
 
     @Async("indexingTaskExecutor")
