@@ -953,19 +953,260 @@
         { icon: 'fa-bullseye',         title: 'Grow Your Wealth',   desc: 'Use the Financial Planner for goals, investments, loans, and long-term renewals.' }
     ];
 
-    const MANUAL_FEATURES = [
-        { icon: 'fa-home',        title: 'Dashboard',          desc: 'Your financial command center — balances, recent activity, budget status, forecasts, and AI insights at a glance.', href: '/dashboard' },
-        { icon: 'fa-right-left',  title: 'Transactions',       desc: 'Log income, expenses & transfers. Bulk CSV import/export, receipt OCR scanning, and recurring bills.', href: '/transactions' },
-        { icon: 'fa-wallet',      title: 'Budget Planner',     desc: 'Set monthly, quarterly, or yearly budgets per category and track what is left to spend.', href: '/budget-planner' },
-        { icon: 'fa-bullseye',    title: 'Financial Planner',  desc: 'Plan investments, loans, renewals, and long-term savings goals.', href: '/financial-planner' },
-        { icon: 'fa-sticky-note', title: 'Notes',              desc: 'Jot down financial notes and reminders tied to your money management.', href: '/notes' },
-        { icon: 'fa-tasks',       title: 'To-Do',              desc: 'Track financial tasks — bills to pay, documents to file, calls to make.', href: '/todos' },
-        { icon: 'fa-coins',       title: 'Assets',             desc: 'Track gold and other valuable assets alongside your cash accounts.', href: '/assets' },
-        { icon: 'fa-trophy',      title: 'Achievements',       desc: 'Earn XP, level up, unlock achievements, and complete monthly challenges as you build good financial habits.', href: '/achievements' },
-        { icon: 'fa-robot',       title: 'AI Financial Coach', desc: 'Chat for a health score, personalized insights, and spending recommendations.', href: '/ai-assistant' },
-        { icon: 'fa-calculator',  title: 'Calculator',         desc: 'A quick on-screen calculator with history, available from any page.', action: 'calculator' },
-        { icon: 'fa-bell',        title: 'Notifications',      desc: 'Budget alerts, bill reminders, and account activity — always one click away.', action: 'notifications' },
-        { icon: 'fa-cog',         title: 'Settings',           desc: 'Manage accounts, categories, profile, appearance, and sidebar layout.', href: '/settings' }
+    // Detailed per-module guide — one entry per real module/feature in the app, each broken into
+    // labeled groups of specific, actionable bullets (not just a one-line teaser) so nothing
+    // implemented goes undiscovered. Rendered as an accordion in the "Module Guide" tab.
+    const MODULE_GUIDE = [
+        { id: 'dashboard', icon: 'fa-home', title: 'Dashboard', href: '/dashboard',
+          tagline: 'Your financial command center — balances, trends, and every widget in one place.',
+          groups: [
+            { heading: 'Overview', items: [
+                'Six headline stat cards: Total Income, Total Expense, Total Savings, Net Balance, Assets Value, and Net Worth.',
+                'Category Chart (where your money goes) and a Monthly Chart (income vs. expense trend over time).',
+                'Toggle between the full Default view and a denser Compact view from the button in the header — useful on smaller screens.'
+            ]},
+            { heading: 'Widgets', items: [
+                'Account Balances — every account\'s current balance in one list.',
+                'Upcoming Recurring — bills and subscriptions due soon.',
+                'Current Budget — this period\'s Budget Planner progress, without leaving the dashboard.',
+                'Financial Planner summary — investment, loan, subscription, and purchase-planner counts at a glance.',
+                'Achievements widget — your level, XP, and streak.',
+                'Family Summary widget — appears once you join a household: this month\'s shared spending and your settlement balance.',
+                'An AI "Today\'s Insight" tip appears once you\'ve logged enough activity for the AI Coach to analyze.'
+            ]}
+          ]},
+        { id: 'transactions', icon: 'fa-right-left', title: 'Transactions', href: '/transactions',
+          tagline: 'Log income, expenses, transfers &amp; savings — plus recurring bills and CSV tools.',
+          groups: [
+            { heading: 'Adding &amp; Editing', items: [
+                'Add New Transaction supports Income, Expense, Savings, and Transfer types — with account, category, date, and an optional details/notes field.',
+                'The Add modal lets you stack multiple transactions in one go via "Add Another Transaction" before saving them all together.',
+                'Spending directly from savings, and credit card transactions, are handled as special cases — your account balances always update automatically.',
+                'Log Cash Transfer moves money between two of your own accounts without it counting as income or expense.',
+                'Edit or delete any transaction later — balances recalculate automatically.'
+            ]},
+            { heading: 'Recurring Transactions', items: [
+                'Create Recurring Transaction sets up a bill, subscription, or income that repeats on a schedule (with a start date, frequency, and optional end date).',
+                'Each due occurrence can be Confirmed (posts it as a real transaction) or Skipped for that cycle.',
+                'Recurring items can be deleted outright, and are listed separately under "All Recurring Transactions" on this same page.',
+                'Import or export your recurring transactions as a CSV file using the buttons above that list.'
+            ]},
+            { heading: 'Finding &amp; Managing', items: [
+                'Filter, search, and sort the transaction list to find exactly what you need.',
+                'Import transactions in bulk from a CSV file, or export your currently filtered list to CSV — both from the toolbar above the list.',
+                'The Scan Receipt button opens the OCR receipt scanner — see the dedicated Receipt Scanner guide below.'
+            ]}
+          ]},
+        { id: 'budget-planner', icon: 'fa-wallet', title: 'Budget Planner', href: '/budget-planner',
+          tagline: 'Category budgets, joint savings goals, templates, charts, and exports.',
+          groups: [
+            { heading: 'Budget Plans', items: [
+                'Switch between plans from the dropdown at the top — FinTrack auto-selects the one matching the current month.',
+                'Create Budget opens a form for Name, Period Type (Month/Quarter/Year), Period Label, Start/End Date, Expected Income, Expected Savings, and Notes.',
+                'Copy Last Month or Duplicate (from History) carry forward a prior plan\'s setup instead of starting from scratch.',
+                'Archive a plan to hide it without deleting it, or delete it outright (this also removes its category and savings allocations).'
+            ]},
+            { heading: 'Category Budgets', items: [
+                'Add Category Budget sets a spending limit for an expense category within the current plan.',
+                'Each card shows a status badge (On Track / Near Limit / Over Budget) with a color-coded progress bar and contextual suggestion tips.',
+                'Edit or delete any category budget at any time.'
+            ]},
+            { heading: 'Savings Goals', items: [
+                'Click + in the Savings Goals panel: choose (or create) a savings category, set a Target Amount, an optional Manual Starting Balance for money saved before you started tracking, and optionally where it\'s Stored In / Funded From.',
+                'Progress combines your starting balance with everything logged as a savings-type transaction toward that category — shown as "X saved (incl. Y already saved) of [target]".',
+                'A goal automatically flips to "Achieved" once it reaches its target; the category locks once a goal exists to avoid duplicates.'
+            ]},
+            { heading: 'Score, Charts &amp; Calendar', items: [
+                'A 0–100 Budget Score gauge reflects category adherence, savings progress, and income-target attainment.',
+                'The Charts tab shows Budget Allocation (doughnut), Budget vs. Actual (bar), and Budget Trend (planned vs. actual over time).',
+                'The Calendar tab marks each day with a color dot for income, spending, savings, or going over budget that day.'
+            ]},
+            { heading: 'Templates, History &amp; Export', items: [
+                'Save a reusable Template (income/savings targets plus a list of category allocations) from the Templates tab, then Apply it to instantly pre-populate a brand-new plan.',
+                'The History tab is a searchable, filterable, sortable table of every plan you\'ve created, with quick actions to open, duplicate, archive, or delete each one.',
+                'Export the currently-open plan as CSV, Excel, or PDF from the header\'s Export dropdown.'
+            ]}
+          ]},
+        { id: 'notes', icon: 'fa-sticky-note', title: 'Notes', href: '/notes',
+          tagline: 'Rich-text notes and reminders tied to your money management.',
+          groups: [
+            { heading: 'What you can do', items: [
+                'Create a note with a title and rich-text content (a formatting toolbar is built into the editor).',
+                'Pick a color and add tags to keep related notes organized.',
+                'Pin important notes to the top, mark a note Done, or Archive it instead of deleting.',
+                'Filter by All / Pinned / Done / Archived, and search by title or content.',
+                'Edit or delete any note at any time.'
+            ]}
+          ]},
+        { id: 'todos', icon: 'fa-tasks', title: 'To-Do', href: '/todos',
+          tagline: 'Financial tasks — bills to pay, documents to file, calls to make.',
+          groups: [
+            { heading: 'What you can do', items: [
+                'Create a task with a title, description, due date and time, priority (Low/Medium/High), and a free-text category (e.g. "Work", "Personal").',
+                'Move a task through Pending → In Progress → Completed as you work on it.',
+                'Filter by All / Pending / In Progress / Completed / Overdue, and search across your tasks.',
+                'Edit or delete any task at any time.'
+            ]}
+          ]},
+        { id: 'assets', icon: 'fa-coins', title: 'Assets', href: '/assets',
+          tagline: 'Track your gold holdings with live (or manual) market pricing.',
+          groups: [
+            { heading: 'Tracking Gold', items: [
+                'Add Gold Asset records a name, Gold Type/Purity (22K, 21K, 18K, 24K, Traditional, or Custom), Type (Ornament, Bar, Coin, or Custom), Weight (with automatic unit conversion), Purchase Price, and optional description/notes.',
+                'Summary cards show Total Gold Value, Total Weight, number of Gold Assets, and the current 22K price per gram.',
+                'Filter by Purity or Type, and search your inventory by name.'
+            ]},
+            { heading: 'Pricing &amp; Data', items: [
+                'Sync Gold Prices pulls the latest per-purity rates automatically; switch to Set Manual Prices if you\'d rather enter your own.',
+                'Import your gold inventory from a CSV file, or export your currently filtered list to CSV.',
+                'Edit or delete any asset at any time — your total value recalculates automatically.'
+            ]}
+          ]},
+        { id: 'financial-planner', icon: 'fa-bullseye', title: 'Financial Planner', href: '/financial-planner',
+          tagline: 'Investments, loans, subscriptions, and the Wishlist &amp; Purchase Planner — four tabs, one page.',
+          groups: [
+            { heading: 'Investment Portfolio tab', items: [
+                'Add Investment records the name, type (Stocks, Mutual Funds, ETFs, Bonds, Crypto, Fixed Deposits, or Other), platform/broker, purchase date, quantity, and buy/current price.',
+                'Summary cards show Total Value, Total Profit/Loss, Total Return %, and Active Investments — backed by a Portfolio Allocation chart and a Profit/Loss-by-investment chart.',
+                'Search, filter by type, and sort by value, profit, or date; edit or delete any holding.'
+            ]},
+            { heading: 'Loan Manager tab', items: [
+                'Add Loan records the loan name, type (Personal, Home, Car, Education, Business, Borrowed, or Lent), lender/borrower, principal, EMI amount, payment frequency, and start/end date.',
+                'Total Interest is calculated correctly for whatever payment frequency you set (monthly, weekly, yearly, or one-time) — not just assumed monthly.',
+                'Mark EMI Paid on an active loan logs the payment and updates its remaining balance and progress bar in one click.',
+                'Filter by type or status (Active/Closed/Overdue), search, and track Total Loan Amount, Remaining Balance, Monthly EMI, and Total Interest across all your loans.'
+            ]},
+            { heading: 'Subscriptions tab', items: [
+                'Add Subscription records the name, category, cost, billing cycle (Monthly/Yearly), and next renewal date — or quick-add a common one (Netflix, Spotify, ChatGPT Plus, Claude Pro, GitHub, Adobe Creative Cloud, etc.) from the template chips.',
+                'Summary cards track Active Subscriptions, Monthly Cost, Yearly Cost, and Upcoming Renewals in the next 30 days.',
+                'Filter by status or billing cycle, search, and pause, cancel, edit, or delete any subscription.'
+            ]},
+            { heading: 'Wishlist &amp; Purchase Planner tab', items: [
+                'Add Purchase logs something you want to buy with a need level (Must/Should/Nice to Have), priority, price, category, store, and target month.',
+                'The Kanban Board organizes items into Must Have / Should Have / Nice to Have columns — drag and drop between columns to re-prioritize.',
+                'The Purchase Timeline lays out planned purchases by target month.',
+                'Every item gets a smart Affordability verdict — Can Buy Now, Wait (with an estimated number of months), or Not Affordable — computed from your real budget and savings data, not guesswork.',
+                'The Purchase Decision Matrix scores each item on Need, Urgency, Budget fit, and Savings progress (0–5 stars each) plus an overall Readiness percentage.',
+                'The Link With Budget Planner panel shows your monthly budget remaining, total planned purchases, and what\'s left after them — so purchases and budgets never conflict.',
+                'Mark an item Purchased to log a real expense transaction for it automatically — nothing needs to be entered twice.',
+                'Every item keeps a Price History (tracks price changes over time) and an Activity Timeline; Analytics charts show Must vs. Should vs. Nice ratio and Monthly Planned vs. Completed purchases.'
+            ]}
+          ]},
+        { id: 'family-finance', icon: 'fa-users', title: 'Family Finance', href: '/family-finance',
+          tagline: 'A household workspace — share what you choose to, keep everything else private.',
+          groups: [
+            { heading: 'Household Setup', items: [
+                'Create a household (you become its Administrator) or accept an invitation someone sent you — you can only belong to one household at a time.',
+                'Invite a member by their email or username, with an optional relationship label (Spouse/Parent/Child/Other); they get a notification and can Accept or Decline.',
+                'Administrators can rename the household, transfer ownership to another member, remove a member, or delete the household outright.',
+                'Leaving — or being removed from — a household never touches your personal transactions, and your past shared expenses stay visible to the others for accountability.'
+            ]},
+            { heading: 'Shared Expenses &amp; Settlements', items: [
+                'Log a Shared Expense: it creates a real personal transaction for whoever paid, then splits it Equally, by Percentage, or by a Fixed Amount among household members.',
+                'The payer\'s own account balance updates exactly like any normal expense — nothing about your personal history is duplicated or faked.',
+                'The Settlement panel shows everyone\'s live balance (paid vs. fair share) and a Suggested Settlement — the minimum number of payments needed to zero everyone out.',
+                'Record a Settlement as a simple ledger note whenever money actually changes hands between members — it nets against the running balance immediately.'
+            ]},
+            { heading: 'Household Budgets &amp; Goals', items: [
+                'An administrator can cap a category\'s spending household-wide (e.g. "Groceries: ৳15,000/month"), measured against everyone\'s shared expenses in that category that month, with On Track / Near Limit / Exceeded status.',
+                'Any member can start a joint Household Goal (e.g. "Family Vacation Fund") with a target amount and optional target date.',
+                'Contribute your own money toward a goal — it\'s a real personal savings transaction that gets linked in, with a full per-member contribution breakdown always visible.',
+                'A goal automatically marks itself Achieved once contributions reach the target, and everyone is notified; archiving a goal stops new contributions while keeping its history, and it can only be deleted outright if it never received a contribution.'
+            ]},
+            { heading: 'Dashboard &amp; Notifications', items: [
+                'The Family Summary card on your main Dashboard shows this month\'s total shared spending, your net balance, member count, and shared-expense count at a glance.',
+                'Notifications keep everyone in the loop automatically: invites, accepted/declined invites, being removed, shared expenses added, settlements recorded, and goals achieved.'
+            ]}
+          ]},
+        { id: 'achievements', icon: 'fa-trophy', title: 'Achievements', href: '/achievements',
+          tagline: 'Earn XP, level up, and build good financial habits through gamification.',
+          groups: [
+            { heading: 'What you can do', items: [
+                'Earn XP for real actions across the app — logging transactions, staying within budget, hitting savings goals, and more — which levels you up over time.',
+                'Track a daily Streak and see it front and center on the Overview tab, alongside your level, XP progress to the next level, and achievement count.',
+                'Unlock Achievements (badges) for milestones, viewable in a dedicated grid on the Achievements tab.',
+                'Complete rotating monthly Challenges on the Challenges tab for extra XP.',
+                'Review your full Recent XP History log to see exactly what earned you points and when.',
+                'Turn gamification off entirely, or toggle individual pieces (notifications, the dashboard widget, celebration animations, challenges, streak tracking, and the XP display) from Settings → Achievements.'
+            ]}
+          ]},
+        { id: 'ai-assistant', icon: 'fa-robot', title: 'AI Financial Assistant', href: '/ai-assistant',
+          tagline: 'A chat assistant that reasons over your own real financial data.',
+          groups: [
+            { heading: 'What you can do', items: [
+                'Ask it anything about your finances in plain language — it reads your actual transactions, budgets, and goals to answer, not generic advice.',
+                'Keep multiple separate conversations (New Chat + a conversation list, like a chat app) so different questions don\'t get mixed together.',
+                'Suggested questions and quick-action prompts appear when you start a new chat, if you\'re not sure what to ask.',
+                'Proactive Insights, Budget Coaching, Savings Coaching, Monthly Reports, and the Dashboard "Today\'s Insight" summary are all separately toggleable in Settings → AI Assistant.',
+                'Developer Mode (Settings → AI Assistant) shows a debug panel under every response with retrieved documents, similarity scores, tool calls, and token usage — useful if a response seems off.'
+            ]}
+          ]},
+        { id: 'receipt-scanner', icon: 'fa-camera', title: 'Receipt Scanner (OCR)', href: '/transactions',
+          tagline: 'Snap a photo of a receipt and let OCR fill in the transaction for you.',
+          groups: [
+            { heading: 'What you can do', items: [
+                'Click Scan Receipt (on the Dashboard or Transactions page) and take a photo or choose an image file (JPG/PNG/WEBP, up to 10MB).',
+                'FinTrack extracts the merchant name, total amount, date, and a suggested category automatically — each pre-filled field shows a confidence indicator.',
+                'Review and correct any field before saving — nothing posts until you click Confirm &amp; Save; you can also view the raw extracted OCR text.',
+                'Every transaction created this way keeps its original receipt image attached — reopen it anytime to view, download, replace, or delete the photo.',
+                'Turn the feature on or off from Settings → Receipt Scanner.'
+            ]}
+          ]},
+        { id: 'voice-assistant', icon: 'fa-microphone', title: 'Voice Assistant', href: null,
+          tagline: 'Speak a transaction, note, or to-do instead of typing it — from any page.',
+          groups: [
+            { heading: 'What you can do', items: [
+                'Open it from the floating microphone button or the Ctrl+Shift+V shortcut, available on every page.',
+                'Speak naturally to log an Expense, Income, Savings, or Transfer, add a Note or To-Do, or ask a Query about your finances.',
+                'If a command is ambiguous, FinTrack asks a quick follow-up instead of guessing wrong — and if it truly can\'t parse it, it routes the request to the AI chat instead.',
+                'Review your full voice command history — including what was understood and its outcome — in Settings → Voice Assistant.',
+                'Turn voice commands on or off, and set the recognition language, from Settings → Voice Assistant (English (US) today; Bangla and mixed Bangla-English are planned).'
+            ]}
+          ]},
+        { id: 'calculator', icon: 'fa-calculator', title: 'Calculator', action: 'calculator',
+          tagline: 'A draggable on-screen calculator available from any page.',
+          groups: [
+            { heading: 'What you can do', items: [
+                'Open it from the sidebar\'s Calculator button — it floats over whatever page you\'re on, and can be dragged, pinned, or minimized.',
+                'Full memory functions (MC/MR/M+/M−) alongside standard operations, percent, and sign toggle.',
+                'A History panel keeps a running log of your recent calculations, with a one-click clear.'
+            ]}
+          ]},
+        { id: 'notifications', icon: 'fa-bell', title: 'Notifications', action: 'notifications',
+          tagline: 'Everything that needs your attention, in one bell-icon dropdown.',
+          groups: [
+            { heading: 'What triggers a notification', items: [
+                'Budget alerts — approaching or exceeding a category budget.',
+                'Savings goals achieved, and upcoming recurring bills.',
+                'Household activity — invites, accepted/declined invites, being removed, shared expenses added, settlements recorded, and household goals achieved.',
+                'Click the bell icon anywhere in the app to view, click through to, or mark-all-read your notifications.'
+            ]}
+          ]},
+        { id: 'settings', icon: 'fa-cog', title: 'Settings', href: '/settings',
+          tagline: 'Every account, category, and app preference lives here, organized into sections.',
+          groups: [
+            { heading: 'Account Configuration', items: [
+                'Add and edit Bank, Mobile Money (MFS), Cash, and Credit Card accounts, each with a starting balance that everything else builds on.'
+            ]},
+            { heading: 'Categories', items: [
+                'Create custom Income, Expense, or Savings categories with your own icon and color.',
+                'Filter existing categories by type, and bulk-import or export them.'
+            ]},
+            { heading: 'Currency &amp; Localization', items: [
+                'Set your currency symbol, position, and decimal formatting — a live preview shows exactly how positive and negative amounts will look everywhere in the app.'
+            ]},
+            { heading: 'Appearance', items: [
+                'Pick a color theme and light/dark mode, adjust font size, and reorder or hide sidebar modules to match how you actually use the app.'
+            ]},
+            { heading: 'Security', items: [
+                'Change your password (with current/new/confirm fields and show/hide toggles).',
+                'Export your Transactions or Categories to CSV directly from this section.',
+                'Danger Zone: permanently delete your account — this requires typing DELETE to confirm and cannot be undone.'
+            ]},
+            { heading: 'About', items: [
+                'App version and release notes, a star-rating feedback form, and a Report a Bug form.'
+            ]}
+          ]}
     ];
 
     function getManualChecklistKey() { return getUserStorageKey('finzin_manual_checklist'); }
@@ -981,13 +1222,26 @@
     function injectUserManualModal() {
         if (document.getElementById('userManualModal')) return;
 
-        var featureCardsHtml = MANUAL_FEATURES.map(function (f) {
-            return '<div class="um-feature-card" data-href="' + (f.href || '') + '" data-action="' + (f.action || '') + '" tabindex="0" role="button" aria-label="' + f.title + '">' +
-                '<div class="um-feature-icon"><i class="fas ' + f.icon + '"></i></div>' +
-                '<div class="um-feature-title">' + f.title + '</div>' +
-                '<div class="um-feature-desc">' + f.desc + '</div>' +
-                '<span class="um-feature-link">Open <i class="fas fa-arrow-right ms-1"></i></span>' +
-                '</div>';
+        var guideAccordionHtml = MODULE_GUIDE.map(function (m) {
+            var groupsHtml = m.groups.map(function (g) {
+                var bulletsHtml = g.items.map(function (item) { return '<li>' + item + '</li>'; }).join('');
+                return '<div class="um-guide-group">' +
+                    '<div class="um-guide-group-heading">' + g.heading + '</div>' +
+                    '<ul class="um-guide-bullets">' + bulletsHtml + '</ul>' +
+                    '</div>';
+            }).join('');
+            var openBtnHtml = (m.href || m.action)
+                ? '<button type="button" class="btn btn-sm btn-primary um-guide-open-btn" data-href="' + (m.href || '') + '" data-action="' + (m.action || '') + '">Open ' + m.title + ' <i class="fas fa-arrow-right ms-1"></i></button>'
+                : '';
+            return '<div class="accordion-item" data-guide-id="' + m.id + '">' +
+                '<h2 class="accordion-header">' +
+                '<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#umGuide-' + m.id + '">' +
+                '<span class="um-guide-icon"><i class="fas ' + m.icon + '"></i></span>' +
+                '<span class="um-guide-headtext"><span class="um-guide-title">' + m.title + '</span><span class="um-guide-tagline">' + m.tagline + '</span></span>' +
+                '</button></h2>' +
+                '<div id="umGuide-' + m.id + '" class="accordion-collapse collapse" data-bs-parent="#umGuideAccordion">' +
+                '<div class="accordion-body">' + groupsHtml + openBtnHtml + '</div>' +
+                '</div></div>';
         }).join('');
 
         var workflowHtml = MANUAL_WORKFLOW.map(function (w, i) {
@@ -1015,7 +1269,7 @@
                     <button class="um-nav-item active" data-um-tab="welcome" type="button" role="tab"><i class="fas fa-hand-sparkles"></i><span>Welcome</span></button>
                     <button class="um-nav-item" data-um-tab="checklist" type="button" role="tab"><i class="fas fa-list-check"></i><span>Getting Started</span><span class="um-nav-badge" id="umChecklistBadge"></span></button>
                     <button class="um-nav-item" data-um-tab="workflow" type="button" role="tab"><i class="fas fa-diagram-project"></i><span>How It Works</span></button>
-                    <button class="um-nav-item" data-um-tab="features" type="button" role="tab"><i class="fas fa-shapes"></i><span>Features &amp; Quick Links</span></button>
+                    <button class="um-nav-item" data-um-tab="features" type="button" role="tab"><i class="fas fa-book"></i><span>Module Guide</span></button>
                   </div>
                   <div class="um-content">
                     <div class="um-pane active" data-um-pane="welcome">
@@ -1047,9 +1301,14 @@
                       <div class="um-flow-note"><i class="fas fa-lightbulb me-2"></i>At the start of each month: review last month in the AI Coach, set a fresh Budget Plan, then just keep logging as you go — the dashboard and forecasts stay current automatically.</div>
                     </div>
                     <div class="um-pane" data-um-pane="features">
-                      <h5><i class="fas fa-shapes me-2"></i>Features &amp; Quick Links</h5>
-                      <p class="text-muted small">Click any card to jump straight there.</p>
-                      <div class="um-feature-grid">${featureCardsHtml}</div>
+                      <h5><i class="fas fa-book me-2"></i>Module Guide</h5>
+                      <p class="text-muted small">Every module, in detail — expand one to see exactly what it can do, or search to jump straight to it.</p>
+                      <div class="um-guide-search-wrap">
+                        <i class="fas fa-search"></i>
+                        <input type="text" class="um-guide-search" id="umGuideSearch" placeholder="Search modules & features…">
+                      </div>
+                      <div class="accordion accordion-flush um-guide-accordion" id="umGuideAccordion">${guideAccordionHtml}</div>
+                      <div class="um-guide-empty d-none" id="umGuideEmpty"><i class="fas fa-magnifying-glass-minus mb-2 d-block" style="font-size:1.8rem;opacity:.4"></i>No modules match "<span id="umGuideEmptyTerm"></span>".</div>
                     </div>
                   </div>
                 </div>
@@ -1072,10 +1331,11 @@
         var goBtn = document.getElementById('umGoToChecklistBtn');
         if (goBtn) goBtn.addEventListener('click', function () { switchManualTab('checklist'); });
 
-        modalEl.querySelectorAll('.um-feature-card').forEach(function (card) {
-            function activate() {
-                var action = card.dataset.action;
-                var href = card.dataset.href;
+        modalEl.querySelectorAll('.um-guide-open-btn').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var action = btn.dataset.action;
+                var href = btn.dataset.href;
                 if (action === 'calculator') {
                     bootstrap.Modal.getInstance(modalEl).hide();
                     if (typeof window.toggleCalc === 'function') window.toggleCalc();
@@ -1085,12 +1345,28 @@
                 } else if (href) {
                     window.location.href = href;
                 }
-            }
-            card.addEventListener('click', activate);
-            card.addEventListener('keydown', function (e) {
-                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
             });
         });
+
+        var guideSearch = document.getElementById('umGuideSearch');
+        if (guideSearch) guideSearch.addEventListener('input', function () { filterModuleGuide(guideSearch.value); });
+    }
+
+    function filterModuleGuide(term) {
+        var modalEl = document.getElementById('userManualModal');
+        if (!modalEl) return;
+        var normalized = (term || '').trim().toLowerCase();
+        var items = modalEl.querySelectorAll('.um-guide-accordion .accordion-item');
+        var visibleCount = 0;
+        items.forEach(function (item) {
+            var matches = !normalized || item.textContent.toLowerCase().indexOf(normalized) !== -1;
+            item.classList.toggle('um-guide-hidden', !matches);
+            if (matches) visibleCount++;
+        });
+        var empty = document.getElementById('umGuideEmpty');
+        var emptyTerm = document.getElementById('umGuideEmptyTerm');
+        if (empty) empty.classList.toggle('d-none', visibleCount > 0 || !normalized);
+        if (emptyTerm) emptyTerm.textContent = term || '';
     }
 
     function switchManualTab(tab) {
