@@ -477,6 +477,17 @@
                 </div>
             </div>
         </div>
+        <div class="col-md-4 d-none" id="familySummaryRow">
+            <div class="card h-100">
+                <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-users me-2"></i>Family Finance</h6>
+                    <a href="/family-finance" class="btn btn-sm btn-outline-primary" title="Open Family Finance"><i class="fas fa-arrow-right"></i></a>
+                </div>
+                <div class="card-body" id="familySummaryBody">
+                    <p class="text-muted small mb-0">Loading…</p>
+                </div>
+            </div>
+        </div>
     </div>
     </div><!-- /#dashboardDefaultView -->
 
@@ -771,6 +782,17 @@
                         <a href="/achievements" class="btn btn-sm btn-outline-primary" title="Open Achievements"><i class="fas fa-arrow-right"></i></a>
                     </div>
                     <div class="card-body" id="gamificationBodyCompact">
+                        <p class="text-muted small mb-0">Loading…</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 d-none" id="familySummaryRowCompact">
+                <div class="card h-100">
+                    <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="fas fa-users me-2"></i>Family Finance</h6>
+                        <a href="/family-finance" class="btn btn-sm btn-outline-primary" title="Open Family Finance"><i class="fas fa-arrow-right"></i></a>
+                    </div>
+                    <div class="card-body" id="familySummaryBodyCompact">
                         <p class="text-muted small mb-0">Loading…</p>
                     </div>
                 </div>
@@ -1349,6 +1371,7 @@
         loadAiSummary();
         loadFpWidget();
         loadGamificationWidget();
+        loadFamilySummaryWidget();
         loadReceiptScannerAvailability();
     });
 
@@ -1414,6 +1437,32 @@
             bodies.forEach(b => b.innerHTML = html);
         } catch (e) {
             bodies.forEach(b => b.innerHTML = '<p class="text-muted small mb-0">Unable to load achievements.</p>');
+        }
+    }
+
+    async function loadFamilySummaryWidget() {
+        const bodies = ['familySummaryBody', 'familySummaryBodyCompact'].map(id => document.getElementById(id)).filter(Boolean);
+        const rows = ['familySummaryRow', 'familySummaryRowCompact'].map(id => document.getElementById(id)).filter(Boolean);
+        if (!bodies.length) return;
+        try {
+            const data = await fetch('/api/households/dashboard-summary').then(r => r.json());
+            if (!data.hasHousehold) {
+                rows.forEach(r => r.classList.add('d-none'));
+                return;
+            }
+            rows.forEach(r => r.classList.remove('d-none'));
+            const balance = data.yourNetBalance || 0;
+            const balanceColor = balance >= 0 ? '#22c55e' : '#ef4444';
+            const balanceLabel = (balance >= 0 ? '+' : '') + formatAmount(balance);
+            let html = `<div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="fw-semibold">${escapeAiSummaryText(data.householdName)}</span>
+                <span class="text-muted small">${data.memberCount} member${data.memberCount !== 1 ? 's' : ''}</span></div>`;
+            html += `<div class="d-flex justify-content-between small text-muted mb-1">
+                <span>Shared This Month</span><span>${formatAmount(data.thisMonthSharedTotal || 0)}</span></div>`;
+            html += `<div class="small">Your Balance: <strong style="color:${balanceColor};">${balanceLabel}</strong></div>`;
+            bodies.forEach(b => b.innerHTML = html);
+        } catch (e) {
+            bodies.forEach(b => b.innerHTML = '<p class="text-muted small mb-0">Unable to load family finance summary.</p>');
         }
     }
 

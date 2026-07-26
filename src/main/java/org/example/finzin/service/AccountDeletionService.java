@@ -2,9 +2,13 @@ package org.example.finzin.service;
 
 import org.example.finzin.entity.BudgetPlanEntity;
 import org.example.finzin.entity.BudgetTemplateEntity;
+import org.example.finzin.entity.HouseholdEntity;
+import org.example.finzin.entity.HouseholdMemberEntity;
 import org.example.finzin.entity.PurchaseItemEntity;
 import org.example.finzin.entity.ReceiptEntity;
+import org.example.finzin.entity.TransactionEntity;
 import org.example.finzin.entity.UserEntity;
+import org.example.finzin.family.HouseholdService;
 import org.example.finzin.purchaseplanner.PurchaseItemImageStorageService;
 import org.example.finzin.receipts.ReceiptStorageService;
 import org.example.finzin.repository.*;
@@ -71,6 +75,12 @@ public class AccountDeletionService {
     private final org.example.finzin.repository.UserStatCounterRepository userStatCounterRepository;
     private final org.example.finzin.repository.StreakRepository streakRepository;
     private final org.example.finzin.repository.UserChallengeRepository userChallengeRepository;
+    private final HouseholdMemberRepository householdMemberRepository;
+    private final HouseholdInvitationRepository householdInvitationRepository;
+    private final SharedTransactionRepository sharedTransactionRepository;
+    private final SharedTransactionShareRepository sharedTransactionShareRepository;
+    private final HouseholdGoalContributionRepository householdGoalContributionRepository;
+    private final HouseholdService householdService;
 
     @Value("${app.upload.dir:user-uploads/profiles}")
     private String profileUploadDir;
@@ -97,7 +107,11 @@ public class AccountDeletionService {
             org.example.finzin.repository.UserAchievementRepository userAchievementRepository,
             org.example.finzin.repository.UserStatCounterRepository userStatCounterRepository,
             org.example.finzin.repository.StreakRepository streakRepository,
-            org.example.finzin.repository.UserChallengeRepository userChallengeRepository) {
+            org.example.finzin.repository.UserChallengeRepository userChallengeRepository,
+            HouseholdMemberRepository householdMemberRepository, HouseholdInvitationRepository householdInvitationRepository,
+            SharedTransactionRepository sharedTransactionRepository, SharedTransactionShareRepository sharedTransactionShareRepository,
+            HouseholdGoalContributionRepository householdGoalContributionRepository,
+            HouseholdService householdService) {
         this.userRepository = userRepository;
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
@@ -139,6 +153,12 @@ public class AccountDeletionService {
         this.userStatCounterRepository = userStatCounterRepository;
         this.streakRepository = streakRepository;
         this.userChallengeRepository = userChallengeRepository;
+        this.householdMemberRepository = householdMemberRepository;
+        this.householdInvitationRepository = householdInvitationRepository;
+        this.sharedTransactionRepository = sharedTransactionRepository;
+        this.sharedTransactionShareRepository = sharedTransactionShareRepository;
+        this.householdGoalContributionRepository = householdGoalContributionRepository;
+        this.householdService = householdService;
     }
 
     @Transactional
@@ -158,6 +178,28 @@ public class AccountDeletionService {
         voiceSettingsRepository.deleteByUserId(userId);
 
         notificationRepository.deleteByUserId(userId);
+
+        // Family Finance: any of this user's own transactions that were shared into a household
+        // ledger must be unlinked before the transactions themselves are deleted below (avoids a
+        // dangling shared_transactions.transaction_id reference). Contributions the user made toward
+        // OTHER members' shared expenses are left as-is — those don't reference anything being
+        // deleted here, and keeping them preserves the household's historical accountability.
+        for (TransactionEntity tx : transactionRepository.findByUserId(userId)) {
+            sharedTransactionRepository.findByTransactionId(tx.getId()).ifPresent(shared -> {
+                sharedTransactionShareRepository.deleteBySharedTransactionId(shared.getId());
+                sharedTransactionRepository.deleteById(shared.getId());
+            });
+            householdGoalContributionRepository.deleteByTransactionId(tx.getId());
+        }
+        // Leaving handles ownership transfer (or deleting the household if this user was its last
+        // member) the same way a voluntary "Leave Household" would.
+        HouseholdMemberEntity membership = householdMemberRepository.findByUserId(userId).orElse(null);
+        if (membership != null) {
+            HouseholdEntity household = householdService.requireHousehold(membership.getHouseholdId());
+            householdService.leave(household, userId);
+        }
+        householdInvitationRepository.deleteByInvitedByUserId(userId);
+        householdInvitationRepository.deleteByInviteeUserId(userId);
 
         // Transactions before categories: transactions.category_id has a real FK constraint.
         transactionRepository.deleteByUserId(userId);

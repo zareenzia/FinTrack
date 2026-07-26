@@ -24,6 +24,7 @@
         { id: 'todos',             label: 'To-Do',             icon: 'fas fa-tasks',           href: '/todos'                            },
         { id: 'assets',            label: 'Assets',            icon: 'fas fa-coins',           href: '/assets'                           },
         { id: 'financial-planner', label: 'Financial Planner', icon: 'fas fa-bullseye',        href: '/financial-planner'                },
+        { id: 'family-finance',    label: 'Family Finance',    icon: 'fas fa-users',           href: '/family-finance'                   },
         { id: 'calculator',        label: 'Calculator',        icon: 'fas fa-calculator',      href: null,   special: 'calculator'       },
         { id: 'settings',          label: 'Settings',          icon: 'fas fa-cog',             href: '/settings',          locked: true  },
     ];
@@ -737,7 +738,12 @@
                 }
                 container.innerHTML = items.slice(0, 20).map(function (n) {
                     var unreadStyle = n.isRead ? '' : 'background:var(--bg-table-stripe);';
-                    return '<div style="padding:8px; border-bottom:1px solid var(--border-input); cursor:pointer; ' + unreadStyle + '" onclick="window.__markNotifRead(' + n.id + ')">' +
+                    // Household invitations route to the Family Finance page (where the invite can
+                    // actually be accepted/declined) instead of just marking themselves read in place.
+                    var onclick = n.type === 'HOUSEHOLD_INVITE'
+                        ? "window.location.href='/family-finance?invite=" + n.relatedEntityId + "'"
+                        : 'window.__markNotifRead(' + n.id + ')';
+                    return '<div style="padding:8px; border-bottom:1px solid var(--border-input); cursor:pointer; ' + unreadStyle + '" onclick="' + onclick + '">' +
                         '<div style="font-weight:600; font-size:0.85rem; color:var(--text-primary-custom);">' + n.title + '</div>' +
                         '<div style="font-size:0.8rem; color:var(--text-secondary-custom);">' + n.message + '</div>' +
                         '</div>';

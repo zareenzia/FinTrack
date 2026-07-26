@@ -117,5 +117,13 @@ public class PageController {
         }
         return "forward:/achievements.html";
     }
+
+    @GetMapping("/family-finance")
+    public String familyFinance(HttpServletRequest request) {
+        if (request.getAttribute("userId") == null) {
+            return "redirect:/login";
+        }
+        return "forward:/family-finance.html";
+    }
 }
 
