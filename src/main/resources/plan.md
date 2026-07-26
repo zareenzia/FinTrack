@@ -44,18 +44,6 @@ Features:
 
 ---
 
-## 11. Voice Expense Logging (⭐⭐⭐⭐⭐) 
-
-Examples:
-
-> "Spent 450 taka on lunch."
-
-Automatically opens a pre-filled transaction.
-
----
-
-# ⭐ Tier 2
-
 ## 6. Duplicate Transaction Detection ⭐⭐⭐⭐⭐
 
 Warn before saving.
@@ -74,38 +62,7 @@ Already logged today.
 
 ---
 
-## 7. Merchant Intelligence ⭐⭐⭐⭐⭐
 
-Automatically learn merchants.
-
-```
-KFC
-
-↓
-
-Dining
-
-```
-
-```
-Star Tech
-
-↓
-
-Electronics
-```
-
-Eventually:
-
-```
-You always spend
-
-৳5,000/month
-
-at KFC.
-```
-
----
 
 ## 9. Emergency Fund Tracker ⭐⭐⭐⭐⭐
 
@@ -135,7 +92,6 @@ Needs Improvement
 
 ---
 
-# ⭐ Tier 3
 
 ## 13. Recurring Transaction Intelligence
 
@@ -149,57 +105,11 @@ Improve by:
 
 ---
 
-## 17. Tax Estimator
+## 17. Tax Estimator & Jaqat calculation
 
 For users who want to estimate annual tax liabilities.
 
 ---
 
 ---
-
-## 20. Gamification
-
-Encourage good financial habits.
-
-Examples:
-
-🏆 30-day no unnecessary spending streak
-
-🏅 Saved 20% of income for 3 consecutive months
-
-🎯 Stayed within budget for 6 months
-
-📈 Increased net worth by 15%
-
----
-
-# Suggested Roadmap from Here
-
-### Phase A – Visualization & Insights
-
-* Financial Calendar
-* Net Worth History
-* Spending Heatmap
-* Cash Flow Diagram
-
-### Phase B – Automation
-
-* OCR Receipt Scanner
-* Duplicate Transaction Detection
-* Merchant Intelligence
-* Bank Statement Import
-
-### Phase C – Advanced Analytics
-
-* Emergency Fund Tracker
-* Financial Timeline
-* AI Spending Forecast
-* Financial Reports
-
-### Phase D – Productivity & Collaboration
-
-* Document Vault
-* Voice Expense Logging
-* Data Export & Backup
-* Family Finance
 

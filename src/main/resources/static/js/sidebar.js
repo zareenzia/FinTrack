@@ -294,6 +294,10 @@
                         <i class="fas fa-robot sidebar-icon"></i>
                         <span class="sidebar-label">AI Assistant</span>
                     </a>
+                    <a href="/achievements" class="sidebar-item sidebar-icon-only" id="achievementsIconBtn" data-path="achievements" title="Achievements" aria-label="Achievements">
+                        <i class="fas fa-trophy sidebar-icon"></i>
+                        <span class="sidebar-label">Achievements</span>
+                    </a>
                     <button class="sidebar-item sidebar-icon-only" id="userManualBtn" title="User Manual &amp; Getting Started" aria-label="User Manual and Getting Started Guide" style="background:none;border:none;position:relative;">
                         <i class="fas fa-book-open sidebar-icon"></i>
                         <span class="sidebar-label">User Manual</span>
@@ -780,6 +784,75 @@
             .catch(function () {});
     }
 
+    // ── Gamification milestone celebration ────────────────────────────────────
+    // Piggybacks on the notification list this page already fetches on load (no new
+    // polling mechanism) — if the newest MILESTONE-type notification hasn't been shown yet
+    // (tracked by id, per-user), a confetti overlay celebrates it once.
+    function getLastCelebratedMilestoneKey() { return getUserStorageKey('finzin_last_celebrated_milestone_id'); }
+
+    function injectCelebrationStyles() {
+        if (document.getElementById('gamificationCelebrationStyles')) return;
+        var style = document.createElement('style');
+        style.id = 'gamificationCelebrationStyles';
+        style.textContent =
+            '.gam-confetti-piece{position:fixed;top:-20px;width:8px;height:14px;opacity:0.9;pointer-events:none;z-index:4000;animation:gamConfettiFall linear forwards;}' +
+            '@keyframes gamConfettiFall{0%{transform:translateY(0) rotate(0deg);opacity:1;}100%{transform:translateY(105vh) rotate(540deg);opacity:0.3;}}' +
+            '.gam-celebration-toast{position:fixed;top:24px;left:50%;transform:translateX(-50%) translateY(-20px);background:var(--bg-modal);border:1px solid var(--border-color);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,0.3);padding:16px 22px;z-index:4001;display:flex;align-items:center;gap:14px;opacity:0;transition:opacity 0.3s ease, transform 0.3s ease;max-width:90vw;}' +
+            '.gam-celebration-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}' +
+            '.gam-celebration-icon{font-size:2rem;line-height:1;}' +
+            '.gam-celebration-title{font-weight:700;color:var(--text-primary-custom);}' +
+            '.gam-celebration-msg{font-size:0.85rem;color:var(--text-secondary-custom);}';
+        document.head.appendChild(style);
+    }
+
+    function launchConfetti() {
+        var colors = ['#255F38', '#1F7D53', '#f39c12', '#e74c3c', '#4ade80', '#D4AF37'];
+        for (var i = 0; i < 40; i++) {
+            (function (i) {
+                var piece = document.createElement('div');
+                piece.className = 'gam-confetti-piece';
+                piece.style.left = (Math.random() * 100) + 'vw';
+                piece.style.background = colors[i % colors.length];
+                piece.style.animationDuration = (2.2 + Math.random() * 1.3) + 's';
+                piece.style.animationDelay = (Math.random() * 0.4) + 's';
+                document.body.appendChild(piece);
+                setTimeout(function () { piece.remove(); }, 4200);
+            })(i);
+        }
+    }
+
+    function showMilestoneCelebration(notification) {
+        injectCelebrationStyles();
+        launchConfetti();
+        var toast = document.createElement('div');
+        toast.className = 'gam-celebration-toast';
+        toast.innerHTML = '<span class="gam-celebration-icon">🎉</span>' +
+            '<div><div class="gam-celebration-title">' + notification.title + '</div>' +
+            '<div class="gam-celebration-msg">' + notification.message + '</div></div>';
+        document.body.appendChild(toast);
+        requestAnimationFrame(function () { toast.classList.add('show'); });
+        setTimeout(function () {
+            toast.classList.remove('show');
+            setTimeout(function () { toast.remove(); }, 350);
+        }, 5000);
+    }
+
+    function checkForMilestoneCelebration() {
+        fetch('/api/notifications')
+            .then(function (r) { return r.json(); })
+            .then(function (items) {
+                var milestone = items.find(function (n) { return n.type === 'MILESTONE'; });
+                if (!milestone) return;
+                var key = getLastCelebratedMilestoneKey();
+                var lastCelebrated = parseInt(localStorage.getItem(key) || '0', 10);
+                if (milestone.id > lastCelebrated) {
+                    localStorage.setItem(key, String(milestone.id));
+                    showMilestoneCelebration(milestone);
+                }
+            })
+            .catch(function () {});
+    }
+
     // ── Global confirmation modal ─────────────────────────────────────────────
     // Replaces the native confirm() dialog (a browser/localhost-styled alert, not part of the
     // app's UI) with an in-app Bootstrap modal so confirmations look and feel consistent with
@@ -882,6 +955,7 @@
         { icon: 'fa-sticky-note', title: 'Notes',              desc: 'Jot down financial notes and reminders tied to your money management.', href: '/notes' },
         { icon: 'fa-tasks',       title: 'To-Do',              desc: 'Track financial tasks — bills to pay, documents to file, calls to make.', href: '/todos' },
         { icon: 'fa-coins',       title: 'Assets',             desc: 'Track gold and other valuable assets alongside your cash accounts.', href: '/assets' },
+        { icon: 'fa-trophy',      title: 'Achievements',       desc: 'Earn XP, level up, unlock achievements, and complete monthly challenges as you build good financial habits.', href: '/achievements' },
         { icon: 'fa-robot',       title: 'AI Financial Coach', desc: 'Chat for a health score, personalized insights, and spending recommendations.', href: '/ai-assistant' },
         { icon: 'fa-calculator',  title: 'Calculator',         desc: 'A quick on-screen calculator with history, available from any page.', action: 'calculator' },
         { icon: 'fa-bell',        title: 'Notifications',      desc: 'Budget alerts, bill reminders, and account activity — always one click away.', action: 'notifications' },
@@ -1345,6 +1419,7 @@
             });
         }
         refreshUnreadBadge();
+        checkForMilestoneCelebration();
 
         // Wire up User Manual button
         var manualBtn = document.getElementById('userManualBtn');

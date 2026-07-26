@@ -41,15 +41,11 @@ tasks.named('test') {
     useJUnitPlatform()
 }
 
-// Tesseract OCR (Receipt Scanner) needs eng.traineddata on disk — see
-// TesseractReceiptOcrEngine, which just disables OCR (503, rest of the app unaffected) if it's
-// missing. Fetching it here means a fresh checkout (e.g. a Railway build) works without a manual
-// setup step, instead of silently losing OCR until someone notices and downloads it by hand.
+
 task downloadTessdata {
     def tessdataDir = file('tessdata')
     def dest = file('tessdata/eng.traineddata')
-    // The real file is ~4MB (tessdata_fast's integer model) — anything much smaller means a
-    // previous download was interrupted partway through, so treat it as absent and retry.
+
     def minValidBytes = 1_000_000L
 
     outputs.file(dest)
@@ -72,8 +68,6 @@ task downloadTessdata {
             logger.lifecycle("Downloaded Tesseract eng.traineddata (${dest.length()} bytes) to ${dest}")
         } catch (Exception e) {
             tmp.delete()
-            // Best-effort: a flaky network shouldn't fail the whole build over an optional
-            // feature — TesseractReceiptOcrEngine already degrades gracefully without this file.
             logger.warn("Could not download Tesseract eng.traineddata — Receipt Scanner OCR will stay disabled until this succeeds. Reason: ${e.message}")
         }
     }

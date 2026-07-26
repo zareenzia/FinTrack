@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Achievements - FinTrack</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="icon" type="image/png" href="/images/logo.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/mobile.css">
+    <style>
+        /* ── Tab Nav (mirrors financial-planner.html's .fp-tab-nav pattern) ── */
+        .gam-tab-nav {
+            display: flex; gap: 6px; flex-wrap: wrap; padding: 6px;
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: 14px; margin-bottom: 1.5rem;
+        }
+        .gam-tab-btn {
+            flex: 1 1 auto; min-width: 120px; display: flex; align-items: center; justify-content: center;
+            gap: 8px; padding: 10px 18px; border: none; border-radius: 10px; background: transparent;
+            color: var(--text-secondary-custom); font-weight: 600; font-size: 0.88rem; cursor: pointer;
+            transition: all 0.25s ease;
+        }
+        .gam-tab-btn:hover:not(.active) { background: var(--bg-table-hover); color: var(--text-body); }
+        .gam-tab-btn.active { background: var(--color-surface); color: #f5f5f0; box-shadow: 0 2px 10px rgba(31,125,83,0.25); }
+        .gam-tab-pane { display: none; }
+        .gam-tab-pane.active { display: block; }
+
+        /* ── Overview hero ── */
+        .gam-level-hero {
+            background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px;
+            padding: 24px; display: flex; flex-wrap: wrap; gap: 24px; align-items: center;
+        }
+        .gam-level-badge {
+            width: 84px; height: 84px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; font-weight: 800; color: #fff; background: linear-gradient(135deg, var(--color-surface), var(--color-accent));
+            flex-shrink: 0; box-shadow: 0 4px 16px rgba(31,125,83,0.35);
+        }
+        .gam-progress-track { height: 12px; border-radius: 999px; background: var(--bg-input); overflow: hidden; }
+        .gam-progress-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--color-surface), var(--color-accent)); transition: width 0.4s ease; }
+        .gam-mini-stat {
+            background: var(--bg-table-stripe); border: 1px solid var(--border-color); border-radius: 12px;
+            padding: 14px; text-align: center; flex: 1; min-width: 110px;
+        }
+        .gam-mini-stat .val { font-size: 1.4rem; font-weight: 800; color: var(--text-primary-custom); }
+        .gam-mini-stat .lbl { font-size: 0.75rem; color: var(--text-muted-custom); }
+
+        /* ── Achievement cards ── */
+        .gam-category-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1.25rem; }
+        .gam-cat-btn {
+            border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-secondary-custom);
+            border-radius: 999px; padding: 6px 14px; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+        }
+        .gam-cat-btn.active { background: var(--color-surface); color: #fff; border-color: var(--color-surface); }
+        .gam-achv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+        .gam-achv-card {
+            background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 16px;
+            display: flex; gap: 12px; box-shadow: var(--shadow-card);
+        }
+        .gam-achv-card.locked { opacity: 0.55; }
+        .gam-achv-icon {
+            width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0; display: flex; align-items: center;
+            justify-content: center; font-size: 1.3rem; color: #fff;
+        }
+        .gam-achv-icon.tier-bronze  { background: var(--tier-bronze); }
+        .gam-achv-icon.tier-silver  { background: var(--tier-silver); }
+        .gam-achv-icon.tier-gold    { background: var(--tier-gold); }
+        .gam-achv-icon.tier-diamond { background: var(--tier-diamond); color: #0b3350; }
+        .gam-achv-body { flex: 1; min-width: 0; }
+        .gam-achv-name { font-weight: 700; font-size: 0.95rem; color: var(--text-primary-custom); }
+        .gam-achv-desc { font-size: 0.78rem; color: var(--text-muted-custom); margin-bottom: 6px; }
+        .gam-achv-progress-track { height: 6px; border-radius: 999px; background: var(--bg-input); overflow: hidden; }
+        .gam-achv-progress-fill { height: 100%; border-radius: 999px; background: var(--color-surface); transition: width 0.4s ease; }
+        .gam-achv-meta { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted-custom); margin-top: 4px; }
+        .gam-achv-unlocked-badge { color: var(--color-surface); font-size: 0.72rem; font-weight: 700; }
+
+        /* ── Badge gallery ── */
+        .gam-badge-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 14px; }
+        .gam-badge-tile { text-align: center; padding: 12px 6px; }
+        .gam-badge-icon {
+            width: 64px; height: 64px; margin: 0 auto 8px; border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; font-size: 1.6rem; color: #fff;
+        }
+        .gam-badge-tile.locked .gam-badge-icon { background: var(--bg-input) !important; color: var(--text-muted-custom); }
+        .gam-badge-tile.locked { opacity: 0.5; }
+        .gam-badge-name { font-size: 0.75rem; font-weight: 600; color: var(--text-body); }
+
+        /* ── Challenges ── */
+        .gam-challenge-card {
+            background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 16px;
+            margin-bottom: 12px; box-shadow: var(--shadow-card);
+        }
+        .gam-challenge-card.completed { border-color: var(--color-surface); }
+    </style>
+</head>
+<body>
+<div id="toastContainer" class="notification-toast-container" aria-live="polite" aria-atomic="true"></div>
+
+<div class="container-fluid mt-4">
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h2><i class="fas fa-trophy me-2"></i>Achievements</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="gam-tab-nav" role="tablist">
+        <button class="gam-tab-btn active" data-tab="overview" onclick="switchGamTab('overview')"><i class="fas fa-gauge-high"></i> Overview</button>
+        <button class="gam-tab-btn" data-tab="achievements" onclick="switchGamTab('achievements')"><i class="fas fa-list-check"></i> Achievements</button>
+        <button class="gam-tab-btn" data-tab="badges" onclick="switchGamTab('badges')"><i class="fas fa-award"></i> Badges</button>
+        <button class="gam-tab-btn" data-tab="challenges" onclick="switchGamTab('challenges')"><i class="fas fa-calendar-check"></i> Challenges</button>
+        <button class="gam-tab-btn" data-tab="statistics" onclick="switchGamTab('statistics')"><i class="fas fa-chart-simple"></i> Statistics</button>
+    </div>
+
+    <!-- ═══ OVERVIEW ═══ -->
+    <div id="gam-tab-overview" class="gam-tab-pane active">
+        <div class="gam-level-hero mb-4">
+            <div class="gam-level-badge" id="gamOverviewLevelBadge">1</div>
+            <div class="flex-grow-1" style="min-width:220px;">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="fw-bold" id="gamOverviewLevelName">Starter</span>
+                    <span class="text-muted small" id="gamOverviewXpLabel">0 XP</span>
+                </div>
+                <div class="gam-progress-track"><div class="gam-progress-fill" id="gamOverviewProgressFill" style="width:0%"></div></div>
+                <div class="text-muted small mt-1" id="gamOverviewNextLevel">Loading…</div>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <div class="gam-mini-stat"><div class="val" id="gamOverviewStreak">0</div><div class="lbl"><i class="fas fa-fire text-warning"></i> Day Streak</div></div>
+                <div class="gam-mini-stat"><div class="val" id="gamOverviewAchvCount">0/0</div><div class="lbl"><i class="fas fa-medal text-success"></i> Achievements</div></div>
+            </div>
+        </div>
+        <h6 class="mb-2"><i class="fas fa-star me-2"></i>Closest to Unlocking</h6>
+        <div class="gam-achv-grid" id="gamOverviewNearest"><p class="text-muted small">Loading…</p></div>
+    </div>
+
+    <!-- ═══ ACHIEVEMENTS ═══ -->
+    <div id="gam-tab-achievements" class="gam-tab-pane">
+        <div class="gam-category-filters" id="gamCategoryFilters"></div>
+        <div class="gam-achv-grid" id="gamAchievementsGrid"><p class="text-muted small">Loading…</p></div>
+    </div>
+
+    <!-- ═══ BADGES ═══ -->
+    <div id="gam-tab-badges" class="gam-tab-pane">
+        <p class="text-muted small mb-3">Every achievement unlocks a badge — <span id="gamBadgeCompletionPct">0%</span> collected so far.</p>
+        <div class="gam-badge-grid" id="gamBadgeGrid"><p class="text-muted small">Loading…</p></div>
+    </div>
+
+    <!-- ═══ CHALLENGES ═══ -->
+    <div id="gam-tab-challenges" class="gam-tab-pane">
+        <p class="text-muted small mb-3">This month's challenges — reset at the start of every calendar month.</p>
+        <div id="gamChallengesList"><p class="text-muted small">Loading…</p></div>
+    </div>
+
+    <!-- ═══ STATISTICS ═══ -->
+    <div id="gam-tab-statistics" class="gam-tab-pane">
+        <div class="row g-3">
+            <div class="col-md-3 col-6">
+                <div class="gam-mini-stat w-100"><div class="val" id="gamStatTotalXp">0</div><div class="lbl">Total XP</div></div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="gam-mini-stat w-100"><div class="val" id="gamStatLevel">1</div><div class="lbl">Current Level</div></div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="gam-mini-stat w-100"><div class="val" id="gamStatAchievements">0/0</div><div class="lbl">Achievements Unlocked</div></div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="gam-mini-stat w-100"><div class="val" id="gamStatStreak">0</div><div class="lbl">Current / Longest Streak</div></div>
+            </div>
+        </div>
+        <h6 class="mt-4 mb-2"><i class="fas fa-clock-rotate-left me-2"></i>Recent XP History</h6>
+        <div id="gamXpHistoryList"><p class="text-muted small">Loading…</p></div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/gamification.js"></script>
+<script src="/js/sidebar.js"></script>
+</body>
+</html>

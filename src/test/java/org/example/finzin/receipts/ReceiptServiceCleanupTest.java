@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -38,13 +39,14 @@ class ReceiptServiceCleanupTest {
     @Mock private ReceiptOcrEngine ocrEngine;
     @Mock private ReceiptFieldExtractor fieldExtractor;
     @Mock private ReceiptSettingsService settingsService;
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     private ReceiptService service;
 
     @BeforeEach
     void setUp() {
         service = new ReceiptService(receiptRepository, transactionRepository, categoryRepository,
-                storageService, ocrEngine, fieldExtractor, settingsService, new ObjectMapper());
+                storageService, ocrEngine, fieldExtractor, settingsService, new ObjectMapper(), eventPublisher);
     }
 
     private ReceiptEntity receipt(Long id, String imagePath, Long transactionId) {

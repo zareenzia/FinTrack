@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -28,12 +29,13 @@ class AccountBalanceServiceTest {
     @Mock private AccountRepository accountRepository;
     @Mock private TransactionRepository transactionRepository;
     @Mock private CreditCardService creditCardService;
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     private AccountBalanceService service;
 
     @BeforeEach
     void setUp() {
-        service = new AccountBalanceService(accountRepository, transactionRepository, creditCardService);
+        service = new AccountBalanceService(accountRepository, transactionRepository, creditCardService, eventPublisher);
     }
 
     private AccountEntity account(Long id, String type, double balance) {
@@ -131,6 +133,7 @@ class AccountBalanceServiceTest {
         TransactionEntity entity = new TransactionEntity(USER_ID, 5000.0, "Shopping", null, "expense",
                 java.time.LocalDateTime.now(), java.time.LocalDateTime.now());
         entity.setSourceAccountId(2L);
+        entity.setId(99L); // a real save() always assigns the generated id; needed since the gamification event reads saved.getId()
         when(transactionRepository.save(entity)).thenReturn(entity);
         lenient().when(creditCardService.validate(USER_ID, 2L, null, "expense", 5000.0)).thenReturn(null);
 

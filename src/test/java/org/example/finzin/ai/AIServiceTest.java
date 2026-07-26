@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.List;
 import java.util.Map;
@@ -47,6 +48,7 @@ class AIServiceTest {
     @Mock private SemanticSearchService semanticSearchService;
     @Mock private RetrievalContextBuilder retrievalContextBuilder;
     @Mock private QueryEmbeddingCache queryEmbeddingCache;
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private AIService aiService;
@@ -54,7 +56,7 @@ class AIServiceTest {
     @BeforeEach
     void setUp() {
         aiService = new AIService(promptBuilder, openAIClient, toolExecutor, conversationService, aiSettingsService,
-                objectMapper, embeddingClient, semanticSearchService, retrievalContextBuilder, queryEmbeddingCache);
+                objectMapper, embeddingClient, semanticSearchService, retrievalContextBuilder, queryEmbeddingCache, eventPublisher);
 
         AiConversationEntity conversation = new AiConversationEntity();
         conversation.setId(CONVERSATION_ID);

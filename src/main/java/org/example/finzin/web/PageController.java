@@ -109,5 +109,13 @@ public class PageController {
         }
         return "forward:/financial-planner.html";
     }
+
+    @GetMapping("/achievements")
+    public String achievements(HttpServletRequest request) {
+        if (request.getAttribute("userId") == null) {
+            return "redirect:/login";
+        }
+        return "forward:/achievements.html";
+    }
 }
 

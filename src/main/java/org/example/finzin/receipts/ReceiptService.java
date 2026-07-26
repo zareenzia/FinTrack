@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.finzin.entity.CategoryEntity;
 import org.example.finzin.entity.ReceiptEntity;
 import org.example.finzin.entity.TransactionEntity;
+import org.example.finzin.gamification.GamificationEvent;
+import org.example.finzin.gamification.GamificationEventType;
 import org.example.finzin.receipts.dto.LinkReceiptRequest;
 import org.example.finzin.receipts.dto.ReceiptResponse;
 import org.example.finzin.receipts.extract.ReceiptFieldExtractionResult;
@@ -15,6 +17,7 @@ import org.example.finzin.repository.ReceiptRepository;
 import org.example.finzin.repository.TransactionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -38,11 +41,13 @@ public class ReceiptService {
     private final ReceiptFieldExtractor fieldExtractor;
     private final ReceiptSettingsService settingsService;
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ReceiptService(ReceiptRepository receiptRepository, TransactionRepository transactionRepository,
                            CategoryRepository categoryRepository, ReceiptStorageService storageService,
                            ReceiptOcrEngine ocrEngine, ReceiptFieldExtractor fieldExtractor,
-                           ReceiptSettingsService settingsService, ObjectMapper objectMapper) {
+                           ReceiptSettingsService settingsService, ObjectMapper objectMapper,
+                           ApplicationEventPublisher eventPublisher) {
         this.receiptRepository = receiptRepository;
         this.transactionRepository = transactionRepository;
         this.categoryRepository = categoryRepository;
@@ -51,6 +56,7 @@ public class ReceiptService {
         this.fieldExtractor = fieldExtractor;
         this.settingsService = settingsService;
         this.objectMapper = objectMapper;
+        this.eventPublisher = eventPublisher;
     }
 
     public ReceiptResponse scan(Long userId, MultipartFile file) throws IOException {
@@ -85,6 +91,8 @@ public class ReceiptService {
         applyExtraction(entity, extraction, userId);
 
         ReceiptEntity saved = receiptRepository.save(entity);
+        eventPublisher.publishEvent(new GamificationEvent(userId, GamificationEventType.RECEIPT_SCANNED,
+                Map.of("receiptId", saved.getId())));
         return ReceiptResponse.from(saved, objectMapper, extraction.warning());
     }
 

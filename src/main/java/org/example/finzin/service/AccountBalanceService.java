@@ -2,10 +2,15 @@ package org.example.finzin.service;
 
 import org.example.finzin.entity.AccountEntity;
 import org.example.finzin.entity.TransactionEntity;
+import org.example.finzin.gamification.GamificationEvent;
+import org.example.finzin.gamification.GamificationEventType;
 import org.example.finzin.repository.AccountRepository;
 import org.example.finzin.repository.TransactionRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Map;
 
 /**
  * Owns every balance-affecting side effect of a transaction create/update/delete, for every
@@ -20,12 +25,14 @@ public class AccountBalanceService {
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
     private final CreditCardService creditCardService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public AccountBalanceService(AccountRepository accountRepository, TransactionRepository transactionRepository,
-                                  CreditCardService creditCardService) {
+                                  CreditCardService creditCardService, ApplicationEventPublisher eventPublisher) {
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
         this.creditCardService = creditCardService;
+        this.eventPublisher = eventPublisher;
     }
 
     /** {@code warning} is non-null only when a credit card purchase exceeded its limit under WARN mode. */
@@ -37,6 +44,13 @@ public class AccountBalanceService {
                 entity.getTransactionType(), entity.getAmount());
         TransactionEntity saved = transactionRepository.save(entity);
         applyBalanceChange(userId, saved.getSourceAccountId(), saved.getDestinationAccountId(), saved.getTransactionType(), saved.getAmount(), false);
+        // Gamification reacts to creation only (not edits/deletes — see GamificationEventListener's
+        // class doc for why); AFTER_COMMIT-listened, so a bug here can never roll back this transaction.
+        eventPublisher.publishEvent(new GamificationEvent(userId, GamificationEventType.TRANSACTION_LOGGED, Map.of(
+                "transactionType", saved.getTransactionType(),
+                "transactionId", saved.getId(),
+                "amount", saved.getAmount()
+        )));
         return new TransactionSaveResult(saved, warning);
     }
 
