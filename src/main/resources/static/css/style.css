@@ -3739,6 +3739,65 @@ body.sidebar-compact #sidebar:not(.collapsed) .sidebar-item:hover::after {
     color: var(--accent-color);
 }
 
+/* ── Module Guide (detailed per-module accordion) ────────────────────────── */
+#userManualModal .um-guide-search {
+    background: var(--bg-input);
+    border: 1px solid var(--border-input);
+    color: var(--text-body);
+    border-radius: 10px;
+    padding: 9px 14px 9px 38px;
+    font-size: 0.85rem;
+    width: 100%;
+    margin-bottom: 14px;
+}
+#userManualModal .um-guide-search-wrap { position: relative; }
+#userManualModal .um-guide-search-wrap i {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    color: var(--text-muted-custom); font-size: 0.8rem;
+}
+#userManualModal .um-guide-accordion .accordion-item {
+    background: var(--bg-table-stripe);
+    border: 1px solid var(--border-color);
+    border-radius: 12px !important;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+#userManualModal .um-guide-accordion .accordion-item.um-guide-hidden { display: none; }
+#userManualModal .um-guide-accordion .accordion-button {
+    background: transparent;
+    color: var(--text-primary-custom);
+    box-shadow: none;
+    padding: 14px 16px;
+    gap: 12px;
+}
+#userManualModal .um-guide-accordion .accordion-button:not(.collapsed) {
+    background: var(--bg-table-hover);
+    box-shadow: none;
+}
+#userManualModal .um-guide-accordion .accordion-button:focus { box-shadow: none; }
+#userManualModal .um-guide-accordion .accordion-button::after { filter: none; }
+:root[data-theme="dark"] #userManualModal .um-guide-accordion .accordion-button::after { filter: invert(1); }
+#userManualModal .um-guide-icon {
+    width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+    background: var(--accent-color); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-size: 0.9rem;
+}
+#userManualModal .um-guide-headtext { display: flex; flex-direction: column; gap: 1px; text-align: left; }
+#userManualModal .um-guide-title { font-weight: 600; font-size: 0.92rem; }
+#userManualModal .um-guide-tagline { font-size: 0.76rem; color: var(--text-secondary-custom); font-weight: 400; }
+#userManualModal .um-guide-accordion .accordion-body { padding: 4px 20px 18px 20px; }
+#userManualModal .um-guide-group { margin-bottom: 14px; }
+#userManualModal .um-guide-group:last-of-type { margin-bottom: 16px; }
+#userManualModal .um-guide-group-heading {
+    font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+    color: var(--accent-color); margin-bottom: 6px;
+}
+#userManualModal .um-guide-bullets { margin: 0; padding-left: 1.2rem; }
+#userManualModal .um-guide-bullets li { font-size: 0.85rem; color: var(--text-body); margin-bottom: 6px; line-height: 1.5; }
+#userManualModal .um-guide-bullets li:last-child { margin-bottom: 0; }
+#userManualModal .um-guide-open-btn { font-size: 0.8rem; }
+#userManualModal .um-guide-empty { text-align: center; padding: 2rem 1rem; color: var(--text-muted-custom); }
+
 /* Responsive: stack nav above content on small screens */
 @media (max-width: 768px) {
     #userManualModal .um-layout {
