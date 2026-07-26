@@ -5,12 +5,15 @@ import org.example.finzin.entity.CategoryEntity;
 import org.example.finzin.entity.PurchaseItemActivityEntity;
 import org.example.finzin.entity.PurchaseItemEntity;
 import org.example.finzin.entity.TransactionEntity;
+import org.example.finzin.gamification.GamificationEvent;
+import org.example.finzin.gamification.GamificationEventType;
 import org.example.finzin.purchaseplanner.dto.*;
 import org.example.finzin.repository.CategoryRepository;
 import org.example.finzin.repository.PurchaseItemActivityRepository;
 import org.example.finzin.repository.PurchaseItemRepository;
 import org.example.finzin.repository.TransactionRepository;
 import org.example.finzin.service.BudgetPlanService;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,6 +24,7 @@ import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -45,11 +49,13 @@ public class PurchaseItemService {
     private final PurchaseAffordabilityService affordabilityService;
     private final BudgetPlanService budgetPlanService;
     private final DocumentIndexer documentIndexer;
+    private final ApplicationEventPublisher eventPublisher;
 
     public PurchaseItemService(PurchaseItemRepository purchaseItemRepository, PurchaseItemActivityRepository activityRepository,
                                 CategoryRepository categoryRepository, TransactionRepository transactionRepository,
                                 PurchaseItemImageStorageService imageStorageService, PurchaseAffordabilityService affordabilityService,
-                                BudgetPlanService budgetPlanService, DocumentIndexer documentIndexer) {
+                                BudgetPlanService budgetPlanService, DocumentIndexer documentIndexer,
+                                ApplicationEventPublisher eventPublisher) {
         this.purchaseItemRepository = purchaseItemRepository;
         this.activityRepository = activityRepository;
         this.categoryRepository = categoryRepository;
@@ -58,6 +64,7 @@ public class PurchaseItemService {
         this.affordabilityService = affordabilityService;
         this.budgetPlanService = budgetPlanService;
         this.documentIndexer = documentIndexer;
+        this.eventPublisher = eventPublisher;
     }
 
     // ============== CRUD ==============
@@ -254,6 +261,11 @@ public class PurchaseItemService {
         logActivity(saved, "PURCHASED", "status", oldStatus, "PURCHASED",
                 transactionId != null ? "Marked purchased, linked to transaction #" + transactionId : "Marked purchased (no linked expense)");
         documentIndexer.indexPurchaseItem(saved);
+        // GOAL_COMPLETED previously only fired from the old Wishlist Goals feature (now replaced by
+        // this module) — reusing the same event/metadata shape ("goalId") so GamificationEventListener
+        // needs no changes; a purchase reaching PURCHASED is this module's equivalent "goal achieved" moment.
+        eventPublisher.publishEvent(new GamificationEvent(saved.getUserId(), GamificationEventType.GOAL_COMPLETED,
+                Map.of("goalId", saved.getId())));
         return saved;
     }
 
