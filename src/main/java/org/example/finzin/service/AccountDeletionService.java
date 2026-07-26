@@ -2,8 +2,10 @@ package org.example.finzin.service;
 
 import org.example.finzin.entity.BudgetPlanEntity;
 import org.example.finzin.entity.BudgetTemplateEntity;
+import org.example.finzin.entity.PurchaseItemEntity;
 import org.example.finzin.entity.ReceiptEntity;
 import org.example.finzin.entity.UserEntity;
+import org.example.finzin.purchaseplanner.PurchaseItemImageStorageService;
 import org.example.finzin.receipts.ReceiptStorageService;
 import org.example.finzin.repository.*;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,7 +50,9 @@ public class AccountDeletionService {
     private final InvestmentRepository investmentRepository;
     private final LoanRepository loanRepository;
     private final SubscriptionRepository subscriptionRepository;
-    private final WishlistGoalRepository wishlistGoalRepository;
+    private final PurchaseItemRepository purchaseItemRepository;
+    private final PurchaseItemActivityRepository purchaseItemActivityRepository;
+    private final PurchaseItemImageStorageService purchaseItemImageStorageService;
     private final NetWorthSnapshotRepository netWorthSnapshotRepository;
     private final NoteRepository noteRepository;
     private final TodoRepository todoRepository;
@@ -73,7 +77,8 @@ public class AccountDeletionService {
             BudgetTemplateRepository budgetTemplateRepository, BudgetTemplateCategoryRepository budgetTemplateCategoryRepository,
             GoldAssetRepository goldAssetRepository, GoldPriceSettingRepository goldPriceSettingRepository,
             AssetRepository assetRepository, InvestmentRepository investmentRepository, LoanRepository loanRepository,
-            SubscriptionRepository subscriptionRepository, WishlistGoalRepository wishlistGoalRepository,
+            SubscriptionRepository subscriptionRepository, PurchaseItemRepository purchaseItemRepository,
+            PurchaseItemActivityRepository purchaseItemActivityRepository, PurchaseItemImageStorageService purchaseItemImageStorageService,
             NetWorthSnapshotRepository netWorthSnapshotRepository, NoteRepository noteRepository, TodoRepository todoRepository,
             SidebarPreferenceRepository sidebarPreferenceRepository, AppearancePreferenceRepository appearancePreferenceRepository,
             AiConversationRepository aiConversationRepository, AiMessageRepository aiMessageRepository,
@@ -99,7 +104,9 @@ public class AccountDeletionService {
         this.investmentRepository = investmentRepository;
         this.loanRepository = loanRepository;
         this.subscriptionRepository = subscriptionRepository;
-        this.wishlistGoalRepository = wishlistGoalRepository;
+        this.purchaseItemRepository = purchaseItemRepository;
+        this.purchaseItemActivityRepository = purchaseItemActivityRepository;
+        this.purchaseItemImageStorageService = purchaseItemImageStorageService;
         this.netWorthSnapshotRepository = netWorthSnapshotRepository;
         this.noteRepository = noteRepository;
         this.todoRepository = todoRepository;
@@ -157,7 +164,14 @@ public class AccountDeletionService {
         investmentRepository.deleteByUserId(userId);
         loanRepository.deleteByUserId(userId);
         subscriptionRepository.deleteByUserId(userId);
-        wishlistGoalRepository.deleteByUserId(userId);
+
+        // Purchase item photos live on disk, not in the DB — delete them before the rows that name them.
+        for (PurchaseItemEntity item : purchaseItemRepository.findByUserId(userId)) {
+            purchaseItemImageStorageService.deleteBestEffort(item.getImagePath());
+        }
+        purchaseItemActivityRepository.deleteByUserId(userId);
+        purchaseItemRepository.deleteByUserId(userId);
+
         netWorthSnapshotRepository.deleteByUserId(userId);
 
         noteRepository.deleteByUserId(userId);

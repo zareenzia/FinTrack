@@ -1,0 +1,29 @@
+package org.example.finzin.purchaseplanner.dto;
+
+public record PurchaseItemResponse(
+        Long id,
+        String itemName,
+        Double estimatedPrice,
+        String category,
+        String needLevel,
+        String priority,
+        String brand,
+        String store,
+        String purchaseUrl,
+        String notes,
+        String targetMonth,
+        String expectedPurchaseDate,
+        String imageUrl,
+        Long linkedSavingsGoalId,
+        String linkedSavingsGoalName,
+        Double linkedSavingsGoalProgressPercent,
+        Long linkedTransactionId,
+        String status,
+        String cancelReason,
+        AffordabilityView affordability,
+        DecisionMatrixView decisionMatrix,
+        String purchasedAt,
+        String cancelledAt,
+        String createdAt,
+        String updatedAt
+) {}

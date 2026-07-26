@@ -29,7 +29,7 @@
         var container = document.getElementById('toastContainer');
         if (!container) return;
         var t = document.createElement('div');
-        t.className = 'notification-toast notification-toast-' + type;
+        t.className = 'notification-toast notification-' + type;
         t.innerHTML = '<span>' + escHtml(msg) + '</span>';
         container.appendChild(t);
         requestAnimationFrame(function () { t.classList.add('show'); });
@@ -55,7 +55,7 @@
 
     // ── Pagination helper ────────────────────────────────────────────────────
     var PAGE_SIZE = 10;
-    var pages = { investments: 1, loans: 1, subscriptions: 1, goals: 1 };
+    var pages = { investments: 1, loans: 1, subscriptions: 1 };
 
     function renderPagination(containerId, total, section) {
         var container = document.getElementById(containerId);
@@ -77,7 +77,6 @@
         if (section === 'investments') renderInvestments();
         else if (section === 'loans') renderLoans();
         else if (section === 'subscriptions') renderSubscriptions();
-        else if (section === 'goals') renderGoals();
     };
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -92,6 +91,11 @@
         });
         // Redraw charts when investment tab becomes visible
         if (tab === 'investments') setTimeout(drawInvCharts, 50);
+        // Wishlist & Purchase Planner lives in a separate paired script (wishlist-planner.js);
+        // its charts mis-measure while the pane is display:none, so redraw once it becomes visible.
+        if (tab === 'purchases') setTimeout(function () {
+            if (typeof window.drawWishlistCharts === 'function') window.drawWishlistCharts();
+        }, 50);
     };
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -555,192 +559,11 @@
     };
 
     // ══════════════════════════════════════════════════════════════════════════
-    // ▌ TAB 4 – WISHLIST & FINANCIAL GOALS
+    // ▌ TAB 4 – WISHLIST & PURCHASE PLANNER lives in the paired js/wishlist-planner.js
+    // (loaded after this file) — it's large enough (kanban+timeline+drag/drop+5 modals+
+    // analytics) to warrant its own file, matching this page's existing multi-script
+    // pattern (sidebar.js + financial-planner.js). It reuses window.FPShared below.
     // ══════════════════════════════════════════════════════════════════════════
-    var goalData = [];
-
-    var GOAL_ICONS = { 'MacBook': '💻', 'Japan Trip': '🌸', 'Wedding': '💍', 'New Phone': '📱', 'Camera': '📷', 'Emergency Fund': '🛡️', 'Bike': '🏍️', 'Car': '🚗', 'House': '🏠' };
-
-    async function loadGoals() {
-        goalData = (await apiFetch(BASE + '/goals')) || [];
-        updateGoalSummary();
-        renderGoals();
-    }
-
-    function updateGoalSummary() {
-        var completed = goalData.filter(function (g) { return g.status === 'COMPLETED'; });
-        document.getElementById('goalCount').textContent = goalData.length;
-        document.getElementById('goalCompleted').textContent = completed.length;
-        document.getElementById('goalTargetStat').textContent = fmtCurrency(goalData.reduce(function (s, g) { return s + (g.targetAmount || 0); }, 0));
-        document.getElementById('goalSavedStat').textContent = fmtCurrency(goalData.reduce(function (s, g) { return s + (g.savedAmount || 0); }, 0));
-    }
-
-    window.renderGoals = function () {
-        var q = (document.getElementById('goalSearch').value || '').toLowerCase();
-        var status = document.getElementById('goalStatusFilter').value;
-        var priority = document.getElementById('goalPriorityFilter').value;
-        var sort = document.getElementById('goalSort').value;
-        var list = goalData.filter(function (g) {
-            return (!q || g.goalName.toLowerCase().includes(q) || (g.category || '').toLowerCase().includes(q))
-                && (!status || g.status === status)
-                && (!priority || g.priority === priority);
-        });
-        if (sort === 'date_asc') list.sort(function (a, b) { return (a.targetDate || '9999').localeCompare(b.targetDate || '9999'); });
-        else if (sort === 'progress_desc') list.sort(function (a, b) { return (b.progressPercent || 0) - (a.progressPercent || 0); });
-        else if (sort === 'amount_desc') list.sort(function (a, b) { return (b.targetAmount || 0) - (a.targetAmount || 0); });
-        var start = (pages.goals - 1) * PAGE_SIZE;
-        var page = list.slice(start, start + PAGE_SIZE);
-        var grid = document.getElementById('goalCardsGrid');
-        if (!list.length) {
-            grid.innerHTML = '<div class="fp-empty" style="grid-column:1/-1"><i class="fas fa-star"></i><p>No goals yet. Click <strong>Add Goal</strong> to start saving towards something.</p></div>';
-            renderPagination('goalPagination', 0, 'goals');
-            return;
-        }
-        grid.innerHTML = page.map(function (g) {
-            var pct = Math.round(g.progressPercent || 0);
-            var barCls = pct >= 100 ? '' : pct >= 75 ? '' : pct >= 40 ? 'warn' : 'danger';
-            var icon = g.icon || GOAL_ICONS[g.goalName] || '🎯';
-            var canComplete = g.status === 'IN_PROGRESS';
-            return '<div class="fp-goal-card">' +
-                '<div class="d-flex align-items-start gap-3 mb-3">' +
-                    '<div class="fp-goal-icon">' + icon + '</div>' +
-                    '<div class="flex-grow-1 min-w-0">' +
-                        '<div class="fp-goal-title">' + escHtml(g.goalName) + '</div>' +
-                        '<div class="fp-goal-meta">' + (g.category ? escHtml(g.category) + ' · ' : '') +
-                            '<span class="fp-badge fp-badge-' + g.priority + '" style="font-size:0.65rem">' + g.priority + '</span>' +
-                            ' <span class="fp-badge fp-badge-' + g.status + '" style="font-size:0.65rem">' + g.status.replace('_', ' ') + '</span>' +
-                        '</div>' +
-                    '</div>' +
-                    '<div class="d-flex gap-1">' +
-                        (canComplete ? '<button class="fp-action-btn" title="Mark Completed" onclick="completeGoal(' + g.id + ')"><i class="fas fa-check"></i></button>' : '') +
-                        '<button class="fp-action-btn" title="Edit" onclick="openGoalModal(' + g.id + ')"><i class="fas fa-pen"></i></button>' +
-                        '<button class="fp-action-btn danger" title="Delete" onclick="confirmDelete(\'goal\',' + g.id + ')"><i class="fas fa-trash"></i></button>' +
-                    '</div>' +
-                '</div>' +
-                '<div class="mb-2">' +
-                    '<div class="d-flex justify-content-between mb-1"><span class="fp-goal-meta">Target</span><strong>' + fmtCurrency(g.targetAmount) + '</strong></div>' +
-                    '<div class="d-flex justify-content-between mb-1"><span class="fp-goal-meta">Saved</span><span class="fp-profit">' + fmtCurrency(g.savedAmount) + '</span></div>' +
-                    '<div class="d-flex justify-content-between mb-2"><span class="fp-goal-meta">Remaining</span><span class="fp-loss">' + fmtCurrency(g.remainingAmount) + '</span></div>' +
-                    '<div class="fp-progress mb-1"><div class="fp-progress-bar ' + barCls + '" style="width:' + Math.min(100, pct) + '%"></div></div>' +
-                    '<div class="d-flex justify-content-between"><span class="fp-goal-meta">' + pct + '% complete</span>' + (g.targetDate ? '<span class="fp-goal-meta">Due: ' + escHtml(g.targetDate) + '</span>' : '') + '</div>' +
-                '</div>' +
-                (g.notes ? '<div class="fp-goal-meta border-top pt-2 mt-2" style="border-color:var(--border-color)!important">' + escHtml(g.notes.slice(0, 80)) + '</div>' : '') +
-            '</div>';
-        }).join('');
-        renderPagination('goalPagination', list.length, 'goals');
-    };
-
-    var GOAL_ICON_OPTIONS = [
-        '🎯','💻','📱','🎒','✈️','🌍','🏠','🚗','🏍️','📷',
-        '💍','🎓','💼','🏖️','⛵','🎸','🏋️','📚','🎮','🛍️',
-        '💰','🏦','🎁','🚀','⌚','🖥️','🎪','🌸','🐶','🏡',
-        '🔑','💎','🛒','🎉','🌟','🏆','🎵','🍕','☕','🌴'
-    ];
-
-    function initGoalIconPicker(selected) {
-        var grid = document.getElementById('goalIconGrid');
-        var hidden = document.getElementById('goalIcon');
-        var preview = document.getElementById('goalIconPreview');
-        var custom = document.getElementById('goalIconCustom');
-        if (!grid) return;
-
-        var current = selected || '🎯';
-        hidden.value = current;
-        preview.textContent = current;
-        custom.value = '';
-
-        grid.innerHTML = GOAL_ICON_OPTIONS.map(function(icon) {
-            var active = icon === current ? 'border-primary bg-primary bg-opacity-10' : 'border-transparent';
-            return '<button type="button" class="btn border rounded goal-icon-opt p-1" data-icon="' + icon + '" ' +
-                'style="font-size:1.4rem;line-height:1;width:2.4rem;height:2.4rem;display:flex;align-items:center;justify-content:center;" ' +
-                'title="' + icon + '" aria-label="Select icon ' + icon + '">' + icon + '</button>';
-        }).join('');
-
-        grid.querySelectorAll('.goal-icon-opt').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                var icon = this.getAttribute('data-icon');
-                hidden.value = icon;
-                preview.textContent = icon;
-                custom.value = '';
-                grid.querySelectorAll('.goal-icon-opt').forEach(function(b) {
-                    b.classList.remove('border-primary','bg-primary','bg-opacity-10');
-                    b.style.borderColor = '';
-                });
-                this.classList.add('border-primary','bg-primary','bg-opacity-10');
-            });
-        });
-
-        custom.oninput = function() {
-            if (this.value.trim()) {
-                hidden.value = this.value.trim();
-                preview.textContent = this.value.trim();
-                grid.querySelectorAll('.goal-icon-opt').forEach(function(b) {
-                    b.classList.remove('border-primary','bg-primary','bg-opacity-10');
-                });
-            }
-        };
-    }
-
-    window.openGoalModal = function (id) {
-        clearForm(['goalId','goalName','goalCategory','goalFormTarget','goalFormSaved','goalDate','goalPriority','goalStatus','goalIcon','goalNotes','goalIconCustom']);
-        document.getElementById('goalPriority').value = 'MEDIUM';
-        document.getElementById('goalStatus').value = 'IN_PROGRESS';
-        document.getElementById('goalFormSaved').value = '0';
-        document.getElementById('goalModalTitle').innerHTML = '<i class="fas fa-star me-2"></i>' + (id ? 'Edit Goal' : 'Add Goal');
-        var iconVal = '🎯';
-        if (id) {
-            var goal = goalData.find(function (x) { return x.id === id; });
-            if (goal) {
-                document.getElementById('goalId').value = goal.id;
-                document.getElementById('goalName').value = goal.goalName || '';
-                document.getElementById('goalCategory').value = goal.category || '';
-                document.getElementById('goalFormTarget').value = goal.targetAmount || '';
-                document.getElementById('goalFormSaved').value = goal.savedAmount || '0';
-                document.getElementById('goalDate').value = goal.targetDate || '';
-                document.getElementById('goalPriority').value = goal.priority || 'MEDIUM';
-                document.getElementById('goalStatus').value = goal.status || 'IN_PROGRESS';
-                document.getElementById('goalNotes').value = goal.notes || '';
-                iconVal = goal.icon || '🎯';
-            }
-        }
-        initGoalIconPicker(iconVal);
-        bootstrap.Modal.getOrCreateInstance(document.getElementById('goalModal')).show();
-    };
-
-    window.saveGoal = async function () {
-        var id = document.getElementById('goalId').value;
-        var body = {
-            goalName: document.getElementById('goalName').value.trim(),
-            category: document.getElementById('goalCategory').value.trim(),
-            targetAmount: parseFloat(document.getElementById('goalFormTarget').value) || 0,
-            savedAmount: parseFloat(document.getElementById('goalFormSaved').value) || 0,
-            targetDate: document.getElementById('goalDate').value || null,
-            priority: document.getElementById('goalPriority').value,
-            status: document.getElementById('goalStatus').value,
-            icon: document.getElementById('goalIcon').value.trim(),
-            notes: document.getElementById('goalNotes').value.trim()
-        };
-        if (!body.goalName || body.targetAmount <= 0) {
-            showToast('Goal name and a valid target amount are required.', 'error'); return;
-        }
-        var url = id ? BASE + '/goals/' + id : BASE + '/goals';
-        var result = await apiFetch(url, { method: id ? 'PUT' : 'POST', body: JSON.stringify(body) });
-        if (result && !result.error) {
-            showToast(id ? 'Goal updated.' : 'Goal added.');
-            bootstrap.Modal.getOrCreateInstance(document.getElementById('goalModal')).hide();
-            loadGoals();
-        } else if (result) {
-            showToast(result.error || 'Save failed.', 'error');
-        }
-    };
-
-    window.completeGoal = async function (id) {
-        var result = await apiFetch(BASE + '/goals/' + id + '/complete', { method: 'POST' });
-        if (result && !result.error) {
-            showToast('🎉 Goal completed!');
-            loadGoals();
-        }
-    };
 
     // ══════════════════════════════════════════════════════════════════════════
     // ▌ DELETE CONFIRMATION
@@ -748,7 +571,7 @@
     var pendingDelete = null;
 
     window.confirmDelete = function (type, id) {
-        var names = { investment: 'investment', loan: 'loan', subscription: 'subscription', goal: 'goal' };
+        var names = { investment: 'investment', loan: 'loan', subscription: 'subscription', purchase: 'purchase item' };
         document.getElementById('fpDeleteMsg').textContent = 'Are you sure you want to delete this ' + (names[type] || 'item') + '? This action cannot be undone.';
         pendingDelete = { type: type, id: id };
         bootstrap.Modal.getOrCreateInstance(document.getElementById('fpDeleteModal')).show();
@@ -756,7 +579,7 @@
 
     document.getElementById('fpDeleteConfirmBtn').addEventListener('click', async function () {
         if (!pendingDelete) return;
-        var endpoints = { investment: 'investments', loan: 'loans', subscription: 'subscriptions', goal: 'goals' };
+        var endpoints = { investment: 'investments', loan: 'loans', subscription: 'subscriptions', purchase: 'purchase-items' };
         var url = BASE + '/' + endpoints[pendingDelete.type] + '/' + pendingDelete.id;
         var result = await apiFetch(url, { method: 'DELETE' });
         bootstrap.Modal.getOrCreateInstance(document.getElementById('fpDeleteModal')).hide();
@@ -765,7 +588,7 @@
             if (pendingDelete.type === 'investment') loadInvestments();
             else if (pendingDelete.type === 'loan') loadLoans();
             else if (pendingDelete.type === 'subscription') loadSubscriptions();
-            else if (pendingDelete.type === 'goal') loadGoals();
+            else if (pendingDelete.type === 'purchase' && typeof window.loadWishlist === 'function') window.loadWishlist();
         }
         pendingDelete = null;
     });
@@ -790,7 +613,12 @@
         loadInvestments();
         loadLoans();
         loadSubscriptions();
-        loadGoals();
+        // wishlist-planner.js registers its own DOMContentLoaded listener for the purchases tab.
     });
+
+    // Shared helpers exposed for js/wishlist-planner.js (mirrors budget-planner.js's window.BudgetPlanner
+    // export precedent) — only stateless/pure helpers are shared, not the pages/renderPagination
+    // plumbing, which stays coupled to this file's other three tabs.
+    window.FPShared = { BASE: BASE, apiFetch: apiFetch, showToast: showToast, fmtCurrency: fmtCurrency, fmtNum: fmtNum, escHtml: escHtml, clearForm: clearForm };
 
 })();

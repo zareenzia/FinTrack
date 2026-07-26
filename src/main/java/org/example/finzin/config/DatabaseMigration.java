@@ -271,21 +271,50 @@ public class DatabaseMigration implements BeanPostProcessor {
                 "updated_at TIMESTAMP NOT NULL DEFAULT NOW()" +
                 ")");
 
-        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS wishlist_goals (" +
+        // Replaced by the Wishlist & Purchase Planner module below — dropped, not just unused, per
+        // explicit confirmation (no migration-rollback tooling exists in this app, so this is permanent).
+        runSilently(dataSource, "DROP TABLE IF EXISTS wishlist_goals");
+
+        // ============== Wishlist & Purchase Planner ==============
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS purchase_items (" +
                 "id BIGSERIAL PRIMARY KEY, " +
                 "user_id BIGINT NOT NULL, " +
-                "goal_name VARCHAR(255) NOT NULL, " +
+                "item_name VARCHAR(255) NOT NULL, " +
+                "estimated_price DOUBLE PRECISION NOT NULL, " +
                 "category VARCHAR(100), " +
-                "target_amount DOUBLE PRECISION NOT NULL, " +
-                "saved_amount DOUBLE PRECISION NOT NULL DEFAULT 0, " +
-                "target_date DATE, " +
+                "need_level VARCHAR(20) NOT NULL DEFAULT 'SHOULD_HAVE', " +
                 "priority VARCHAR(20) NOT NULL DEFAULT 'MEDIUM', " +
-                "status VARCHAR(20) NOT NULL DEFAULT 'IN_PROGRESS', " +
-                "icon VARCHAR(100), " +
+                "brand VARCHAR(255), " +
+                "store VARCHAR(255), " +
+                "purchase_url VARCHAR(1000), " +
                 "notes TEXT, " +
+                "target_month VARCHAR(7), " +
+                "expected_purchase_date DATE, " +
+                "image_path VARCHAR(500), " +
+                "linked_savings_goal_id BIGINT, " +
+                "linked_transaction_id BIGINT, " +
+                "status VARCHAR(20) NOT NULL DEFAULT 'PLANNING', " +
+                "cancel_reason VARCHAR(30), " +
+                "last_affordability_status VARCHAR(20), " +
+                "purchased_at TIMESTAMP, " +
+                "cancelled_at TIMESTAMP, " +
                 "created_at TIMESTAMP NOT NULL DEFAULT NOW(), " +
                 "updated_at TIMESTAMP NOT NULL DEFAULT NOW()" +
                 ")");
+        runSilently(dataSource, "CREATE INDEX IF NOT EXISTS idx_purchase_items_user ON purchase_items (user_id)");
+
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS purchase_item_activity (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "purchase_item_id BIGINT NOT NULL, " +
+                "user_id BIGINT NOT NULL, " +
+                "activity_type VARCHAR(30) NOT NULL, " +
+                "field_name VARCHAR(50), " +
+                "old_value VARCHAR(500), " +
+                "new_value VARCHAR(500), " +
+                "note TEXT, " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW()" +
+                ")");
+        runSilently(dataSource, "CREATE INDEX IF NOT EXISTS idx_purchase_item_activity_item ON purchase_item_activity (purchase_item_id, created_at)");
 
         runSilently(dataSource, "CREATE TABLE IF NOT EXISTS sidebar_preferences (" +
                 "id BIGSERIAL PRIMARY KEY, " +
