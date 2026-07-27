@@ -11,10 +11,6 @@
     <link rel="icon" type="image/png" href="/images/logo.png">
     <style>
         .amount-calc-btn:hover { background: var(--surface-color) !important; border-color: var(--surface-color) !important; }
-        /* Transfer flow layout */
-        .transfer-flow { display: flex; align-items: flex-end; gap: 8px; }
-        .transfer-flow-field { flex: 1; min-width: 0; }
-        .transfer-flow-arrow { flex-shrink: 0; padding-bottom: 6px; color: var(--accent-color); font-size: 1.1rem; }
 
         /* Recurring Transactions section */
         .rt-table thead th { border-bottom: 2px solid var(--border-color); color: var(--text-secondary-custom); font-weight: 600; font-size: 0.85rem; }
@@ -63,12 +59,23 @@
         .rt-section-item:last-child { border-bottom: none; }
 
         /* Bulk transaction rows (Add New Transaction modal) */
-        .tx-bulk-row { border: 1px solid var(--border-color, #e5e7eb); border-radius: 10px; padding: 12px; margin-bottom: 10px; background: var(--bg-card, #fff); animation: txRowIn .2s ease; }
+        .tx-bulk-row { position: relative; border: 1px solid var(--border-color, #e5e7eb); border-radius: 10px; padding: 12px; margin-bottom: 10px; background: var(--bg-card, #fff); animation: txRowIn .2s ease; }
         .tx-bulk-row.has-error { border-color: #ef4444; }
         .tx-bulk-row.removing { animation: txRowOut .18s ease forwards; }
         @keyframes txRowIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes txRowOut { to { opacity: 0; transform: scale(.97); } }
-        .tx-row-actions { gap: 4px; }
+        /* Duplicate/Remove pinned to the row's corner instead of eating a grid column — .tx-row-fields
+           reserves the matching space so the Description/Amount/Type/Category inputs never run under them. */
+        .tx-row-fields { padding-right: 64px; }
+        .tx-row-actions { position: absolute; top: 10px; right: 10px; display: flex; gap: 4px; }
+        .tx-row-action-btn {
+            width: 26px; height: 26px; border: none; border-radius: 7px;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: var(--bg-table-stripe); color: var(--text-secondary-custom);
+            font-size: 0.72rem; cursor: pointer; transition: background 0.15s ease, color 0.15s ease;
+        }
+        .tx-row-action-btn:hover { background: var(--bg-table-hover); color: var(--accent-color); }
+        .tx-row-action-btn.tx-row-remove:hover { background: rgba(220,38,38,0.12); color: #dc3545; }
 
         /* Receipt Scanner */
         .rs-confidence-badge { font-size: .68rem; font-weight: 700; margin-left: 4px; }
@@ -87,9 +94,6 @@
                 </button>
                 <button type="button" class="btn-add-transaction" id="openScanReceiptBtn">
                     <i class="fas fa-camera"></i>Scan Receipt
-                </button>
-                <button type="button" class="btn-add-transaction" id="openTransferModalBtn">
-                    <i class="fas fa-random"></i>Log Cash Transfer
                 </button>
                 <button type="button" class="btn-add-transaction" id="openRecurringModalBtn">
                     <i class="fas fa-sync-alt"></i>Create Recurring Transaction
@@ -495,182 +499,6 @@
   </div>
 </div>
 
-<!-- Log Cash Transfer Modal -->
-<div class="modal fade" id="transferModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-random me-2"></i>Log Cash Transfer</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p class="text-muted small mb-3">Move money between any of your accounts, or record money coming from / going to outside your tracked accounts using External Source / External Destination. Balances update instantly.</p>
-                <form id="transferForm">
-                    <!-- From → To visual flow -->
-                    <div class="transfer-flow mb-3">
-                        <div class="transfer-flow-field">
-                            <label class="form-label fw-semibold"><i class="fas fa-arrow-up-from-bracket me-1 text-danger"></i>From Account</label>
-                            <select class="form-select form-select-sm" id="transferFrom" required>
-                                <option value="">Select source…</option>
-                            </select>
-                        </div>
-                        <div class="transfer-flow-arrow">
-                            <i class="fas fa-arrow-right"></i>
-                        </div>
-                        <div class="transfer-flow-field">
-                            <label class="form-label fw-semibold"><i class="fas fa-arrow-down-to-bracket me-1 text-success"></i>To Account</label>
-                            <select class="form-select form-select-sm" id="transferTo" required>
-                                <option value="">Select destination…</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Amount</label>
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text">৳</span>
-                            <input type="number" class="form-control" id="transferAmount" step="0.01" min="0.01" required placeholder="0.00">
-                            <button type="button" class="input-group-text amount-calc-btn" title="Open Calculator" onclick="if(window.openCalcForInput) window.openCalcForInput('transferAmount'); else if(window.openCalc) window.openCalc();" style="cursor:pointer; background:var(--accent-color); border-color:var(--accent-color); color:#fff;">
-                                <i class="fas fa-calculator" style="font-size:0.8rem;"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label class="form-label">Date</label>
-                            <input type="date" class="form-control form-control-sm" id="transferDate" required>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label" id="transferNoteLabel">Note <small class="text-muted">(optional)</small></label>
-                            <input type="text" class="form-control form-control-sm" id="transferNote" placeholder="e.g., Salary split">
-                        </div>
-                    </div>
-
-                    <div class="mb-3 d-none" id="transferCountsAsWrap">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="transferCountsAs">
-                            <label class="form-check-label" for="transferCountsAs" id="transferCountsAsLabel">Also count this as Income</label>
-                        </div>
-                        <div class="mt-2 d-none" id="transferCategoryWrap">
-                            <label class="form-label small mb-1">Category</label>
-                            <select class="form-select form-select-sm" id="transferCategory">
-                                <option value="">Select category</option>
-                            </select>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary icon-btn" data-bs-dismiss="modal" title="Cancel"><i class="fas fa-times"></i></button>
-                <button type="button" class="btn btn-success icon-btn" id="saveTransferBtn" title="Log Transfer"><i class="fas fa-check"></i></button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Manage Categories Modal -->
-<div class="modal fade" id="manageCategoriesModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-info text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-tags"></i> Manage Categories
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body" style="max-height: 500px; overflow-y: auto;">
-                <button class="btn btn-success w-100 mb-3" type="button" id="addNewCategoryBtn">
-                    <i class="fas fa-plus"></i> Add New Category
-                </button>
-                <div id="categoriesListContainer"></div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Edit Category Modal -->
-<div class="modal fade" id="editCategoryModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Edit Category</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label for="editCategoryName" class="form-label">Category Name</label>
-                    <input type="text" class="form-control" id="editCategoryName" placeholder="Category name">
-                </div>
-                <div class="mb-3">
-                    <label for="editCategoryColor" class="form-label">Color</label>
-                    <input type="color" class="form-control form-control-color" id="editCategoryColor" value="#3498db">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="saveCategoryChangesBtn">Save Changes</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Delete Category Modal -->
-<div class="modal fade" id="deleteCategoryModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Delete Category</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                Do you want to delete this category?
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
-                <button type="button" class="btn btn-danger" id="confirmDeleteCategoryBtn">Yes, Delete</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Add New Category Modal -->
-<div class="modal fade" id="addCategoryModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Add New Category</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label for="newCategoryName" class="form-label">Category Name</label>
-                    <input type="text" class="form-control" id="newCategoryName" placeholder="Enter category name">
-                </div>
-                <div class="mb-3">
-                    <label for="newCategoryType" class="form-label">Category Type</label>
-                    <select class="form-select" id="newCategoryType">
-                        <option value="general">General (all types)</option>
-                        <option value="expense">Expense</option>
-                        <option value="savings">Savings</option>
-                        <option value="income">Income</option>
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label for="newCategoryColor" class="form-label">Color</label>
-                    <input type="color" class="form-control form-control-color" id="newCategoryColor" value="#3498db">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-success" id="createCategoryBtn">Create Category</button>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- Create/Edit Recurring Transaction Modal -->
 <div class="modal fade" id="createRecurringModal" tabindex="-1" aria-hidden="true">
@@ -955,19 +783,12 @@
         } catch(e) {}
         return baseKey;
     }
-    let editCategoryId = null;
-    let deleteCategoryId = null;
-    let manageCategoriesModal = null;
-    let editCategoryModal = null;
-    let deleteCategoryModal = null;
-    let addCategoryModal = null;
     let createRecurringModal = null;
     let deleteRecurringModal = null;
     let confirmOccurrenceModal = null;
     let skipOccurrenceModal = null;
     let skipOccurrenceId = null;
     let addTransactionModal = null;
-    let transferModal = null;
     let receiptScannerModal = null;
     let receiptDetailModal = null;
     let rsSelectedFile = null;
@@ -1028,16 +849,11 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        manageCategoriesModal = new bootstrap.Modal(document.getElementById('manageCategoriesModal'));
-        editCategoryModal = new bootstrap.Modal(document.getElementById('editCategoryModal'));
-        deleteCategoryModal = new bootstrap.Modal(document.getElementById('deleteCategoryModal'));
-        addCategoryModal = new bootstrap.Modal(document.getElementById('addCategoryModal'));
         createRecurringModal = new bootstrap.Modal(document.getElementById('createRecurringModal'));
         deleteRecurringModal = new bootstrap.Modal(document.getElementById('deleteRecurringModal'));
         confirmOccurrenceModal = new bootstrap.Modal(document.getElementById('confirmOccurrenceModal'));
         skipOccurrenceModal = new bootstrap.Modal(document.getElementById('skipOccurrenceModal'));
         addTransactionModal = new bootstrap.Modal(document.getElementById('addTransactionModal'));
-        transferModal = new bootstrap.Modal(document.getElementById('transferModal'));
         receiptScannerModal = new bootstrap.Modal(document.getElementById('receiptScannerModal'));
         receiptDetailModal = new bootstrap.Modal(document.getElementById('receiptDetailModal'));
         txDeleteModal = new bootstrap.Modal(document.getElementById('dashboardDeleteTxModal'));
@@ -1105,14 +921,11 @@
             if (file) importTransactionsFromCsv(file);
         });
 
-        document.getElementById('openManageCategoriesModalBtn').addEventListener('click', openCategoryManagementModal);
-        document.getElementById('saveCategoryChangesBtn').addEventListener('click', saveCategoryChanges);
-        document.getElementById('confirmDeleteCategoryBtn').addEventListener('click', confirmDeleteCategory);
-        document.getElementById('addNewCategoryBtn').addEventListener('click', openAddCategoryModal);
-        document.getElementById('createCategoryBtn').addEventListener('click', createNewCategory);
+        document.getElementById('openManageCategoriesModalBtn').addEventListener('click', function () {
+            window.location.href = '/settings?section=categories';
+        });
         document.getElementById('openRecurringModalBtn').addEventListener('click', openCreateRecurringModal);
         document.getElementById('openAddTransactionModalBtn').addEventListener('click', openAddTransactionModal);
-        document.getElementById('openTransferModalBtn').addEventListener('click', openTransferModal);
         document.getElementById('openScanReceiptBtn').addEventListener('click', openReceiptScannerModal);
         document.getElementById('rsChooseFileBtn').addEventListener('click', () => document.getElementById('rsFileInput').click());
         document.getElementById('rsFileInput').addEventListener('change', function (e) {
@@ -1135,19 +948,7 @@
             if (file && validateReceiptFile(file)) replaceReceiptImage(rdCurrentReceiptId, file);
         });
         document.getElementById('rdDeleteBtn').addEventListener('click', () => deleteReceipt(rdCurrentReceiptId));
-        document.getElementById('transferFrom').addEventListener('change', function () {
-            updateTransferNoteLabel();
-            updateTransferCountsAsUI();
-        });
-        document.getElementById('transferTo').addEventListener('change', function () {
-            updateTransferNoteLabel();
-            updateTransferCountsAsUI();
-        });
-        document.getElementById('transferCountsAs').addEventListener('change', function () {
-            document.getElementById('transferCategoryWrap').classList.toggle('d-none', !this.checked);
-        });
         document.getElementById('saveTransactionBtn').addEventListener('click', () => document.getElementById('transactionForm').requestSubmit());
-        document.getElementById('saveTransferBtn').addEventListener('click', () => document.getElementById('transferForm').requestSubmit());
         document.getElementById('recurType').addEventListener('change', function () {
             onRecurTypeChange().then(() => { document.getElementById('saveRecurringBtn').disabled = false; });
         });
@@ -1177,7 +978,6 @@
 
         loadAccountsIntoSelect();
         applyCurrencySymbolToInputs();
-        document.getElementById('transferDate').valueAsDate = new Date();
         loadRecurring();
         loadRecentTransactions();
         loadReceiptScannerAvailability();
@@ -1193,12 +993,6 @@
             openReceiptScannerModal();
         }
     });
-
-    function openCategoryManagementModal(e) {
-        e.preventDefault();
-        loadCategoriesForManagement();
-        manageCategoriesModal.show();
-    }
 
     async function openAddTransactionModal() {
         await loadAccountsIntoSelect();
@@ -1479,68 +1273,6 @@
         }
     }
 
-    function openTransferModal() {
-        document.getElementById('transferForm').reset();
-        document.getElementById('transferDate').valueAsDate = new Date();
-        updateTransferNoteLabel();
-        updateTransferCountsAsUI();
-        transferModal.show();
-    }
-
-    /** Relabels the Note field when either side of the transfer is External, to prompt a useful description. */
-    function updateTransferNoteLabel() {
-        const fromVal = document.getElementById('transferFrom').value;
-        const toVal = document.getElementById('transferTo').value;
-        const label = document.getElementById('transferNoteLabel');
-        const input = document.getElementById('transferNote');
-        if (fromVal === 'EXTERNAL' || toVal === 'EXTERNAL') {
-            label.innerHTML = 'Description / Source / Destination <small class="text-muted">(optional)</small>';
-            input.placeholder = 'e.g., ABC Company Salary, ATM Withdrawal, Friend John';
-        } else {
-            label.innerHTML = 'Note <small class="text-muted">(optional)</small>';
-            input.placeholder = 'e.g., Salary split';
-        }
-    }
-
-    /**
-     * Shows a checkbox to also log an External Source/Destination transfer as real Income/Expense
-     * (e.g. salary received) so it counts toward the Income/Expense totals without a separate entry.
-     * Hidden entirely for a normal account-to-account transfer, where that would double-count money
-     * the user already owns.
-     */
-    function updateTransferCountsAsUI() {
-        const fromVal = document.getElementById('transferFrom').value;
-        const toVal = document.getElementById('transferTo').value;
-        const wrap = document.getElementById('transferCountsAsWrap');
-        const label = document.getElementById('transferCountsAsLabel');
-        const checkbox = document.getElementById('transferCountsAs');
-        const catWrap = document.getElementById('transferCategoryWrap');
-
-        if (fromVal === 'EXTERNAL') {
-            wrap.classList.remove('d-none');
-            label.textContent = 'Also count this as Income';
-            loadTransferCategories('income');
-        } else if (toVal === 'EXTERNAL') {
-            wrap.classList.remove('d-none');
-            label.textContent = 'Also count this as Expense';
-            loadTransferCategories('expense');
-        } else {
-            wrap.classList.add('d-none');
-            checkbox.checked = false;
-            catWrap.classList.add('d-none');
-        }
-    }
-
-    async function loadTransferCategories(type) {
-        try {
-            const cats = await fetch(`/api/categories?type=${encodeURIComponent(type)}`).then(r => r.json());
-            document.getElementById('transferCategory').innerHTML =
-                '<option value="">Select category</option>' + cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-        } catch (e) {
-            document.getElementById('transferCategory').innerHTML = '<option value="">Error loading</option>';
-        }
-    }
-
     async function loadCategoriesIntoSelect(selectEl, type) {
         if (!selectEl) return;
         if (!categoriesByTypeCache[type]) {
@@ -1614,38 +1346,55 @@
         container.innerHTML = txRows.map(row => {
             const canRemove = txRows.length > 1;
             const isTransfer = row.type === 'transfer';
-            const row2Html = isTransfer ? `
-                    <div class="col-md-4 mb-1">
+
+            const categoryFieldHtml = isTransfer ? '' :
+                '<label class="form-label small mb-1 text-muted">Category</label><select class="form-select form-select-sm tx-row-category"><option value="">Select category</option></select>';
+
+            // At most 2 fields per row throughout — the transfer case has 3 conceptual fields
+            // (From/To/Date), so it gets its own extra row instead of squeezing a third column in.
+            const sourceRowHtml = isTransfer ? `
+                <div class="row g-2 mb-2">
+                    <div class="col-md-6">
                         <label class="form-label small mb-1 text-muted">From Account</label>
                         <select class="form-select form-select-sm tx-row-transfer-from"><option value="">Select source…</option></select>
                         <div class="tx-row-from-balance small text-muted mt-1"></div>
                     </div>
-                    <div class="col-md-4 mb-1">
+                    <div class="col-md-6">
                         <label class="form-label small mb-1 text-muted">To Account</label>
                         <select class="form-select form-select-sm tx-row-transfer-to"><option value="">Select destination…</option></select>
                         <div class="tx-row-to-balance small text-muted mt-1"></div>
                     </div>
-                    <div class="col-md-4 mb-1">
+                </div>
+                <div class="row g-2">
+                    <div class="col-md-6">
                         <label class="form-label small mb-1 text-muted">Date</label>
                         <input type="date" class="form-control form-control-sm tx-row-date">
-                    </div>` : `
-                    <div class="col-md-6 mb-1">
+                    </div>
+                </div>` : `
+                <div class="row g-2">
+                    <div class="col-md-6">
                         <label class="form-label small mb-1 text-muted tx-row-account-label">Paid From <small class="text-muted">(optional)</small></label>
                         <select class="form-select form-select-sm tx-row-account"><option value="">-- No account --</option></select>
                         <div class="tx-row-account-balance small text-muted mt-1"></div>
                     </div>
-                    <div class="col-md-6 mb-1">
+                    <div class="col-md-6">
                         <label class="form-label small mb-1 text-muted">Date</label>
                         <input type="date" class="form-control form-control-sm tx-row-date">
-                    </div>`;
+                    </div>
+                </div>`;
+
             return `
             <div class="tx-bulk-row${row.error ? ' has-error' : ''}" data-row-uid="${row.uid}">
-                <div class="row g-2">
-                    <div class="col-md-3 mb-2">
+                <div class="tx-row-actions">
+                    <button type="button" class="tx-row-action-btn tx-row-dup" title="Duplicate"><i class="fas fa-copy"></i></button>
+                    ${canRemove ? '<button type="button" class="tx-row-action-btn tx-row-remove" title="Remove"><i class="fas fa-trash"></i></button>' : ''}
+                </div>
+                <div class="row g-2 mb-2 tx-row-fields">
+                    <div class="col-md-6">
                         <label class="form-label small mb-1 text-muted">Description ${isTransfer ? '<small class="text-muted">(optional)</small>' : ''}</label>
                         <input type="text" class="form-control form-control-sm tx-row-desc" placeholder="e.g., Grocery shopping" value="${escHtml(row.description)}">
                     </div>
-                    <div class="col-md-2 mb-2">
+                    <div class="col-md-6">
                         <label class="form-label small mb-1 text-muted">Amount</label>
                         <div class="input-group input-group-sm">
                             <span class="input-group-text">৳</span>
@@ -1653,7 +1402,9 @@
                             <button type="button" class="input-group-text amount-calc-btn tx-row-calc-btn" title="Open Calculator" style="cursor:pointer; background:var(--accent-color); border-color:var(--accent-color); color:#fff;"><i class="fas fa-calculator" style="font-size:0.8rem;"></i></button>
                         </div>
                     </div>
-                    <div class="col-md-2 mb-2">
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-md-6">
                         <label class="form-label small mb-1 text-muted">Type</label>
                         <select class="form-select form-select-sm tx-row-type">
                             <option value="expense">Expense</option>
@@ -1662,16 +1413,11 @@
                             <option value="transfer">Transfer</option>
                         </select>
                     </div>
-                    <div class="col-md-3 mb-2">
-                        ${isTransfer ? '' : '<label class="form-label small mb-1 text-muted">Category</label><select class="form-select form-select-sm tx-row-category"><option value="">Select category</option></select>'}
-                    </div>
-                    <div class="col-md-2 mb-2 d-flex align-items-end tx-row-actions">
-                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 tx-row-dup" title="Duplicate"><i class="fas fa-copy"></i></button>
-                        ${canRemove ? '<button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 tx-row-remove" title="Remove"><i class="fas fa-trash"></i></button>' : ''}
+                    <div class="col-md-6">
+                        ${categoryFieldHtml}
                     </div>
                 </div>
-                <div class="row g-2">${row2Html}
-                </div>
+                ${sourceRowHtml}
                 <div class="tx-row-error small text-danger mt-1${row.error ? '' : ' d-none'}">${escHtml(row.error || '')}</div>
             </div>`;
         }).join('');
@@ -1863,97 +1609,6 @@
         }
     }
 
-    document.getElementById('transferForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const fromId = document.getElementById('transferFrom').value;
-        const toId   = document.getElementById('transferTo').value;
-        const amount = parseFloat(document.getElementById('transferAmount').value);
-        const note   = document.getElementById('transferNote').value.trim();
-        const date   = document.getElementById('transferDate').value;
-
-        if (!fromId || !toId) {
-            showTopNotification('Please select both From and To accounts.', 'error'); return;
-        }
-        if (fromId === 'EXTERNAL' && toId === 'EXTERNAL') {
-            showTopNotification('From and To cannot both be External — one side must be one of your accounts.', 'error'); return;
-        }
-        if (fromId === toId) {
-            showTopNotification('Source and destination accounts must be different.', 'error'); return;
-        }
-        if (!amount || amount <= 0) {
-            showTopNotification('Enter a valid amount.', 'error'); return;
-        }
-
-        // If the user opted to also count an External Source/Destination transfer as real
-        // Income/Expense (e.g. salary received), submit it AS that type instead of as a transfer —
-        // it then reuses the existing income/expense logic end-to-end (totals, reports, editing)
-        // with zero special-casing, rather than inventing a parallel "counts toward income" concept.
-        const countsAs = document.getElementById('transferCountsAs').checked;
-        const categoryId = document.getElementById('transferCategory').value;
-        let payload;
-        if (countsAs && fromId === 'EXTERNAL') {
-            if (!categoryId) { showTopNotification('Select a category for this income.', 'error'); return; }
-            payload = {
-                description: note || 'Income',
-                amount: amount,
-                category_id: parseInt(categoryId, 10),
-                transaction_type: 'income',
-                date: date,
-                sourceAccountId: parseInt(toId, 10),
-                destinationAccountId: null
-            };
-        } else if (countsAs && toId === 'EXTERNAL') {
-            if (!categoryId) { showTopNotification('Select a category for this expense.', 'error'); return; }
-            payload = {
-                description: note || 'Expense',
-                amount: amount,
-                category_id: parseInt(categoryId, 10),
-                transaction_type: 'expense',
-                date: date,
-                sourceAccountId: parseInt(fromId, 10),
-                destinationAccountId: null
-            };
-        } else {
-            payload = {
-                description: note || 'Transfer',
-                amount: amount,
-                category_id: null,
-                transaction_type: 'transfer',
-                date: date,
-                sourceAccountId: fromId === 'EXTERNAL' ? null : parseInt(fromId, 10),
-                destinationAccountId: toId === 'EXTERNAL' ? null : parseInt(toId, 10)
-            };
-        }
-
-        try {
-            const response = await fetch('/api/transactions', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload)
-            });
-            const data = await response.json().catch(() => null);
-            if (response.ok) {
-                transferModal.hide();
-                document.getElementById('transferForm').reset();
-                document.getElementById('transferDate').valueAsDate = new Date();
-                updateTransferCountsAsUI();
-                loadRecentTransactions();
-                const successMessage = payload.transaction_type === 'transfer'
-                    ? 'Transfer logged successfully.'
-                    : `Logged as ${payload.transaction_type} — it now counts toward your totals.`;
-                if (data && data.warning) {
-                    showTopNotification(data.warning, 'warning');
-                } else {
-                    showTopNotification(successMessage, 'success');
-                }
-            } else {
-                showTopNotification((data && data.error) || 'Failed to log transfer.', 'error');
-            }
-        } catch (error) {
-            showTopNotification('Unable to log transfer right now.', 'error');
-        }
-    });
-
     const TOAST_ICONS = { success: 'fa-circle-check', error: 'fa-circle-exclamation', warning: 'fa-triangle-exclamation', info: 'fa-circle-info' };
 
     function showTopNotification(message, type = 'success') {
@@ -1971,167 +1626,6 @@
         setTimeout(dismiss, 5000);
     }
 
-    // ============== CATEGORY MANAGEMENT FUNCTIONS ==============
-    async function loadCategoriesForManagement() {
-        try {
-            const response = await fetch('/api/categories');
-            const categories = await response.json();
-            cachedCategories = categories;
-
-            const container = document.getElementById('categoriesListContainer');
-            if (!categories.length) {
-                container.innerHTML = '<p class="text-muted">No categories yet. Create one to get started!</p>';
-                return;
-            }
-
-            container.innerHTML = categories.map(cat => `
-                <div class="card mb-3" style="border-left: 5px solid ${cat.color}">
-                    <div class="card-body py-3 d-flex justify-content-between align-items-center">
-                        <div style="flex: 1;">
-                            <h6 class="card-title mb-0" style="color: ${cat.color}; font-weight: bold;">
-                                ${cat.name}
-                            </h6>
-                            <small class="text-muted">Color: ${cat.color}</small>
-                        </div>
-                        <div class="btn-group" role="group">
-                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="editCategory(${cat.id})" title="Edit">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteCategory(${cat.id})" title="Delete">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        } catch (error) {
-            showTopNotification('Unable to load categories.', 'error');
-        }
-    }
-
-    function editCategory(id) {
-        const current = cachedCategories.find(c => c.id === id);
-        if (!current) {
-            showTopNotification('Category not found.', 'error');
-            return;
-        }
-        editCategoryId = id;
-        document.getElementById('editCategoryName').value = current.name || '';
-        document.getElementById('editCategoryColor').value = current.color || '#3498db';
-        editCategoryModal.show();
-    }
-
-    async function saveCategoryChanges() {
-        if (editCategoryId === null) return;
-        const current = cachedCategories.find(c => c.id === editCategoryId);
-        if (!current) {
-            showTopNotification('Category not found.', 'error');
-            return;
-        }
-
-        const newName = document.getElementById('editCategoryName').value.trim();
-        const newColor = document.getElementById('editCategoryColor').value.trim() || '#3498db';
-        if (!newName) {
-            showTopNotification('Category name cannot be empty.', 'error');
-            return;
-        }
-
-        try {
-            const response = await fetch(`/api/categories/${editCategoryId}`, {
-                method: 'PUT',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    name: newName,
-                    color: newColor,
-                    icon: current.icon || 'tag',
-                    description: current.description || ''
-                })
-            });
-
-            if (response.ok) {
-                editCategoryModal.hide();
-                editCategoryId = null;
-                loadCategoriesForManagement();
-                categoriesByTypeCache = {};
-                showTopNotification('Category updated successfully.', 'success');
-            } else {
-                const errorData = await response.json().catch(() => null);
-                showTopNotification(errorData?.error || 'Error updating category.', 'error');
-            }
-        } catch (error) {
-            showTopNotification('Unable to update category right now.', 'error');
-        }
-    }
-
-    function deleteCategory(id) {
-        deleteCategoryId = id;
-        deleteCategoryModal.show();
-    }
-
-    async function confirmDeleteCategory() {
-        if (deleteCategoryId === null) return;
-        try {
-            const response = await fetch(`/api/categories/${deleteCategoryId}`, {method: 'DELETE'});
-            if (response.ok) {
-                deleteCategoryModal.hide();
-                deleteCategoryId = null;
-                loadCategoriesForManagement();
-                categoriesByTypeCache = {};
-                showTopNotification('Category deleted successfully.', 'success');
-            } else {
-                const errorData = await response.json().catch(() => null);
-                showTopNotification(errorData?.error || 'Error deleting category.', 'error');
-            }
-        } catch (error) {
-            showTopNotification('Unable to delete category right now.', 'error');
-        }
-    }
-
-    function openAddCategoryModal() {
-        document.getElementById('newCategoryName').value = '';
-        document.getElementById('newCategoryColor').value = '#3498db';
-        const currentType = 'general';
-        const typeEl = document.getElementById('newCategoryType');
-        if (typeEl) typeEl.value = currentType;
-        addCategoryModal.show();
-    }
-
-    async function createNewCategory() {
-        const name  = document.getElementById('newCategoryName').value.trim();
-        const color = document.getElementById('newCategoryColor').value;
-        const catType = document.getElementById('newCategoryType').value || 'general';
-
-        if (!name) {
-            showTopNotification('Category name cannot be empty.', 'error');
-            return;
-        }
-
-        const category = {
-            name: name,
-            color: color,
-            icon: 'tag',
-            categoryType: catType
-        };
-
-        try {
-            const response = await fetch('/api/categories', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(category)
-            });
-            if (response.ok) {
-                addCategoryModal.hide();
-                loadCategoriesForManagement();
-                categoriesByTypeCache = {};
-                showTopNotification('Category created successfully.', 'success');
-            } else {
-                const errorData = await response.json().catch(() => null);
-                showTopNotification(errorData?.error || 'Error creating category.', 'error');
-            }
-        } catch (error) {
-            showTopNotification('Unable to create category right now.', 'error');
-        }
-    }
     const ACCOUNT_FIELD_LABELS = { expense: 'Paid From', income: 'Received Into', savings: 'Savings Account' };
     function applyAccountFieldLabel(labelElId, type) {
         const labelEl = document.getElementById(labelElId);
@@ -2161,24 +1655,12 @@
         cachedAccounts = accounts;
         const label = a => a.accountNickname + (a.bankName ? ' (' + a.bankName + ')' : a.provider ? ' (' + a.provider + ')' : '');
         const srcSel  = document.getElementById('sourceAccount');
-        const fromSel = document.getElementById('transferFrom');
-        const toSel   = document.getElementById('transferTo');
         const recurSrcSel  = document.getElementById('recurSourceAccount');
         const recurDestSel = document.getElementById('recurDestAccount');
         const srcOpts = '<option value="">-- No account --</option>' + accounts.map(a => `<option value="${a.id}">${label(a)}</option>`).join('');
         const txOpts  = '<option value="">Select…</option>' + accounts.map(a => `<option value="${a.id}">${label(a)}</option>`).join('');
         const accountOptionsHtml = accounts.map(a => `<option value="${a.id}">${label(a)}</option>`).join('');
-        const fromOpts = '<option value="">Select source…</option>'
-            + '<option value="EXTERNAL">🌐 External Source</option>'
-            + (accounts.length ? '<option disabled>──────────</option>' : '')
-            + accountOptionsHtml;
-        const toOpts = '<option value="">Select destination…</option>'
-            + '<option value="EXTERNAL">🌐 External Destination</option>'
-            + (accounts.length ? '<option disabled>──────────</option>' : '')
-            + accountOptionsHtml;
         if (srcSel)  srcSel.innerHTML  = srcOpts;
-        if (fromSel) fromSel.innerHTML = fromOpts;
-        if (toSel)   toSel.innerHTML   = toOpts;
         if (recurSrcSel)  recurSrcSel.innerHTML  = srcOpts;
         if (recurDestSel) recurDestSel.innerHTML = txOpts;
         const acctFilterSel = document.getElementById('txAccountFilter');
@@ -3134,7 +2616,7 @@
             const fromSavingsText = idx.fromSavings !== -1 ? (r[idx.fromSavings] || '').trim().toLowerCase() : '';
 
             if (type === 'transfer') {
-                failed++; errors.push(`"${description || 'row'}" skipped — Transfer rows aren't supported for import; add them via Log Cash Transfer.`);
+                failed++; errors.push(`"${description || 'row'}" skipped — Transfer rows aren't supported for import; add them via Add New Transaction (Type: Transfer).`);
                 continue;
             }
             if (!['income', 'expense', 'savings'].includes(type)) {

@@ -316,6 +316,16 @@ public class DatabaseMigration implements BeanPostProcessor {
                 ")");
         runSilently(dataSource, "CREATE INDEX IF NOT EXISTS idx_purchase_item_activity_item ON purchase_item_activity (purchase_item_id, created_at)");
 
+        // ============== Forgot Password ==============
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS password_reset_tokens (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "user_id BIGINT NOT NULL, " +
+                "token_hash VARCHAR(64) NOT NULL UNIQUE, " +
+                "expires_at TIMESTAMP NOT NULL, " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW()" +
+                ")");
+        runSilently(dataSource, "CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user ON password_reset_tokens (user_id)");
+
         runSilently(dataSource, "CREATE TABLE IF NOT EXISTS sidebar_preferences (" +
                 "id BIGSERIAL PRIMARY KEY, " +
                 "user_id BIGINT NOT NULL UNIQUE, " +
@@ -333,6 +343,9 @@ public class DatabaseMigration implements BeanPostProcessor {
         // clickable without altering any note's visible content or deleting anything.
         runSilently(dataSource, "UPDATE notes SET content = REPLACE(content, 'data-list=\"check\"', 'data-list=\"unchecked\"') " +
                 "WHERE content LIKE '%data-list=\"check\"%'");
+
+        // ============== Todos: "pinned" state ==============
+        runSilently(dataSource, "ALTER TABLE todos ADD COLUMN IF NOT EXISTS pinned BOOLEAN NOT NULL DEFAULT FALSE");
 
         // ============== Credit card accounting ==============
         runSilently(dataSource, "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS credit_limit_behavior VARCHAR(10) NOT NULL DEFAULT 'WARN'");

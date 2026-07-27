@@ -156,7 +156,7 @@
 
     <div id="dashboardDefaultView" class="dashboard-view-panel active">
     <div class="row mb-4">
-        <div class="col-xl-2 col-md-4 mb-3">
+        <div class="col-6 col-md-4 col-xl-2 mb-3">
             <div class="card stat-card stat-card--income">
                 <div class="card-body">
                     <div class="sc-top">
@@ -174,7 +174,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-2 col-md-4 mb-3">
+        <div class="col-6 col-md-4 col-xl-2 mb-3">
             <div class="card stat-card stat-card--expense">
                 <div class="card-body">
                     <div class="sc-top">
@@ -192,7 +192,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-2 col-md-4 mb-3">
+        <div class="col-6 col-md-4 col-xl-2 mb-3">
             <div class="card stat-card stat-card--savings">
                 <div class="card-body">
                     <div class="sc-top">
@@ -210,7 +210,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-2 col-md-4 mb-3">
+        <div class="col-6 col-md-4 col-xl-2 mb-3">
             <div class="card stat-card stat-card--balance" id="netBalanceCard">
                 <div class="card-body">
                     <div class="sc-top">
@@ -228,14 +228,14 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-2 col-md-4 mb-3">
+        <div class="col-6 col-md-4 col-xl-2 mb-3">
             <div class="card stat-card stat-card--assets">
                 <div class="card-body">
                     <div class="sc-top">
                         <div class="sc-icon-circle"><i class="fas fa-chart-line"></i></div>
                         <div class="sc-title-block">
                             <div class="sc-title">Assets Value</div>
-                            <div class="sc-subtitle"><i class="fas fa-gem sc-trend-up"></i> Portfolio · All time</div>
+                            <div class="sc-subtitle"><i class="fas fa-gem sc-trend-up"></i> <span class="sc-subtitle-text">Portfolio &middot; All time</span></div>
                         </div>
                         <button class="sc-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
                     </div>
@@ -246,14 +246,14 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-2 col-md-4 mb-3">
+        <div class="col-6 col-md-4 col-xl-2 mb-3">
             <div class="card stat-card stat-card--networth">
                 <div class="card-body">
                     <div class="sc-top">
                         <div class="sc-icon-circle"><i class="fas fa-crown"></i></div>
                         <div class="sc-title-block">
                             <div class="sc-title">Net Worth</div>
-                            <div class="sc-subtitle"><i class="fas fa-star sc-trend-up"></i> Total value · All time</div>
+                            <div class="sc-subtitle"><i class="fas fa-star sc-trend-up"></i> <span class="sc-subtitle-text">Total value &middot; All time</span></div>
                         </div>
                         <button class="sc-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
                     </div>
@@ -484,6 +484,17 @@
                     <a href="/family-finance" class="btn btn-sm btn-outline-primary" title="Open Family Finance"><i class="fas fa-arrow-right"></i></a>
                 </div>
                 <div class="card-body" id="familySummaryBody">
+                    <p class="text-muted small mb-0">Loading…</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-thumbtack me-2"></i>Pinned To-Do</h6>
+                    <a href="/todos" class="btn btn-sm btn-outline-primary" title="Open To-Do"><i class="fas fa-arrow-right"></i></a>
+                </div>
+                <div class="card-body" id="pinnedTodoBody">
                     <p class="text-muted small mb-0">Loading…</p>
                 </div>
             </div>
@@ -797,6 +808,17 @@
                     </div>
                 </div>
             </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="fas fa-thumbtack me-2"></i>Pinned To-Do</h6>
+                        <a href="/todos" class="btn btn-sm btn-outline-primary" title="Open To-Do"><i class="fas fa-arrow-right"></i></a>
+                    </div>
+                    <div class="card-body" id="pinnedTodoBodyCompact">
+                        <p class="text-muted small mb-0">Loading…</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div><!-- /#dashboardCompactView -->
 
@@ -957,7 +979,7 @@
     /** Format a number as a currency string using saved settings */
     function formatAmount(value) {
         var c = getCurrencySettings();
-        var num = Number(value).toFixed(c.decimals);
+        var num = Number(value).toLocaleString('en-US', { minimumFractionDigits: c.decimals, maximumFractionDigits: c.decimals });
         return c.position === 'before' ? c.symbol + num : num + '\u00a0' + c.symbol;
     }
     let categoryColorMap      = {};
@@ -1049,6 +1071,7 @@
         if (categoryChartData.length) drawCategoryChart(categoryChartData, activeSuffix());
         if (monthlyChartData.length)  drawMonthlyChart(monthlyChartData, activeSuffix());
         fitStatAmounts();
+        syncUpcomingRecurringHeight();
         applyCardHideSetting();
     }
 
@@ -1365,13 +1388,13 @@
 
         updateGreeting();
         loadDashboard();
-        loadAccountBalances();
-        loadUpcomingRecurring();
+        Promise.all([loadAccountBalances(), loadUpcomingRecurring()]).then(syncUpcomingRecurringHeight);
         loadCurrentBudget();
         loadAiSummary();
         loadFpWidget();
         loadGamificationWidget();
         loadFamilySummaryWidget();
+        loadPinnedTodoWidget();
         loadReceiptScannerAvailability();
     });
 
@@ -1404,6 +1427,25 @@
             containers.forEach(c => c.innerHTML = html);
         } catch (e) {
             containers.forEach(c => c.innerHTML = '<p class="text-muted small mb-0">Unable to load upcoming recurring transactions.</p>');
+        }
+    }
+
+    /** Default view only: Account Balances keeps its natural, uncapped height — Upcoming
+     * Recurring Transactions (which has its own fixed 260px cap for the Compact view) is instead
+     * pinned to that exact same height (not just a ceiling — a fixed match, with room left blank
+     * if its own content is shorter), scrolling internally if its content would otherwise be taller. */
+    function syncUpcomingRecurringHeight() {
+        const panel = document.getElementById('dashboardDefaultView');
+        if (!panel || !panel.classList.contains('active')) return; // hidden panel reads 0 height
+        const acctBody = panel.querySelector('.acct-summary-card .card-body');
+        const recurBody = document.getElementById('upcomingRecurringBody');
+        if (!acctBody || !recurBody) return;
+        recurBody.style.height = '';
+        recurBody.style.maxHeight = '';
+        const targetHeight = acctBody.offsetHeight;
+        if (targetHeight > 0) {
+            recurBody.style.height = targetHeight + 'px';
+            recurBody.style.maxHeight = targetHeight + 'px';
         }
     }
 
@@ -1463,6 +1505,32 @@
             bodies.forEach(b => b.innerHTML = html);
         } catch (e) {
             bodies.forEach(b => b.innerHTML = '<p class="text-muted small mb-0">Unable to load family finance summary.</p>');
+        }
+    }
+
+    /** Always visible (unlike Family Finance) — pinning a to-do is always something the user
+     * could do, so there's no "not applicable" state to hide behind. */
+    async function loadPinnedTodoWidget() {
+        const bodies = ['pinnedTodoBody', 'pinnedTodoBodyCompact'].map(id => document.getElementById(id)).filter(Boolean);
+        if (!bodies.length) return;
+        try {
+            const items = await fetch('/api/todos?pinned=true').then(r => r.json());
+            let html;
+            if (!items.length) {
+                html = '<p class="text-muted small mb-2">Nothing pinned yet.</p>' +
+                    '<p class="text-muted small mb-0">Pin a to-do from your <a href="/todos">To-Do list</a> to see it here.</p>';
+            } else {
+                const shown = items.slice(0, 3);
+                html = shown.map(t => `
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="fw-semibold small">${escapeAiSummaryText(t.title)}</span>
+                        ${t.due_date ? `<span class="text-muted small ms-2">${new Date(t.due_date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</span>` : ''}
+                    </div>`).join('');
+                if (items.length > 3) html += `<div class="text-muted small">+${items.length - 3} more pinned</div>`;
+            }
+            bodies.forEach(b => b.innerHTML = html);
+        } catch (e) {
+            bodies.forEach(b => b.innerHTML = '<p class="text-muted small mb-0">Unable to load pinned to-dos.</p>');
         }
     }
 
@@ -1586,7 +1654,7 @@
         }).catch(() => {});
     }
 
-    window.addEventListener('resize', fitStatAmounts);
+    window.addEventListener('resize', function () { fitStatAmounts(); syncUpcomingRecurringHeight(); });
 
     async function loadDashboard() {
         try {

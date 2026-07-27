@@ -31,6 +31,11 @@ public class PageController {
         return "forward:/signup.html";
     }
 
+    @GetMapping("/reset-password")
+    public String resetPassword() {
+        return "forward:/reset-password.html";
+    }
+
     // Protected routes - require authentication
     @GetMapping("/dashboard")
     public String dashboard(HttpServletRequest request) {

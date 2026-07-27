@@ -378,6 +378,9 @@ async function saveProfile() {
         updateSidebarAvatarUI(_profileData.profilePicture, _profileData.fullName);
         clearUsernameStatus();
         showToast('Profile saved successfully!');
+
+        const modalEl = document.getElementById('userProfileModal');
+        if (modalEl) bootstrap.Modal.getOrCreateInstance(modalEl).hide();
     } catch (err) {
         console.error(err);
         showToast(err.message || 'Failed to save profile.', 'error');
