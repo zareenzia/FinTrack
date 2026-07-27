@@ -60,6 +60,9 @@ public class AccountDeletionService {
     private final NetWorthSnapshotRepository netWorthSnapshotRepository;
     private final NoteRepository noteRepository;
     private final TodoRepository todoRepository;
+    private final TodoFolderRepository todoFolderRepository;
+    private final TodoListRepository todoListRepository;
+    private final TodoItemRepository todoItemRepository;
     private final SidebarPreferenceRepository sidebarPreferenceRepository;
     private final AppearancePreferenceRepository appearancePreferenceRepository;
     private final AiConversationRepository aiConversationRepository;
@@ -97,6 +100,7 @@ public class AccountDeletionService {
             SubscriptionRepository subscriptionRepository, PurchaseItemRepository purchaseItemRepository,
             PurchaseItemActivityRepository purchaseItemActivityRepository, PurchaseItemImageStorageService purchaseItemImageStorageService,
             NetWorthSnapshotRepository netWorthSnapshotRepository, NoteRepository noteRepository, TodoRepository todoRepository,
+            TodoFolderRepository todoFolderRepository, TodoListRepository todoListRepository, TodoItemRepository todoItemRepository,
             SidebarPreferenceRepository sidebarPreferenceRepository, AppearancePreferenceRepository appearancePreferenceRepository,
             AiConversationRepository aiConversationRepository, AiMessageRepository aiMessageRepository,
             AiDocumentEmbeddingRepository aiDocumentEmbeddingRepository, AiSettingsRepository aiSettingsRepository,
@@ -138,6 +142,9 @@ public class AccountDeletionService {
         this.netWorthSnapshotRepository = netWorthSnapshotRepository;
         this.noteRepository = noteRepository;
         this.todoRepository = todoRepository;
+        this.todoFolderRepository = todoFolderRepository;
+        this.todoListRepository = todoListRepository;
+        this.todoItemRepository = todoItemRepository;
         this.sidebarPreferenceRepository = sidebarPreferenceRepository;
         this.appearancePreferenceRepository = appearancePreferenceRepository;
         this.aiConversationRepository = aiConversationRepository;
@@ -238,7 +245,10 @@ public class AccountDeletionService {
         netWorthSnapshotRepository.deleteByUserId(userId);
 
         noteRepository.deleteByUserId(userId);
-        todoRepository.deleteByUserId(userId);
+        todoItemRepository.deleteByUserId(userId);
+        todoListRepository.deleteByUserId(userId);
+        todoFolderRepository.deleteByUserId(userId);
+        todoRepository.deleteByUserId(userId); // OLD flat entity — kept for GDPR purge of legacy orphaned rows
 
         sidebarPreferenceRepository.deleteByUserId(userId);
         appearancePreferenceRepository.deleteByUserId(userId);

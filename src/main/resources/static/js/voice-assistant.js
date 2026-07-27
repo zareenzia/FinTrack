@@ -712,11 +712,6 @@
         if (result.source === 'HEURISTIC') html += heuristicBanner();
         html += fieldRow('vaTodoTitle', 'Title', '<input type="text" class="form-control" id="vaTodoTitle" value="' + escHtml(f.todoTitle || '') + '">');
         html += fieldRow('vaTodoDue', 'Due Date (optional)', '<input type="date" class="form-control" id="vaTodoDue" value="' + (f.todoDueDate || '') + '">');
-        var priority = f.todoPriority || 'medium';
-        html += '<div class="va-field-row"><label for="vaTodoPriority">Priority</label><select class="form-select" id="vaTodoPriority">' +
-            ['low', 'medium', 'high'].map(function (p) {
-                return '<option value="' + p + '"' + (p === priority ? ' selected' : '') + '>' + capitalize(p) + '</option>';
-            }).join('') + '</select></div>';
         html += confirmFooterButtons();
 
         document.getElementById('vaScreenConfirm').innerHTML = html;
@@ -725,14 +720,12 @@
             var title = document.getElementById('vaTodoTitle').value.trim();
             if (!title) return { validationError: 'Please enter a title.' };
             return {
-                url: '/api/todos',
+                url: '/api/todo/items/quick',
                 method: 'POST',
                 entityType: 'todo',
                 body: {
                     title: title,
-                    dueDate: document.getElementById('vaTodoDue').value || null,
-                    priority: document.getElementById('vaTodoPriority').value,
-                    status: 'pending'
+                    dueDate: document.getElementById('vaTodoDue').value || null
                 }
             };
         });

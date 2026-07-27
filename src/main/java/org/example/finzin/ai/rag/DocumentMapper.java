@@ -8,6 +8,7 @@ import org.example.finzin.entity.GoldAssetEntity;
 import org.example.finzin.entity.NoteEntity;
 import org.example.finzin.entity.PurchaseItemEntity;
 import org.example.finzin.entity.TodoEntity;
+import org.example.finzin.entity.TodoItemEntity;
 import org.example.finzin.entity.TransactionEntity;
 import org.springframework.stereotype.Component;
 
@@ -62,6 +63,29 @@ public class DocumentMapper {
         metadata.put("status", t.getStatus());
         metadata.put("completed", t.getCompleted());
         return new MappedDocument(t.getTitle(), content, metadata);
+    }
+
+    /** subItems are this top-level item's sub-items (steps), already-fetched by the caller (DocumentIndexer)
+     *  per this class's stateless/no-DB-calls convention. Sub-items are never indexed on their own —
+     *  their titles are folded into the parent's content here instead. */
+    public MappedDocument mapTodoItem(TodoItemEntity item, List<TodoItemEntity> subItems) {
+        StringBuilder content = new StringBuilder();
+        content.append(item.getTitle());
+        if (item.getNotes() != null && !item.getNotes().isBlank()) {
+            content.append(" - ").append(item.getNotes());
+        }
+        if (item.getDueDate() != null) {
+            content.append(" (due: ").append(item.getDueDate()).append(")");
+        }
+        if (subItems != null && !subItems.isEmpty()) {
+            String steps = subItems.stream().map(TodoItemEntity::getTitle).collect(Collectors.joining(", "));
+            content.append(". Steps: ").append(steps);
+        }
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("completed", item.getCompleted());
+        metadata.put("important", item.getImportant());
+        metadata.put("dueDate", item.getDueDate() != null ? item.getDueDate().toString() : null);
+        return new MappedDocument(item.getTitle(), content.toString(), metadata);
     }
 
     public MappedDocument mapAccount(AccountEntity a) {
