@@ -4,6 +4,9 @@ import org.example.finzin.entity.PasswordResetTokenEntity;
 import org.example.finzin.entity.UserEntity;
 import org.example.finzin.repository.PasswordResetTokenRepository;
 import org.example.finzin.repository.UserRepository;
+import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +19,7 @@ import java.util.Optional;
 
 @Service
 public class PasswordResetService {
+    private static final Logger log = LoggerFactory.getLogger(PasswordResetService.class);
     private static final long TOKEN_VALIDITY_MINUTES = 30;
 
     private final UserRepository userRepository;
@@ -24,8 +28,17 @@ public class PasswordResetService {
     private final EmailService emailService;
     private final SecureRandom secureRandom = new SecureRandom();
 
-    @Value("${app.frontend.base-url}")
+    // No hard-coded default here on purpose — an empty value just means reset links come out
+    // broken (logged below) rather than the whole app failing to start over a missing placeholder.
+    @Value("${app.frontend.base-url:}")
     private String frontendBaseUrl;
+
+    @PostConstruct
+    void checkConfigured() {
+        if (frontendBaseUrl == null || frontendBaseUrl.isBlank()) {
+            log.warn("app.frontend.base-url is not set — password reset links will be missing their domain until it is configured.");
+        }
+    }
 
     public PasswordResetService(UserRepository userRepository, PasswordResetTokenRepository tokenRepository,
                                  AuthService authService, EmailService emailService) {
