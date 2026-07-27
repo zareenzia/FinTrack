@@ -165,10 +165,37 @@ public class PurchaseItemService {
         String old = existing.getNeedLevel();
         if (Objects.equals(old, newNeedLevel)) return existing;
         existing.setNeedLevel(newNeedLevel);
+        existing.setBoardPosition(null); // manual order doesn't carry across columns
         PurchaseItemEntity saved = purchaseItemRepository.save(existing);
         logActivity(saved, "NEED_LEVEL_CHANGE", "needLevel", old, newNeedLevel, "Moved from " + old + " to " + newNeedLevel);
         documentIndexer.indexPurchaseItem(saved);
         return saved;
+    }
+
+    /** Persists a Kanban column's on-screen card order after a same-column drag-and-drop reorder.
+     *  Not logged as an activity/timeline event — purely cosmetic ordering, not a data change. */
+    @Transactional
+    public void reorderWithinColumn(Long userId, String needLevel, List<Long> orderedIds) {
+        if (needLevel == null || !NEED_LEVELS.contains(needLevel)) {
+            throw PurchaseItemException.badRequest("needLevel must be one of MUST_HAVE, SHOULD_HAVE, NICE_TO_HAVE");
+        }
+        if (orderedIds == null || orderedIds.isEmpty()) {
+            throw PurchaseItemException.badRequest("orderedIds must not be empty");
+        }
+        Map<Long, PurchaseItemEntity> byId = purchaseItemRepository.findAllById(orderedIds).stream()
+                .collect(Collectors.toMap(PurchaseItemEntity::getId, i -> i));
+        List<PurchaseItemEntity> ordered = new ArrayList<>();
+        for (Long id : orderedIds) {
+            PurchaseItemEntity item = byId.get(id);
+            if (item == null || !Objects.equals(item.getUserId(), userId) || !needLevel.equals(item.getNeedLevel())) {
+                throw PurchaseItemException.badRequest("One or more items couldn't be reordered — try refreshing the board.");
+            }
+            ordered.add(item);
+        }
+        for (int i = 0; i < ordered.size(); i++) {
+            ordered.get(i).setBoardPosition(i);
+        }
+        purchaseItemRepository.saveAll(ordered);
     }
 
     public PurchaseItemEntity patchTargetMonth(PurchaseItemEntity existing, String newTargetMonth) {
@@ -343,7 +370,8 @@ public class PurchaseItemService {
                 item.getPurchasedAt() != null ? item.getPurchasedAt().toString() : null,
                 item.getCancelledAt() != null ? item.getCancelledAt().toString() : null,
                 item.getCreatedAt() != null ? item.getCreatedAt().toString() : null,
-                item.getUpdatedAt() != null ? item.getUpdatedAt().toString() : null
+                item.getUpdatedAt() != null ? item.getUpdatedAt().toString() : null,
+                item.getBoardPosition()
         );
     }
 
