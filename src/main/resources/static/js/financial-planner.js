@@ -1,10 +1,10 @@
 /**
  * financial-planner.js
  * Handles all logic for the Financial Planner page:
- *   Tab 1 – Investment Portfolio
- *   Tab 2 – Loan Manager
- *   Tab 3 – Subscription Manager
- *   Tab 4 – Wishlist & Financial Goals
+ *   Tab 1 – Wishlist & Purchase Planner (paired script: wishlist-planner.js)
+ *   Tab 2 – Subscription Manager
+ *   Tab 3 – Loan Manager
+ *   Tab 4 – Investment Portfolio
  */
 (function () {
     'use strict';

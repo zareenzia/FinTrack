@@ -150,6 +150,19 @@ public class AuthService {
         return userRepository.save(user);
     }
 
+    public UserEntity resetPassword(Long userId, String newPassword) throws IllegalArgumentException {
+        Optional<UserEntity> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) throw new IllegalArgumentException("User not found");
+
+        if (!PASSWORD_PATTERN.matcher(newPassword).matches()) {
+            throw new IllegalArgumentException("Password must be at least 8 characters and include uppercase, lowercase, a number, and a special character");
+        }
+
+        UserEntity user = userOpt.get();
+        user.setPasswordHash(passwordService.hashPassword(newPassword));
+        return userRepository.save(user);
+    }
+
     public boolean isUsernameAvailable(String username, Long excludeUserId) {
         Optional<UserEntity> existing = userRepository.findByUsernameIgnoreCase(username);
         if (existing.isEmpty()) return true;

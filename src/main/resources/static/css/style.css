@@ -1101,6 +1101,10 @@ body.has-sidebar {
     display: flex;
     align-items: flex-start;
     gap: 12px;
+    /* Reserve room on the right for the eye button, which is pulled out of this flex row (see
+       .sc-top .sc-eye-btn below) and pinned to the card's corner instead — otherwise the title
+       block would expand to fill that space and its text could run underneath the button. */
+    padding-right: 38px;
 }
 
 /* White circle with colored icon — animated pulse */
@@ -1158,6 +1162,16 @@ body.has-sidebar {
     display: flex;
     align-items: center;
     gap: 4px;
+    min-width: 0;
+}
+/* Subtitle label text (e.g. "This month", "Total value · All time") — truncate with an
+   ellipsis on narrow cards instead of wrapping word-by-word into a multi-line mess. */
+.sc-subtitle .sc-month-label,
+.sc-subtitle .sc-subtitle-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
 }
 .sc-trend-up   { color: #bbf7d0; }
 .sc-trend-down { color: #fecaca; }
@@ -1180,6 +1194,16 @@ body.has-sidebar {
     flex-shrink: 0;
 }
 .sc-eye-btn:hover { background: rgba(255,255,255,0.35); color: #fff; }
+
+/* In the grid stat-cards specifically (not the Compact view's summary-stat-row, which keeps its
+   own inline eye button), pin the eye button to the card's corner instead of letting it sit in
+   the flex row — that was stealing ~42px from the title/subtitle on every card, which is what
+   was forcing "Total Income", "Net Balance", etc. to wrap even at a normal card width. */
+.sc-top .sc-eye-btn {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+}
 
 /* Divider */
 .sc-divider {
@@ -1313,6 +1337,16 @@ body.has-sidebar {
 .form-control::placeholder {
     color: var(--text-placeholder);
     font-weight: 400;
+}
+
+/* Input-group addons (e.g. the currency symbol prefix on Amount fields) had no theme styling
+   anywhere and fell back to Bootstrap's default light-gray background — a jarring white box
+   in an otherwise dark-themed input. Match the same tokens .form-control/.form-select use. */
+.input-group-text {
+    background-color: var(--bg-table-stripe);
+    border: 2px solid var(--border-input);
+    color: var(--text-secondary-custom);
+    font-weight: 600;
 }
 
 /* ===== BUTTONS ===== */

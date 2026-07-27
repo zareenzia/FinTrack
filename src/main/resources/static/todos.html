@@ -410,6 +410,9 @@
                         </div>
                     </div>
                     <div class="todo-actions">
+                        <button class="todo-btn" onclick="togglePin(${todo.id}, ${todo.pinned === true})" title="${todo.pinned ? 'Unpin' : 'Pin'}">
+                            <i class="fas fa-thumbtack${todo.pinned ? ' text-warning' : ''}"></i>
+                        </button>
                         <button class="todo-btn" onclick="editTodo(${todo.id})" title="Edit">
                             <i class="fas fa-edit"></i>
                         </button>
@@ -507,6 +510,25 @@
             }
         } catch (error) {
             console.error('Error toggling todo:', error);
+        }
+    }
+
+    async function togglePin(id, isPinned) {
+        const todo = allTodos.find(t => t.id === id);
+        if (!todo) return;
+
+        try {
+            const response = await fetch(`/api/todos/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...todo, pinned: !isPinned })
+            });
+
+            if (response.ok) {
+                loadTodos();
+            }
+        } catch (error) {
+            console.error('Error toggling pin:', error);
         }
     }
 

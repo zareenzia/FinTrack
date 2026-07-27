@@ -511,7 +511,8 @@ public class FinanceApiController {
             HttpServletRequest request,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) String priority
+            @RequestParam(required = false) String priority,
+            @RequestParam(required = false) String pinned
     ) {
         Long userId = getUserId(request);
         List<TodoEntity> todos;
@@ -528,6 +529,15 @@ public class FinanceApiController {
 
         if (priority != null && !priority.isBlank()) {
             todos = todos.stream().filter(t -> t.getPriority().equalsIgnoreCase(priority)).collect(Collectors.toList());
+        }
+
+        if (pinned != null && !pinned.isBlank()) {
+            boolean pinnedOnly = Boolean.parseBoolean(pinned);
+            todos = todos.stream()
+                    .filter(t -> pinnedOnly == Boolean.TRUE.equals(t.getPinned()))
+                    .sorted(Comparator.comparing(TodoEntity::getDueDate, Comparator.nullsLast(Comparator.naturalOrder()))
+                            .thenComparing(TodoEntity::getUpdatedAt, Comparator.reverseOrder()))
+                    .collect(Collectors.toList());
         }
 
         return todos.stream().map(this::toTodoResponse).collect(Collectors.toList());
@@ -552,6 +562,7 @@ public class FinanceApiController {
         entity.setStatus(body.status != null ? body.status : "pending");
         entity.setCompleted(false);
         entity.setColor(body.color != null ? body.color : "#29B6F6");
+        entity.setPinned(body.pinned != null && body.pinned);
 
         TodoEntity saved = todoRepository.save(entity);
         documentIndexer.indexTodo(saved);
@@ -597,6 +608,9 @@ public class FinanceApiController {
         }
         if (body.color != null) {
             entity.setColor(body.color);
+        }
+        if (body.pinned != null) {
+            entity.setPinned(body.pinned);
         }
 
         TodoEntity updated = todoRepository.save(entity);
@@ -857,7 +871,8 @@ public class FinanceApiController {
             String category,
             String status,
             Boolean completed,
-            String color
+            String color,
+            Boolean pinned
     ) {
     }
 
@@ -907,6 +922,7 @@ public class FinanceApiController {
         response.put("status", entity.getStatus());
         response.put("completed", entity.getCompleted() != null ? entity.getCompleted() : false);
         response.put("color", entity.getColor() != null ? entity.getColor() : "#29B6F6");
+        response.put("pinned", entity.getPinned() != null ? entity.getPinned() : false);
         response.put("created_at", entity.getCreatedAt().toString());
         response.put("updated_at", entity.getUpdatedAt().toString());
         return response;
