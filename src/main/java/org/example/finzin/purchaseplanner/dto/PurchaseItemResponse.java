@@ -25,5 +25,6 @@ public record PurchaseItemResponse(
         String purchasedAt,
         String cancelledAt,
         String createdAt,
-        String updatedAt
+        String updatedAt,
+        Integer boardPosition
 ) {}

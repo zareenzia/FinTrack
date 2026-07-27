@@ -37,6 +37,8 @@
     var wpSavingsGoalsCache = null;
     var wpHasBudgetPlan = false;
     var wpBudgetRemainingAmount = null;
+    var wpDraggingId = null;
+    var wpDraggingNeedLevel = null;
 
     function setText(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
 
@@ -234,9 +236,20 @@
         renderTimeline(list);
     }
 
+    /** Kanban columns always show manual drag order (not the "Sort by" dropdown, which drives the
+     *  List view below) — items never manually dragged fall back to newest-first. */
+    function sortForBoard(items) {
+        return items.slice().sort(function (a, b) {
+            var pa = a.boardPosition == null ? Infinity : a.boardPosition;
+            var pb = b.boardPosition == null ? Infinity : b.boardPosition;
+            if (pa !== pb) return pa - pb;
+            return (b.createdAt || '').localeCompare(a.createdAt || '');
+        });
+    }
+
     function renderKanban(list) {
         WP_NEED_LEVELS.forEach(function (level) {
-            var items = list.filter(function (i) { return i.needLevel === level; });
+            var items = sortForBoard(list.filter(function (i) { return i.needLevel === level; }));
             var countEl = document.getElementById(WP_NEED_COUNT_IDS[level]);
             if (countEl) countEl.textContent = items.length;
             var body = document.getElementById(WP_NEED_COL_IDS[level]);
@@ -364,10 +377,32 @@
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/plain', cardEl.dataset.id);
             cardEl.classList.add('dragging');
+            var item = wpData.find(function (x) { return x.id === parseInt(cardEl.dataset.id, 10); });
+            wpDraggingId = item ? item.id : null;
+            wpDraggingNeedLevel = item ? item.needLevel : null;
         });
         cardEl.addEventListener('dragend', function () {
             cardEl.classList.remove('dragging');
+            wpDraggingId = null;
+            wpDraggingNeedLevel = null;
+            // If the drag ended outside any valid drop zone, dragover's live DOM shuffling never got
+            // persisted — re-render from wpData (the source of truth) to discard that stray preview.
+            renderWishlistBoard();
         });
+    }
+
+    /** Classic "which sibling is the pointer past the midpoint of" reorder helper — finds the
+     *  card the dragged item should land before, so cards visually shuffle live during drag. */
+    function getDragAfterElement(container, y) {
+        var candidates = Array.prototype.slice.call(container.querySelectorAll('.wp-card:not(.dragging)'));
+        return candidates.reduce(function (closest, child) {
+            var box = child.getBoundingClientRect();
+            var offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            }
+            return closest;
+        }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
     }
 
     function wireKanbanColumnDrop(bodyEl, level) {
@@ -375,14 +410,54 @@
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
             bodyEl.classList.add('drag-over');
+            if (wpDraggingNeedLevel === level) {
+                var draggingEl = bodyEl.querySelector('.wp-card.dragging');
+                if (!draggingEl) return;
+                var afterElement = getDragAfterElement(bodyEl, e.clientY);
+                if (afterElement == null) bodyEl.appendChild(draggingEl);
+                else bodyEl.insertBefore(draggingEl, afterElement);
+            }
         });
         bodyEl.addEventListener('dragleave', function () { bodyEl.classList.remove('drag-over'); });
         bodyEl.addEventListener('drop', function (e) {
             e.preventDefault();
             bodyEl.classList.remove('drag-over');
             var id = parseInt(e.dataTransfer.getData('text/plain'), 10);
-            handleKanbanDrop(id, level);
+            if (wpDraggingNeedLevel === level) {
+                handleKanbanReorder(bodyEl, level);
+            } else {
+                handleKanbanDrop(id, level);
+            }
         });
+    }
+
+    /** Persists the column's on-screen card order (already live-shuffled by dragover above) after a
+     *  same-column drop — optimistic update + revert-on-error, matching handleKanbanDrop's convention. */
+    async function handleKanbanReorder(bodyEl, level) {
+        var orderedIds = Array.prototype.map.call(bodyEl.querySelectorAll('.wp-card'), function (el) {
+            return parseInt(el.dataset.id, 10);
+        });
+        var previous = wpData.filter(function (i) { return i.needLevel === level; })
+            .map(function (i) { return { id: i.id, boardPosition: i.boardPosition }; });
+
+        orderedIds.forEach(function (id, idx) {
+            var item = wpData.find(function (x) { return x.id === id; });
+            if (item) item.boardPosition = idx;
+        });
+        renderWishlistBoard();
+
+        var result = await apiFetch(BASE + '/purchase-items/reorder', {
+            method: 'PATCH',
+            body: JSON.stringify({ needLevel: level, orderedIds: orderedIds })
+        });
+        if (!result || result.error) {
+            previous.forEach(function (p) {
+                var item = wpData.find(function (x) { return x.id === p.id; });
+                if (item) item.boardPosition = p.boardPosition;
+            });
+            renderWishlistBoard();
+            showToast((result && result.error) || "Couldn't save the new order — reverted.", 'error');
+        }
     }
 
     async function handleKanbanDrop(id, level) {

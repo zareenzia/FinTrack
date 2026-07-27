@@ -31,6 +31,11 @@ public class PurchaseItemEntity {
     @Column(nullable = false)
     private String priority;
 
+    /** Manual drag-and-drop order within this item's (userId, needLevel) Kanban column.
+     *  Null means "never manually reordered" — callers sort those after positioned items, by createdAt. */
+    @Column(nullable = true)
+    private Integer boardPosition;
+
     @Column(nullable = true)
     private String brand;
 
@@ -113,6 +118,8 @@ public class PurchaseItemEntity {
     public void setNeedLevel(String needLevel) { this.needLevel = needLevel; }
     public String getPriority() { return priority; }
     public void setPriority(String priority) { this.priority = priority; }
+    public Integer getBoardPosition() { return boardPosition; }
+    public void setBoardPosition(Integer boardPosition) { this.boardPosition = boardPosition; }
     public String getBrand() { return brand; }
     public void setBrand(String brand) { this.brand = brand; }
     public String getStore() { return store; }

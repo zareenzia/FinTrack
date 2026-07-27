@@ -100,6 +100,19 @@ public class PurchaseItemApiController {
         return withOwnedItem(request, id, item -> purchaseItemService.patchStatus(item, body.status()));
     }
 
+    /** Persists a Kanban column's card order after a same-column drag-and-drop reorder.
+     *  Not under /{id} since it mutates the whole column's ordering, not a single item. */
+    @PatchMapping("/reorder")
+    public ResponseEntity<?> reorder(HttpServletRequest request, @RequestBody ReorderRequest body) {
+        Long userId = getUserId(request);
+        try {
+            purchaseItemService.reorderWithinColumn(userId, body.needLevel(), body.orderedIds());
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (PurchaseItemException e) {
+            return mapPurchaseItemException(e);
+        }
+    }
+
     @PostMapping("/{id}/cancel")
     public ResponseEntity<?> cancel(HttpServletRequest request, @PathVariable Long id, @RequestBody CancelPurchaseRequest body) {
         return withOwnedItem(request, id, item -> purchaseItemService.cancel(item, body.reason()));
