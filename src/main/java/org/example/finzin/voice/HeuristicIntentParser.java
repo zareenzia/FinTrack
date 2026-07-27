@@ -77,8 +77,6 @@ public class HeuristicIntentParser implements IntentParser {
             "^(create a note[,:]?\\s*|note that\\s+|remember (to|that)\\s+|jot down\\s+)", Pattern.CASE_INSENSITIVE);
     private static final Pattern TODO_TRIGGER_PATTERN = Pattern.compile(
             "^(add a to-?do[,:]?\\s*|add a task[,:]?\\s*(to\\s+)?|remind me to\\s+|remind me\\s+(to\\s+)?)", Pattern.CASE_INSENSITIVE);
-    private static final Pattern HIGH_PRIORITY_PATTERN = Pattern.compile("\\b(urgent|important|asap|high priority)\\b", Pattern.CASE_INSENSITIVE);
-    private static final Pattern LOW_PRIORITY_PATTERN = Pattern.compile("\\b(whenever|low priority|not urgent)\\b", Pattern.CASE_INSENSITIVE);
 
     @Override
     public ParsedVoiceCommand parse(Long userId, String transcript, VoicePriorState priorState) {
@@ -281,8 +279,6 @@ public class HeuristicIntentParser implements IntentParser {
         }
         LocalDate date = extractRelativeDate(text);
         if (date != null) fields.put("todoDueDate", date.toString());
-        if (HIGH_PRIORITY_PATTERN.matcher(text).find()) fields.put("todoPriority", "high");
-        else if (LOW_PRIORITY_PATTERN.matcher(text).find()) fields.put("todoPriority", "low");
         String followUp = missing.isEmpty() ? null : "What's the to-do?";
         return new ParsedVoiceCommand(VoiceIntent.TODO, confidence, "HEURISTIC", fields, missing, followUp);
     }

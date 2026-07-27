@@ -1508,29 +1508,29 @@
         }
     }
 
-    /** Always visible (unlike Family Finance) — pinning a to-do is always something the user
+    /** Always visible (unlike Family Finance) — starring a to-do is always something the user
      * could do, so there's no "not applicable" state to hide behind. */
     async function loadPinnedTodoWidget() {
         const bodies = ['pinnedTodoBody', 'pinnedTodoBodyCompact'].map(id => document.getElementById(id)).filter(Boolean);
         if (!bodies.length) return;
         try {
-            const items = await fetch('/api/todos?pinned=true').then(r => r.json());
+            const items = await fetch('/api/todo/items/starred').then(r => r.json());
             let html;
             if (!items.length) {
-                html = '<p class="text-muted small mb-2">Nothing pinned yet.</p>' +
-                    '<p class="text-muted small mb-0">Pin a to-do from your <a href="/todos">To-Do list</a> to see it here.</p>';
+                html = '<p class="text-muted small mb-2">Nothing starred yet.</p>' +
+                    '<p class="text-muted small mb-0">Star a to-do from your <a href="/todos">To-Do list</a> to see it here.</p>';
             } else {
                 const shown = items.slice(0, 3);
                 html = shown.map(t => `
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <span class="fw-semibold small">${escapeAiSummaryText(t.title)}</span>
-                        ${t.due_date ? `<span class="text-muted small ms-2">${new Date(t.due_date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</span>` : ''}
+                        ${t.dueDate ? `<span class="text-muted small ms-2">${new Date(t.dueDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</span>` : ''}
                     </div>`).join('');
-                if (items.length > 3) html += `<div class="text-muted small">+${items.length - 3} more pinned</div>`;
+                if (items.length > 3) html += `<div class="text-muted small">+${items.length - 3} more starred</div>`;
             }
             bodies.forEach(b => b.innerHTML = html);
         } catch (e) {
-            bodies.forEach(b => b.innerHTML = '<p class="text-muted small mb-0">Unable to load pinned to-dos.</p>');
+            bodies.forEach(b => b.innerHTML = '<p class="text-muted small mb-0">Unable to load starred to-dos.</p>');
         }
     }
 

@@ -11,10 +11,12 @@ import org.example.finzin.entity.NoteEntity;
 import org.example.finzin.entity.PurchaseItemEntity;
 import org.example.finzin.entity.SavingsBudgetEntity;
 import org.example.finzin.entity.TodoEntity;
+import org.example.finzin.entity.TodoItemEntity;
 import org.example.finzin.entity.TransactionEntity;
 import org.example.finzin.repository.BudgetRepository;
 import org.example.finzin.repository.CategoryRepository;
 import org.example.finzin.repository.SavingsBudgetRepository;
+import org.example.finzin.repository.TodoItemRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
@@ -41,15 +43,17 @@ public class DocumentIndexer {
     private final CategoryRepository categoryRepository;
     private final BudgetRepository budgetRepository;
     private final SavingsBudgetRepository savingsBudgetRepository;
+    private final TodoItemRepository todoItemRepository;
 
     public DocumentIndexer(EmbeddingService embeddingService, DocumentMapper documentMapper,
                             CategoryRepository categoryRepository, BudgetRepository budgetRepository,
-                            SavingsBudgetRepository savingsBudgetRepository) {
+                            SavingsBudgetRepository savingsBudgetRepository, TodoItemRepository todoItemRepository) {
         this.embeddingService = embeddingService;
         this.documentMapper = documentMapper;
         this.categoryRepository = categoryRepository;
         this.budgetRepository = budgetRepository;
         this.savingsBudgetRepository = savingsBudgetRepository;
+        this.todoItemRepository = todoItemRepository;
     }
 
     @Async("indexingTaskExecutor")
@@ -89,6 +93,21 @@ public class DocumentIndexer {
     @Async("indexingTaskExecutor")
     public void deleteTodo(Long userId, Long todoId) {
         safely("TODO", todoId, () -> embeddingService.deleteDocument(userId, IndexedEntityType.TODO, todoId));
+    }
+
+    /** Top-level items only — sub-items are never indexed on their own, see DocumentMapper.mapTodoItem. */
+    @Async("indexingTaskExecutor")
+    public void indexTodoItem(TodoItemEntity item) {
+        safely("TODO", item.getId(), () -> {
+            List<TodoItemEntity> subItems = todoItemRepository.findByParentItemId(item.getId());
+            var doc = documentMapper.mapTodoItem(item, subItems);
+            embeddingService.indexDocument(item.getUserId(), IndexedEntityType.TODO, item.getId(), doc.title(), doc.content(), doc.metadata());
+        });
+    }
+
+    @Async("indexingTaskExecutor")
+    public void deleteTodoItem(Long userId, Long itemId) {
+        safely("TODO", itemId, () -> embeddingService.deleteDocument(userId, IndexedEntityType.TODO, itemId));
     }
 
     @Async("indexingTaskExecutor")

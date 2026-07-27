@@ -5,13 +5,11 @@ import org.example.finzin.entity.AccountEntity;
 import org.example.finzin.entity.AssetEntity;
 import org.example.finzin.entity.CategoryEntity;
 import org.example.finzin.entity.NoteEntity;
-import org.example.finzin.entity.TodoEntity;
 import org.example.finzin.entity.TransactionEntity;
 import org.example.finzin.repository.AccountRepository;
 import org.example.finzin.repository.AssetRepository;
 import org.example.finzin.repository.CategoryRepository;
 import org.example.finzin.repository.NoteRepository;
-import org.example.finzin.repository.TodoRepository;
 import org.example.finzin.repository.TransactionRepository;
 import org.example.finzin.service.FinancialSummaryService;
 import org.example.finzin.service.AccountBalanceService;
@@ -52,19 +50,17 @@ public class FinanceApiController {
     private final TransactionRepository transactionRepository;
     private final AssetRepository assetRepository;
     private final NoteRepository noteRepository;
-    private final TodoRepository todoRepository;
     private final FinancialSummaryService financialSummaryService;
     private final DocumentIndexer documentIndexer;
     private final AccountBalanceService accountBalanceService;
     private final AccountRepository accountRepository;
     private final ApplicationEventPublisher eventPublisher;
 
-    public FinanceApiController(CategoryRepository categoryRepository, TransactionRepository transactionRepository, AssetRepository assetRepository, NoteRepository noteRepository, TodoRepository todoRepository, FinancialSummaryService financialSummaryService, DocumentIndexer documentIndexer, AccountBalanceService accountBalanceService, AccountRepository accountRepository, ApplicationEventPublisher eventPublisher) {
+    public FinanceApiController(CategoryRepository categoryRepository, TransactionRepository transactionRepository, AssetRepository assetRepository, NoteRepository noteRepository, FinancialSummaryService financialSummaryService, DocumentIndexer documentIndexer, AccountBalanceService accountBalanceService, AccountRepository accountRepository, ApplicationEventPublisher eventPublisher) {
         this.categoryRepository = categoryRepository;
         this.transactionRepository = transactionRepository;
         this.assetRepository = assetRepository;
         this.noteRepository = noteRepository;
-        this.todoRepository = todoRepository;
         this.financialSummaryService = financialSummaryService;
         this.documentIndexer = documentIndexer;
         this.accountBalanceService = accountBalanceService;
@@ -505,135 +501,6 @@ public class FinanceApiController {
         return ResponseEntity.noContent().build();
     }
 
-    // ============== TODO ENDPOINTS ==============
-    @GetMapping("/todos")
-    public List<Map<String, Object>> getTodos(
-            HttpServletRequest request,
-            @RequestParam(required = false) String search,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) String priority,
-            @RequestParam(required = false) String pinned
-    ) {
-        Long userId = getUserId(request);
-        List<TodoEntity> todos;
-
-        if (search != null && !search.isBlank()) {
-            todos = todoRepository.searchByUserIdAndTitle(userId, search);
-        } else {
-            todos = todoRepository.findByUserIdAndCompletedFalse(userId);
-        }
-
-        if (status != null && !status.isBlank()) {
-            todos = todos.stream().filter(t -> t.getStatus().equalsIgnoreCase(status)).collect(Collectors.toList());
-        }
-
-        if (priority != null && !priority.isBlank()) {
-            todos = todos.stream().filter(t -> t.getPriority().equalsIgnoreCase(priority)).collect(Collectors.toList());
-        }
-
-        if (pinned != null && !pinned.isBlank()) {
-            boolean pinnedOnly = Boolean.parseBoolean(pinned);
-            todos = todos.stream()
-                    .filter(t -> pinnedOnly == Boolean.TRUE.equals(t.getPinned()))
-                    .sorted(Comparator.comparing(TodoEntity::getDueDate, Comparator.nullsLast(Comparator.naturalOrder()))
-                            .thenComparing(TodoEntity::getUpdatedAt, Comparator.reverseOrder()))
-                    .collect(Collectors.toList());
-        }
-
-        return todos.stream().map(this::toTodoResponse).collect(Collectors.toList());
-    }
-
-    @PostMapping("/todos")
-    public ResponseEntity<?> createTodo(HttpServletRequest request, @RequestBody TodoRequest body) {
-        Long userId = getUserId(request);
-        
-        if (body.title == null || body.title.isBlank()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Title is required"));
-        }
-
-        TodoEntity entity = new TodoEntity();
-        entity.setUserId(userId);
-        entity.setTitle(body.title.trim());
-        entity.setDescription(body.description != null ? body.description : "");
-        entity.setDueDate(body.dueDate);
-        entity.setDueTime(body.dueTime);
-        entity.setPriority(body.priority != null ? body.priority : "medium");
-        entity.setCategory(body.category != null ? body.category : "");
-        entity.setStatus(body.status != null ? body.status : "pending");
-        entity.setCompleted(false);
-        entity.setColor(body.color != null ? body.color : "#29B6F6");
-        entity.setPinned(body.pinned != null && body.pinned);
-
-        TodoEntity saved = todoRepository.save(entity);
-        documentIndexer.indexTodo(saved);
-        return ResponseEntity.status(HttpStatus.CREATED).body(toTodoResponse(saved));
-    }
-
-    @PutMapping("/todos/{id}")
-    public ResponseEntity<?> updateTodo(HttpServletRequest request, @PathVariable Long id, @RequestBody TodoRequest body) {
-        Long userId = getUserId(request);
-        TodoEntity entity = todoRepository.findById(id).orElse(null);
-        if (entity == null || !entity.getUserId().equals(userId)) {
-            return ResponseEntity.notFound().build();
-        }
-
-        boolean wasCompleted = Boolean.TRUE.equals(entity.getCompleted());
-
-        if (body.title != null && !body.title.isBlank()) {
-            entity.setTitle(body.title.trim());
-        }
-        if (body.description != null) {
-            entity.setDescription(body.description);
-        }
-        if (body.dueDate != null) {
-            entity.setDueDate(body.dueDate);
-        }
-        if (body.dueTime != null) {
-            entity.setDueTime(body.dueTime);
-        }
-        if (body.priority != null) {
-            entity.setPriority(body.priority);
-        }
-        if (body.category != null) {
-            entity.setCategory(body.category);
-        }
-        if (body.status != null) {
-            entity.setStatus(body.status);
-        }
-        if (body.completed != null) {
-            entity.setCompleted(body.completed);
-            if (body.completed) {
-                entity.setStatus("completed");
-            }
-        }
-        if (body.color != null) {
-            entity.setColor(body.color);
-        }
-        if (body.pinned != null) {
-            entity.setPinned(body.pinned);
-        }
-
-        TodoEntity updated = todoRepository.save(entity);
-        documentIndexer.indexTodo(updated);
-        if (!wasCompleted && Boolean.TRUE.equals(updated.getCompleted())) {
-            eventPublisher.publishEvent(new GamificationEvent(userId, GamificationEventType.TODO_COMPLETED,
-                    Map.of("todoId", updated.getId())));
-        }
-        return ResponseEntity.ok(toTodoResponse(updated));
-    }
-
-    @DeleteMapping("/todos/{id}")
-    public ResponseEntity<?> deleteTodo(HttpServletRequest request, @PathVariable Long id) {
-        Long userId = getUserId(request);
-        TodoEntity entity = todoRepository.findById(id).orElse(null);
-        if (entity == null || !entity.getUserId().equals(userId)) {
-            return ResponseEntity.notFound().build();
-        }
-        todoRepository.deleteById(id);
-        documentIndexer.deleteTodo(userId, id);
-        return ResponseEntity.noContent().build();
-    }
-
     // ============== ANALYTICS ENDPOINTS ==============
     @GetMapping("/analytics/summary")
     public Map<String, Object> summary(HttpServletRequest request) {
@@ -862,20 +729,6 @@ public class FinanceApiController {
     ) {
     }
 
-    private record TodoRequest(
-            String title,
-            String description,
-            java.time.LocalDate dueDate,
-            String dueTime,
-            String priority,
-            String category,
-            String status,
-            Boolean completed,
-            String color,
-            Boolean pinned
-    ) {
-    }
-
     private Map<String, Object> toNoteResponse(NoteEntity entity) {
         String plain = stripNoteHtml(entity.getContent());
         String preview = plain.length() > 150 ? plain.substring(0, 150) + "…" : plain;
@@ -910,21 +763,4 @@ public class FinanceApiController {
                 .trim();
     }
 
-    private Map<String, Object> toTodoResponse(TodoEntity entity) {
-        Map<String, Object> response = new LinkedHashMap<>();
-        response.put("id", entity.getId());
-        response.put("title", entity.getTitle());
-        response.put("description", entity.getDescription() != null ? entity.getDescription() : "");
-        response.put("due_date", entity.getDueDate() != null ? entity.getDueDate().toString() : "");
-        response.put("due_time", entity.getDueTime() != null ? entity.getDueTime() : "");
-        response.put("priority", entity.getPriority());
-        response.put("category", entity.getCategory() != null ? entity.getCategory() : "");
-        response.put("status", entity.getStatus());
-        response.put("completed", entity.getCompleted() != null ? entity.getCompleted() : false);
-        response.put("color", entity.getColor() != null ? entity.getColor() : "#29B6F6");
-        response.put("pinned", entity.getPinned() != null ? entity.getPinned() : false);
-        response.put("created_at", entity.getCreatedAt().toString());
-        response.put("updated_at", entity.getUpdatedAt().toString());
-        return response;
-    }
 }
