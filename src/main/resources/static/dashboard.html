@@ -300,13 +300,18 @@
             <div class="card">
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h6 class="mb-0"><i class="fas fa-line-chart"></i> Monthly Trend</h6>
-                    <div class="btn-group btn-group-sm" role="group">
-                        <button type="button" class="btn btn-outline-light active" id="monthlyLineBtn" onclick="switchMonthlyChart('line')" title="Line Chart">
-                            <i class="fas fa-line-chart"></i>
-                        </button>
-                        <button type="button" class="btn btn-outline-light" id="monthlyBarBtn" onclick="switchMonthlyChart('bar')" title="Bar Chart">
-                            <i class="fas fa-bars"></i>
-                        </button>
+                    <div class="d-flex align-items-center gap-2">
+                        <select class="tx-filter-select" id="monthlyCategoryFilter" title="Filter expense by category" onchange="onMonthlyCategoryFilterChanged(this.value)">
+                            <option value="">All Categories</option>
+                        </select>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-outline-light active" id="monthlyLineBtn" onclick="switchMonthlyChart('line')" title="Line Chart">
+                                <i class="fas fa-line-chart"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-light" id="monthlyBarBtn" onclick="switchMonthlyChart('bar')" title="Bar Chart">
+                                <i class="fas fa-bars"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body chart-body-monthly" style="display: flex; align-items: center; justify-content: center;">
@@ -685,13 +690,18 @@
                 <div class="card">
                     <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
                         <h6 class="mb-0"><i class="fas fa-line-chart me-2"></i>Monthly Trend</h6>
-                        <div class="btn-group dashboard-chart-toggle" role="group">
-                            <button type="button" class="btn btn-outline-light active" id="monthlyLineBtnCompact" onclick="switchMonthlyChart('line')" title="Line Chart">
-                                <i class="fas fa-line-chart"></i>
-                            </button>
-                            <button type="button" class="btn btn-outline-light" id="monthlyBarBtnCompact" onclick="switchMonthlyChart('bar')" title="Bar Chart">
-                                <i class="fas fa-bars"></i>
-                            </button>
+                        <div class="d-flex align-items-center gap-2">
+                            <select class="tx-filter-select" id="monthlyCategoryFilterCompact" title="Filter expense by category" onchange="onMonthlyCategoryFilterChanged(this.value)">
+                                <option value="">All Categories</option>
+                            </select>
+                            <div class="btn-group dashboard-chart-toggle" role="group">
+                                <button type="button" class="btn btn-outline-light active" id="monthlyLineBtnCompact" onclick="switchMonthlyChart('line')" title="Line Chart">
+                                    <i class="fas fa-line-chart"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-light" id="monthlyBarBtnCompact" onclick="switchMonthlyChart('bar')" title="Bar Chart">
+                                    <i class="fas fa-bars"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div class="card-body chart-body-monthly" style="display: flex; align-items: center; justify-content: center;">
@@ -938,6 +948,7 @@
     let categoryChartType    = 'pie';
     let monthlyChartType     = 'line';
     let categoryBreakdownType = 'expense';   // 'expense' | 'savings'
+    let monthlyCategoryFilter = '';   // '' = all categories, otherwise an expense category name
 
     let allTransactions      = [];
     let selectedMonthKey     = null;   // 'YYYY-MM' or 'ALL'
@@ -1685,6 +1696,22 @@
                 });
                 catFilter.value = prevCat;
             }
+
+            // Populate the Monthly Trend expense-category filter (expense + general categories only)
+            const expenseCategories = categories.filter(cat => !cat.categoryType || cat.categoryType === 'general' || cat.categoryType === 'expense');
+            ['', 'Compact'].forEach(function (suf) {
+                const sel = document.getElementById('monthlyCategoryFilter' + suf);
+                if (!sel) return;
+                const prev = sel.value;
+                sel.innerHTML = '<option value="">All Categories</option>';
+                expenseCategories.forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value       = cat.name;
+                    opt.textContent = cat.name;
+                    sel.appendChild(opt);
+                });
+                sel.value = prev;
+            });
 
             const accounts = await fetch('/api/accounts').then(r => r.json()).catch(() => []);
             cachedAccounts = accounts;
@@ -2507,18 +2534,30 @@
         const months = {};
         fiscalYear.forEach(m => { months[m] = { income: 0, expense: 0, savings: 0 }; });
 
-        data.forEach(d => {
-            if (d.month) {
-                const monthNum = d.month.toString().padStart(7, '0').slice(-2);  // last 2 chars of YYYY-MM
-                const mm = d.month.split('-')[1];
+        if (monthlyCategoryFilter) {
+            // Category-scoped expense trend, computed client-side from the already-loaded transactions
+            allTransactions.forEach(tx => {
+                if (tx.transaction_type !== 'expense') return;
+                if ((tx.category_name || 'Uncategorized') !== monthlyCategoryFilter) return;
+                const mm = String(new Date(tx.date).getMonth() + 1).padStart(2, '0');
                 const monthLabel = monthMap[mm];
                 if (monthLabel && months[monthLabel]) {
-                    if (d.type === 'income')  months[monthLabel].income  = Number(d.total);
-                    if (d.type === 'expense') months[monthLabel].expense = Number(d.total);
-                    if (d.type === 'savings') months[monthLabel].savings = Number(d.total);
+                    months[monthLabel].expense += Number(tx.amount) || 0;
                 }
-            }
-        });
+            });
+        } else {
+            data.forEach(d => {
+                if (d.month) {
+                    const mm = d.month.split('-')[1];
+                    const monthLabel = monthMap[mm];
+                    if (monthLabel && months[monthLabel]) {
+                        if (d.type === 'income')  months[monthLabel].income  = Number(d.total);
+                        if (d.type === 'expense') months[monthLabel].expense = Number(d.total);
+                        if (d.type === 'savings') months[monthLabel].savings = Number(d.total);
+                    }
+                }
+            });
+        }
 
         const ctx = canvasEl.getContext('2d');
         if (monthlyChartInstances[suffix]) monthlyChartInstances[suffix].destroy();
@@ -2535,28 +2574,27 @@
             }
         };
 
+        const expenseLabel = monthlyCategoryFilter ? ('Expense: ' + monthlyCategoryFilter) : 'Expense';
         const incomeDataset  = { label: 'Income',  data: fiscalYear.map(m => months[m].income),  borderColor: '#28a745', backgroundColor: 'rgba(40,167,69,0.1)',  tension: 0.4, fill: true };
-        const expenseDataset = { label: 'Expense', data: fiscalYear.map(m => months[m].expense), borderColor: '#dc3545', backgroundColor: 'rgba(220,53,69,0.1)',   tension: 0.4, fill: true };
+        const expenseDataset = { label: expenseLabel, data: fiscalYear.map(m => months[m].expense), borderColor: '#dc3545', backgroundColor: 'rgba(220,53,69,0.1)',   tension: 0.4, fill: true };
         const savingsDataset = { label: 'Savings', data: fiscalYear.map(m => months[m].savings), borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)',  tension: 0.4, fill: true };
 
+        // A category filter narrows the chart down to that category's expense trend only —
+        // mixing it with unfiltered income/savings totals would be misleading (wildly different scales).
+        const datasets = monthlyCategoryFilter ? [expenseDataset] : [incomeDataset, expenseDataset, savingsDataset];
+
         if (monthlyChartType === 'bar') {
-            incomeDataset.backgroundColor  = '#28a745';
-            incomeDataset.borderRadius     = 6;
-            incomeDataset.borderSkipped    = false;
-            delete incomeDataset.borderColor; delete incomeDataset.tension; delete incomeDataset.fill;
-            expenseDataset.backgroundColor = '#dc3545';
-            expenseDataset.borderRadius    = 6;
-            expenseDataset.borderSkipped   = false;
-            delete expenseDataset.borderColor; delete expenseDataset.tension; delete expenseDataset.fill;
-            savingsDataset.backgroundColor = '#3b82f6';
-            savingsDataset.borderRadius    = 6;
-            savingsDataset.borderSkipped   = false;
-            delete savingsDataset.borderColor; delete savingsDataset.tension; delete savingsDataset.fill;
+            datasets.forEach(ds => {
+                ds.backgroundColor = ds.borderColor;
+                ds.borderRadius    = 6;
+                ds.borderSkipped   = false;
+                delete ds.borderColor; delete ds.tension; delete ds.fill;
+            });
         }
 
         monthlyChartInstances[suffix] = new Chart(ctx, {
             type: monthlyChartType === 'bar' ? 'bar' : 'line',
-            data: { labels: fiscalYear, datasets: [incomeDataset, expenseDataset, savingsDataset] },
+            data: { labels: fiscalYear, datasets: datasets },
             options: commonOptions
         });
     }
@@ -2568,6 +2606,15 @@
             const barBtn  = document.getElementById('monthlyBarBtn' + suf);
             if (lineBtn) lineBtn.classList.toggle('active', type === 'line');
             if (barBtn)  barBtn.classList.toggle('active', type === 'bar');
+        });
+        drawMonthlyChart(monthlyChartData, activeSuffix());
+    }
+
+    function onMonthlyCategoryFilterChanged(value) {
+        monthlyCategoryFilter = value;
+        ['', 'Compact'].forEach(function (suf) {
+            const sel = document.getElementById('monthlyCategoryFilter' + suf);
+            if (sel) sel.value = value;
         });
         drawMonthlyChart(monthlyChartData, activeSuffix());
     }
