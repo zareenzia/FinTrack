@@ -1,0 +1,66 @@
+> Task :downloadTessdata UP-TO-DATE
+> Task :compileJava UP-TO-DATE
+> Task :processResources
+> Task :classes
+> Task :resolveMainClassName
+
+> Task :bootRun
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.1.0)
+
+2026-07-27T22:04:42.720+06:00  WARN 32832 --- [finzin] [           main] org.hibernate.orm.deprecation            : HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-07-27T22:05:02.696+06:00  WARN 32832 --- [finzin] [           main] org.example.finzin.ai.OpenAIClient       : OPENAI_API_KEY is not set — AI Assistant requests will fail until it is configured.
+2026-07-27T22:05:04.053+06:00  WARN 32832 --- [finzin] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-07-27T22:05:04.190+06:00  WARN 32832 --- [finzin] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with an AuthenticationProvider bean. UserDetailsService beans will not be used by Spring Security for automatically configuring username/password login. Consider removing the AuthenticationProvider bean. Alternatively, consider using the UserDetailsService in a manually instantiated DaoAuthenticationProvider. If the current configuration is intentional, to turn off this warning, increase the logging level of 'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer' to ERROR
+⚠️ No token found in request for: /todos.html
+⚠️ No token found in request for: /todos.html
+⚠️ No token found in request for: /api/todo/lists
+⚠️ No token found in request for: /api/todo/folders
+⚠️ No token found in request for: /api/appearance-preferences
+⚠️ No token found in request for: /api/notifications/unread-count
+⚠️ No token found in request for: /api/notifications
+⚠️ No token found in request for: /images/logo.png
+⚠️ No token found in request for: /images/logo.png
+2026-07-27T22:05:39.860+06:00  WARN 32832 --- [finzin] [nio-8585-exec-7] .w.s.m.s.DefaultHandlerExceptionResolver : Ignoring exception, response committed already: org.springframework.http.converter.HttpMessageNotWritableException: Could not write JSON: ServletOutputStream failed to write: java.io.IOException: An established connection was aborted by the software in your host machine
+⚠️ No token found in request for: /todos.html
+⚠️ No token found in request for: /api/todo/folders
+⚠️ No token found in request for: /api/todo/lists
+⚠️ No token found in request for: /api/appearance-preferences
+⚠️ No token found in request for: /api/notifications
+⚠️ No token found in request for: /api/notifications/unread-count
+⚠️ No token found in request for: /images/logo.png
+⚠️ No token found in request for: /images/logo.png
+⚠️ No token found in request for: /api/todo/lists/5/items
+⚠️ No token found in request for: /api/todo/items/14
+⚠️ No token found in request for: /api/todo/folders
+⚠️ No token found in request for: /api/todo/lists
+⚠️ No token found in request for: /api/todo/lists/5
+⚠️ No token found in request for: /api/todo/lists/6
+⚠️ No token found in request for: /api/todo/folders/4
+⚠️ No token found in request for: /api/todo/folders/5
+⚠️ No token found in request for: /api/todo/folders
+⚠️ No token found in request for: /api/todo/lists
+
+> Task :bootRun FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':bootRun' (registered by plugin 'org.springframework.boot').
+> Process 'command 'C:\Users\Hp\.jdks\corretto-17.0.19\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 3m 3s
+5 actionable tasks: 3 executed, 2 up-to-date
