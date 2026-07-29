@@ -61,9 +61,17 @@ public class BudgetPlanApiController {
     }
 
     @GetMapping("/current")
-    public ResponseEntity<?> current(HttpServletRequest request) {
+    public ResponseEntity<?> current(HttpServletRequest request, @RequestParam(required = false) String month) {
         Long userId = getUserId(request);
-        BudgetPlanEntity plan = budgetPlanService.getCurrentPlan(userId);
+        LocalDate date = LocalDate.now();
+        if (month != null && !month.isBlank()) {
+            try {
+                date = java.time.YearMonth.parse(month).atDay(1);
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(Map.of("error", "month must be in yyyy-MM format"));
+            }
+        }
+        BudgetPlanEntity plan = budgetPlanService.getPlanForDate(userId, date);
         if (plan == null) {
             return ResponseEntity.ok(Map.of("hasCurrent", false));
         }

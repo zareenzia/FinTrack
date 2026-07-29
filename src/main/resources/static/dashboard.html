@@ -1254,6 +1254,8 @@
         categoryChartData = breakdown;
         drawCategoryChart(breakdown, activeSuffix());
 
+        loadCurrentBudget(selectedMonthKey);
+
         currentPage = 0;
         applyFiltersAndDisplay();
     }
@@ -1582,13 +1584,17 @@
         }
     }
 
-    async function loadCurrentBudget() {
+    /** monthKey: 'YYYY-MM' to show that month's budget, or 'ALL'/falsy to show the real current month. */
+    async function loadCurrentBudget(monthKey) {
         const containers = ['currentBudgetBody', 'currentBudgetBodyCompact']
             .map(id => document.getElementById(id))
             .filter(Boolean);
         if (!containers.length) return;
         try {
-            const data = await fetch('/api/budget-plans/current').then(r => r.json());
+            const url = (monthKey && monthKey !== 'ALL')
+                ? '/api/budget-plans/current?month=' + encodeURIComponent(monthKey)
+                : '/api/budget-plans/current';
+            const data = await fetch(url).then(r => r.json());
             if (!data.hasCurrent) {
                 const html = '<p class="text-muted small mb-0">No active budget for this period. <a href="/budget-planner">Create one</a>.</p>';
                 containers.forEach(c => c.innerHTML = html);

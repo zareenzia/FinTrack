@@ -16,6 +16,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Year;
+import java.time.YearMonth;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -80,15 +82,25 @@ public class BudgetPlanService {
 
     private static final Map<String, Integer> PERIOD_TYPE_SPECIFICITY = Map.of("MONTH", 0, "QUARTER", 1, "YEAR", 2);
 
-    /**
-     * When multiple active plans cover today (e.g. a monthly, a quarterly, and a yearly budget all
-     * overlapping the current date), prefer the most specific one (MONTH over QUARTER over YEAR) —
-     * that's the one a user actually wants to see as "today's budget", not whichever was created last.
-     */
     public BudgetPlanEntity getCurrentPlan(Long userId) {
-        LocalDate today = LocalDate.now();
-        List<BudgetPlanEntity> matches = budgetPlanRepository
-                .findByUserIdAndStatusAndStartDateLessThanEqualAndEndDateGreaterThanEqualOrderByCreatedAtDesc(userId, "ACTIVE", today, today);
+        return getPlanForDate(userId, LocalDate.now());
+    }
+
+    /**
+     * When multiple active plans cover the given date (e.g. a monthly, a quarterly, and a yearly budget
+     * all overlapping it), prefer the most specific one (MONTH over QUARTER over YEAR) — that's the one
+     * a user actually wants to see as "that period's budget", not whichever was created last.
+     *
+     * Filters in memory against periodStart/periodEnd (derived from period+periodType) rather than a
+     * DB query on the raw startDate/endDate columns, so this stays consistent with computeCategoryStatuses
+     * and computeSummary — a plan whose stored dates have drifted from its labeled period is still matched
+     * (or not) the same way its actual-spend totals are computed.
+     */
+    public BudgetPlanEntity getPlanForDate(Long userId, LocalDate date) {
+        List<BudgetPlanEntity> matches = budgetPlanRepository.findByUserIdAndStatus(userId, "ACTIVE").stream()
+                .filter(p -> !periodStart(p).isAfter(date) && !periodEnd(p).isBefore(date))
+                .sorted(Comparator.comparing(BudgetPlanEntity::getCreatedAt).reversed())
+                .collect(Collectors.toList());
         return matches.stream()
                 .min(Comparator.comparingInt(p -> PERIOD_TYPE_SPECIFICITY.getOrDefault(p.getPeriodType(), 99)))
                 .orElse(null);
@@ -236,8 +248,49 @@ public class BudgetPlanService {
 
     // ============== Computed views (always live — never cached) ==============
 
-    private LocalDateTime rangeStart(BudgetPlanEntity plan) { return plan.getStartDate().atStartOfDay(); }
-    private LocalDateTime rangeEnd(BudgetPlanEntity plan) { return plan.getEndDate().plusDays(1).atStartOfDay(); }
+    private LocalDateTime rangeStart(BudgetPlanEntity plan) { return periodStart(plan).atStartOfDay(); }
+    private LocalDateTime rangeEnd(BudgetPlanEntity plan) { return periodEnd(plan).plusDays(1).atStartOfDay(); }
+
+    /**
+     * The plan's stored startDate/endDate are meant to always match its period/periodType (the UI keeps
+     * them in sync), but nothing enforces that server-side — an edit or a stale duplicate can leave them
+     * pointing at a wider range than the labeled period. Actual-spend totals must reset every new period,
+     * so they're computed from period+periodType (the source of truth), falling back to the stored dates
+     * only if the period string can't be parsed.
+     */
+    private LocalDate periodStart(BudgetPlanEntity plan) {
+        try {
+            return switch (plan.getPeriodType()) {
+                case "MONTH" -> YearMonth.parse(plan.getPeriod()).atDay(1);
+                case "QUARTER" -> quarterStartMonth(plan.getPeriod());
+                case "YEAR" -> Year.parse(plan.getPeriod()).atDay(1);
+                default -> plan.getStartDate();
+            };
+        } catch (Exception e) {
+            return plan.getStartDate();
+        }
+    }
+
+    private LocalDate periodEnd(BudgetPlanEntity plan) {
+        try {
+            return switch (plan.getPeriodType()) {
+                case "MONTH" -> YearMonth.parse(plan.getPeriod()).atEndOfMonth();
+                case "QUARTER" -> quarterStartMonth(plan.getPeriod()).plusMonths(3).minusDays(1);
+                case "YEAR" -> Year.parse(plan.getPeriod()).atMonth(12).atEndOfMonth();
+                default -> plan.getEndDate();
+            };
+        } catch (Exception e) {
+            return plan.getEndDate();
+        }
+    }
+
+    /** Parses a "yyyy-Qn" period label into the first day of that quarter's first month. */
+    private LocalDate quarterStartMonth(String period) {
+        int dashIndex = period.indexOf('-');
+        int year = Integer.parseInt(period.substring(0, dashIndex));
+        int quarter = Integer.parseInt(period.substring(dashIndex + 2));
+        return LocalDate.of(year, (quarter - 1) * 3 + 1, 1);
+    }
 
     public Map<String, Object> computeSummary(BudgetPlanEntity plan, List<Map<String, Object>> categoryStatuses) {
         Long userId = plan.getUserId();
@@ -268,9 +321,11 @@ public class BudgetPlanService {
 
     public List<Map<String, Object>> computeCategoryStatuses(BudgetPlanEntity plan) {
         LocalDate today = LocalDate.now();
-        boolean periodEnded = plan.getEndDate().isBefore(today);
-        long totalDays = Math.max(1, plan.getStartDate().until(plan.getEndDate()).getDays() + 1);
-        long elapsedDays = Math.max(0, Math.min(totalDays, plan.getStartDate().until(today.isBefore(plan.getStartDate()) ? plan.getStartDate() : today).getDays()));
+        LocalDate periodStart = periodStart(plan);
+        LocalDate periodEnd = periodEnd(plan);
+        boolean periodEnded = periodEnd.isBefore(today);
+        long totalDays = Math.max(1, periodStart.until(periodEnd).getDays() + 1);
+        long elapsedDays = Math.max(0, Math.min(totalDays, periodStart.until(today.isBefore(periodStart) ? periodStart : today).getDays()));
         double elapsedFraction = Math.min(1.0, (double) elapsedDays / totalDays);
 
         return budgetRepository.findByBudgetPlanId(plan.getId()).stream().map(b -> {
