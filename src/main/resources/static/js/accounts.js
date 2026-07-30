@@ -1,5 +1,5 @@
 /**
- * accounts.js — Account Configuration module for FinTrack
+ * accounts.js — Account Configuration module for One Taka Note
  */
 (function () {
     'use strict';
