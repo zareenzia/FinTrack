@@ -1,4 +1,4 @@
-# 💰 FinTrack — Personal Finance Platform
+# 💰 One Taka Note — Personal Finance Platform
 
 > A full-stack personal finance platform built with **Spring Boot 4** and **Vanilla JavaScript**. Track income, expenses, transfers, and recurring bills across real bank/cash/credit-card accounts; plan budgets and monthly goals; manage investments, loans, subscriptions, and gold holdings; and get AI-powered insights, coaching, and a chat assistant grounded in your own data — all from a clean, responsive UI with light/dark theming and a fully customizable sidebar.
 

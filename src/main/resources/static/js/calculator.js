@@ -1,5 +1,5 @@
 /**
- * FinTrack Built-in Calculator
+ * One Taka Note Built-in Calculator
  * Floating popup — state and history persisted in localStorage.
  * Exposes window.toggleCalc / window.openCalc / window.closeCalc for sidebar.
  */
