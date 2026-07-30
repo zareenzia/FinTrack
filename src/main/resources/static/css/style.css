@@ -738,7 +738,12 @@ body.has-sidebar {
 .sidebar-nav {
     flex: 1;
     padding: 10px 8px;
-    overflow: hidden;
+    /* Same fix as the mobile drawer below: this list shrinks to fill whatever space is left
+       above .sidebar-bottom (Logout/Profile/theme toggle, kept always visible via margin-top:auto
+       there). With overflow:hidden, a larger font-size preference or enough enabled/pinned modules
+       pushes items below the fold with no way to reach them — scroll the list instead of clipping it. */
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .sidebar-item {
