@@ -52,7 +52,7 @@ public class CreditCardService {
      */
     public String validate(Long userId, Long sourceAccountId, Long destinationAccountId, String type, double amount) {
         if (sourceAccountId != null) {
-            AccountEntity source = findOwned(sourceAccountId, userId);
+            AccountEntity source = findOwnedForUpdate(sourceAccountId, userId);
             if (isCreditCard(source) && DEBITING_SOURCE_TYPES.contains(type)) {
                 Double limit = source.getCreditLimit();
                 double projectedOutstanding = source.getCurrentBalance() + amount;
@@ -68,7 +68,7 @@ public class CreditCardService {
             }
         }
         if ("transfer".equals(type) && destinationAccountId != null) {
-            AccountEntity destination = findOwned(destinationAccountId, userId);
+            AccountEntity destination = findOwnedForUpdate(destinationAccountId, userId);
             if (isCreditCard(destination) && amount > destination.getCurrentBalance()) {
                 throw new CreditCardValidationException("Payment exceeds current outstanding balance.");
             }
@@ -130,6 +130,20 @@ public class CreditCardService {
 
     private AccountEntity findOwned(Long accountId, Long userId) {
         AccountEntity account = accountRepository.findById(accountId).orElse(null);
+        return (account != null && account.getUserId().equals(userId)) ? account : null;
+    }
+
+    /**
+     * Same as {@link #findOwned} but with a pessimistic write lock, for use on the transaction
+     * create/update path only (never for read-only display like {@link #getLedger}). This must be
+     * the FIRST read of the account within the enclosing transaction: Hibernate returns the same
+     * already-managed Java instance on a later re-fetch by id rather than refreshing its fields, so
+     * if an earlier, unlocked read had already cached the entity, re-fetching it with a lock later
+     * (e.g. in AccountBalanceService.applyBalanceChange) would still hand back the stale snapshot —
+     * the DB row lock would be acquired correctly, but the balance math would run on stale data.
+     */
+    private AccountEntity findOwnedForUpdate(Long accountId, Long userId) {
+        AccountEntity account = accountRepository.findByIdForUpdate(accountId).orElse(null);
         return (account != null && account.getUserId().equals(userId)) ? account : null;
     }
 }

@@ -12,6 +12,8 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -43,7 +45,7 @@ class CreditCardServiceTest {
 
     @Test
     void blockModeThrowsWhenPurchaseExceedsLimit() {
-        when(accountRepository.findById(CARD_ID)).thenReturn(Optional.of(card(95000, 100000, "BLOCK")));
+        when(accountRepository.findByIdForUpdate(CARD_ID)).thenReturn(Optional.of(card(95000, 100000, "BLOCK")));
 
         assertThrows(CreditCardValidationException.class,
                 () -> service.validate(USER_ID, CARD_ID, null, "expense", 10000));
@@ -51,7 +53,7 @@ class CreditCardServiceTest {
 
     @Test
     void warnModeReturnsWarningButDoesNotThrow() {
-        when(accountRepository.findById(CARD_ID)).thenReturn(Optional.of(card(95000, 100000, "WARN")));
+        when(accountRepository.findByIdForUpdate(CARD_ID)).thenReturn(Optional.of(card(95000, 100000, "WARN")));
 
         String warning = service.validate(USER_ID, CARD_ID, null, "expense", 10000);
 
@@ -60,7 +62,7 @@ class CreditCardServiceTest {
 
     @Test
     void ignoreModeAllowsSilently() {
-        when(accountRepository.findById(CARD_ID)).thenReturn(Optional.of(card(95000, 100000, "IGNORE")));
+        when(accountRepository.findByIdForUpdate(CARD_ID)).thenReturn(Optional.of(card(95000, 100000, "IGNORE")));
 
         String warning = service.validate(USER_ID, CARD_ID, null, "expense", 10000);
 
@@ -69,7 +71,7 @@ class CreditCardServiceTest {
 
     @Test
     void withinLimitProducesNoWarningRegardlessOfMode() {
-        when(accountRepository.findById(CARD_ID)).thenReturn(Optional.of(card(20000, 100000, "BLOCK")));
+        when(accountRepository.findByIdForUpdate(CARD_ID)).thenReturn(Optional.of(card(20000, 100000, "BLOCK")));
 
         String warning = service.validate(USER_ID, CARD_ID, null, "expense", 5000);
 
@@ -79,7 +81,7 @@ class CreditCardServiceTest {
     @Test
     void overpaymentIsAlwaysBlockedRegardlessOfBehaviorMode() {
         // destination is the credit card being paid off; behavior mode is irrelevant to overpayment
-        when(accountRepository.findById(CARD_ID)).thenReturn(Optional.of(card(12000, 100000, "IGNORE")));
+        when(accountRepository.findByIdForUpdate(CARD_ID)).thenReturn(Optional.of(card(12000, 100000, "IGNORE")));
 
         assertThrows(CreditCardValidationException.class,
                 () -> service.validate(USER_ID, null, CARD_ID, "transfer", 20000));
@@ -87,11 +89,41 @@ class CreditCardServiceTest {
 
     @Test
     void paymentWithinOutstandingIsAllowed() {
-        when(accountRepository.findById(CARD_ID)).thenReturn(Optional.of(card(12000, 100000, "IGNORE")));
+        when(accountRepository.findByIdForUpdate(CARD_ID)).thenReturn(Optional.of(card(12000, 100000, "IGNORE")));
 
         String warning = service.validate(USER_ID, null, CARD_ID, "transfer", 12000);
 
         assertNull(warning);
+    }
+
+    // ============================================================================================
+    // Regression guard for the concurrent-transfer money-duplication bug: validate() MUST fetch
+    // accounts via the pessimistic-write-locked repository method, not plain findById. Whichever
+    // code path first touches an account within a transaction determines whether later reads in
+    // the same transaction (e.g. AccountBalanceService.applyBalanceChange's own locked fetch) get a
+    // properly-locked, fresh row or a stale cached entity — an unlocked read here silently
+    // reintroduces the lost-update race even though applyBalanceChange's own lock looks correct in
+    // isolation. See AccountBalanceServiceTest's transfer tests for the balance-arithmetic side.
+    // ============================================================================================
+
+    @Test
+    void validateFetchesSourceAccountWithPessimisticLockNotPlainFindById() {
+        when(accountRepository.findByIdForUpdate(CARD_ID)).thenReturn(Optional.of(card(20000, 100000, "WARN")));
+
+        service.validate(USER_ID, CARD_ID, null, "expense", 5000);
+
+        verify(accountRepository).findByIdForUpdate(CARD_ID);
+        verify(accountRepository, never()).findById(CARD_ID);
+    }
+
+    @Test
+    void validateFetchesDestinationAccountWithPessimisticLockNotPlainFindById() {
+        when(accountRepository.findByIdForUpdate(CARD_ID)).thenReturn(Optional.of(card(12000, 100000, "IGNORE")));
+
+        service.validate(USER_ID, null, CARD_ID, "transfer", 5000);
+
+        verify(accountRepository).findByIdForUpdate(CARD_ID);
+        verify(accountRepository, never()).findById(CARD_ID);
     }
 
     @Test

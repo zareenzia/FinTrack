@@ -86,23 +86,48 @@ public class AccountBalanceService {
      * the destination). For a CREDIT_CARD account in either role, the sign is inverted — spending
      * increases what's owed, a payment (transfer-in) decreases it — because {@code currentBalance}
      * on a credit card means outstanding debt, not available funds.
+     *
+     * Every involved account is fetched with a pessimistic write lock ({@link
+     * AccountRepository#findByIdForUpdate}) BEFORE either is mutated, so two concurrent calls
+     * touching the same account (e.g. several rows from the bulk "Add Transaction" table, which
+     * submits one request per row in parallel) serialize on that row instead of both reading the
+     * same balance and one silently overwriting the other's update. Both ids are locked in a fixed
+     * order (lower id first) rather than source-then-destination, so that a transfer A->B racing
+     * with a concurrent transfer B->A can never deadlock by each holding one row and waiting on
+     * the other.
      */
     @Transactional
     public void applyBalanceChange(Long userId, Long sourceAccountId, Long destinationAccountId, String type, double amount, boolean reverse) {
         double multiplier = reverse ? -1 : 1;
-        if (sourceAccountId != null) {
-            AccountEntity account = accountRepository.findById(sourceAccountId).orElse(null);
-            if (account != null && account.getUserId().equals(userId)) {
-                account.setCurrentBalance(account.getCurrentBalance() + multiplier * signedDelta(account, type, amount, true));
-                accountRepository.save(account);
-            }
+        boolean isTransfer = "transfer".equals(type) && destinationAccountId != null;
+
+        AccountEntity account = null;
+        AccountEntity destination = null;
+        if (sourceAccountId != null && isTransfer && sourceAccountId.equals(destinationAccountId)) {
+            // Defensive only — the API layer already rejects a transfer to itself; treat as a no-op
+            // rather than double-locking (and double-crediting/debiting) the same row.
+            isTransfer = false;
         }
-        if ("transfer".equals(type) && destinationAccountId != null) {
-            AccountEntity destination = accountRepository.findById(destinationAccountId).orElse(null);
-            if (destination != null && destination.getUserId().equals(userId)) {
-                destination.setCurrentBalance(destination.getCurrentBalance() + multiplier * signedDelta(destination, type, amount, false));
-                accountRepository.save(destination);
+        if (sourceAccountId != null && isTransfer) {
+            if (sourceAccountId < destinationAccountId) {
+                account = accountRepository.findByIdForUpdate(sourceAccountId).orElse(null);
+                destination = accountRepository.findByIdForUpdate(destinationAccountId).orElse(null);
+            } else {
+                destination = accountRepository.findByIdForUpdate(destinationAccountId).orElse(null);
+                account = accountRepository.findByIdForUpdate(sourceAccountId).orElse(null);
             }
+        } else {
+            if (sourceAccountId != null) account = accountRepository.findByIdForUpdate(sourceAccountId).orElse(null);
+            if (isTransfer) destination = accountRepository.findByIdForUpdate(destinationAccountId).orElse(null);
+        }
+
+        if (account != null && account.getUserId().equals(userId)) {
+            account.setCurrentBalance(account.getCurrentBalance() + multiplier * signedDelta(account, type, amount, true));
+            accountRepository.save(account);
+        }
+        if (isTransfer && destination != null && destination.getUserId().equals(userId)) {
+            destination.setCurrentBalance(destination.getCurrentBalance() + multiplier * signedDelta(destination, type, amount, false));
+            accountRepository.save(destination);
         }
     }
 
