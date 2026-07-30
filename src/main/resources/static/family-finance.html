@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Finance - FinTrack</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/mobile.css">
+    <link rel="icon" type="image/png" href="/images/logo.png">
+    <style>
+        /* ── Page header ─────────────────────────── */
+        .ff-page-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 1.5rem; }
+        .ff-page-title { font-size: 1.4rem; font-weight: 700; color: var(--text-primary-custom); display: flex; align-items: center; gap: 10px; }
+        .ff-page-title i { color: var(--color-surface); }
+
+        /* ── Panels ──────────────────────────────── */
+        .ff-panel { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; box-shadow: var(--shadow-card); }
+        .ff-panel-title { font-size: 0.95rem; font-weight: 700; color: var(--text-primary-custom); margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+
+        /* ── Stat cards ──────────────────────────── */
+        .ff-stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+        @media (max-width: 991px) { .ff-stat-row { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 575px) { .ff-stat-row { grid-template-columns: 1fr; } }
+        .ff-stat-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 1rem 1.25rem; display: flex; align-items: center; gap: 14px; box-shadow: var(--shadow-card); }
+        .ff-stat-icon { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
+        .ff-stat-icon.green { background: rgba(31,125,83,0.15); color: var(--color-surface); }
+        .ff-stat-icon.blue { background: rgba(59,130,246,0.15); color: #3b82f6; }
+        .ff-stat-icon.purple { background: rgba(168,85,247,0.15); color: #a855f7; }
+        .ff-stat-icon.orange { background: rgba(249,115,22,0.15); color: #f97316; }
+        .ff-stat-value { font-size: 1.3rem; font-weight: 700; color: var(--text-primary-custom); line-height: 1.2; }
+        .ff-stat-label { font-size: 0.75rem; color: var(--text-muted-custom); margin-top: 2px; }
+        .ff-positive { color: #22c55e; }
+        .ff-negative { color: #ef4444; }
+
+        /* ── Badges ──────────────────────────────── */
+        .ff-badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; font-size: 0.72rem; font-weight: 600; white-space: nowrap; }
+        .ff-badge-ADMIN { background: rgba(168,85,247,0.15); color: #a855f7; }
+        .ff-badge-MEMBER { background: rgba(59,130,246,0.15); color: #3b82f6; }
+        .ff-badge-EQUAL { background: rgba(31,125,83,0.15); color: var(--color-surface); }
+        .ff-badge-PERCENTAGE { background: rgba(249,115,22,0.15); color: #f97316; }
+        .ff-badge-FIXED_AMOUNT { background: rgba(59,130,246,0.15); color: #3b82f6; }
+        .ff-badge-you { background: var(--bg-table-stripe); color: var(--text-muted-custom); }
+
+        /* ── Rows / lists ────────────────────────── */
+        .ff-member-row, .ff-expense-row, .ff-settlement-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; }
+        .ff-member-row:last-child, .ff-expense-row:last-child, .ff-settlement-row:last-child { border-bottom: none; }
+        .ff-row-name { font-weight: 600; color: var(--text-primary-custom); }
+        .ff-row-meta { font-size: 0.78rem; color: var(--text-muted-custom); }
+        .ff-row-actions { margin-left: auto; display: flex; gap: 4px; }
+
+        /* ── Action buttons ──────────────────────── */
+        .ff-action-btn { width: 30px; height: 30px; border: none; background: transparent; border-radius: 7px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s ease; color: var(--text-secondary-custom); font-size: 0.8rem; }
+        .ff-action-btn:hover { background: var(--bg-table-hover); color: var(--color-surface); }
+        .ff-action-btn.danger:hover { background: rgba(239,68,68,0.12); color: #ef4444; }
+
+        /* ── Empty state ─────────────────────────── */
+        .ff-empty { text-align: center; padding: 2.5rem 1rem; color: var(--text-muted-custom); }
+        .ff-empty i { font-size: 2.4rem; opacity: 0.3; margin-bottom: 1rem; display: block; }
+        .ff-empty p { font-size: 0.9rem; margin: 0; }
+
+        /* ── Contributor picker (Log Shared Expense modal) ─ */
+        .ff-contrib-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .ff-contrib-value { width: 100px; }
+
+        /* ── Internal tabs (Overview / Budgets & Goals) ──── */
+        .ff-tab-nav { display: flex; gap: 6px; flex-wrap: wrap; padding: 6px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; margin-bottom: 1.5rem; }
+        .ff-tab-btn { flex: 1 1 auto; min-width: 140px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 18px; border: none; border-radius: 10px; background: transparent; color: var(--text-secondary-custom); font-weight: 600; font-size: 0.88rem; cursor: pointer; transition: all 0.25s ease; }
+        .ff-tab-btn:hover:not(.active) { background: var(--bg-table-hover); color: var(--text-body); }
+        .ff-tab-btn.active { background: var(--color-surface); color: #f5f5f0; box-shadow: 0 2px 10px rgba(31, 125, 83, 0.25); }
+        .ff-tab-pane { display: none; }
+        .ff-tab-pane.active { display: block; }
+
+        /* ── Progress bars (household budgets & goals) ───── */
+        .ff-progress { height: 10px; border-radius: 6px; background: var(--bg-input); overflow: hidden; }
+        .ff-progress-bar { height: 100%; transition: width 0.3s ease; background: #28a745; }
+        .ff-progress-bar.warn { background: #fd7e14; }
+        .ff-progress-bar.over { background: #dc3545; }
+        .ff-goal-card, .ff-budget-card { border: 1px solid var(--border-color); border-radius: 10px; padding: 1rem; margin-bottom: 1rem; }
+        .ff-contributor-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--bg-table-stripe); border-radius: 999px; padding: 3px 10px 3px 4px; font-size: 0.75rem; margin: 2px 4px 2px 0; }
+        .ff-contributor-chip .ff-chip-avatar { width: 20px; height: 20px; border-radius: 50%; background: var(--color-surface); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; }
+
+        /* ── Modal tweaks (per-page convention) ──── */
+        .modal-content { background: var(--bg-modal); }
+        .modal-header { border-bottom: 1px solid var(--border-color); }
+        .modal-footer { border-top: 1px solid var(--border-color); }
+        .form-control, .form-select { background: var(--bg-input); border-color: var(--border-input); color: var(--text-body); }
+        .form-control:focus, .form-select:focus { background: var(--bg-input-focus); border-color: var(--color-surface); color: var(--text-body); box-shadow: 0 0 0 3px rgba(31,125,83,0.15); }
+        .form-label { color: var(--text-secondary-custom); font-size: 0.85rem; font-weight: 500; }
+    </style>
+</head>
+<body>
+<div id="toastContainer" class="notification-toast-container" aria-live="polite" aria-atomic="true"></div>
+
+<div class="container-fluid mt-4">
+    <div class="ff-page-header">
+        <div class="ff-page-title"><i class="fas fa-users"></i>Family Finance</div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         NO-HOUSEHOLD STATE
+    ══════════════════════════════════════════════ -->
+    <div id="ffNoHouseholdState" class="d-none">
+        <div class="ff-panel" id="ffPendingInvitesPanel" style="display:none;">
+            <div class="ff-panel-title"><i class="fas fa-envelope-open-text me-1"></i>Pending Invitations</div>
+            <div id="ffPendingInvitesList"></div>
+        </div>
+        <div class="ff-panel">
+            <div class="ff-panel-title"><i class="fas fa-house-chimney me-1"></i>Create a Household</div>
+            <p class="text-muted small">Create a household to collaborate on shared expenses, budgets, and goals with family members — everyone keeps their own private account, and nothing is shared automatically.</p>
+            <div class="row g-2">
+                <div class="col-md-6">
+                    <input type="text" class="form-control" id="ffNewHouseholdName" placeholder="e.g., The Zia Family">
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-primary w-100" onclick="createHousehold()"><i class="fas fa-plus me-1"></i>Create Household</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════
+         HOUSEHOLD VIEW
+    ══════════════════════════════════════════════ -->
+    <div id="ffHouseholdView" class="d-none">
+        <!-- Household header -->
+        <div class="ff-panel d-flex align-items-center flex-wrap gap-2 justify-content-between">
+            <div>
+                <div style="font-size:1.15rem;font-weight:700;color:var(--text-primary-custom);" id="ffHouseholdName">—</div>
+                <div class="ff-row-meta"><span id="ffMemberCount">0</span> members</div>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <button class="btn btn-sm btn-outline-secondary d-none" id="ffRenameBtn" onclick="openRenameHouseholdModal()"><i class="fas fa-pen me-1"></i>Rename</button>
+                <button class="btn btn-sm btn-outline-secondary d-none" id="ffTransferBtn" onclick="openTransferOwnershipModal()"><i class="fas fa-crown me-1"></i>Transfer Ownership</button>
+                <button class="btn btn-sm btn-primary d-none" id="ffInviteBtn" onclick="openInviteModal()"><i class="fas fa-user-plus me-1"></i>Invite Member</button>
+                <button class="btn btn-sm btn-outline-danger" id="ffLeaveBtn" onclick="confirmLeaveHousehold()"><i class="fas fa-right-from-bracket me-1"></i>Leave</button>
+                <button class="btn btn-sm btn-outline-danger d-none" id="ffDeleteHouseholdBtn" onclick="confirmDeleteHousehold()"><i class="fas fa-trash-alt me-1"></i>Delete Household</button>
+            </div>
+        </div>
+
+        <!-- Dashboard summary cards -->
+        <div class="ff-stat-row">
+            <div class="ff-stat-card"><div class="ff-stat-icon green"><i class="fas fa-sack-dollar"></i></div><div><div class="ff-stat-value" id="ffStatThisMonth">—</div><div class="ff-stat-label">Shared This Month</div></div></div>
+            <div class="ff-stat-card"><div class="ff-stat-icon blue" id="ffBalanceIcon"><i class="fas fa-scale-balanced"></i></div><div><div class="ff-stat-value" id="ffStatBalance">—</div><div class="ff-stat-label">Your Balance</div></div></div>
+            <div class="ff-stat-card"><div class="ff-stat-icon purple"><i class="fas fa-users"></i></div><div><div class="ff-stat-value" id="ffStatMembers">—</div><div class="ff-stat-label">Household Members</div></div></div>
+            <div class="ff-stat-card"><div class="ff-stat-icon orange"><i class="fas fa-receipt"></i></div><div><div class="ff-stat-value" id="ffStatExpenseCount">—</div><div class="ff-stat-label">Shared Expenses (This Month)</div></div></div>
+        </div>
+
+        <!-- Internal tabs -->
+        <div class="ff-tab-nav">
+            <button class="ff-tab-btn active" data-tab="overview" onclick="ffSwitchTab('overview')">
+                <i class="fas fa-table-columns"></i>Overview
+            </button>
+            <button class="ff-tab-btn" data-tab="budgets-goals" onclick="ffSwitchTab('budgets-goals')">
+                <i class="fas fa-bullseye"></i>Budgets &amp; Goals
+            </button>
+        </div>
+
+        <div id="ff-tab-overview" class="ff-tab-pane active">
+            <div class="row">
+                <!-- Members panel -->
+                <div class="col-lg-5">
+                    <div class="ff-panel">
+                        <div class="ff-panel-title"><i class="fas fa-people-group me-1"></i>Members</div>
+                        <div id="ffMembersList"></div>
+                    </div>
+
+                    <!-- Settlement panel -->
+                    <div class="ff-panel">
+                        <div class="ff-panel-title">
+                            <span><i class="fas fa-handshake me-1"></i>Settlement</span>
+                            <button class="btn btn-sm btn-primary" onclick="openSettlementModal()"><i class="fas fa-plus me-1"></i>Record Settlement</button>
+                        </div>
+                        <div id="ffBalancesList" class="mb-3"></div>
+                        <div class="ff-row-meta mb-2">Suggested Settlement</div>
+                        <div id="ffSuggestedTransfers"></div>
+                        <div class="ff-row-meta mt-3 mb-1">History</div>
+                        <div id="ffSettlementHistory"></div>
+                    </div>
+                </div>
+
+                <!-- Shared expenses panel -->
+                <div class="col-lg-7">
+                    <div class="ff-panel">
+                        <div class="ff-panel-title">
+                            <span><i class="fas fa-cart-shopping me-1"></i>Shared Expenses</span>
+                            <button class="btn btn-sm btn-primary" onclick="openLogExpenseModal()"><i class="fas fa-plus me-1"></i>Log Shared Expense</button>
+                        </div>
+                        <div class="mb-2">
+                            <input type="month" class="form-control form-control-sm" style="max-width:180px;" id="ffExpenseMonthFilter" onchange="loadSharedExpenses()">
+                        </div>
+                        <div id="ffExpensesList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="ff-tab-budgets-goals" class="ff-tab-pane">
+            <div class="row">
+                <!-- Household budgets panel -->
+                <div class="col-lg-6">
+                    <div class="ff-panel">
+                        <div class="ff-panel-title">
+                            <span><i class="fas fa-wallet me-1"></i>Household Budgets</span>
+                            <button class="btn btn-sm btn-primary d-none" id="ffAddBudgetBtn" onclick="openBudgetModal()"><i class="fas fa-plus me-1"></i>Add Budget</button>
+                        </div>
+                        <p class="text-muted small">A monthly spending cap on a category, measured against everyone's shared expenses.</p>
+                        <div id="ffBudgetsList"></div>
+                    </div>
+                </div>
+
+                <!-- Household goals panel -->
+                <div class="col-lg-6">
+                    <div class="ff-panel">
+                        <div class="ff-panel-title">
+                            <span><i class="fas fa-piggy-bank me-1"></i>Household Goals</span>
+                            <button class="btn btn-sm btn-primary" onclick="openGoalModal()"><i class="fas fa-plus me-1"></i>New Goal</button>
+                        </div>
+                        <p class="text-muted small">A joint savings target — any member can contribute their own money toward it.</p>
+                        <div id="ffGoalsList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div><!-- /.container-fluid -->
+
+<!-- ════════════════════════════════════════════════
+     INVITE MEMBER MODAL
+════════════════════════════════════════════════ -->
+<div class="modal fade" id="ffInviteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-plus me-2"></i>Invite Member</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Email or Username *</label>
+                    <input type="text" class="form-control" id="ffInviteQuery" placeholder="e.g., wife@example.com">
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Relationship</label>
+                    <select class="form-select" id="ffInviteRelationship">
+                        <option value="">Select…</option>
+                        <option value="Spouse">Spouse</option>
+                        <option value="Parent">Parent</option>
+                        <option value="Child">Child</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="sendInvitation()"><i class="fas fa-paper-plane me-1"></i>Send Invitation</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     RENAME HOUSEHOLD MODAL
+════════════════════════════════════════════════ -->
+<div class="modal fade" id="ffRenameModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-pen me-2"></i>Rename Household</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label">Household Name *</label>
+                <input type="text" class="form-control" id="ffRenameInput">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveRename()"><i class="fas fa-save me-1"></i>Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     LOG SHARED EXPENSE MODAL
+════════════════════════════════════════════════ -->
+<div class="modal fade" id="ffExpenseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-cart-shopping me-2"></i>Log Shared Expense</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label class="form-label">Description *</label>
+                        <input type="text" class="form-control" id="ffExpenseDescription" placeholder="e.g., Groceries">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Amount *</label>
+                        <input type="number" class="form-control" id="ffExpenseAmount" step="0.01" min="0">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Category</label>
+                        <select class="form-select" id="ffExpenseCategory"><option value="">Select category</option></select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Paid From</label>
+                        <select class="form-select" id="ffExpenseAccount"><option value="">-- No account --</option></select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Date *</label>
+                        <input type="date" class="form-control" id="ffExpenseDate">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Split Method</label>
+                        <select class="form-select" id="ffExpenseSplitMethod" onchange="renderContributorRows()">
+                            <option value="EQUAL">Equal</option>
+                            <option value="PERCENTAGE">Percentage</option>
+                            <option value="FIXED_AMOUNT">Fixed Amount</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="ff-row-meta">Total: <strong id="ffContribTotalCheck">—</strong></div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Contributors</label>
+                        <div id="ffExpenseContributors"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveSharedExpense()"><i class="fas fa-save me-1"></i>Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     RECORD SETTLEMENT MODAL
+════════════════════════════════════════════════ -->
+<div class="modal fade" id="ffSettlementModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-handshake me-2"></i>Record Settlement</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Pay To *</label>
+                    <select class="form-select" id="ffSettlementToUser"></select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Amount *</label>
+                    <input type="number" class="form-control" id="ffSettlementAmount" step="0.01" min="0">
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Note</label>
+                    <textarea class="form-control" id="ffSettlementNote" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveSettlement()"><i class="fas fa-save me-1"></i>Record</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     TRANSFER OWNERSHIP MODAL
+════════════════════════════════════════════════ -->
+<div class="modal fade" id="ffTransferModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-crown me-2"></i>Transfer Ownership</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small">You'll become a regular member; the selected member becomes the household administrator.</p>
+                <label class="form-label">New Owner *</label>
+                <select class="form-select" id="ffTransferToUser"></select>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="saveTransferOwnership()"><i class="fas fa-crown me-1"></i>Transfer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     GENERIC CONFIRM MODAL (leave / delete / remove member / unshare)
+════════════════════════════════════════════════ -->
+<div class="modal fade" id="ffConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:420px">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-triangle-exclamation me-2 text-danger"></i>Please Confirm</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-4">
+                <p class="mb-0" id="ffConfirmMsg">Are you sure?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="ffConfirmBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     HOUSEHOLD BUDGET MODAL
+════════════════════════════════════════════════ -->
+<div class="modal fade" id="ffBudgetModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-wallet me-2"></i><span id="ffBudgetModalTitle">Add Household Budget</span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Category *</label>
+                    <input type="text" class="form-control" id="ffBudgetCategory" list="ffBudgetCategorySuggestions" placeholder="e.g., Groceries">
+                    <datalist id="ffBudgetCategorySuggestions"></datalist>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Monthly Limit *</label>
+                    <input type="number" class="form-control" id="ffBudgetLimit" step="0.01" min="0">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveBudget()"><i class="fas fa-save me-1"></i>Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     HOUSEHOLD GOAL MODAL
+════════════════════════════════════════════════ -->
+<div class="modal fade" id="ffGoalModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-piggy-bank me-2"></i><span id="ffGoalModalTitle">New Household Goal</span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Goal Name *</label>
+                    <input type="text" class="form-control" id="ffGoalName" placeholder="e.g., Family Vacation Fund">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Target Amount *</label>
+                    <input type="number" class="form-control" id="ffGoalTarget" step="0.01" min="0">
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Target Date</label>
+                    <input type="date" class="form-control" id="ffGoalDate">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveGoal()"><i class="fas fa-save me-1"></i>Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     CONTRIBUTE TO GOAL MODAL
+════════════════════════════════════════════════ -->
+<div class="modal fade" id="ffContributeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-hand-holding-dollar me-2"></i>Contribute to <span id="ffContributeGoalName">—</span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label class="form-label">Description *</label>
+                        <input type="text" class="form-control" id="ffContributeDescription" placeholder="e.g., This month's contribution">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Amount *</label>
+                        <input type="number" class="form-control" id="ffContributeAmount" step="0.01" min="0">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Category</label>
+                        <select class="form-select" id="ffContributeCategory"><option value="">Select category</option></select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">From Account</label>
+                        <select class="form-select" id="ffContributeAccount"><option value="">-- No account --</option></select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Date *</label>
+                        <input type="date" class="form-control" id="ffContributeDate">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Note</label>
+                        <input type="text" class="form-control" id="ffContributeNote" placeholder="Optional note">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveContribution()"><i class="fas fa-save me-1"></i>Contribute</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/sidebar.js"></script>
+<script src="/js/family-finance.js"></script>
+</body>
+</html>

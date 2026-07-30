@@ -100,4 +100,22 @@ public class RecurringTransactionService {
         }
         return date;
     }
+
+    /**
+     * Used when editing a recurring transaction's startDate/frequency/intervalValue: re-anchors
+     * the cadence to the (possibly just-changed) startDate rather than leaving nextExecutionDate
+     * stuck on whatever the old schedule computed. Steps forward from startDate by the cadence
+     * until landing on a date that is both strictly after lastExecutionDate (so the edit can never
+     * re-trigger or duplicate a period that already ran) and on or after today (so it's never left
+     * showing a stale past date).
+     */
+    public LocalDate recalculateNextExecutionDateForEdit(LocalDate startDate, String frequency, int intervalValue,
+                                                          LocalDate lastExecutionDate) {
+        LocalDate today = LocalDate.now();
+        LocalDate candidate = startDate;
+        while ((lastExecutionDate != null && !candidate.isAfter(lastExecutionDate)) || candidate.isBefore(today)) {
+            candidate = RecurringTransactionExecutionService.computeNextDate(candidate, frequency, intervalValue);
+        }
+        return candidate;
+    }
 }

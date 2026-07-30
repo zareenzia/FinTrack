@@ -2,8 +2,10 @@ package org.example.finzin.web;
 
 import jakarta.servlet.http.HttpServletResponse;
 import org.example.finzin.entity.UserEntity;
+import org.example.finzin.service.AccountDeletionService;
 import org.example.finzin.service.AuthService;
 import org.example.finzin.service.JwtTokenProvider;
+import org.example.finzin.service.PasswordResetService;
 import org.example.finzin.service.RecurringTransactionExecutionService;
 import org.example.finzin.service.BudgetScheduler;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,17 +34,22 @@ public class AuthController {
     private final JwtTokenProvider jwtTokenProvider;
     private final RecurringTransactionExecutionService recurringTransactionExecutionService;
     private final BudgetScheduler budgetScheduler;
+    private final AccountDeletionService accountDeletionService;
+    private final PasswordResetService passwordResetService;
 
     @Value("${app.upload.dir:user-uploads/profiles}")
     private String uploadDir;
 
     public AuthController(AuthService authService, JwtTokenProvider jwtTokenProvider,
                            RecurringTransactionExecutionService recurringTransactionExecutionService,
-                           BudgetScheduler budgetScheduler) {
+                           BudgetScheduler budgetScheduler, AccountDeletionService accountDeletionService,
+                           PasswordResetService passwordResetService) {
         this.authService = authService;
         this.jwtTokenProvider = jwtTokenProvider;
         this.recurringTransactionExecutionService = recurringTransactionExecutionService;
         this.budgetScheduler = budgetScheduler;
+        this.accountDeletionService = accountDeletionService;
+        this.passwordResetService = passwordResetService;
     }
     
     // --- Helper: extract and validate userId from Authorization header -------
@@ -353,7 +360,42 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Failed to change password"));
         }
     }
-    
+
+    // Always returns the same generic message, whether or not the email matches an account —
+    // revealing that difference would let an attacker enumerate registered emails.
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        if (request.getEmail() == null || request.getEmail().isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Email is required"));
+        }
+        try {
+            passwordResetService.requestReset(request.getEmail().trim());
+        } catch (Exception e) {
+            System.out.println("?? Forgot-password error: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return ResponseEntity.ok(Map.of("message", "If an account exists for that email, a password reset link has been sent."));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
+        try {
+            if (request.getToken() == null || request.getToken().isBlank()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Reset token is required"));
+            }
+            if (request.getNewPassword() == null || !request.getNewPassword().equals(request.getConfirmPassword())) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Passwords do not match"));
+            }
+            passwordResetService.resetPassword(request.getToken(), request.getNewPassword());
+            return ResponseEntity.ok(Map.of("message", "Password reset successful. You can now log in."));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Failed to reset password"));
+        }
+    }
+
     @PostMapping(value = "/profile-picture", consumes = "multipart/form-data")
     public ResponseEntity<?> uploadProfilePicture(
             @RequestHeader(value = "Authorization", required = false) String authHeader,
@@ -432,6 +474,22 @@ public class AuthController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Failed to remove picture"));
+        }
+    }
+
+    @DeleteMapping("/account")
+    public ResponseEntity<?> deleteAccount(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        try {
+            Long userId = extractUserIdFromHeader(authHeader);
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Unauthorized"));
+            }
+            accountDeletionService.deleteAccount(userId);
+            return ResponseEntity.ok(Map.of("message", "Account deleted"));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Failed to delete account"));
         }
     }
 }

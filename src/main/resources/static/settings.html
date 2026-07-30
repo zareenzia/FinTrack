@@ -66,6 +66,18 @@
     .icon-picker{display:flex;flex-wrap:wrap;gap:4px}
     .icon-option{width:28px;height:28px;border:1.5px solid var(--border-color,#e5e7eb);border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.75rem;transition:all .15s;color:var(--text-body)}
     .icon-option.selected{border-color:var(--accent-color);background:rgba(46,125,79,.1);color:var(--accent-color)}
+    .color-picker{display:flex;flex-wrap:wrap;gap:6px}
+    .color-swatch{width:22px;height:22px;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:transform .15s ease,box-shadow .15s ease;position:relative;flex-shrink:0}
+    .color-swatch:hover{transform:scale(1.15)}
+    .color-swatch.selected{border-color:var(--text-body,#333);box-shadow:0 0 0 2px var(--bg-card,#fff)}
+    .color-swatch.selected::after{content:'\f00c';font-family:'Font Awesome 6 Free';font-weight:900;position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.6rem;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+    .cat-bulk-row{border:1px solid var(--border-color,#e5e7eb);border-radius:10px;padding:12px;margin-bottom:10px;background:var(--bg-card,#fff);animation:catRowIn .2s ease}
+    .cat-bulk-row.has-error{border-color:#ef4444}
+    .cat-bulk-row.removing{animation:catRowOut .18s ease forwards}
+    @keyframes catRowIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes catRowOut{to{opacity:0;transform:scale(.97)}}
+    .cat-row-preview{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.9rem;flex-shrink:0;transition:background .15s ease}
+    .cat-row-actions{display:flex;gap:4px;flex-shrink:0}
     .pw-strength{height:4px;border-radius:4px;margin-top:6px;transition:all .3s}
     .danger-zone{border:1.5px solid #ef4444!important}
     .danger-zone .settings-card-title{color:#ef4444}
@@ -143,6 +155,7 @@
   </style>
 </head>
 <body>
+<div id="toastContainer" class="notification-toast-container" aria-live="polite" aria-atomic="true"></div>
   <div class="settings-layout">
     <div class="settings-left-panel">
       <div class="settings-left-header">
@@ -160,6 +173,21 @@
         </a>
         <a class="settings-nav-item" data-section="account-config" href="#">
           <i class="fas fa-wallet"></i> Account Configuration
+        </a>
+        <a class="settings-nav-item" data-section="ai-assistant" href="#">
+          <i class="fas fa-robot"></i> AI Assistant
+        </a>
+        <a class="settings-nav-item" data-section="receipt-scanner" href="#">
+          <i class="fas fa-receipt"></i> Receipt Scanner
+        </a>
+        <a class="settings-nav-item" data-section="voice-assistant" href="#">
+          <i class="fas fa-microphone"></i> Voice Assistant
+        </a>
+        <a class="settings-nav-item" data-section="gamification" href="#">
+          <i class="fas fa-trophy"></i> Achievements
+        </a>
+        <a class="settings-nav-item" data-section="family-finance" href="#">
+          <i class="fas fa-users"></i> Family Finance
         </a>
         <a class="settings-nav-item" data-section="security" href="#">
           <i class="fas fa-shield-alt"></i> Privacy &amp; Security
@@ -323,6 +351,21 @@
                   <option value="false">Hide symbols</option>
                 </select>
               </div>
+              <!-- Sidebar Mode -->
+              <div class="compact-pref-row">
+                <label class="compact-pref-label" for="selectSidebarMode"><i class="fas fa-compress-alt"></i> Sidebar Mode</label>
+                <select id="selectSidebarMode" class="form-select compact-pref-select">
+                  <option value="false">Expanded — icons + labels</option>
+                  <option value="true">Compact — icons only</option>
+                </select>
+              </div>
+              <!-- Sidebar Customization -->
+              <div class="compact-pref-row">
+                <label class="compact-pref-label"><i class="fas fa-sliders-h"></i> Sidebar Layout</label>
+                <button class="btn btn-outline-primary btn-sm" id="btnCustomizeSidebar" onclick="if(typeof openSidebarCustomizer==='function') openSidebarCustomizer();">
+                  <i class="fas fa-cog me-1"></i>Customize Sidebar
+                </button>
+              </div>
             </div>
           </div>
 
@@ -433,31 +476,11 @@
 
           <div id="addCatForm" style="display:none" class="settings-card mb-3" style="padding:14px 16px">
             <div class="d-flex align-items-center justify-content-between mb-2">
-              <span class="compact-pref-label"><i class="fas fa-tag"></i> <span id="catFormTitle">New Category</span></span>
+              <span class="compact-pref-label"><i class="fas fa-tag"></i> <span id="catFormTitle">New Categories</span></span>
               <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="btnCancelAddCat" title="Cancel"><i class="fas fa-times"></i></button>
             </div>
-            <div class="row g-2 mb-2">
-              <div class="col-5">
-                <input type="text" class="form-control form-control-sm" id="catName" placeholder="Name *">
-              </div>
-              <div class="col-4">
-                <select class="form-select form-select-sm" id="catType">
-                  <option value="general">General</option>
-                  <option value="income">Income</option>
-                  <option value="expense">Expense</option>
-                  <option value="savings">Savings</option>
-                </select>
-              </div>
-              <div class="col-3">
-                <input type="color" class="form-control form-control-color w-100" id="catColor" value="#2e7d4f" title="Color" style="height:31px">
-              </div>
-              <div class="col-12">
-                <input type="text" class="form-control form-control-sm" id="catDesc" placeholder="Description (optional)">
-              </div>
-              <div class="col-12">
-                <div class="icon-picker" id="iconPicker"></div>
-              </div>
-            </div>
+            <div id="catRowsContainer"></div>
+            <button class="btn btn-sm btn-outline-primary w-100 mb-2" type="button" id="btnAddCatRow"><i class="fas fa-plus me-1"></i>Add Another Category</button>
             <button class="btn btn-sm btn-success" id="btnSaveCat"><i class="fas fa-check me-1"></i>Save</button>
           </div>
 
@@ -697,6 +720,253 @@
           </div><!-- end two-column row -->
         </section>
 
+        <!-- ===== AI ASSISTANT ===== -->
+        <section class="settings-section" id="section-ai-assistant">
+          <div class="settings-section-heading"><i class="fas fa-robot" style="color:var(--accent-color)"></i> AI Assistant</div>
+          <p class="settings-section-desc">Configure the AI Financial Assistant that answers questions about your own data.</p>
+
+          <div class="card">
+            <div class="card-body">
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" role="switch" id="aiSettingsEnabled">
+                <label class="form-check-label" for="aiSettingsEnabled">Enable AI Assistant</label>
+              </div>
+
+              <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="aiSettingsDeveloperMode">
+                <label class="form-check-label" for="aiSettingsDeveloperMode">Developer Mode</label>
+                <div><small class="text-muted">Shows a debug panel (retrieved documents, similarity scores, tool calls, token usage) below every AI response.</small></div>
+              </div>
+
+              <hr class="my-3">
+              <div class="mb-2 fw-semibold small text-muted">AI Financial Coach Features</div>
+
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="aiSettingsProactiveInsights">
+                <label class="form-check-label" for="aiSettingsProactiveInsights">Enable Proactive Insights</label>
+              </div>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="aiSettingsBudgetCoaching">
+                <label class="form-check-label" for="aiSettingsBudgetCoaching">Enable Budget Coaching</label>
+              </div>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="aiSettingsSavingsCoaching">
+                <label class="form-check-label" for="aiSettingsSavingsCoaching">Enable Savings Coaching</label>
+              </div>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="aiSettingsMonthlyReports">
+                <label class="form-check-label" for="aiSettingsMonthlyReports">Enable Monthly Reports</label>
+              </div>
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" role="switch" id="aiSettingsDashboardSummary">
+                <label class="form-check-label" for="aiSettingsDashboardSummary">Enable Dashboard Summary</label>
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label">Provider</label>
+                  <select class="form-select" id="aiSettingsProvider" disabled>
+                    <option value="openai" selected>OpenAI</option>
+                  </select>
+                  <small class="text-muted">More providers may be added in a future update.</small>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Model</label>
+                  <input type="text" class="form-control" id="aiSettingsModel" placeholder="gpt-5">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Max Response Length <small class="text-muted">(tokens, 100-4000)</small></label>
+                  <input type="number" class="form-control" id="aiSettingsMaxTokens" min="100" max="4000" step="50">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Temperature <span id="aiSettingsTempLabel" class="text-muted"></span></label>
+                  <input type="range" class="form-range" id="aiSettingsTemperature" min="0" max="2" step="0.1">
+                  <small class="text-muted">Lower = more focused and consistent, higher = more creative.</small>
+                </div>
+              </div>
+
+              <button type="button" class="btn btn-primary mt-3" id="aiSettingsSaveBtn">
+                <i class="fas fa-save me-1"></i>Save AI Settings
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== RECEIPT SCANNER ===== -->
+        <section class="settings-section" id="section-receipt-scanner">
+          <div class="settings-section-heading"><i class="fas fa-receipt" style="color:var(--accent-color)"></i> Receipt Scanner</div>
+          <p class="settings-section-desc">Configure the AI-powered receipt scanning feature on the Dashboard and Transactions pages.</p>
+
+          <div class="card">
+            <div class="card-body">
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="receiptScannerEnabled">
+                <label class="form-check-label" for="receiptScannerEnabled">Enable Receipt Scanner</label>
+                <div><small class="text-muted">Turns the "Scan Receipt" button on the Dashboard and Transactions pages on or off.</small></div>
+              </div>
+              <button type="button" class="btn btn-primary mt-3" id="receiptScannerSaveBtn">
+                <i class="fas fa-save me-1"></i>Save Receipt Scanner Settings
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== VOICE ASSISTANT ===== -->
+        <section class="settings-section" id="section-voice-assistant">
+          <div class="settings-section-heading"><i class="fas fa-microphone" style="color:var(--accent-color)"></i> Voice Assistant</div>
+          <p class="settings-section-desc">Configure voice-driven commands for logging transactions, notes, and to-dos — accessible from the floating microphone button or Ctrl+Shift+V on any page.</p>
+
+          <div class="card mb-3">
+            <div class="card-body">
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" role="switch" id="voiceSettingsEnabled">
+                <label class="form-check-label" for="voiceSettingsEnabled">Enable Voice Commands</label>
+                <div><small class="text-muted">Turns the floating microphone button and the Ctrl+Shift+V shortcut on or off everywhere in the app.</small></div>
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label">Language</label>
+                  <select class="form-select" id="voiceSettingsLanguage">
+                    <option value="en-US">English (US)</option>
+                  </select>
+                  <small class="text-muted">Bangla and mixed Bangla-English are planned for a future update.</small>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Speech Provider</label>
+                  <select class="form-select" id="voiceSettingsProvider" disabled>
+                    <option value="browser" selected>Browser (built-in, free)</option>
+                  </select>
+                  <small class="text-muted">OpenAI Whisper, Azure, and Google Speech are planned for a future update.</small>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Auto-stop After Silence <small class="text-muted">(seconds)</small></label>
+                  <input type="number" class="form-control" id="voiceSettingsSilence" min="1" max="10" step="1">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Max Recording Length <small class="text-muted">(seconds)</small></label>
+                  <input type="number" class="form-control" id="voiceSettingsMaxLength" min="10" max="300" step="10">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Speech Speed <span class="badge bg-secondary">Coming soon</span></label>
+                  <input type="range" class="form-range" id="voiceSettingsSpeed" min="0.5" max="2" step="0.1" disabled>
+                </div>
+              </div>
+
+              <hr class="my-3">
+
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="voiceSettingsNoiseReduction" disabled>
+                <label class="form-check-label" for="voiceSettingsNoiseReduction">Noise Reduction <span class="badge bg-secondary">Coming soon</span></label>
+              </div>
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" role="switch" id="voiceSettingsSaveAudio" disabled>
+                <label class="form-check-label" for="voiceSettingsSaveAudio">Save Audio Recordings <span class="badge bg-secondary">Coming soon</span></label>
+              </div>
+              <div class="mb-2">
+                <small class="text-muted"><i class="fas fa-shield-alt me-1"></i>Every voice command is always reviewed on a confirmation screen before anything is saved — this can't be turned off.</small>
+              </div>
+
+              <button type="button" class="btn btn-primary mt-3" id="voiceSettingsSaveBtn">
+                <i class="fas fa-save me-1"></i>Save Voice Assistant Settings
+              </button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span><i class="fas fa-clock-rotate-left me-2"></i>Voice Command History</span>
+              <button type="button" class="btn btn-sm btn-outline-danger" id="voiceHistoryClearBtn"><i class="fas fa-trash-alt me-1"></i>Clear All</button>
+            </div>
+            <div class="card-body">
+              <div id="voiceHistoryList"><p class="text-muted small mb-0">Loading…</p></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== ACHIEVEMENTS (Gamification) ===== -->
+        <section class="settings-section" id="section-gamification">
+          <div class="settings-section-heading"><i class="fas fa-trophy" style="color:var(--accent-color)"></i> Achievements</div>
+          <p class="settings-section-desc">Control XP, levels, achievements, streaks, and monthly challenges — purely observational, never affects your financial data.</p>
+
+          <div class="card mb-3">
+            <div class="card-body">
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" role="switch" id="gamificationSettingsEnabled">
+                <label class="form-check-label" for="gamificationSettingsEnabled">Enable Gamification</label>
+                <div><small class="text-muted">Turns off XP, achievements, streaks, and challenges entirely.</small></div>
+              </div>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="gamificationSettingsNotifications">
+                <label class="form-check-label" for="gamificationSettingsNotifications">Achievement Notifications</label>
+              </div>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="gamificationSettingsDashboardWidget">
+                <label class="form-check-label" for="gamificationSettingsDashboardWidget">Show Dashboard Widget</label>
+              </div>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="gamificationSettingsCelebrations">
+                <label class="form-check-label" for="gamificationSettingsCelebrations">Milestone Celebrations</label>
+              </div>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="gamificationSettingsChallenges">
+                <label class="form-check-label" for="gamificationSettingsChallenges">Enable Monthly Challenges</label>
+              </div>
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" role="switch" id="gamificationSettingsStreakTracking">
+                <label class="form-check-label" for="gamificationSettingsStreakTracking">Enable Streak Tracking</label>
+              </div>
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" role="switch" id="gamificationSettingsShowXp">
+                <label class="form-check-label" for="gamificationSettingsShowXp">Show XP Numbers</label>
+              </div>
+
+              <button type="button" class="btn btn-primary mt-1" id="gamificationSettingsSaveBtn">
+                <i class="fas fa-save me-1"></i>Save Achievement Settings
+              </button>
+            </div>
+          </div>
+
+          <div class="settings-card">
+            <div class="settings-card-title"><i class="fas fa-exclamation-triangle"></i> Reset Progress</div>
+            <p class="text-muted small">Permanently clears all XP, levels, unlocked achievements, streaks, and challenge progress. This cannot be undone.</p>
+            <button class="btn btn-danger" id="gamificationResetBtn">
+              <i class="fas fa-rotate-left me-1"></i>Reset My Progress
+            </button>
+          </div>
+        </section>
+
+        <!-- ===== FAMILY FINANCE ===== -->
+        <section class="settings-section" id="section-family-finance">
+          <div class="settings-section-heading"><i class="fas fa-users" style="color:var(--accent-color)"></i> Family Finance</div>
+          <p class="settings-section-desc">Manage your household from here, or visit the <a href="/family-finance">Family Finance page</a> for members, shared expenses, and settlements. Personal financial data always stays private unless you explicitly share it.</p>
+
+          <div id="ffSettingsNoHousehold" class="settings-card" style="display:none;">
+            <p class="text-muted small mb-0">You don't belong to a household yet. <a href="/family-finance">Create or join one</a>.</p>
+          </div>
+
+          <div id="ffSettingsHousehold" style="display:none;">
+            <div class="card mb-3">
+              <div class="card-body">
+                <label class="form-label">Household Name</label>
+                <div class="d-flex gap-2">
+                  <input type="text" class="form-control" id="ffSettingsNameInput" disabled>
+                  <button class="btn btn-primary" id="ffSettingsRenameBtn" style="display:none;">Save</button>
+                </div>
+                <div class="mt-2"><small class="text-muted" id="ffSettingsRoleNote"></small></div>
+              </div>
+            </div>
+
+            <div class="settings-card danger-zone">
+              <div class="settings-card-title"><i class="fas fa-exclamation-triangle"></i> Danger Zone</div>
+              <div class="settings-card-sub">Irreversible actions &mdash; proceed with caution</div>
+              <p class="text-muted small">Leaving removes you from the household — your past shared expenses stay visible to other members for accountability. Deleting removes the household for everyone. Neither affects anyone's personal transactions.</p>
+              <button class="btn btn-outline-danger me-2" id="ffSettingsLeaveBtn"><i class="fas fa-right-from-bracket me-1"></i>Leave Household</button>
+              <button class="btn btn-danger" id="ffSettingsDeleteBtn" style="display:none;"><i class="fas fa-trash-alt me-1"></i>Delete Household</button>
+            </div>
+          </div>
+        </section>
+
         <!-- ===== ABOUT ===== -->
         <section class="settings-section" id="section-about">
           <div class="settings-section-heading"><i class="fas fa-info-circle" style="color:var(--accent-color)"></i> About FinTrack</div>
@@ -898,12 +1168,27 @@
               <input type="number" class="form-control form-control-sm" id="acctDueDay" min="1" max="31" placeholder="e.g. 10">
             </div>
           </div>
+          <div class="mb-3 field-credit" style="display:none">
+            <label class="form-label">If a purchase exceeds the credit limit</label>
+            <select class="form-select" id="acctCreditLimitBehavior">
+              <option value="WARN">⚠️ Warn but allow</option>
+              <option value="BLOCK">🚫 Block the transaction</option>
+              <option value="IGNORE">➖ Ignore (no check)</option>
+            </select>
+          </div>
           <div class="mb-3">
             <label class="form-label fw-semibold" id="openingBalanceLabel">Opening Balance</label>
             <div class="input-group"><span class="input-group-text">৳</span>
               <input type="number" class="form-control" id="acctOpeningBalance" min="0" step="0.01" value="0" placeholder="0.00">
             </div>
             <div class="form-text" id="openingBalanceHint">Starting balance for this account.</div>
+          </div>
+          <div class="mb-3" id="currentBalanceWrap" style="display:none">
+            <label class="form-label fw-semibold" id="currentBalanceLabel">Current Balance</label>
+            <div class="input-group"><span class="input-group-text">৳</span>
+              <input type="number" class="form-control" id="acctCurrentBalance" step="0.01" placeholder="0.00">
+            </div>
+            <div class="form-text" id="currentBalanceHint">The actual balance right now — edit to correct or reconcile.</div>
           </div>
           <div class="mb-3">
             <label class="form-label">Status</label>
@@ -936,6 +1221,56 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" title="Cancel"><i class="fas fa-times"></i></button>
           <button type="button" class="btn btn-danger" onclick="confirmDelete()" title="Delete"><i class="fas fa-trash-alt"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Credit Card Ledger Modal ── -->
+  <div class="modal fade" id="ledgerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fas fa-list-ul me-2"></i><span id="ledgerModalTitle">Ledger</span></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-2 mb-3">
+            <div class="col-md-3">
+              <label class="form-label small mb-1">From</label>
+              <input type="date" class="form-control form-control-sm" id="ledgerStartDate">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small mb-1">To</label>
+              <input type="date" class="form-control form-control-sm" id="ledgerEndDate">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small mb-1">Type</label>
+              <select class="form-select form-select-sm" id="ledgerTypeFilter">
+                <option value="">All</option>
+                <option value="expense">Purchases</option>
+                <option value="transfer">Payments</option>
+                <option value="income">Refunds</option>
+                <option value="savings">Savings</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small mb-1">Search</label>
+              <input type="text" class="form-control form-control-sm" id="ledgerSearch" placeholder="Merchant, category…">
+            </div>
+          </div>
+          <div class="d-flex justify-content-end mb-2">
+            <button class="btn btn-sm btn-outline-primary" onclick="applyLedgerFilters()"><i class="fas fa-filter me-1"></i>Apply Filters</button>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Type</th><th class="text-end">Amount</th><th class="text-end">Balance</th></tr></thead>
+              <tbody id="ledgerTableBody"><tr><td colspan="6" class="text-center text-muted">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
         </div>
       </div>
     </div>
@@ -1056,36 +1391,27 @@ function applySettings(s) {
 }
 
 // ============== Notifications ==============
+var TOAST_ICONS = { success: 'fa-circle-check', error: 'fa-circle-exclamation', warning: 'fa-triangle-exclamation', info: 'fa-circle-info' };
+var TOAST_TYPE_ALIAS = { danger: 'error' };
 function showNotification(message, type) {
-  type = type || 'success';
-  var colors = { success:'#2e7d4f', danger:'#ef4444', warning:'#f59e0b', info:'#3b82f6' };
-  var div = document.createElement('div');
-  div.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;min-width:280px;max-width:380px;background:#fff;border-left:4px solid '+(colors[type]||colors.success)+';border-radius:8px;padding:14px 18px;box-shadow:0 4px 20px rgba(0,0,0,.15);display:flex;align-items:center;gap:12px;animation:slideIn .3s ease;';
-  var icons = { success:'check-circle', danger:'exclamation-circle', warning:'exclamation-triangle', info:'info-circle' };
-  div.innerHTML = '<i class="fas fa-'+(icons[type]||'check-circle')+'" style="color:'+(colors[type]||colors.success)+';font-size:1.1rem"></i><span style="flex:1;font-size:.9rem">'+message+'</span><button onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;color:#888;font-size:1rem">&#x2715;</button>';
-  document.body.appendChild(div);
-  setTimeout(function(){ if (div.parentElement) div.remove(); }, 4000);
+  type = TOAST_TYPE_ALIAS[type] || type || 'success';
+  var container = document.getElementById('toastContainer');
+  if (!container) return;
+  var toast = document.createElement('div');
+  toast.className = 'notification-toast notification-' + type;
+  toast.innerHTML = '<i class="fas ' + (TOAST_ICONS[type] || TOAST_ICONS.success) + ' notification-toast-icon"></i>' +
+    '<span class="notification-toast-message"></span>' +
+    '<button type="button" class="notification-toast-close" aria-label="Dismiss">&times;</button>';
+  toast.querySelector('.notification-toast-message').textContent = message;
+  var dismiss = function () { toast.classList.remove('show'); setTimeout(function () { toast.remove(); }, 300); };
+  toast.querySelector('.notification-toast-close').addEventListener('click', dismiss);
+  container.appendChild(toast);
+  requestAnimationFrame(function () { toast.classList.add('show'); });
+  setTimeout(dismiss, 5000);
 }
-var slideStyle = document.createElement('style');
-slideStyle.textContent = '@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}';
-document.head.appendChild(slideStyle);
 
-// ============== Icon picker ==============
+// ============== Icon picker (used per-row by the bulk category form below) ==============
 var CAT_ICONS = ['tag','shopping-cart','home','car','utensils','heart','briefcase','gift','plane','gamepad','book','music','mobile-alt','bolt','graduation-cap','piggy-bank','chart-line','coffee','pizza-slice','baby','film','dumbbell','paw','leaf'];
-var selectedIcon = 'tag';
-(function initIconPicker() {
-  var picker = document.getElementById('iconPicker');
-  if (!picker) return;
-  picker.innerHTML = CAT_ICONS.map(function(icon){
-    return '<div class="icon-option'+(icon==='tag'?' selected':'')+'" data-icon="'+icon+'"><i class="fas fa-'+icon+'"></i></div>';
-  }).join('');
-  picker.querySelectorAll('.icon-option').forEach(function(opt){
-    opt.addEventListener('click', function(){
-      selectedIcon = opt.dataset.icon;
-      picker.querySelectorAll('.icon-option').forEach(function(o){ o.classList.toggle('selected', o.dataset.icon === selectedIcon); });
-    });
-  });
-})();
 
 // ============== Nav switching ==============
 document.querySelectorAll('.settings-nav-item').forEach(function(item){
@@ -1100,6 +1426,282 @@ document.querySelectorAll('.settings-nav-item').forEach(function(item){
     if (section === 'categories' && allCategories.length === 0) loadCategories();
     if (section === 'security') loadUserProfile();
     if (section === 'account-config') { if (typeof loadAll === 'function') loadAll(); }
+    if (section === 'ai-assistant') loadAiSettings();
+    if (section === 'receipt-scanner') loadReceiptScannerSettings();
+    if (section === 'voice-assistant') { loadVoiceAssistantSettings(); loadVoiceHistory(); }
+    if (section === 'gamification') loadGamificationSettings();
+    if (section === 'family-finance') loadFamilyFinanceSettings();
+  });
+});
+
+// Jump straight to a section when linked as /settings?section=account-config (e.g. from the User Manual's quick links)
+(function openSectionFromQuery(){
+  var section = new URLSearchParams(window.location.search).get('section');
+  if (!section) return;
+  var navItem = document.querySelector('.settings-nav-item[data-section="' + section + '"]');
+  if (navItem) navItem.click();
+})();
+
+// ============== Receipt Scanner Settings ==============
+function loadReceiptScannerSettings() {
+  fetch('/api/receipts/settings').then(function(r){ return r.json(); }).then(function(s){
+    document.getElementById('receiptScannerEnabled').checked = s.enabled !== false;
+  }).catch(function(){ showNotification('Unable to load Receipt Scanner settings.', 'danger'); });
+}
+
+document.getElementById('receiptScannerSaveBtn').addEventListener('click', function(){
+  fetch('/api/receipts/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enabled: document.getElementById('receiptScannerEnabled').checked })
+  }).then(function(r){
+    if (r.ok) {
+      showNotification('Receipt Scanner settings saved.', 'success');
+    } else {
+      return r.json().then(function(err){ showNotification((err && err.error) || 'Failed to save settings.', 'danger'); });
+    }
+  }).catch(function(){ showNotification('Unable to save settings right now.', 'danger'); });
+});
+
+// ============== AI Settings ==============
+function loadAiSettings() {
+  fetch('/api/ai/settings').then(function(r){ return r.json(); }).then(function(s){
+    document.getElementById('aiSettingsEnabled').checked = s.enabled !== false;
+    document.getElementById('aiSettingsDeveloperMode').checked = s.developerMode === true;
+    document.getElementById('aiSettingsModel').value = s.model || 'gpt-5';
+    document.getElementById('aiSettingsMaxTokens').value = s.maxTokens || 800;
+    document.getElementById('aiSettingsTemperature').value = s.temperature != null ? s.temperature : 0.3;
+    document.getElementById('aiSettingsTempLabel').textContent = (s.temperature != null ? s.temperature : 0.3);
+    document.getElementById('aiSettingsProactiveInsights').checked = s.enableProactiveInsights !== false;
+    document.getElementById('aiSettingsBudgetCoaching').checked = s.enableBudgetCoaching !== false;
+    document.getElementById('aiSettingsSavingsCoaching').checked = s.enableSavingsCoaching !== false;
+    document.getElementById('aiSettingsMonthlyReports').checked = s.enableMonthlyReports !== false;
+    document.getElementById('aiSettingsDashboardSummary').checked = s.enableDashboardSummary !== false;
+  }).catch(function(){ showNotification('Unable to load AI settings.', 'danger'); });
+}
+
+document.getElementById('aiSettingsTemperature').addEventListener('input', function(){
+  document.getElementById('aiSettingsTempLabel').textContent = this.value;
+});
+
+document.getElementById('aiSettingsSaveBtn').addEventListener('click', function(){
+  var body = {
+    model: document.getElementById('aiSettingsModel').value.trim(),
+    maxTokens: parseInt(document.getElementById('aiSettingsMaxTokens').value, 10),
+    temperature: parseFloat(document.getElementById('aiSettingsTemperature').value),
+    enabled: document.getElementById('aiSettingsEnabled').checked,
+    developerMode: document.getElementById('aiSettingsDeveloperMode').checked,
+    enableProactiveInsights: document.getElementById('aiSettingsProactiveInsights').checked,
+    enableBudgetCoaching: document.getElementById('aiSettingsBudgetCoaching').checked,
+    enableSavingsCoaching: document.getElementById('aiSettingsSavingsCoaching').checked,
+    enableMonthlyReports: document.getElementById('aiSettingsMonthlyReports').checked,
+    enableDashboardSummary: document.getElementById('aiSettingsDashboardSummary').checked
+  };
+  fetch('/api/ai/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  }).then(function(r){
+    if (r.ok) {
+      showNotification('AI settings saved.', 'success');
+    } else {
+      return r.json().then(function(err){ showNotification((err && err.error) || 'Failed to save AI settings.', 'danger'); });
+    }
+  }).catch(function(){ showNotification('Unable to save AI settings right now.', 'danger'); });
+});
+
+// ============== Voice Assistant Settings ==============
+function loadVoiceAssistantSettings() {
+  fetch('/api/voice/settings').then(function(r){ return r.json(); }).then(function(s){
+    document.getElementById('voiceSettingsEnabled').checked = s.enabled !== false;
+    document.getElementById('voiceSettingsLanguage').value = s.language || 'en-US';
+    document.getElementById('voiceSettingsSilence').value = s.autoStopSilenceSeconds || 3;
+    document.getElementById('voiceSettingsMaxLength').value = s.maxRecordingLengthSeconds || 60;
+    document.getElementById('voiceSettingsSpeed').value = s.speechSpeed || 1.0;
+    document.getElementById('voiceSettingsNoiseReduction').checked = s.noiseReduction === true;
+    document.getElementById('voiceSettingsSaveAudio').checked = s.saveAudioRecordings === true;
+  }).catch(function(){ showNotification('Unable to load Voice Assistant settings.', 'danger'); });
+}
+
+document.getElementById('voiceSettingsSaveBtn').addEventListener('click', function(){
+  var body = {
+    enabled: document.getElementById('voiceSettingsEnabled').checked,
+    language: document.getElementById('voiceSettingsLanguage').value,
+    autoStopSilenceSeconds: parseInt(document.getElementById('voiceSettingsSilence').value, 10),
+    maxRecordingLengthSeconds: parseInt(document.getElementById('voiceSettingsMaxLength').value, 10)
+  };
+  fetch('/api/voice/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  }).then(function(r){
+    if (r.ok) {
+      showNotification('Voice Assistant settings saved.', 'success');
+    } else {
+      return r.json().then(function(err){ showNotification((err && err.error) || 'Failed to save Voice Assistant settings.', 'danger'); });
+    }
+  }).catch(function(){ showNotification('Unable to save Voice Assistant settings right now.', 'danger'); });
+});
+
+// ============== Achievements (Gamification) ==============
+function loadGamificationSettings() {
+  fetch('/api/gamification/settings').then(function(r){ return r.json(); }).then(function(s){
+    document.getElementById('gamificationSettingsEnabled').checked = s.enabled !== false;
+    document.getElementById('gamificationSettingsNotifications').checked = s.enableNotifications !== false;
+    document.getElementById('gamificationSettingsDashboardWidget').checked = s.showDashboardWidget !== false;
+    document.getElementById('gamificationSettingsCelebrations').checked = s.enableCelebrations !== false;
+    document.getElementById('gamificationSettingsChallenges').checked = s.enableChallenges !== false;
+    document.getElementById('gamificationSettingsStreakTracking').checked = s.enableStreakTracking !== false;
+    document.getElementById('gamificationSettingsShowXp').checked = s.showXp !== false;
+  }).catch(function(){ showNotification('Unable to load Achievement settings.', 'danger'); });
+}
+
+document.getElementById('gamificationSettingsSaveBtn').addEventListener('click', function(){
+  var body = {
+    enabled: document.getElementById('gamificationSettingsEnabled').checked,
+    enableNotifications: document.getElementById('gamificationSettingsNotifications').checked,
+    showDashboardWidget: document.getElementById('gamificationSettingsDashboardWidget').checked,
+    enableCelebrations: document.getElementById('gamificationSettingsCelebrations').checked,
+    enableChallenges: document.getElementById('gamificationSettingsChallenges').checked,
+    enableStreakTracking: document.getElementById('gamificationSettingsStreakTracking').checked,
+    showXp: document.getElementById('gamificationSettingsShowXp').checked
+  };
+  fetch('/api/gamification/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  }).then(function(r){
+    if (r.ok) {
+      showNotification('Achievement settings saved.', 'success');
+    } else {
+      return r.json().then(function(err){ showNotification((err && err.error) || 'Failed to save Achievement settings.', 'danger'); });
+    }
+  }).catch(function(){ showNotification('Unable to save Achievement settings right now.', 'danger'); });
+});
+
+document.getElementById('gamificationResetBtn').addEventListener('click', function(){
+  confirmAction('Permanently reset all XP, levels, achievements, streaks, and challenge progress? This cannot be undone.',
+      { title: 'Reset Progress', confirmText: 'Reset Progress', confirmClass: 'btn-danger' }).then(function(confirmed){
+    if (!confirmed) return;
+    fetch('/api/gamification/reset', { method: 'DELETE' }).then(function(r){
+      if (r.ok) showNotification('Achievement progress reset.', 'success');
+      else showNotification('Failed to reset progress.', 'danger');
+    }).catch(function(){ showNotification('Unable to reset progress right now.', 'danger'); });
+  });
+});
+
+// ============== Family Finance ==============
+var ffSettingsHousehold = null;
+function loadFamilyFinanceSettings() {
+  fetch('/api/households/mine').then(function(r){ return r.json(); }).then(function(data){
+    ffSettingsHousehold = (data && data.hasHousehold) ? data : null;
+    document.getElementById('ffSettingsNoHousehold').style.display = ffSettingsHousehold ? 'none' : '';
+    document.getElementById('ffSettingsHousehold').style.display = ffSettingsHousehold ? '' : 'none';
+    if (!ffSettingsHousehold) return;
+    var isAdmin = ffSettingsHousehold.myRole === 'ADMIN';
+    var nameInput = document.getElementById('ffSettingsNameInput');
+    nameInput.value = ffSettingsHousehold.name || '';
+    nameInput.disabled = !isAdmin;
+    document.getElementById('ffSettingsRenameBtn').style.display = isAdmin ? '' : 'none';
+    document.getElementById('ffSettingsDeleteBtn').style.display = isAdmin ? '' : 'none';
+    document.getElementById('ffSettingsRoleNote').textContent = isAdmin
+      ? 'You are the administrator of this household.'
+      : 'Only the household administrator can rename or delete the household.';
+  }).catch(function(){ showNotification('Unable to load Family Finance settings.', 'danger'); });
+}
+
+document.getElementById('ffSettingsRenameBtn').addEventListener('click', function(){
+  if (!ffSettingsHousehold) return;
+  var name = document.getElementById('ffSettingsNameInput').value.trim();
+  if (!name) { showNotification('Household name cannot be empty.', 'danger'); return; }
+  fetch('/api/households/' + ffSettingsHousehold.id, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: name })
+  }).then(function(r){
+    if (r.ok) { showNotification('Household renamed.', 'success'); loadFamilyFinanceSettings(); }
+    else return r.json().then(function(err){ showNotification((err && err.error) || 'Failed to rename household.', 'danger'); });
+  }).catch(function(){ showNotification('Unable to rename household right now.', 'danger'); });
+});
+
+document.getElementById('ffSettingsLeaveBtn').addEventListener('click', function(){
+  if (!ffSettingsHousehold) return;
+  confirmAction('Leave "' + ffSettingsHousehold.name + '"? Your past shared expenses stay visible to the household for accountability.',
+      { title: 'Leave Household', confirmText: 'Leave Household', confirmClass: 'btn-danger' }).then(function(confirmed){
+    if (!confirmed) return;
+    fetch('/api/households/' + ffSettingsHousehold.id + '/leave', { method: 'POST' }).then(function(r){
+      if (r.ok) { showNotification('You left the household.', 'success'); loadFamilyFinanceSettings(); }
+      else return r.json().then(function(err){ showNotification((err && err.error) || 'Failed to leave household.', 'danger'); });
+    }).catch(function(){ showNotification('Unable to leave household right now.', 'danger'); });
+  });
+});
+
+document.getElementById('ffSettingsDeleteBtn').addEventListener('click', function(){
+  if (!ffSettingsHousehold) return;
+  confirmAction('Permanently delete "' + ffSettingsHousehold.name + '"? This removes it for every member. Nobody\'s personal transactions are affected.',
+      { title: 'Delete Household', confirmText: 'Delete Household', confirmClass: 'btn-danger' }).then(function(confirmed){
+    if (!confirmed) return;
+    fetch('/api/households/' + ffSettingsHousehold.id, { method: 'DELETE' }).then(function(r){
+      if (r.ok) { showNotification('Household deleted.', 'success'); loadFamilyFinanceSettings(); }
+      else return r.json().then(function(err){ showNotification((err && err.error) || 'Failed to delete household.', 'danger'); });
+    }).catch(function(){ showNotification('Unable to delete household right now.', 'danger'); });
+  });
+});
+
+var VOICE_INTENT_ICONS = {
+  EXPENSE: 'fa-money-bill-wave', INCOME: 'fa-hand-holding-dollar', SAVINGS: 'fa-piggy-bank',
+  TRANSFER: 'fa-right-left', NOTE: 'fa-sticky-note', TODO: 'fa-list-check',
+  QUERY: 'fa-comment-dots', UNKNOWN: 'fa-question'
+};
+var VOICE_STATUS_LABELS = {
+  completed: 'Completed', pending: 'Not confirmed', awaiting_followup: 'Awaiting follow-up',
+  unresolved: 'Unresolved', routed_to_chat: 'Sent to AI chat'
+};
+
+function loadVoiceHistory() {
+  var container = document.getElementById('voiceHistoryList');
+  container.innerHTML = '<p class="text-muted small mb-0">Loading…</p>';
+  fetch('/api/voice/history').then(function(r){ return r.json(); }).then(function(items){
+    if (!items.length) {
+      container.innerHTML = '<p class="text-muted small mb-0">No voice commands yet — try the microphone button on any page.</p>';
+      return;
+    }
+    container.innerHTML = items.map(function(item){
+      var icon = VOICE_INTENT_ICONS[item.intent] || 'fa-microphone';
+      var statusLabel = VOICE_STATUS_LABELS[item.status] || item.status;
+      var statusBadgeClass = item.status === 'completed' ? 'bg-success' : (item.status === 'unresolved' ? 'bg-secondary' : 'bg-warning text-dark');
+      var when = item.createdAt ? new Date(item.createdAt).toLocaleString() : '';
+      return '<div class="d-flex justify-content-between align-items-start py-2 border-bottom voice-history-row" data-id="' + item.id + '">' +
+        '<div class="d-flex gap-2">' +
+          '<i class="fas ' + icon + ' mt-1" style="color:var(--accent-color)"></i>' +
+          '<div>' +
+            '<div class="small">' + escHtml(item.originalTranscript) + '</div>' +
+            '<div class="text-muted" style="font-size:0.75rem">' + escHtml(when) + ' &middot; <span class="badge ' + statusBadgeClass + '">' + escHtml(statusLabel) + '</span></div>' +
+          '</div>' +
+        '</div>' +
+        '<button type="button" class="btn btn-sm btn-link text-danger voice-history-delete-btn" title="Delete" aria-label="Delete"><i class="fas fa-trash-alt"></i></button>' +
+      '</div>';
+    }).join('');
+    container.querySelectorAll('.voice-history-delete-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var row = btn.closest('.voice-history-row');
+        var id = row.getAttribute('data-id');
+        fetch('/api/voice/history/' + id, { method: 'DELETE' }).then(function(r){
+          if (r.ok) { row.remove(); if (!container.querySelector('.voice-history-row')) loadVoiceHistory(); }
+          else showNotification('Failed to delete that entry.', 'danger');
+        }).catch(function(){ showNotification('Unable to delete that entry right now.', 'danger'); });
+      });
+    });
+  }).catch(function(){ container.innerHTML = '<p class="text-muted small mb-0">Unable to load voice command history.</p>'; });
+}
+
+document.getElementById('voiceHistoryClearBtn').addEventListener('click', function(){
+  confirmAction('Delete all voice command history? This cannot be undone.', { title: 'Clear Voice History', confirmText: 'Clear All', confirmClass: 'btn-danger' }).then(function(confirmed){
+    if (!confirmed) return;
+    fetch('/api/voice/history', { method: 'DELETE' }).then(function(r){
+      if (r.ok) { showNotification('Voice command history cleared.', 'success'); loadVoiceHistory(); }
+      else showNotification('Failed to clear history.', 'danger');
+    }).catch(function(){ showNotification('Unable to clear history right now.', 'danger'); });
   });
 });
 
@@ -1107,6 +1709,20 @@ document.querySelectorAll('.settings-nav-item').forEach(function(item){
 function COLOR_THEME_KEY() { return getUserStorageKey('fintrack_color_theme'); }
 function THEME_KEY()       { return getUserStorageKey('fintrack_theme'); }
 
+// Theme + color theme are per-user, not per-browser — best-effort sync to the server so
+// switching devices/browsers shows the same appearance instead of each one defaulting fresh.
+function syncAppearanceToServer(patch) {
+  fetch('/api/appearance-preferences', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(patch)
+  }).catch(function(){});
+}
+
+// Pure DOM/localStorage apply — no network. Used both for a genuine user pick (see the click
+// handler below, which separately syncs to the server) and for passively re-rendering an
+// already-known value (e.g. page load, or reconciling with the server's value) — that second
+// case must NOT re-PUT, or a stale/default local value would clobber the real server value.
 function applyColorTheme(key) {
   if (!key || key === 'forest') {
     document.documentElement.removeAttribute('data-color-theme');
@@ -1129,17 +1745,24 @@ function initThemeGrid() {
     opt.addEventListener('click', function(){
       applyColorTheme(opt.dataset.themeKey);
       syncThemeGrid();
+      syncAppearanceToServer({ colorTheme: opt.dataset.themeKey });
     });
   });
 }
 
 // ============== Display Mode ==============
-function initDisplayMode() {
+function syncDisplayModeButtons() {
   var saved = localStorage.getItem(THEME_KEY()) || 'light';
   document.querySelectorAll('.display-mode-btn').forEach(function(btn){
     btn.classList.toggle('active', btn.dataset.mode === saved);
     btn.classList.toggle('btn-primary', btn.dataset.mode === saved);
     btn.classList.toggle('btn-outline-secondary', btn.dataset.mode !== saved);
+  });
+}
+
+function initDisplayMode() {
+  syncDisplayModeButtons();
+  document.querySelectorAll('.display-mode-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
       document.querySelectorAll('.display-mode-btn').forEach(function(b){
         b.classList.remove('active','btn-primary');
@@ -1154,9 +1777,18 @@ function initDisplayMode() {
       }
       document.documentElement.setAttribute('data-theme', mode);
       localStorage.setItem(THEME_KEY(), mode);
+      syncAppearanceToServer({ theme: mode });
     });
   });
 }
+
+// Sidebar.js resolves the server's per-user theme/color-theme asynchronously (it must not
+// block first paint); when it lands after our own localStorage-based initial render, re-sync
+// this page's controls so they don't show a stale value from before the reconcile.
+window.addEventListener('finzin:appearance-synced', function() {
+  syncThemeGrid();
+  syncDisplayModeButtons();
+});
 
 // ============== Appearance ==============
 function initAppearanceUI() {
@@ -1321,10 +1953,31 @@ if (btnResetAppearance) {
     if (sfs) sfs.value = DEFAULTS.fontSize || 'medium';
     var sl = document.getElementById('selectLayout');
     if (sl) sl.value = DEFAULTS.layout || 'comfortable';
+    // Reset compact mode
+    var sidebarCompactKey = getUserStorageKey('sidebar_compact_mode');
+    localStorage.removeItem(sidebarCompactKey);
+    document.body.classList.remove('sidebar-compact');
+    var sm = document.getElementById('selectSidebarMode');
+    if (sm) sm.value = 'false';
     syncAllPills(s);
     showNotification('Appearance reset to defaults', 'info');
   });
 }
+
+// Compact mode select
+(function() {
+  var sidebarCompactKey = getUserStorageKey('sidebar_compact_mode');
+  var sm = document.getElementById('selectSidebarMode');
+  if (sm) {
+    sm.value = localStorage.getItem(sidebarCompactKey) === 'true' ? 'true' : 'false';
+    sm.addEventListener('change', function() {
+      var compact = this.value === 'true';
+      localStorage.setItem(sidebarCompactKey, String(compact));
+      document.body.classList.toggle('sidebar-compact', compact);
+      showNotification(compact ? 'Compact sidebar enabled' : 'Expanded sidebar enabled', 'success');
+    });
+  }
+})();
 
 // ============== Categories ==============
 var allCategories = [];
@@ -1426,30 +2079,164 @@ if (btnToggleAddCat) {
 var btnCancelAddCat = document.getElementById('btnCancelAddCat');
 if (btnCancelAddCat) btnCancelAddCat.addEventListener('click', closeCatForm);
 
+// ============== Bulk category rows ==============
+var CATEGORY_COLORS = ['#E53935','#F4511E','#FB8C00','#FDD835','#7CB342','#43A047','#00897B','#00ACC1','#1E88E5','#3949AB','#5E35B1','#8E24AA','#D81B60','#EC407A','#6D4C41','#757575','#546E7A','#90A4AE','#2E7D32','#1565C0'];
+var catRows = [];
+var catRowSeq = 0;
+
+function newCatRow(data) {
+  data = data || {};
+  return {
+    uid: 'r' + (++catRowSeq),
+    id: data.id || null,
+    name: data.name || '',
+    categoryType: (data.categoryType || 'general').toLowerCase(),
+    color: data.color || CATEGORY_COLORS[8],
+    icon: data.icon || 'tag',
+    description: data.description || '',
+    error: null
+  };
+}
+
+function focusRowName(uid) {
+  var rowEl = document.querySelector('[data-row-uid="' + uid + '"]');
+  var input = rowEl ? rowEl.querySelector('.cat-row-name') : null;
+  if (input) input.focus();
+}
+
+function renderCatRows() {
+  var container = document.getElementById('catRowsContainer');
+  if (!container) return;
+  var isEdit = editingCatId !== null;
+
+  container.innerHTML = catRows.map(function (row) {
+    var canRemove = !isEdit && catRows.length > 1;
+    return '' +
+      '<div class="cat-bulk-row' + (row.error ? ' has-error' : '') + '" data-row-uid="' + row.uid + '">' +
+        '<div class="d-flex align-items-start gap-2 mb-2">' +
+          '<div class="cat-row-preview" style="background:' + row.color + '"><i class="fas fa-' + row.icon + '"></i></div>' +
+          '<div class="flex-grow-1">' +
+            '<div class="row g-2">' +
+              '<div class="col-7"><input type="text" class="form-control form-control-sm cat-row-name" placeholder="Category Name *" value="' + escHtml(row.name) + '"></div>' +
+              '<div class="col-5">' +
+                '<select class="form-select form-select-sm cat-row-type">' +
+                  '<option value="general">General</option>' +
+                  '<option value="income">Income</option>' +
+                  '<option value="expense">Expense</option>' +
+                  '<option value="savings">Savings</option>' +
+                '</select>' +
+              '</div>' +
+            '</div>' +
+            '<input type="text" class="form-control form-control-sm cat-row-desc mt-2" placeholder="Description (optional)" value="' + escHtml(row.description) + '">' +
+          '</div>' +
+          '<div class="cat-row-actions">' +
+            (isEdit ? '' : '<button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 cat-row-dup" title="Duplicate"><i class="fas fa-copy"></i></button>') +
+            (canRemove ? '<button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 cat-row-remove" title="Remove"><i class="fas fa-trash"></i></button>' : '') +
+          '</div>' +
+        '</div>' +
+        '<div class="mb-1"><label class="form-label small mb-1 text-muted">Color</label><div class="color-picker cat-row-colors"></div></div>' +
+        '<div><label class="form-label small mb-1 text-muted">Icon</label><div class="icon-picker cat-row-icons"></div></div>' +
+        '<div class="cat-row-error small text-danger mt-1' + (row.error ? '' : ' d-none') + '">' + escHtml(row.error || '') + '</div>' +
+      '</div>';
+  }).join('');
+
+  catRows.forEach(function (row) {
+    var rowEl = container.querySelector('[data-row-uid="' + row.uid + '"]');
+    if (!rowEl) return;
+
+    var typeSel = rowEl.querySelector('.cat-row-type');
+    typeSel.value = row.categoryType;
+    typeSel.addEventListener('change', function () { row.categoryType = this.value; });
+
+    rowEl.querySelector('.cat-row-name').addEventListener('input', function () { row.name = this.value; });
+    rowEl.querySelector('.cat-row-desc').addEventListener('input', function () { row.description = this.value; });
+
+    var colorsEl = rowEl.querySelector('.cat-row-colors');
+    colorsEl.innerHTML = CATEGORY_COLORS.map(function (c) {
+      return '<div class="color-swatch' + (c.toLowerCase() === row.color.toLowerCase() ? ' selected' : '') + '" data-color="' + c + '" style="background:' + c + '" title="' + c + '"></div>';
+    }).join('');
+    colorsEl.querySelectorAll('.color-swatch').forEach(function (sw) {
+      sw.addEventListener('click', function () {
+        row.color = sw.dataset.color;
+        colorsEl.querySelectorAll('.color-swatch').forEach(function (s) { s.classList.toggle('selected', s === sw); });
+        rowEl.querySelector('.cat-row-preview').style.background = row.color;
+      });
+    });
+
+    var iconsEl = rowEl.querySelector('.cat-row-icons');
+    iconsEl.innerHTML = CAT_ICONS.map(function (icon) {
+      return '<div class="icon-option' + (icon === row.icon ? ' selected' : '') + '" data-icon="' + icon + '"><i class="fas fa-' + icon + '"></i></div>';
+    }).join('');
+    iconsEl.querySelectorAll('.icon-option').forEach(function (opt) {
+      opt.addEventListener('click', function () {
+        row.icon = opt.dataset.icon;
+        iconsEl.querySelectorAll('.icon-option').forEach(function (o) { o.classList.toggle('selected', o === opt); });
+        rowEl.querySelector('.cat-row-preview').innerHTML = '<i class="fas fa-' + row.icon + '"></i>';
+      });
+    });
+
+    var dupBtn = rowEl.querySelector('.cat-row-dup');
+    if (dupBtn) {
+      dupBtn.addEventListener('click', function () {
+        var idx = catRows.indexOf(row);
+        var copy = newCatRow({ name: row.name ? row.name + ' Copy' : '', categoryType: row.categoryType, color: row.color, icon: row.icon, description: row.description });
+        catRows.splice(idx + 1, 0, copy);
+        renderCatRows();
+        focusRowName(copy.uid);
+      });
+    }
+
+    var removeBtn = rowEl.querySelector('.cat-row-remove');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', function () {
+        rowEl.classList.add('removing');
+        setTimeout(function () {
+          catRows = catRows.filter(function (r) { return r.uid !== row.uid; });
+          renderCatRows();
+        }, 180);
+      });
+    }
+  });
+}
+
+var btnAddCatRow = document.getElementById('btnAddCatRow');
+if (btnAddCatRow) {
+  btnAddCatRow.addEventListener('click', function () {
+    var row = newCatRow();
+    catRows.push(row);
+    renderCatRows();
+    focusRowName(row.uid);
+  });
+}
+
 function openCatForm(cat) {
   var form = document.getElementById('addCatForm');
   if (!form) return;
   editingCatId = cat ? cat.id : null;
-  document.getElementById('catName').value = cat ? (cat.name||'') : '';
-  document.getElementById('catType').value = cat ? (cat.categoryType||'general').toLowerCase() : 'general';
-  document.getElementById('catColor').value = cat ? (cat.color||'#2e7d4f') : '#2e7d4f';
-  document.getElementById('catDesc').value = cat ? (cat.description||'') : '';
-  selectedIcon = cat ? (cat.icon||'tag') : 'tag';
-  document.querySelectorAll('.icon-option').forEach(function(o){ o.classList.toggle('selected', o.dataset.icon === selectedIcon); });
+  catRows = cat
+    ? [newCatRow({ id: cat.id, name: cat.name, categoryType: cat.categoryType, color: cat.color, icon: cat.icon, description: cat.description })]
+    : [newCatRow()];
+  renderCatRows();
+
+  var addRowBtn = document.getElementById('btnAddCatRow');
+  if (addRowBtn) addRowBtn.classList.toggle('d-none', !!cat);
+
   var saveBtn = document.getElementById('btnSaveCat');
   if (saveBtn) saveBtn.innerHTML = cat ? '<i class="fas fa-check me-1"></i>Update' : '<i class="fas fa-check me-1"></i>Save';
   var titleEl = document.getElementById('catFormTitle');
-  if (titleEl) titleEl.textContent = cat ? 'Edit Category' : 'New Category';
+  if (titleEl) titleEl.textContent = cat ? 'Edit Category' : 'New Categories';
   form.style.display = 'block';
   form.scrollIntoView({ behavior:'smooth', block:'nearest' });
   var toggleBtn = document.getElementById('btnToggleAddCat');
   if (toggleBtn) toggleBtn.innerHTML = '<i class="fas fa-times"></i>';
+  focusRowName(catRows[0].uid);
 }
 
 function closeCatForm() {
   var form = document.getElementById('addCatForm');
   if (form) form.style.display = 'none';
   editingCatId = null;
+  catRows = [];
   var toggleBtn = document.getElementById('btnToggleAddCat');
   if (toggleBtn) toggleBtn.innerHTML = '<i class="fas fa-plus"></i>';
 }
@@ -1457,29 +2244,74 @@ function closeCatForm() {
 var btnSaveCat = document.getElementById('btnSaveCat');
 if (btnSaveCat) {
   btnSaveCat.addEventListener('click', async function(){
-    var nameEl = document.getElementById('catName');
-    var name = nameEl ? nameEl.value.trim() : '';
-    if (!name) { showNotification('Category name is required', 'danger'); return; }
-    var body = {
-      name: name,
-      categoryType: document.getElementById('catType').value,
-      color: document.getElementById('catColor').value,
-      icon: selectedIcon,
-      description: (document.getElementById('catDesc') ? document.getElementById('catDesc').value.trim() : '') || ''
-    };
-    try {
-      var token = getAuthToken();
-      var headers = Object.assign({ 'Content-Type':'application/json' }, token ? {'Authorization':'Bearer '+token} : {});
-      var url = editingCatId ? '/api/categories/'+editingCatId : '/api/categories';
-      var method = editingCatId ? 'PUT' : 'POST';
-      var res = await fetch(url, { method: method, headers: headers, body: JSON.stringify(body) });
-      if (!res.ok) throw new Error('Failed');
-      showNotification(editingCatId ? 'Category updated!' : 'Category created!', 'success');
-      closeCatForm();
-      await loadCategories();
-    } catch(e) {
-      showNotification('Failed to save category', 'danger');
+    catRows.forEach(function (r) { r.error = null; });
+
+    var hasError = false;
+    catRows.forEach(function (row) {
+      if (!row.name || !row.name.trim()) { row.error = 'Name is required'; hasError = true; }
+    });
+    var seen = {};
+    catRows.forEach(function (row) {
+      var key = (row.name || '').trim().toLowerCase();
+      if (!key || row.error) return;
+      if (seen[key]) { row.error = 'Duplicate name in this batch'; seen[key].error = 'Duplicate name in this batch'; hasError = true; }
+      else { seen[key] = row; }
+    });
+    if (hasError) {
+      renderCatRows();
+      showNotification('Please fix the highlighted row' + (catRows.length > 1 ? 's' : ''), 'danger');
+      return;
     }
+
+    var token = getAuthToken();
+    var headers = Object.assign({ 'Content-Type':'application/json' }, token ? {'Authorization':'Bearer '+token} : {});
+
+    if (editingCatId) {
+      var row = catRows[0];
+      try {
+        var res = await fetch('/api/categories/' + editingCatId, {
+          method: 'PUT', headers: headers,
+          body: JSON.stringify({ name: row.name.trim(), categoryType: row.categoryType, color: row.color, icon: row.icon, description: row.description.trim() })
+        });
+        if (!res.ok) throw new Error('Failed');
+        showNotification('Category updated!', 'success');
+        closeCatForm();
+        await loadCategories();
+      } catch (e) {
+        showNotification('Failed to save category', 'danger');
+      }
+      return;
+    }
+
+    var results = await Promise.all(catRows.map(function (row) {
+      return fetch('/api/categories', {
+        method: 'POST', headers: headers,
+        body: JSON.stringify({ name: row.name.trim(), categoryType: row.categoryType, color: row.color, icon: row.icon, description: row.description.trim() })
+      }).then(async function (res) {
+        if (!res.ok) {
+          var data = await res.json().catch(function () { return {}; });
+          row.error = data.error || 'Failed to save';
+          return false;
+        }
+        return true;
+      }).catch(function () {
+        row.error = 'Network error';
+        return false;
+      });
+    }));
+
+    var succeeded = results.filter(Boolean).length;
+    var failed = results.length - succeeded;
+
+    if (failed === 0) {
+      showNotification(succeeded + ' ' + (succeeded === 1 ? 'Category' : 'Categories') + ' Created Successfully', 'success');
+      closeCatForm();
+    } else {
+      catRows = catRows.filter(function (row) { return !!row.error; });
+      renderCatRows();
+      showNotification(succeeded + ' created, ' + failed + ' failed — see highlighted row' + (failed > 1 ? 's' : '') + ' below', 'danger');
+    }
+    await loadCategories();
   });
 }
 
@@ -1791,10 +2623,25 @@ if (deleteConfirmInput) {
 var btnConfirmDeleteAccount = document.getElementById('btnConfirmDeleteAccount');
 if (btnConfirmDeleteAccount) {
   btnConfirmDeleteAccount.addEventListener('click', function(){
-    showNotification('Account deletion initiated. You will be redirected...', 'warning');
-    var modal = bootstrap.Modal.getInstance(document.getElementById('deleteAccountModal'));
-    if (modal) modal.hide();
-    setTimeout(function(){ window.location.href = '/login.html'; }, 2000);
+    btnConfirmDeleteAccount.disabled = true;
+    var originalHtml = btnConfirmDeleteAccount.innerHTML;
+    btnConfirmDeleteAccount.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Deleting…';
+    fetch('/api/auth/account', { method: 'DELETE', headers: authHeaders() })
+      .then(function(res){
+        if (!res.ok) return res.json().then(function(err){ throw new Error((err && err.error) || 'Failed to delete account.'); });
+        var modal = bootstrap.Modal.getInstance(document.getElementById('deleteAccountModal'));
+        if (modal) modal.hide();
+        showNotification('Account deleted. Redirecting…', 'warning');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        document.cookie = 'Authorization=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        setTimeout(function(){ window.location.href = '/login.html'; }, 1500);
+      })
+      .catch(function(err){
+        showNotification(err.message || 'Unable to delete account right now.', 'danger');
+        btnConfirmDeleteAccount.disabled = false;
+        btnConfirmDeleteAccount.innerHTML = originalHtml;
+      });
   });
 }
 

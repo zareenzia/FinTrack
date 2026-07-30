@@ -23,6 +23,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
     implementation 'org.postgresql:postgresql'
     implementation 'com.fasterxml.jackson.core:jackson-databind'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
@@ -32,6 +33,7 @@ dependencies {
     implementation 'org.jsoup:jsoup:1.17.2'
     implementation 'org.apache.poi:poi-ooxml:5.2.5'
     implementation 'org.apache.pdfbox:pdfbox:3.0.2'
+    implementation 'net.sourceforge.tess4j:tess4j:5.11.0'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
@@ -39,3 +41,36 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+
+task downloadTessdata {
+    def tessdataDir = file('tessdata')
+    def dest = file('tessdata/eng.traineddata')
+
+    def minValidBytes = 1_000_000L
+
+    outputs.file(dest)
+
+    doLast {
+        if (dest.exists() && dest.length() >= minValidBytes) {
+            return
+        }
+        tessdataDir.mkdirs()
+        def tmp = new File(tessdataDir, 'eng.traineddata.tmp')
+        try {
+            def connection = new URL('https://github.com/tesseract-ocr/tessdata_fast/raw/main/eng.traineddata').openConnection()
+            connection.connectTimeout = 15000
+            connection.readTimeout = 60000
+            connection.inputStream.withStream { input -> tmp.withOutputStream { output -> output << input } }
+            if (tmp.length() < minValidBytes) {
+                throw new GradleException("download looked incomplete (${tmp.length()} bytes)")
+            }
+            java.nio.file.Files.move(tmp.toPath(), dest.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            logger.lifecycle("Downloaded Tesseract eng.traineddata (${dest.length()} bytes) to ${dest}")
+        } catch (Exception e) {
+            tmp.delete()
+            logger.warn("Could not download Tesseract eng.traineddata — Receipt Scanner OCR will stay disabled until this succeeds. Reason: ${e.message}")
+        }
+    }
+}
+compileJava.dependsOn downloadTessdata

@@ -13,6 +13,79 @@
     const COLLAPSED_KEY  = getUserStorageKey('sidebar_collapsed');
     const THEME_KEY      = getUserStorageKey('fintrack_theme');
     const SETTINGS_KEY   = getUserStorageKey('fintrack_settings');
+    const COMPACT_KEY    = getUserStorageKey('sidebar_compact_mode');
+
+    // ── All available sidebar modules (master registry) ──────────────────────
+    const SIDEBAR_MODULES = [
+        { id: 'dashboard',         label: 'Home',              icon: 'fas fa-home',            href: '/dashboard',         locked: true  },
+        { id: 'transactions',      label: 'Transactions',      icon: 'fas fa-exchange-alt',    href: '/transactions'                     },
+        { id: 'budget-planner',    label: 'Budget Planner',    icon: 'fas fa-wallet',          href: '/budget-planner'                   },
+        { id: 'notes',             label: 'Notes',             icon: 'fas fa-sticky-note',     href: '/notes'                            },
+        { id: 'todos',             label: 'To-Do',             icon: 'fas fa-tasks',           href: '/todos'                            },
+        { id: 'assets',            label: 'Assets',            icon: 'fas fa-coins',           href: '/assets'                           },
+        { id: 'financial-planner', label: 'Financial Planner', icon: 'fas fa-bullseye',        href: '/financial-planner'                },
+        { id: 'family-finance',    label: 'Family Finance',    icon: 'fas fa-users',           href: '/family-finance'                   },
+        { id: 'calculator',        label: 'Calculator',        icon: 'fas fa-calculator',      href: null,   special: 'calculator'       },
+        { id: 'settings',          label: 'Settings',          icon: 'fas fa-cog',             href: '/settings',          locked: true  },
+    ];
+
+    // ── Sidebar preference helpers ────────────────────────────────────────────
+    function getSidebarPrefsKey() { return getUserStorageKey('sidebar_prefs'); }
+
+    function getDefaultPrefs() {
+        return SIDEBAR_MODULES.map(function(m, i) {
+            return { id: m.id, visible: true, pinned: false, displayOrder: i };
+        });
+    }
+
+    function loadSidebarPrefs() {
+        try {
+            var raw = localStorage.getItem(getSidebarPrefsKey());
+            if (!raw) return getDefaultPrefs();
+            var saved = JSON.parse(raw);
+            // Merge: add any new modules not in saved prefs
+            var savedIds = saved.map(function(p) { return p.id; });
+            var maxOrder = saved.reduce(function(m,p) { return Math.max(m, p.displayOrder || 0); }, 0);
+            SIDEBAR_MODULES.forEach(function(m, i) {
+                if (savedIds.indexOf(m.id) === -1) {
+                    saved.push({ id: m.id, visible: true, pinned: false, displayOrder: maxOrder + i + 1 });
+                }
+            });
+            return saved;
+        } catch(e) {
+            return getDefaultPrefs();
+        }
+    }
+
+    function saveSidebarPrefs(prefs) {
+        try { localStorage.setItem(getSidebarPrefsKey(), JSON.stringify(prefs)); } catch(e) {}
+        // Best-effort server sync (non-blocking)
+        fetch('/api/sidebar-preferences', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ preferencesJson: JSON.stringify(prefs) })
+        }).catch(function() {});
+    }
+
+    function getOrderedModules(prefs) {
+        var prefMap = {};
+        prefs.forEach(function(p) { prefMap[p.id] = p; });
+
+        var pinned = [], unpinned = [];
+        SIDEBAR_MODULES.forEach(function(m) {
+            var p = prefMap[m.id] || { visible: true, pinned: false, displayOrder: 99 };
+            if (!p.visible) return;
+            if (p.pinned && !m.locked) pinned.push({ module: m, pref: p });
+            else unpinned.push({ module: m, pref: p });
+        });
+        pinned.sort(function(a,b) { return (a.pref.displayOrder||0) - (b.pref.displayOrder||0); });
+        // locked modules stay at their natural position in unpinned
+        var lockedAtStart = unpinned.filter(function(x) { return x.module.locked && x.module.id === 'dashboard'; });
+        var lockedAtEnd   = unpinned.filter(function(x) { return x.module.locked && x.module.id !== 'dashboard'; });
+        var free          = unpinned.filter(function(x) { return !x.module.locked; });
+        free.sort(function(a,b) { return (a.pref.displayOrder||0) - (b.pref.displayOrder||0); });
+        return lockedAtStart.concat(pinned).concat(free).concat(lockedAtEnd);
+    }
 
     // ── Apply global settings (font-size, animations, color theme) immediately
     (function applyGlobalSettingsEarly() {
@@ -28,12 +101,19 @@
         } catch (e) { /* silently ignore */ }
     })();
 
+    const COLOR_THEME_KEY = getUserStorageKey('fintrack_color_theme');
+
+    function applyColorTheme(key) {
+        if (!key || key === 'forest') {
+            document.documentElement.removeAttribute('data-color-theme');
+        } else {
+            document.documentElement.setAttribute('data-color-theme', key);
+        }
+    }
+
     // ── Apply saved color theme immediately (before first paint)
     (function applyColorThemeEarly() {
-        var ct = localStorage.getItem(getUserStorageKey('fintrack_color_theme')) || 'forest';
-        if (ct !== 'forest') {
-            document.documentElement.setAttribute('data-color-theme', ct);
-        }
+        applyColorTheme(localStorage.getItem(COLOR_THEME_KEY) || 'forest');
     })();
 
     // Apply theme immediately on script load to prevent flash of wrong theme
@@ -83,6 +163,7 @@
         const next = (current === 'dark') ? 'light' : 'dark';
         localStorage.setItem(THEME_KEY, next);
         applyTheme(next);
+        syncAppearanceToServer({ theme: next });
     }
 
     function initTheme() {
@@ -96,6 +177,42 @@
                 }
             });
         }
+    }
+
+    // ── Cross-device sync ─────────────────────────────────────────
+    // Theme/color-theme are cached in localStorage (per-browser) so the page can apply
+    // them before first paint with no flash, but the source of truth is per-user on the
+    // server — otherwise the same account shows a different theme in every browser/device.
+    function syncAppearanceToServer(patch) {
+        fetch('/api/appearance-preferences', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(patch)
+        }).catch(function () {});
+    }
+
+    function syncAppearanceFromServer() {
+        fetch('/api/appearance-preferences')
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (data) {
+                if (!data) return;
+                var changed = false;
+                if (data.theme && data.theme !== localStorage.getItem(THEME_KEY)) {
+                    localStorage.setItem(THEME_KEY, data.theme);
+                    applyTheme(data.theme);
+                    changed = true;
+                }
+                if (data.colorTheme && data.colorTheme !== localStorage.getItem(COLOR_THEME_KEY)) {
+                    localStorage.setItem(COLOR_THEME_KEY, data.colorTheme);
+                    applyColorTheme(data.colorTheme);
+                    changed = true;
+                }
+                if (changed) {
+                    if (typeof window.reloadSidebar === 'function') window.reloadSidebar();
+                    window.dispatchEvent(new CustomEvent('finzin:appearance-synced', { detail: data }));
+                }
+            })
+            .catch(function () {});
     }
 
     /* ── User helpers ──────────────────────────────────────────── */
@@ -119,78 +236,86 @@
         const userName = user ? (user.fullName || user.username || user.name || 'User') : 'User';
         const initials = getInitials(userName);
         const profilePicUrl = user && user.profilePicture ? user.profilePicture : null;
-        // Initial icon depends on current (or preferred) theme
         const isDark = (localStorage.getItem(THEME_KEY) || getPreferredTheme()) === 'dark';
         const themeIcon  = isDark ? 'fas fa-sun sidebar-icon' : 'fas fa-moon sidebar-icon';
         const themeLabel = isDark ? 'Light Mode' : 'Dark Mode';
 
         const aside = document.createElement('aside');
         aside.id = 'sidebar';
+
+        // Build nav items from preferences
+        const prefs = loadSidebarPrefs();
+        const ordered = getOrderedModules(prefs);
+        const prefMap = {};
+        prefs.forEach(function(p) { prefMap[p.id] = p; });
+
+        var navItemsHtml = ordered.map(function(entry) {
+            var m = entry.module;
+            var p = entry.pref;
+            var pinBadge = (p.pinned && !m.locked)
+                ? '<span class="sidebar-pin-dot" title="Pinned" aria-label="Pinned"></span>' : '';
+
+            if (m.special === 'calculator') {
+                return '<button class="sidebar-item" id="calcSidebarBtn" title="' + m.label + '" aria-label="' + m.label + '" style="background:none;border:none;width:100%;text-align:left;">' +
+                    '<i class="' + m.icon + ' sidebar-icon"></i>' +
+                    '<span class="sidebar-label">' + m.label + '</span>' + pinBadge +
+                    '</button>';
+            }
+            return '<a href="' + m.href + '" class="sidebar-item" data-path="' + m.id + '" title="' + m.label + '" aria-label="' + m.label + '">' +
+                '<i class="' + m.icon + ' sidebar-icon"></i>' +
+                '<span class="sidebar-label">' + m.label + '</span>' + pinBadge +
+                '</a>';
+        }).join('');
+
         aside.innerHTML = `
             <div class="sidebar-header">
                 <div class="sidebar-brand">
                     <img src="/images/logo.png" alt="FinTrack" class="sidebar-brand-logo">
                     <span class="sidebar-label">FinTrack</span>
                 </div>
-                <button class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Toggle sidebar">
+                <button class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Toggle sidebar" aria-label="Toggle sidebar">
                     <i class="fas fa-chevron-left" id="sidebarToggleIcon"></i>
                 </button>
             </div>
 
-            <nav class="sidebar-nav">
-                <a href="/dashboard" class="sidebar-item" data-path="dashboard" title="Home">
-                    <i class="fas fa-home sidebar-icon"></i>
-                    <span class="sidebar-label">Home</span>
-                </a>
-                <a href="/transactions" class="sidebar-item" data-path="transactions" title="Transactions">
-                    <i class="fas fa-exchange-alt sidebar-icon"></i>
-                    <span class="sidebar-label">Transactions</span>
-                </a>
-                <a href="/budget-planner" class="sidebar-item" data-path="budget-planner" title="Budget Planner">
-                    <i class="fas fa-wallet sidebar-icon"></i>
-                    <span class="sidebar-label">Budget Planner</span>
-                </a>
-                <a href="/notes" class="sidebar-item" data-path="notes" title="Notes">
-                    <i class="fas fa-sticky-note sidebar-icon"></i>
-                    <span class="sidebar-label">Notes</span>
-                </a>
-                <a href="/todos" class="sidebar-item" data-path="todos" title="To-Do">
-                    <i class="fas fa-tasks sidebar-icon"></i>
-                    <span class="sidebar-label">To-Do</span>
-                </a>
-                <a href="/assets" class="sidebar-item" data-path="assets" title="Assets">
-                    <i class="fas fa-coins sidebar-icon"></i>
-                    <span class="sidebar-label">Assets</span>
-                </a>
-                <button class="sidebar-item" id="calcSidebarBtn" title="Calculator" style="background:none;border:none;width:100%;text-align:left;">
-                    <i class="fas fa-calculator sidebar-icon"></i>
-                    <span class="sidebar-label">Calculator</span>
-                </button>
-                <a href="/settings" class="sidebar-item" data-path="settings" title="Settings">
-                    <i class="fas fa-cog sidebar-icon"></i>
-                    <span class="sidebar-label">Settings</span>
-                </a>
+            <nav class="sidebar-nav" id="sidebarNav" aria-label="Main navigation">
+                ${navItemsHtml}
             </nav>
 
             <div class="sidebar-spacer"></div>
 
             <div class="sidebar-bottom">
-                <button class="sidebar-item" id="notificationBellBtn" title="Notifications" style="background:none;border:none;width:100%;text-align:left;position:relative;">
-                    <i class="fas fa-bell sidebar-icon"></i>
-                    <span class="sidebar-label">Notifications</span>
-                    <span id="notifBadge" class="d-none" style="position:absolute; top:6px; left:26px; background:#dc3545; color:#fff; border-radius:999px; font-size:0.65rem; padding:1px 6px; font-weight:600;"></span>
-                </button>
-                <button class="sidebar-item sidebar-theme-toggle" id="themeToggleBtn" title="Toggle theme">
+                <div class="sidebar-icon-row">
+                    <button class="sidebar-item sidebar-icon-only" id="notificationBellBtn" title="Notifications" aria-label="Notifications" style="background:none;border:none;position:relative;">
+                        <i class="fas fa-bell sidebar-icon"></i>
+                        <span class="sidebar-label">Notifications</span>
+                        <span id="notifBadge" class="d-none" style="position:absolute; top:6px; right:6px; background:#dc3545; color:#fff; border-radius:999px; font-size:0.65rem; padding:1px 6px; font-weight:600;" aria-live="polite"></span>
+                    </button>
+                    <a href="/ai-assistant" class="sidebar-item sidebar-icon-only" id="aiAssistantIconBtn" data-path="ai-assistant" title="AI Assistant" aria-label="AI Assistant">
+                        <i class="fas fa-robot sidebar-icon"></i>
+                        <span class="sidebar-label">AI Assistant</span>
+                    </a>
+                    <a href="/achievements" class="sidebar-item sidebar-icon-only" id="achievementsIconBtn" data-path="achievements" title="Achievements" aria-label="Achievements">
+                        <i class="fas fa-trophy sidebar-icon"></i>
+                        <span class="sidebar-label">Achievements</span>
+                    </a>
+                    <button class="sidebar-item sidebar-icon-only" id="userManualBtn" title="User Manual &amp; Getting Started" aria-label="User Manual and Getting Started Guide" style="background:none;border:none;position:relative;">
+                        <i class="fas fa-book-open sidebar-icon"></i>
+                        <span class="sidebar-label">User Manual</span>
+                        <span id="manualBadgeDot" class="manual-badge-dot d-none" aria-hidden="true"></span>
+                    </button>
+                </div>
+                <button class="sidebar-item sidebar-theme-toggle" id="themeToggleBtn" title="Toggle theme" aria-label="Toggle theme">
                     <span class="theme-icon-wrap">
                         <i class="${themeIcon}" id="themeToggleIcon"></i>
                     </span>
                     <span class="sidebar-label" id="themeToggleLbl">${themeLabel}</span>
                 </button>
-                <div class="sidebar-item sidebar-profile" id="sidebarProfileBtn" title="${userName}">
+                <div class="sidebar-item sidebar-profile" id="sidebarProfileBtn" title="${userName}" tabindex="0" role="button" aria-label="Profile: ${userName}">
                     <div class="sidebar-avatar" id="sidebarAvatar" style="overflow:hidden;">${profilePicUrl ? `<img src="${profilePicUrl}" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : initials}</div>
                     <span class="sidebar-label" id="sidebarUserName">${userName}</span>
                 </div>
-                <a href="#" class="sidebar-item sidebar-logout" id="sidebarLogoutBtn" title="Logout">
+                <a href="#" class="sidebar-item sidebar-logout" id="sidebarLogoutBtn" title="Logout" aria-label="Logout">
                     <i class="fas fa-sign-out-alt sidebar-icon"></i>
                     <span class="sidebar-label">Logout</span>
                 </a>
@@ -495,6 +620,70 @@
         }
     }
 
+    /* ── Voice Assistant ───────────────────────────────────────── */
+
+    function injectVoiceAssistantWidget() {
+        if (!document.querySelector('link[href="/css/voice-assistant.css"]')) {
+            var link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = '/css/voice-assistant.css';
+            document.head.appendChild(link);
+        }
+
+        if (document.getElementById('voiceAssistantFab')) return;
+
+        var fab = document.createElement('button');
+        fab.id = 'voiceAssistantFab';
+        fab.className = 'va-fab';
+        fab.type = 'button';
+        fab.title = 'Voice Assistant (Ctrl+Shift+V)';
+        fab.setAttribute('aria-label', 'Voice Assistant');
+        fab.innerHTML = '<i class="fas fa-microphone"></i>';
+        document.body.appendChild(fab);
+
+        var modalHtml =
+            '<div class="modal fade" id="voiceAssistantModal" tabindex="-1" aria-labelledby="voiceAssistantModalTitle" aria-modal="true" role="dialog">' +
+              '<div class="modal-dialog modal-dialog-centered modal-lg">' +
+                '<div class="modal-content">' +
+                  '<div class="modal-header">' +
+                    '<h5 class="modal-title" id="voiceAssistantModalTitle"><i class="fas fa-microphone me-2"></i>Voice Assistant</h5>' +
+                    '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>' +
+                  '</div>' +
+                  '<div class="modal-body">' +
+                    '<div id="vaScreenRecording" class="va-screen active">' +
+                      '<div class="va-mic-wrap">' +
+                        '<div class="va-mic-pulse"></div>' +
+                        '<button type="button" id="vaMicButton" class="va-mic-btn" aria-label="Start or stop recording"><i class="fas fa-microphone"></i></button>' +
+                      '</div>' +
+                      '<canvas id="vaWaveformCanvas" class="va-waveform" width="400" height="60"></canvas>' +
+                      '<div class="va-timer" id="vaTimer">00:00</div>' +
+                      '<div class="va-status" id="vaStatus">Tap the mic to start</div>' +
+                      '<div class="va-transcript" id="vaTranscript"></div>' +
+                      '<div class="va-followup d-none" id="vaFollowupBanner"></div>' +
+                      '<div class="va-controls">' +
+                        '<button type="button" class="btn btn-outline-secondary va-ctrl-btn d-none" id="vaPauseBtn"><i class="fas fa-pause"></i> Pause</button>' +
+                        '<button type="button" class="btn btn-outline-secondary va-ctrl-btn d-none" id="vaResumeBtn"><i class="fas fa-play"></i> Resume</button>' +
+                        '<button type="button" class="btn btn-danger va-ctrl-btn d-none" id="vaStopBtn"><i class="fas fa-stop"></i> Stop</button>' +
+                        '<button type="button" class="btn btn-outline-secondary va-ctrl-btn" id="vaCancelBtn"><i class="fas fa-times"></i> Cancel</button>' +
+                      '</div>' +
+                    '</div>' +
+                    '<div id="vaScreenConfirm" class="va-screen"></div>' +
+                    '<div id="vaScreenSuccess" class="va-screen"></div>' +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
+            '</div>';
+        var wrapper = document.createElement('div');
+        wrapper.innerHTML = modalHtml;
+        document.body.appendChild(wrapper.firstElementChild);
+
+        if (!document.querySelector('script[src="/js/voice-assistant.js"]')) {
+            var script = document.createElement('script');
+            script.src = '/js/voice-assistant.js';
+            document.body.appendChild(script);
+        }
+    }
+
     /* ── Notifications ─────────────────────────────────────────── */
 
     function injectNotificationPanel() {
@@ -505,8 +694,14 @@
         panel.style.cssText = 'display:none; position:fixed; bottom:70px; left:90px; width:320px; max-height:400px; overflow-y:auto; background:var(--bg-modal); border:1px solid var(--border-color); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.25); z-index:2000; padding:8px;';
         panel.innerHTML = '<div style="display:flex; justify-content:space-between; align-items:center; padding:6px 8px; font-weight:600; color:var(--text-primary-custom);">' +
             '<span><i class="fas fa-bell me-1"></i>Notifications</span>' +
+            '<button type="button" id="notifMarkAllReadBtn" style="background:none; border:none; color:var(--accent-color); font-size:0.75rem; font-weight:600; cursor:pointer; padding:2px 4px;">Mark all as read</button>' +
             '</div><div id="notifListContainer"></div>';
         document.body.appendChild(panel);
+
+        document.getElementById('notifMarkAllReadBtn').addEventListener('click', function (e) {
+            e.stopPropagation();
+            markAllNotificationsRead();
+        });
 
         document.addEventListener('click', function (e) {
             var panelEl = document.getElementById('notifDropdownPanel');
@@ -543,7 +738,12 @@
                 }
                 container.innerHTML = items.slice(0, 20).map(function (n) {
                     var unreadStyle = n.isRead ? '' : 'background:var(--bg-table-stripe);';
-                    return '<div style="padding:8px; border-bottom:1px solid var(--border-input); cursor:pointer; ' + unreadStyle + '" onclick="window.__markNotifRead(' + n.id + ')">' +
+                    // Household invitations route to the Family Finance page (where the invite can
+                    // actually be accepted/declined) instead of just marking themselves read in place.
+                    var onclick = n.type === 'HOUSEHOLD_INVITE'
+                        ? "window.location.href='/family-finance?invite=" + n.relatedEntityId + "'"
+                        : 'window.__markNotifRead(' + n.id + ')';
+                    return '<div style="padding:8px; border-bottom:1px solid var(--border-input); cursor:pointer; ' + unreadStyle + '" onclick="' + onclick + '">' +
                         '<div style="font-weight:600; font-size:0.85rem; color:var(--text-primary-custom);">' + n.title + '</div>' +
                         '<div style="font-size:0.8rem; color:var(--text-secondary-custom);">' + n.message + '</div>' +
                         '</div>';
@@ -564,6 +764,16 @@
     }
     window.__markNotifRead = markNotificationRead;
 
+    function markAllNotificationsRead() {
+        fetch('/api/notifications/read-all', { method: 'PATCH' })
+            .then(function () {
+                refreshUnreadBadge();
+                var panel = document.getElementById('notifDropdownPanel');
+                if (panel) panel.style.display = 'none';
+            })
+            .catch(function () {});
+    }
+
     function refreshUnreadBadge() {
         fetch('/api/notifications/unread-count')
             .then(function (r) { return r.json(); })
@@ -580,9 +790,839 @@
             .catch(function () {});
     }
 
+    // ── Gamification milestone celebration ────────────────────────────────────
+    // Piggybacks on the notification list this page already fetches on load (no new
+    // polling mechanism) — if the newest MILESTONE-type notification hasn't been shown yet
+    // (tracked by id, per-user), a confetti overlay celebrates it once.
+    function getLastCelebratedMilestoneKey() { return getUserStorageKey('finzin_last_celebrated_milestone_id'); }
+
+    function injectCelebrationStyles() {
+        if (document.getElementById('gamificationCelebrationStyles')) return;
+        var style = document.createElement('style');
+        style.id = 'gamificationCelebrationStyles';
+        style.textContent =
+            '.gam-confetti-piece{position:fixed;top:-20px;width:8px;height:14px;opacity:0.9;pointer-events:none;z-index:4000;animation:gamConfettiFall linear forwards;}' +
+            '@keyframes gamConfettiFall{0%{transform:translateY(0) rotate(0deg);opacity:1;}100%{transform:translateY(105vh) rotate(540deg);opacity:0.3;}}' +
+            '.gam-celebration-toast{position:fixed;top:24px;left:50%;transform:translateX(-50%) translateY(-20px);background:var(--bg-modal);border:1px solid var(--border-color);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,0.3);padding:16px 22px;z-index:4001;display:flex;align-items:center;gap:14px;opacity:0;transition:opacity 0.3s ease, transform 0.3s ease;max-width:90vw;}' +
+            '.gam-celebration-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}' +
+            '.gam-celebration-icon{font-size:2rem;line-height:1;}' +
+            '.gam-celebration-title{font-weight:700;color:var(--text-primary-custom);}' +
+            '.gam-celebration-msg{font-size:0.85rem;color:var(--text-secondary-custom);}';
+        document.head.appendChild(style);
+    }
+
+    function launchConfetti() {
+        var colors = ['#255F38', '#1F7D53', '#f39c12', '#e74c3c', '#4ade80', '#D4AF37'];
+        for (var i = 0; i < 40; i++) {
+            (function (i) {
+                var piece = document.createElement('div');
+                piece.className = 'gam-confetti-piece';
+                piece.style.left = (Math.random() * 100) + 'vw';
+                piece.style.background = colors[i % colors.length];
+                piece.style.animationDuration = (2.2 + Math.random() * 1.3) + 's';
+                piece.style.animationDelay = (Math.random() * 0.4) + 's';
+                document.body.appendChild(piece);
+                setTimeout(function () { piece.remove(); }, 4200);
+            })(i);
+        }
+    }
+
+    function showMilestoneCelebration(notification) {
+        injectCelebrationStyles();
+        launchConfetti();
+        var toast = document.createElement('div');
+        toast.className = 'gam-celebration-toast';
+        toast.innerHTML = '<span class="gam-celebration-icon">🎉</span>' +
+            '<div><div class="gam-celebration-title">' + notification.title + '</div>' +
+            '<div class="gam-celebration-msg">' + notification.message + '</div></div>';
+        document.body.appendChild(toast);
+        requestAnimationFrame(function () { toast.classList.add('show'); });
+        setTimeout(function () {
+            toast.classList.remove('show');
+            setTimeout(function () { toast.remove(); }, 350);
+        }, 5000);
+    }
+
+    function checkForMilestoneCelebration() {
+        fetch('/api/notifications')
+            .then(function (r) { return r.json(); })
+            .then(function (items) {
+                var milestone = items.find(function (n) { return n.type === 'MILESTONE'; });
+                if (!milestone) return;
+                var key = getLastCelebratedMilestoneKey();
+                var lastCelebrated = parseInt(localStorage.getItem(key) || '0', 10);
+                if (milestone.id > lastCelebrated) {
+                    localStorage.setItem(key, String(milestone.id));
+                    showMilestoneCelebration(milestone);
+                }
+            })
+            .catch(function () {});
+    }
+
+    // ── Global confirmation modal ─────────────────────────────────────────────
+    // Replaces the native confirm() dialog (a browser/localhost-styled alert, not part of the
+    // app's UI) with an in-app Bootstrap modal so confirmations look and feel consistent with
+    // the rest of FinTrack. Usage: `if (await confirmAction('Delete this?')) { ... }`.
+    function injectConfirmModal() {
+        if (document.getElementById('appConfirmModal')) return;
+        var wrapper = document.createElement('div');
+        wrapper.innerHTML =
+            '<div class="modal fade" id="appConfirmModal" tabindex="-1" aria-hidden="true">' +
+              '<div class="modal-dialog modal-dialog-centered">' +
+                '<div class="modal-content">' +
+                  '<div class="modal-header">' +
+                    '<h5 class="modal-title" id="appConfirmModalTitle"><i class="fas fa-circle-question me-2"></i>Confirm</h5>' +
+                    '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>' +
+                  '</div>' +
+                  '<div class="modal-body" id="appConfirmModalBody">Are you sure?</div>' +
+                  '<div class="modal-footer">' +
+                    '<button type="button" class="btn btn-secondary" id="appConfirmModalCancelBtn" data-bs-dismiss="modal">Cancel</button>' +
+                    '<button type="button" class="btn btn-primary" id="appConfirmModalOkBtn">Confirm</button>' +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
+            '</div>';
+        document.body.appendChild(wrapper.firstElementChild);
+    }
+
+    function confirmAction(message, opts) {
+        opts = opts || {};
+        injectConfirmModal();
+        var modalEl = document.getElementById('appConfirmModal');
+        document.getElementById('appConfirmModalTitle').innerHTML =
+            '<i class="fas fa-circle-question me-2"></i>' + (opts.title || 'Confirm');
+        document.getElementById('appConfirmModalBody').textContent = message;
+        var okBtn = document.getElementById('appConfirmModalOkBtn');
+        okBtn.textContent = opts.confirmText || 'Confirm';
+        okBtn.className = 'btn ' + (opts.confirmClass || 'btn-primary');
+        var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+        return new Promise(function (resolve) {
+            var settled = false;
+            function cleanup() {
+                okBtn.removeEventListener('click', onOk);
+                modalEl.removeEventListener('hidden.bs.modal', onHidden);
+            }
+            function onOk() {
+                settled = true;
+                cleanup();
+                modal.hide();
+                resolve(true);
+            }
+            function onHidden() {
+                cleanup();
+                if (!settled) resolve(false);
+            }
+            okBtn.addEventListener('click', onOk);
+            modalEl.addEventListener('hidden.bs.modal', onHidden);
+            modal.show();
+        });
+    }
+    window.confirmAction = confirmAction;
+
+    // ── User Manual / Getting Started Guide ───────────────────────────────────
+    const MANUAL_CHECKLIST = [
+        { id: 'accounts',     icon: 'fa-building-columns', title: 'Set up your accounts',
+          desc: 'Add your Bank, Mobile Money (MFS), Cash, and Credit Card accounts with their starting balances — everything else builds on this.',
+          linkLabel: 'Open Account Settings', href: '/settings?section=account-config' },
+        { id: 'transactions', icon: 'fa-right-left', title: 'Log your first transactions',
+          desc: 'Add income & expenses manually, import a CSV in bulk, or scan a receipt with OCR.',
+          linkLabel: 'Open Transactions', href: '/transactions' },
+        { id: 'recurring',    icon: 'fa-rotate', title: 'Set up recurring bills',
+          desc: 'Add subscriptions, EMIs, and credit card due dates so forecasts and reminders stay accurate.',
+          linkLabel: 'Open Transactions', href: '/transactions' },
+        { id: 'budget',       icon: 'fa-wallet', title: "Create this month's budget",
+          desc: 'Allocate a planned amount per category and track what you have left to spend, in real time.',
+          linkLabel: 'Open Budget Planner', href: '/budget-planner' },
+        { id: 'planner',      icon: 'fa-bullseye', title: 'Set your financial goals',
+          desc: 'Plan investments, loans, renewals, and long-term savings goals in the Financial Planner.',
+          linkLabel: 'Open Financial Planner', href: '/financial-planner' },
+        { id: 'ai',           icon: 'fa-robot', title: 'Meet your AI Financial Coach',
+          desc: 'Once you have a bit of history, ask the AI for a health score, insights, and personalized recommendations.',
+          linkLabel: 'Open AI Assistant', href: '/ai-assistant' },
+        { id: 'personalize',  icon: 'fa-palette', title: 'Personalize FinTrack',
+          desc: 'Pick a color theme, reorder your sidebar, and choose your currency & date format.',
+          linkLabel: 'Open Appearance Settings', href: '/settings?section=appearance' }
+    ];
+
+    const MANUAL_WORKFLOW = [
+        { icon: 'fa-building-columns', title: 'Set Up Accounts',   desc: 'Bank, MFS, Cash & Credit Cards — the foundation everything else builds on.' },
+        { icon: 'fa-right-left',       title: 'Track Transactions', desc: 'Log as you spend, import in bulk, or scan receipts — daily upkeep takes seconds.' },
+        { icon: 'fa-wallet',           title: 'Plan Your Budget',   desc: 'Set a per-category budget each month and watch the dashboard track your progress.' },
+        { icon: 'fa-robot',            title: 'Get AI Insights',    desc: 'The AI Coach reads your real data to flag risks and suggest where to cut back.' },
+        { icon: 'fa-bullseye',         title: 'Grow Your Wealth',   desc: 'Use the Financial Planner for goals, investments, loans, and long-term renewals.' }
+    ];
+
+    // Detailed per-module guide — one entry per real module/feature in the app, each broken into
+    // labeled groups of specific, actionable bullets (not just a one-line teaser) so nothing
+    // implemented goes undiscovered. Rendered as an accordion in the "Module Guide" tab.
+    const MODULE_GUIDE = [
+        { id: 'dashboard', icon: 'fa-home', title: 'Dashboard', href: '/dashboard',
+          tagline: 'Your financial command center — balances, trends, and every widget in one place.',
+          groups: [
+            { heading: 'Overview', items: [
+                'Six headline stat cards: Total Income, Total Expense, Total Savings, Net Balance, Assets Value, and Net Worth.',
+                'Category Chart (where your money goes) and a Monthly Chart (income vs. expense trend over time).',
+                'Toggle between the full Default view and a denser Compact view from the button in the header — useful on smaller screens.'
+            ]},
+            { heading: 'Widgets', items: [
+                'Account Balances — every account\'s current balance in one list.',
+                'Upcoming Recurring — bills and subscriptions due soon.',
+                'Current Budget — this period\'s Budget Planner progress, without leaving the dashboard.',
+                'Financial Planner summary — investment, loan, subscription, and purchase-planner counts at a glance.',
+                'Achievements widget — your level, XP, and streak.',
+                'Family Summary widget — appears once you join a household: this month\'s shared spending and your settlement balance.',
+                'An AI "Today\'s Insight" tip appears once you\'ve logged enough activity for the AI Coach to analyze.'
+            ]}
+          ]},
+        { id: 'transactions', icon: 'fa-right-left', title: 'Transactions', href: '/transactions',
+          tagline: 'Log income, expenses, transfers &amp; savings — plus recurring bills and CSV tools.',
+          groups: [
+            { heading: 'Adding &amp; Editing', items: [
+                'Add New Transaction supports Income, Expense, Savings, and Transfer types — with account, category, date, and an optional details/notes field.',
+                'The Add modal lets you stack multiple transactions in one go via "Add Another Transaction" before saving them all together.',
+                'Spending directly from savings, and credit card transactions, are handled as special cases — your account balances always update automatically.',
+                'Log Cash Transfer moves money between two of your own accounts without it counting as income or expense.',
+                'Edit or delete any transaction later — balances recalculate automatically.'
+            ]},
+            { heading: 'Recurring Transactions', items: [
+                'Create Recurring Transaction sets up a bill, subscription, or income that repeats on a schedule (with a start date, frequency, and optional end date).',
+                'Each due occurrence can be Confirmed (posts it as a real transaction) or Skipped for that cycle.',
+                'Recurring items can be deleted outright, and are listed separately under "All Recurring Transactions" on this same page.',
+                'Import or export your recurring transactions as a CSV file using the buttons above that list.'
+            ]},
+            { heading: 'Finding &amp; Managing', items: [
+                'Filter, search, and sort the transaction list to find exactly what you need.',
+                'Import transactions in bulk from a CSV file, or export your currently filtered list to CSV — both from the toolbar above the list.',
+                'The Scan Receipt button opens the OCR receipt scanner — see the dedicated Receipt Scanner guide below.'
+            ]}
+          ]},
+        { id: 'budget-planner', icon: 'fa-wallet', title: 'Budget Planner', href: '/budget-planner',
+          tagline: 'Category budgets, joint savings goals, templates, charts, and exports.',
+          groups: [
+            { heading: 'Budget Plans', items: [
+                'Switch between plans from the dropdown at the top — FinTrack auto-selects the one matching the current month.',
+                'Create Budget opens a form for Name, Period Type (Month/Quarter/Year), Period Label, Start/End Date, Expected Income, Expected Savings, and Notes.',
+                'Copy Last Month or Duplicate (from History) carry forward a prior plan\'s setup instead of starting from scratch.',
+                'Archive a plan to hide it without deleting it, or delete it outright (this also removes its category and savings allocations).'
+            ]},
+            { heading: 'Category Budgets', items: [
+                'Add Category Budget sets a spending limit for an expense category within the current plan.',
+                'Each card shows a status badge (On Track / Near Limit / Over Budget) with a color-coded progress bar and contextual suggestion tips.',
+                'Edit or delete any category budget at any time.'
+            ]},
+            { heading: 'Savings Goals', items: [
+                'Click + in the Savings Goals panel: choose (or create) a savings category, set a Target Amount, an optional Manual Starting Balance for money saved before you started tracking, and optionally where it\'s Stored In / Funded From.',
+                'Progress combines your starting balance with everything logged as a savings-type transaction toward that category — shown as "X saved (incl. Y already saved) of [target]".',
+                'A goal automatically flips to "Achieved" once it reaches its target; the category locks once a goal exists to avoid duplicates.'
+            ]},
+            { heading: 'Score, Charts &amp; Calendar', items: [
+                'A 0–100 Budget Score gauge reflects category adherence, savings progress, and income-target attainment.',
+                'The Charts tab shows Budget Allocation (doughnut), Budget vs. Actual (bar), and Budget Trend (planned vs. actual over time).',
+                'The Calendar tab marks each day with a color dot for income, spending, savings, or going over budget that day.'
+            ]},
+            { heading: 'Templates, History &amp; Export', items: [
+                'Save a reusable Template (income/savings targets plus a list of category allocations) from the Templates tab, then Apply it to instantly pre-populate a brand-new plan.',
+                'The History tab is a searchable, filterable, sortable table of every plan you\'ve created, with quick actions to open, duplicate, archive, or delete each one.',
+                'Export the currently-open plan as CSV, Excel, or PDF from the header\'s Export dropdown.'
+            ]}
+          ]},
+        { id: 'notes', icon: 'fa-sticky-note', title: 'Notes', href: '/notes',
+          tagline: 'Rich-text notes and reminders tied to your money management.',
+          groups: [
+            { heading: 'What you can do', items: [
+                'Create a note with a title and rich-text content (a formatting toolbar is built into the editor).',
+                'Pick a color and add tags to keep related notes organized.',
+                'Pin important notes to the top, mark a note Done, or Archive it instead of deleting.',
+                'Filter by All / Pinned / Done / Archived, and search by title or content.',
+                'Edit or delete any note at any time.'
+            ]}
+          ]},
+        { id: 'todos', icon: 'fa-tasks', title: 'To-Do', href: '/todos',
+          tagline: 'Financial tasks — bills to pay, documents to file, calls to make.',
+          groups: [
+            { heading: 'What you can do', items: [
+                'Create a task with a title, description, due date and time, priority (Low/Medium/High), and a free-text category (e.g. "Work", "Personal").',
+                'Move a task through Pending → In Progress → Completed as you work on it.',
+                'Filter by All / Pending / In Progress / Completed / Overdue, and search across your tasks.',
+                'Edit or delete any task at any time.'
+            ]}
+          ]},
+        { id: 'assets', icon: 'fa-coins', title: 'Assets', href: '/assets',
+          tagline: 'Track your gold holdings with live (or manual) market pricing.',
+          groups: [
+            { heading: 'Tracking Gold', items: [
+                'Add Gold Asset records a name, Gold Type/Purity (22K, 21K, 18K, 24K, Traditional, or Custom), Type (Ornament, Bar, Coin, or Custom), Weight (with automatic unit conversion), Purchase Price, and optional description/notes.',
+                'Summary cards show Total Gold Value, Total Weight, number of Gold Assets, and the current 22K price per gram.',
+                'Filter by Purity or Type, and search your inventory by name.'
+            ]},
+            { heading: 'Pricing &amp; Data', items: [
+                'Sync Gold Prices pulls the latest per-purity rates automatically; switch to Set Manual Prices if you\'d rather enter your own.',
+                'Import your gold inventory from a CSV file, or export your currently filtered list to CSV.',
+                'Edit or delete any asset at any time — your total value recalculates automatically.'
+            ]}
+          ]},
+        { id: 'financial-planner', icon: 'fa-bullseye', title: 'Financial Planner', href: '/financial-planner',
+          tagline: 'Investments, loans, subscriptions, and the Wishlist &amp; Purchase Planner — four tabs, one page.',
+          groups: [
+            { heading: 'Investment Portfolio tab', items: [
+                'Add Investment records the name, type (Stocks, Mutual Funds, ETFs, Bonds, Crypto, Fixed Deposits, or Other), platform/broker, purchase date, quantity, and buy/current price.',
+                'Summary cards show Total Value, Total Profit/Loss, Total Return %, and Active Investments — backed by a Portfolio Allocation chart and a Profit/Loss-by-investment chart.',
+                'Search, filter by type, and sort by value, profit, or date; edit or delete any holding.'
+            ]},
+            { heading: 'Loan Manager tab', items: [
+                'Add Loan records the loan name, type (Personal, Home, Car, Education, Business, Borrowed, or Lent), lender/borrower, principal, EMI amount, payment frequency, and start/end date.',
+                'Total Interest is calculated correctly for whatever payment frequency you set (monthly, weekly, yearly, or one-time) — not just assumed monthly.',
+                'Mark EMI Paid on an active loan logs the payment and updates its remaining balance and progress bar in one click.',
+                'Filter by type or status (Active/Closed/Overdue), search, and track Total Loan Amount, Remaining Balance, Monthly EMI, and Total Interest across all your loans.'
+            ]},
+            { heading: 'Subscriptions tab', items: [
+                'Add Subscription records the name, category, cost, billing cycle (Monthly/Yearly), and next renewal date — or quick-add a common one (Netflix, Spotify, ChatGPT Plus, Claude Pro, GitHub, Adobe Creative Cloud, etc.) from the template chips.',
+                'Summary cards track Active Subscriptions, Monthly Cost, Yearly Cost, and Upcoming Renewals in the next 30 days.',
+                'Filter by status or billing cycle, search, and pause, cancel, edit, or delete any subscription.'
+            ]},
+            { heading: 'Wishlist &amp; Purchase Planner tab', items: [
+                'Add Purchase logs something you want to buy with a need level (Must/Should/Nice to Have), priority, price, category, store, and target month.',
+                'The Kanban Board organizes items into Must Have / Should Have / Nice to Have columns — drag and drop between columns to re-prioritize.',
+                'The Purchase Timeline lays out planned purchases by target month.',
+                'Every item gets a smart Affordability verdict — Can Buy Now, Wait (with an estimated number of months), or Not Affordable — computed from your real budget and savings data, not guesswork.',
+                'The Purchase Decision Matrix scores each item on Need, Urgency, Budget fit, and Savings progress (0–5 stars each) plus an overall Readiness percentage.',
+                'The Link With Budget Planner panel shows your monthly budget remaining, total planned purchases, and what\'s left after them — so purchases and budgets never conflict.',
+                'Mark an item Purchased to log a real expense transaction for it automatically — nothing needs to be entered twice.',
+                'Every item keeps a Price History (tracks price changes over time) and an Activity Timeline; Analytics charts show Must vs. Should vs. Nice ratio and Monthly Planned vs. Completed purchases.'
+            ]}
+          ]},
+        { id: 'family-finance', icon: 'fa-users', title: 'Family Finance', href: '/family-finance',
+          tagline: 'A household workspace — share what you choose to, keep everything else private.',
+          groups: [
+            { heading: 'Household Setup', items: [
+                'Create a household (you become its Administrator) or accept an invitation someone sent you — you can only belong to one household at a time.',
+                'Invite a member by their email or username, with an optional relationship label (Spouse/Parent/Child/Other); they get a notification and can Accept or Decline.',
+                'Administrators can rename the household, transfer ownership to another member, remove a member, or delete the household outright.',
+                'Leaving — or being removed from — a household never touches your personal transactions, and your past shared expenses stay visible to the others for accountability.'
+            ]},
+            { heading: 'Shared Expenses &amp; Settlements', items: [
+                'Log a Shared Expense: it creates a real personal transaction for whoever paid, then splits it Equally, by Percentage, or by a Fixed Amount among household members.',
+                'The payer\'s own account balance updates exactly like any normal expense — nothing about your personal history is duplicated or faked.',
+                'The Settlement panel shows everyone\'s live balance (paid vs. fair share) and a Suggested Settlement — the minimum number of payments needed to zero everyone out.',
+                'Record a Settlement as a simple ledger note whenever money actually changes hands between members — it nets against the running balance immediately.'
+            ]},
+            { heading: 'Household Budgets &amp; Goals', items: [
+                'An administrator can cap a category\'s spending household-wide (e.g. "Groceries: ৳15,000/month"), measured against everyone\'s shared expenses in that category that month, with On Track / Near Limit / Exceeded status.',
+                'Any member can start a joint Household Goal (e.g. "Family Vacation Fund") with a target amount and optional target date.',
+                'Contribute your own money toward a goal — it\'s a real personal savings transaction that gets linked in, with a full per-member contribution breakdown always visible.',
+                'A goal automatically marks itself Achieved once contributions reach the target, and everyone is notified; archiving a goal stops new contributions while keeping its history, and it can only be deleted outright if it never received a contribution.'
+            ]},
+            { heading: 'Dashboard &amp; Notifications', items: [
+                'The Family Summary card on your main Dashboard shows this month\'s total shared spending, your net balance, member count, and shared-expense count at a glance.',
+                'Notifications keep everyone in the loop automatically: invites, accepted/declined invites, being removed, shared expenses added, settlements recorded, and goals achieved.'
+            ]}
+          ]},
+        { id: 'achievements', icon: 'fa-trophy', title: 'Achievements', href: '/achievements',
+          tagline: 'Earn XP, level up, and build good financial habits through gamification.',
+          groups: [
+            { heading: 'What you can do', items: [
+                'Earn XP for real actions across the app — logging transactions, staying within budget, hitting savings goals, and more — which levels you up over time.',
+                'Track a daily Streak and see it front and center on the Overview tab, alongside your level, XP progress to the next level, and achievement count.',
+                'Unlock Achievements (badges) for milestones, viewable in a dedicated grid on the Achievements tab.',
+                'Complete rotating monthly Challenges on the Challenges tab for extra XP.',
+                'Review your full Recent XP History log to see exactly what earned you points and when.',
+                'Turn gamification off entirely, or toggle individual pieces (notifications, the dashboard widget, celebration animations, challenges, streak tracking, and the XP display) from Settings → Achievements.'
+            ]}
+          ]},
+        { id: 'ai-assistant', icon: 'fa-robot', title: 'AI Financial Assistant', href: '/ai-assistant',
+          tagline: 'A chat assistant that reasons over your own real financial data.',
+          groups: [
+            { heading: 'What you can do', items: [
+                'Ask it anything about your finances in plain language — it reads your actual transactions, budgets, and goals to answer, not generic advice.',
+                'Keep multiple separate conversations (New Chat + a conversation list, like a chat app) so different questions don\'t get mixed together.',
+                'Suggested questions and quick-action prompts appear when you start a new chat, if you\'re not sure what to ask.',
+                'Proactive Insights, Budget Coaching, Savings Coaching, Monthly Reports, and the Dashboard "Today\'s Insight" summary are all separately toggleable in Settings → AI Assistant.',
+                'Developer Mode (Settings → AI Assistant) shows a debug panel under every response with retrieved documents, similarity scores, tool calls, and token usage — useful if a response seems off.'
+            ]}
+          ]},
+        { id: 'receipt-scanner', icon: 'fa-camera', title: 'Receipt Scanner (OCR)', href: '/transactions',
+          tagline: 'Snap a photo of a receipt and let OCR fill in the transaction for you.',
+          groups: [
+            { heading: 'What you can do', items: [
+                'Click Scan Receipt (on the Dashboard or Transactions page) and take a photo or choose an image file (JPG/PNG/WEBP, up to 10MB).',
+                'FinTrack extracts the merchant name, total amount, date, and a suggested category automatically — each pre-filled field shows a confidence indicator.',
+                'Review and correct any field before saving — nothing posts until you click Confirm &amp; Save; you can also view the raw extracted OCR text.',
+                'Every transaction created this way keeps its original receipt image attached — reopen it anytime to view, download, replace, or delete the photo.',
+                'Turn the feature on or off from Settings → Receipt Scanner.'
+            ]}
+          ]},
+        { id: 'voice-assistant', icon: 'fa-microphone', title: 'Voice Assistant', href: null,
+          tagline: 'Speak a transaction, note, or to-do instead of typing it — from any page.',
+          groups: [
+            { heading: 'What you can do', items: [
+                'Open it from the floating microphone button or the Ctrl+Shift+V shortcut, available on every page.',
+                'Speak naturally to log an Expense, Income, Savings, or Transfer, add a Note or To-Do, or ask a Query about your finances.',
+                'If a command is ambiguous, FinTrack asks a quick follow-up instead of guessing wrong — and if it truly can\'t parse it, it routes the request to the AI chat instead.',
+                'Review your full voice command history — including what was understood and its outcome — in Settings → Voice Assistant.',
+                'Turn voice commands on or off, and set the recognition language, from Settings → Voice Assistant (English (US) today; Bangla and mixed Bangla-English are planned).'
+            ]}
+          ]},
+        { id: 'calculator', icon: 'fa-calculator', title: 'Calculator', action: 'calculator',
+          tagline: 'A draggable on-screen calculator available from any page.',
+          groups: [
+            { heading: 'What you can do', items: [
+                'Open it from the sidebar\'s Calculator button — it floats over whatever page you\'re on, and can be dragged, pinned, or minimized.',
+                'Full memory functions (MC/MR/M+/M−) alongside standard operations, percent, and sign toggle.',
+                'A History panel keeps a running log of your recent calculations, with a one-click clear.'
+            ]}
+          ]},
+        { id: 'notifications', icon: 'fa-bell', title: 'Notifications', action: 'notifications',
+          tagline: 'Everything that needs your attention, in one bell-icon dropdown.',
+          groups: [
+            { heading: 'What triggers a notification', items: [
+                'Budget alerts — approaching or exceeding a category budget.',
+                'Savings goals achieved, and upcoming recurring bills.',
+                'Household activity — invites, accepted/declined invites, being removed, shared expenses added, settlements recorded, and household goals achieved.',
+                'Click the bell icon anywhere in the app to view, click through to, or mark-all-read your notifications.'
+            ]}
+          ]},
+        { id: 'settings', icon: 'fa-cog', title: 'Settings', href: '/settings',
+          tagline: 'Every account, category, and app preference lives here, organized into sections.',
+          groups: [
+            { heading: 'Account Configuration', items: [
+                'Add and edit Bank, Mobile Money (MFS), Cash, and Credit Card accounts, each with a starting balance that everything else builds on.'
+            ]},
+            { heading: 'Categories', items: [
+                'Create custom Income, Expense, or Savings categories with your own icon and color.',
+                'Filter existing categories by type, and bulk-import or export them.'
+            ]},
+            { heading: 'Currency &amp; Localization', items: [
+                'Set your currency symbol, position, and decimal formatting — a live preview shows exactly how positive and negative amounts will look everywhere in the app.'
+            ]},
+            { heading: 'Appearance', items: [
+                'Pick a color theme and light/dark mode, adjust font size, and reorder or hide sidebar modules to match how you actually use the app.'
+            ]},
+            { heading: 'Security', items: [
+                'Change your password (with current/new/confirm fields and show/hide toggles).',
+                'Export your Transactions or Categories to CSV directly from this section.',
+                'Danger Zone: permanently delete your account — this requires typing DELETE to confirm and cannot be undone.'
+            ]},
+            { heading: 'About', items: [
+                'App version and release notes, a star-rating feedback form, and a Report a Bug form.'
+            ]}
+          ]}
+    ];
+
+    function getManualChecklistKey() { return getUserStorageKey('finzin_manual_checklist'); }
+    function getManualSeenKey() { return getUserStorageKey('finzin_manual_seen'); }
+
+    function loadManualChecklistDone() {
+        try { return JSON.parse(localStorage.getItem(getManualChecklistKey()) || '[]'); } catch (e) { return []; }
+    }
+    function saveManualChecklistDone(arr) {
+        try { localStorage.setItem(getManualChecklistKey(), JSON.stringify(arr)); } catch (e) {}
+    }
+
+    function injectUserManualModal() {
+        if (document.getElementById('userManualModal')) return;
+
+        var guideAccordionHtml = MODULE_GUIDE.map(function (m) {
+            var groupsHtml = m.groups.map(function (g) {
+                var bulletsHtml = g.items.map(function (item) { return '<li>' + item + '</li>'; }).join('');
+                return '<div class="um-guide-group">' +
+                    '<div class="um-guide-group-heading">' + g.heading + '</div>' +
+                    '<ul class="um-guide-bullets">' + bulletsHtml + '</ul>' +
+                    '</div>';
+            }).join('');
+            var openBtnHtml = (m.href || m.action)
+                ? '<button type="button" class="btn btn-sm btn-primary um-guide-open-btn" data-href="' + (m.href || '') + '" data-action="' + (m.action || '') + '">Open ' + m.title + ' <i class="fas fa-arrow-right ms-1"></i></button>'
+                : '';
+            return '<div class="accordion-item" data-guide-id="' + m.id + '">' +
+                '<h2 class="accordion-header">' +
+                '<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#umGuide-' + m.id + '">' +
+                '<span class="um-guide-icon"><i class="fas ' + m.icon + '"></i></span>' +
+                '<span class="um-guide-headtext"><span class="um-guide-title">' + m.title + '</span><span class="um-guide-tagline">' + m.tagline + '</span></span>' +
+                '</button></h2>' +
+                '<div id="umGuide-' + m.id + '" class="accordion-collapse collapse" data-bs-parent="#umGuideAccordion">' +
+                '<div class="accordion-body">' + groupsHtml + openBtnHtml + '</div>' +
+                '</div></div>';
+        }).join('');
+
+        var workflowHtml = MANUAL_WORKFLOW.map(function (w, i) {
+            var arrow = i < MANUAL_WORKFLOW.length - 1 ? '<div class="um-flow-arrow"><i class="fas fa-chevron-right"></i></div>' : '';
+            return '<div class="um-flow-step" style="--um-d:' + i + '">' +
+                '<div class="um-flow-num">' + (i + 1) + '</div>' +
+                '<div class="um-flow-icon"><i class="fas ' + w.icon + '"></i></div>' +
+                '<div class="um-flow-title">' + w.title + '</div>' +
+                '<div class="um-flow-desc">' + w.desc + '</div>' +
+                '</div>' + arrow;
+        }).join('');
+
+        var wrapper = document.createElement('div');
+        wrapper.innerHTML = `
+        <div class="modal fade" id="userManualModal" tabindex="-1" aria-labelledby="userManualModalTitle" aria-modal="true" role="dialog">
+          <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="userManualModalTitle"><i class="fas fa-book-open me-2"></i>User Manual &amp; Getting Started</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body p-0">
+                <div class="um-layout">
+                  <div class="um-nav" role="tablist" aria-orientation="vertical">
+                    <button class="um-nav-item active" data-um-tab="welcome" type="button" role="tab"><i class="fas fa-hand-sparkles"></i><span>Welcome</span></button>
+                    <button class="um-nav-item" data-um-tab="checklist" type="button" role="tab"><i class="fas fa-list-check"></i><span>Getting Started</span><span class="um-nav-badge" id="umChecklistBadge"></span></button>
+                    <button class="um-nav-item" data-um-tab="workflow" type="button" role="tab"><i class="fas fa-diagram-project"></i><span>How It Works</span></button>
+                    <button class="um-nav-item" data-um-tab="features" type="button" role="tab"><i class="fas fa-book"></i><span>Module Guide</span></button>
+                  </div>
+                  <div class="um-content">
+                    <div class="um-pane active" data-um-pane="welcome">
+                      <div class="um-welcome-hero">
+                        <i class="fas fa-seedling um-hero-icon"></i>
+                        <h4>Welcome to FinTrack!</h4>
+                        <p class="text-muted">Your all-in-one personal finance companion — track spending, plan budgets, manage assets, and get AI-powered coaching, all in one place.</p>
+                      </div>
+                      <div class="um-welcome-grid">
+                        <div class="um-welcome-item"><i class="fas fa-bolt"></i><div><strong>Built for speed</strong><span>Bulk import, receipt scanning, and quick-add shortcuts.</span></div></div>
+                        <div class="um-welcome-item"><i class="fas fa-chart-line"></i><div><strong>Always in view</strong><span>One dashboard for balances, budgets, and forecasts.</span></div></div>
+                        <div class="um-welcome-item"><i class="fas fa-robot"></i><div><strong>AI on your side</strong><span>Personalized insights as soon as you have a bit of history.</span></div></div>
+                      </div>
+                      <button class="btn btn-primary mt-2" id="umGoToChecklistBtn" type="button"><i class="fas fa-list-check me-1"></i>Start the Getting Started Checklist <i class="fas fa-arrow-right ms-1"></i></button>
+                    </div>
+                    <div class="um-pane" data-um-pane="checklist">
+                      <div class="um-checklist-head">
+                        <h5><i class="fas fa-flag-checkered me-2"></i>What to set up first</h5>
+                        <p class="text-muted small mb-2">New here? Follow this order — each step builds on the last, so your budgets and AI insights stay accurate from day one.</p>
+                        <div class="um-progress-track"><div class="um-progress-fill" id="umProgressFill" style="width:0%"></div></div>
+                        <div class="um-progress-label" id="umProgressLabel">0 of ${MANUAL_CHECKLIST.length} complete</div>
+                      </div>
+                      <div class="um-checklist" id="umChecklist"></div>
+                    </div>
+                    <div class="um-pane" data-um-pane="workflow">
+                      <h5><i class="fas fa-diagram-project me-2"></i>How FinTrack Fits Together</h5>
+                      <p class="text-muted small">The typical flow through the app, month after month:</p>
+                      <div class="um-flow">${workflowHtml}</div>
+                      <div class="um-flow-note"><i class="fas fa-lightbulb me-2"></i>At the start of each month: review last month in the AI Coach, set a fresh Budget Plan, then just keep logging as you go — the dashboard and forecasts stay current automatically.</div>
+                    </div>
+                    <div class="um-pane" data-um-pane="features">
+                      <h5><i class="fas fa-book me-2"></i>Module Guide</h5>
+                      <p class="text-muted small">Every module, in detail — expand one to see exactly what it can do, or search to jump straight to it.</p>
+                      <div class="um-guide-search-wrap">
+                        <i class="fas fa-search"></i>
+                        <input type="text" class="um-guide-search" id="umGuideSearch" placeholder="Search modules & features…">
+                      </div>
+                      <div class="accordion accordion-flush um-guide-accordion" id="umGuideAccordion">${guideAccordionHtml}</div>
+                      <div class="um-guide-empty d-none" id="umGuideEmpty"><i class="fas fa-magnifying-glass-minus mb-2 d-block" style="font-size:1.8rem;opacity:.4"></i>No modules match "<span id="umGuideEmptyTerm"></span>".</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+        document.body.appendChild(wrapper.firstElementChild);
+        wireUserManualModal();
+    }
+
+    function wireUserManualModal() {
+        var modalEl = document.getElementById('userManualModal');
+        if (!modalEl) return;
+
+        modalEl.querySelectorAll('.um-nav-item').forEach(function (btn) {
+            btn.addEventListener('click', function () { switchManualTab(btn.dataset.umTab); });
+        });
+
+        var goBtn = document.getElementById('umGoToChecklistBtn');
+        if (goBtn) goBtn.addEventListener('click', function () { switchManualTab('checklist'); });
+
+        modalEl.querySelectorAll('.um-guide-open-btn').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var action = btn.dataset.action;
+                var href = btn.dataset.href;
+                if (action === 'calculator') {
+                    bootstrap.Modal.getInstance(modalEl).hide();
+                    if (typeof window.toggleCalc === 'function') window.toggleCalc();
+                } else if (action === 'notifications') {
+                    bootstrap.Modal.getInstance(modalEl).hide();
+                    toggleNotificationPanel();
+                } else if (href) {
+                    window.location.href = href;
+                }
+            });
+        });
+
+        var guideSearch = document.getElementById('umGuideSearch');
+        if (guideSearch) guideSearch.addEventListener('input', function () { filterModuleGuide(guideSearch.value); });
+    }
+
+    function filterModuleGuide(term) {
+        var modalEl = document.getElementById('userManualModal');
+        if (!modalEl) return;
+        var normalized = (term || '').trim().toLowerCase();
+        var items = modalEl.querySelectorAll('.um-guide-accordion .accordion-item');
+        var visibleCount = 0;
+        items.forEach(function (item) {
+            var matches = !normalized || item.textContent.toLowerCase().indexOf(normalized) !== -1;
+            item.classList.toggle('um-guide-hidden', !matches);
+            if (matches) visibleCount++;
+        });
+        var empty = document.getElementById('umGuideEmpty');
+        var emptyTerm = document.getElementById('umGuideEmptyTerm');
+        if (empty) empty.classList.toggle('d-none', visibleCount > 0 || !normalized);
+        if (emptyTerm) emptyTerm.textContent = term || '';
+    }
+
+    function switchManualTab(tab) {
+        var modalEl = document.getElementById('userManualModal');
+        if (!modalEl) return;
+        modalEl.querySelectorAll('.um-nav-item').forEach(function (btn) {
+            btn.classList.toggle('active', btn.dataset.umTab === tab);
+        });
+        modalEl.querySelectorAll('.um-pane').forEach(function (pane) {
+            pane.classList.toggle('active', pane.dataset.umPane === tab);
+        });
+    }
+
+    function renderManualChecklist() {
+        var container = document.getElementById('umChecklist');
+        if (!container) return;
+        var done = loadManualChecklistDone();
+        container.innerHTML = MANUAL_CHECKLIST.map(function (step, i) {
+            var isDone = done.indexOf(step.id) !== -1;
+            return '<div class="um-check-item' + (isDone ? ' done' : '') + '" data-step="' + step.id + '">' +
+                '<button type="button" class="um-check-box" aria-label="Mark ' + step.title + '" aria-pressed="' + isDone + '"><i class="fas fa-check"></i></button>' +
+                '<div class="um-check-num">' + (i + 1) + '</div>' +
+                '<div class="um-check-icon"><i class="fas ' + step.icon + '"></i></div>' +
+                '<div class="um-check-text"><div class="um-check-title">' + step.title + '</div><div class="um-check-desc">' + step.desc + '</div></div>' +
+                '<a href="' + step.href + '" class="btn btn-sm btn-outline-primary um-check-link">' + step.linkLabel + ' <i class="fas fa-arrow-right ms-1"></i></a>' +
+                '</div>';
+        }).join('');
+
+        container.querySelectorAll('.um-check-box').forEach(function (box) {
+            box.addEventListener('click', function () {
+                var item = box.closest('.um-check-item');
+                toggleManualStep(item.dataset.step, item);
+            });
+        });
+
+        updateManualProgress(done);
+    }
+
+    function toggleManualStep(stepId, itemEl) {
+        var done = loadManualChecklistDone();
+        var idx = done.indexOf(stepId);
+        if (idx === -1) { done.push(stepId); } else { done.splice(idx, 1); }
+        saveManualChecklistDone(done);
+
+        var nowDone = done.indexOf(stepId) !== -1;
+        if (itemEl) {
+            itemEl.classList.toggle('done', nowDone);
+            var box = itemEl.querySelector('.um-check-box');
+            if (box) box.setAttribute('aria-pressed', nowDone);
+            if (nowDone) {
+                itemEl.classList.add('um-pop');
+                setTimeout(function () { itemEl.classList.remove('um-pop'); }, 400);
+            }
+        }
+        updateManualProgress(done);
+    }
+
+    function updateManualProgress(done) {
+        var total = MANUAL_CHECKLIST.length;
+        var count = done.length;
+        var pct = total ? Math.round((count / total) * 100) : 0;
+        var fill = document.getElementById('umProgressFill');
+        var label = document.getElementById('umProgressLabel');
+        var navBadge = document.getElementById('umChecklistBadge');
+        if (fill) fill.style.width = pct + '%';
+        if (label) label.textContent = count + ' of ' + total + ' complete' + (count === total ? ' 🎉' : '');
+        if (navBadge) navBadge.textContent = count > 0 ? (count + '/' + total) : '';
+    }
+
+    function updateManualBadgeVisibility() {
+        var dot = document.getElementById('manualBadgeDot');
+        if (!dot) return;
+        var seen = localStorage.getItem(getManualSeenKey()) === 'true';
+        dot.classList.toggle('d-none', seen);
+    }
+
+    function markManualSeen() {
+        try { localStorage.setItem(getManualSeenKey(), 'true'); } catch (e) {}
+        updateManualBadgeVisibility();
+    }
+
+    function openUserManual() {
+        injectUserManualModal();
+        renderManualChecklist();
+        markManualSeen();
+        var modalEl = document.getElementById('userManualModal');
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+    window.openUserManual = openUserManual;
+
+    // ── Sidebar Customizer Modal ──────────────────────────────────────────────
+    function injectSidebarCustomizerModal() {
+        if (document.getElementById('sidebarCustomizerModal')) return;
+        var modal = document.createElement('div');
+        modal.id = 'sidebarCustomizerModal';
+        modal.className = 'modal fade';
+        modal.setAttribute('tabindex', '-1');
+        modal.setAttribute('aria-labelledby', 'sidebarCustomizerTitle');
+        modal.setAttribute('aria-modal', 'true');
+        modal.setAttribute('role', 'dialog');
+        modal.innerHTML = `
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="sidebarCustomizerTitle"><i class="fas fa-sliders-h me-2"></i>Customize Sidebar</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <p class="text-muted small mb-3">Drag modules to reorder. Toggle visibility. Pin favorites to the top. <strong>Home</strong>, <strong>Settings</strong>, and <strong>Logout</strong> cannot be hidden.</p>
+              <div class="input-group mb-3">
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                <input type="text" id="customizerSearch" class="form-control" placeholder="Search modules…" aria-label="Search modules">
+              </div>
+              <div id="customizerList" class="list-group" role="list" aria-label="Sidebar modules">
+              </div>
+            </div>
+            <div class="modal-footer d-flex justify-content-between">
+              <button type="button" class="btn btn-outline-danger btn-sm" id="customizerRestoreBtn">
+                <i class="fas fa-undo me-1"></i>Restore Defaults
+              </button>
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary btn-sm" id="customizerSaveBtn">
+                  <i class="fas fa-save me-1"></i>Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+        document.body.appendChild(modal);
+    }
+
+    function openSidebarCustomizer() {
+        injectSidebarCustomizerModal();
+        var prefs = loadSidebarPrefs();
+        var prefMap = {};
+        prefs.forEach(function(p) { prefMap[p.id] = p; });
+
+        // Build working copy
+        var working = SIDEBAR_MODULES.map(function(m, i) {
+            var p = prefMap[m.id] || { id: m.id, visible: true, pinned: false, displayOrder: i };
+            return { id: m.id, visible: !!p.visible, pinned: !!p.pinned, displayOrder: p.displayOrder || i,
+                     label: m.label, icon: m.icon, locked: !!m.locked };
+        });
+        working.sort(function(a,b) { return a.displayOrder - b.displayOrder; });
+
+        function renderList(filter) {
+            var list = document.getElementById('customizerList');
+            list.innerHTML = '';
+            working.forEach(function(item, idx) {
+                if (filter && item.label.toLowerCase().indexOf(filter.toLowerCase()) === -1) return;
+                var li = document.createElement('div');
+                li.className = 'list-group-item list-group-item-action d-flex align-items-center gap-3 px-3 py-2';
+                li.setAttribute('draggable', 'true');
+                li.setAttribute('data-id', item.id);
+                li.setAttribute('role', 'listitem');
+                li.style.cursor = item.locked ? 'default' : 'grab';
+
+                var dragHandle = item.locked ? '<span style="width:16px;display:inline-block;"></span>' :
+                    '<span class="drag-handle text-muted" title="Drag to reorder" style="cursor:grab;font-size:1.1rem;"><i class="fas fa-grip-vertical"></i></span>';
+
+                var pinClass = item.pinned ? 'text-warning' : 'text-muted';
+                var pinTitle = item.pinned ? 'Unpin' : 'Pin to top';
+                var pinBtn = item.locked ? '<span style="width:28px;display:inline-block;"></span>' :
+                    '<button class="btn btn-sm p-0 border-0 pin-btn ' + pinClass + '" title="' + pinTitle + '" style="width:28px;" aria-label="' + pinTitle + '" aria-pressed="' + item.pinned + '">' +
+                    '<i class="fas fa-thumbtack"></i></button>';
+
+                var toggleDisabled = item.locked ? 'disabled title="Cannot hide"' : '';
+                var toggleChecked = item.visible ? 'checked' : '';
+                var toggleHtml = '<div class="form-check form-switch mb-0" style="padding-left:0;">' +
+                    '<input class="form-check-input vis-toggle" type="checkbox" ' + toggleChecked + ' ' + toggleDisabled +
+                    ' id="vis_' + item.id + '" aria-label="Toggle visibility of ' + item.label + '" style="cursor:' + (item.locked ? 'not-allowed' : 'pointer') + ';margin-left:0;"></div>';
+
+                li.innerHTML = dragHandle + '<i class="' + item.icon + ' sidebar-icon me-1" style="width:18px;text-align:center;"></i>' +
+                    '<span class="flex-grow-1 fw-medium">' + item.label + (item.locked ? ' <span class="badge bg-secondary ms-1" style="font-size:0.65rem;">locked</span>' : '') + '</span>' +
+                    pinBtn + toggleHtml;
+
+                // Visibility toggle
+                var toggle = li.querySelector('.vis-toggle');
+                if (toggle && !item.locked) {
+                    toggle.addEventListener('change', function() {
+                        item.visible = this.checked;
+                        li.classList.toggle('opacity-50', !this.checked);
+                    });
+                }
+                if (!item.visible) li.classList.add('opacity-50');
+
+                // Pin button
+                var pinBtnEl = li.querySelector('.pin-btn');
+                if (pinBtnEl) {
+                    pinBtnEl.addEventListener('click', function() {
+                        item.pinned = !item.pinned;
+                        renderList(document.getElementById('customizerSearch').value);
+                    });
+                }
+
+                // Drag & drop
+                li.addEventListener('dragstart', function(e) {
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', item.id);
+                    li.classList.add('dragging');
+                });
+                li.addEventListener('dragend', function() { li.classList.remove('dragging'); });
+                li.addEventListener('dragover', function(e) {
+                    e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+                    li.classList.add('drag-over');
+                });
+                li.addEventListener('dragleave', function() { li.classList.remove('drag-over'); });
+                li.addEventListener('drop', function(e) {
+                    e.preventDefault(); li.classList.remove('drag-over');
+                    var fromId = e.dataTransfer.getData('text/plain');
+                    var fromIdx = working.findIndex(function(x) { return x.id === fromId; });
+                    var toIdx   = working.findIndex(function(x) { return x.id === item.id; });
+                    if (fromIdx !== -1 && toIdx !== -1 && fromIdx !== toIdx) {
+                        var moved = working.splice(fromIdx, 1)[0];
+                        working.splice(toIdx, 0, moved);
+                        working.forEach(function(x, i) { x.displayOrder = i; });
+                        renderList(document.getElementById('customizerSearch').value);
+                    }
+                });
+
+                list.appendChild(li);
+            });
+        }
+
+        renderList('');
+
+        document.getElementById('customizerSearch').oninput = function() { renderList(this.value); };
+
+        document.getElementById('customizerSaveBtn').onclick = function() {
+            working.forEach(function(x, i) { x.displayOrder = i; });
+            saveSidebarPrefs(working.map(function(x) {
+                return { id: x.id, visible: x.visible, pinned: x.pinned, displayOrder: x.displayOrder };
+            }));
+            bootstrap.Modal.getInstance(document.getElementById('sidebarCustomizerModal')).hide();
+            if (typeof window.reloadSidebar === 'function') window.reloadSidebar();
+        };
+
+        document.getElementById('customizerRestoreBtn').onclick = function() {
+            if (!confirm('Restore the default sidebar layout? This will remove all customizations.')) return;
+            var defaults = getDefaultPrefs();
+            saveSidebarPrefs(defaults);
+            fetch('/api/sidebar-preferences', { method: 'DELETE' }).catch(function(){});
+            bootstrap.Modal.getInstance(document.getElementById('sidebarCustomizerModal')).hide();
+            if (typeof window.reloadSidebar === 'function') window.reloadSidebar();
+        };
+
+        var bsModal = new bootstrap.Modal(document.getElementById('sidebarCustomizerModal'));
+        bsModal.show();
+    }
+
     function init() {
         // Apply theme immediately to prevent flash of wrong theme
         initTheme();
+        // Reconcile with the server's per-user value (e.g. this is a new browser/device)
+        syncAppearanceFromServer();
 
         const sidebar = buildSidebar();
 
@@ -637,7 +1677,10 @@
         });
         injectProfileModal();
         injectCalculator();
+        injectVoiceAssistantWidget();
         injectNotificationPanel();
+        injectConfirmModal();
+        injectUserManualModal();
 
         // Wire up calculator sidebar button
         var calcBtn = document.getElementById('calcSidebarBtn');
@@ -658,6 +1701,78 @@
             });
         }
         refreshUnreadBadge();
+        checkForMilestoneCelebration();
+
+        // Wire up User Manual button
+        var manualBtn = document.getElementById('userManualBtn');
+        if (manualBtn) {
+            manualBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                openUserManual();
+            });
+        }
+        updateManualBadgeVisibility();
+
+        // Wire up Voice Assistant FAB + keyboard shortcut
+        var voiceFab = document.getElementById('voiceAssistantFab');
+        if (voiceFab) {
+            voiceFab.addEventListener('click', function () {
+                if (typeof window.openVoiceAssistant === 'function') window.openVoiceAssistant();
+            });
+        }
+        document.addEventListener('keydown', function (e) {
+            if (e.ctrlKey && e.shiftKey && (e.key === 'V' || e.key === 'v')) {
+                e.preventDefault();
+                if (typeof window.openVoiceAssistant === 'function') window.openVoiceAssistant();
+            }
+        });
+
+        // First-time visitors landing on the dashboard get a one-time automatic
+        // intro to the User Manual, answering "what should I set up first?"
+        var landingPath = window.location.pathname.replace(/^\//, '');
+        if ((landingPath === 'dashboard' || landingPath === '') && localStorage.getItem(getManualSeenKey()) !== 'true') {
+            setTimeout(function () { openUserManual(); }, 1200);
+        }
+
+        // Apply compact mode
+        if (localStorage.getItem(COMPACT_KEY) === 'true') {
+            document.body.classList.add('sidebar-compact');
+        }
+
+        // Expose customizer globally
+        window.openSidebarCustomizer = openSidebarCustomizer;
+        window.reloadSidebar = function() {
+            var old = document.getElementById('sidebar');
+            if (old) {
+                var newSidebar = buildSidebar();
+                old.parentNode.replaceChild(newSidebar, old);
+                initWireup(newSidebar);
+            }
+        };
+    }
+
+    function initWireup(sidebar) {
+        setActiveItem(sidebar);
+        var t = document.getElementById('sidebarToggleBtn');
+        if (t) t.addEventListener('click', toggleSidebar);
+        var th = document.getElementById('themeToggleBtn');
+        if (th) th.addEventListener('click', toggleTheme);
+        var pr = document.getElementById('sidebarProfileBtn');
+        if (pr) pr.addEventListener('click', openProfileModal);
+        var lo = document.getElementById('sidebarLogoutBtn');
+        if (lo) lo.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (typeof logout === 'function') logout();
+            else { localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href = '/login'; }
+        });
+        var calcBtn = document.getElementById('calcSidebarBtn');
+        if (calcBtn) calcBtn.addEventListener('click', function() { if (typeof window.toggleCalc === 'function') window.toggleCalc(); });
+        var notifBtn = document.getElementById('notificationBellBtn');
+        if (notifBtn) notifBtn.addEventListener('click', function(e) { e.stopPropagation(); toggleNotificationPanel(); });
+        refreshUnreadBadge();
+        var manualBtn = document.getElementById('userManualBtn');
+        if (manualBtn) manualBtn.addEventListener('click', function(e) { e.stopPropagation(); openUserManual(); });
+        updateManualBadgeVisibility();
     }
 
     // Expose for debugging/external use

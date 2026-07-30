@@ -49,6 +49,24 @@
             line-height: 1.4;
             word-break: break-word;
         }
+        .note-card-header-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        .note-card-header-row .note-title { margin-bottom: 8px; flex: 1; }
+        .note-done-checkbox {
+            width: 18px;
+            height: 18px;
+            margin-top: 2px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .note-card.done { opacity: 0.72; }
+        .note-card.done .note-title {
+            text-decoration: line-through;
+            color: rgba(0,0,0,0.55);
+        }
         .note-preview {
             font-size: 0.865rem;
             color: #374151;
@@ -249,14 +267,16 @@
         .ql-editor p { margin: 0 0 4px; }
         .ql-editor ol, .ql-editor ul { padding-left: 1.6rem; margin: 4px 0; }
         .ql-editor li { margin: 2px 0; }
-        /* Checklist */
-        .ql-editor li[data-list='check'] {
+        /* Checklist — Quill's own checkbox-click handler (formats/list.js) only recognizes
+           data-list="unchecked"/"checked" as toggleable states, not "check". */
+        .ql-editor li[data-list='unchecked'],
+        .ql-editor li[data-list='checked'] {
             list-style: none;
             position: relative;
             padding-left: 1.5rem;
-            pointer-events: none;
         }
-        .ql-editor li[data-list='check'] > .ql-ui {
+        .ql-editor li[data-list='unchecked'] > .ql-ui,
+        .ql-editor li[data-list='checked'] > .ql-ui {
             position: absolute;
             left: 0;
             top: 2px;
@@ -265,15 +285,15 @@
             width: 16px;
             height: 16px;
         }
-        .ql-editor li[data-list='check'] > .ql-ui::before {
+        .ql-editor li[data-list='unchecked'] > .ql-ui::before,
+        .ql-editor li[data-list='checked'] > .ql-ui::before {
             content: '☐';
             font-size: 1rem;
             line-height: 1;
             color: var(--text-body);
         }
-        .ql-editor li[data-list='check'].ql-checked > .ql-ui::before { content: '☑'; color: var(--accent-color); }
-        .ql-editor li[data-list='check'].ql-checked { opacity: 0.7; }
-        .ql-editor li[data-list='check'] { pointer-events: auto; }
+        .ql-editor li[data-list='checked'] > .ql-ui::before { content: '☑'; color: var(--accent-color); }
+        .ql-editor li[data-list='checked'] { opacity: 0.7; }
         /* Scrollbar */
         .ql-editor::-webkit-scrollbar { width: 5px; }
         .ql-editor::-webkit-scrollbar-track { background: transparent; }
@@ -317,9 +337,65 @@
             align-items: center;
             gap: 5px;
         }
+
+        /* ═══ TAG EDITOR ═══════════════════════════════════════ */
+        .note-tag-editor {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 10px;
+            border: 1px solid var(--border-color, #d1d5db);
+            border-radius: 8px;
+            background: var(--bg-input, var(--bg-card));
+        }
+        .note-tag-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .note-tag-editor-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.78rem;
+            font-weight: 500;
+            padding: 3px 6px 3px 10px;
+            border-radius: 20px;
+            background: var(--nav-active-bg, rgba(37,95,56,0.14));
+            color: var(--accent-color);
+            white-space: nowrap;
+        }
+        .note-tag-chip-remove {
+            border: none;
+            background: none;
+            color: inherit;
+            opacity: 0.7;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0 2px;
+            font-size: 0.95rem;
+        }
+        .note-tag-chip-remove:hover { opacity: 1; }
+        .note-tag-input {
+            flex: 1;
+            min-width: 120px;
+            border: none;
+            outline: none;
+            background: transparent;
+            color: var(--text-body);
+            font-size: 0.88rem;
+            padding: 4px 2px;
+        }
+
+        /* ═══ AUTO-SAVE STATUS ══════════════════════════════════ */
+        .note-save-status {
+            font-size: 0.78rem;
+            color: var(--text-muted, #94a3b8);
+            margin-right: auto;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
+
+<div id="toastContainer" class="notification-toast-container" aria-live="polite" aria-atomic="true"></div>
 
 <div class="container-fluid mt-4">
     <div class="row mb-3">
@@ -340,6 +416,8 @@
     <div class="filter-bar">
         <button class="filter-btn active" onclick="filterNotes('all', this)">All</button>
         <button class="filter-btn" onclick="filterNotes('pinned', this)">📌 Pinned</button>
+        <button class="filter-btn" onclick="filterNotes('done', this)">✅ Done</button>
+        <button class="filter-btn" onclick="filterNotes('archived', this)">🗄️ Archived</button>
     </div>
 
     <div class="notes-grid" id="notesContainer">
@@ -386,7 +464,7 @@
                             <!-- Lists -->
                             <button type="button" class="tb-btn" data-fmt="list" data-val="bullet" title="Bullet List"><i class="fas fa-list-ul"></i></button>
                             <button type="button" class="tb-btn" data-fmt="list" data-val="ordered" title="Numbered List"><i class="fas fa-list-ol"></i></button>
-                            <button type="button" class="tb-btn" data-fmt="list" data-val="check" title="Checklist"><i class="fas fa-check-square"></i></button>
+                            <button type="button" class="tb-btn" data-fmt="list" data-val="unchecked" title="Checklist"><i class="fas fa-check-square"></i></button>
                             <span class="tb-sep"></span>
                             <!-- Alignment -->
                             <button type="button" class="tb-btn" data-fmt="align" data-val="" title="Align Left"><i class="fas fa-align-left"></i></button>
@@ -404,22 +482,34 @@
                     <div class="note-color-swatches" id="noteColorSwatches"></div>
                 </div>
 
-                <!-- Tags + Pin row -->
-                <div class="row g-3">
-                    <div class="col-md-8">
-                        <label class="note-field-label"><i class="fas fa-tag"></i> Tags</label>
-                        <input type="text" class="form-control" id="noteTags" placeholder="e.g., work, personal, finance">
+                <!-- Tags -->
+                <div class="mb-3">
+                    <label class="note-field-label"><i class="fas fa-tag"></i> Tags</label>
+                    <div class="note-tag-editor" id="noteTagEditor">
+                        <div class="note-tag-chips" id="noteTagChips"></div>
+                        <input type="text" class="note-tag-input" id="noteTagInput" placeholder="Type a tag and press Enter or ,">
                     </div>
-                    <div class="col-md-4 d-flex align-items-end pb-1">
+                </div>
+
+                <!-- Pin + Done row -->
+                <div class="row g-3">
+                    <div class="col-md-6">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="notePinned">
                             <label class="form-check-label fw-500" for="notePinned">📌 Pin this note</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="noteDone">
+                            <label class="form-check-label fw-500" for="noteDone">✅ Mark as done</label>
                         </div>
                     </div>
                 </div>
 
             </div>
             <div class="modal-footer">
+                <span class="note-save-status" id="noteSaveStatus"></span>
                 <button type="button" class="btn btn-secondary btn-sm px-4" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary btn-sm px-4" onclick="saveNote()">
                     <i class="fas fa-save me-1"></i>Save Note
@@ -450,382 +540,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
-<script>
-/* ═══════════════════════════════════════════════════════════════
-   Note Colors — 12 pastel swatches
-═══════════════════════════════════════════════════════════════ */
-const NOTE_COLORS = [
-    { hex: '#FFFFFF', name: 'White' },
-    { hex: '#F3F4F6', name: 'Light Gray' },
-    { hex: '#DBEAFE', name: 'Light Blue' },
-    { hex: '#BFDBFE', name: 'Sky Blue' },
-    { hex: '#D1FAE5', name: 'Mint Green' },
-    { hex: '#DCFCE7', name: 'Light Green' },
-    { hex: '#FEF3C7', name: 'Light Yellow' },
-    { hex: '#FED7AA', name: 'Light Orange' },
-    { hex: '#FBCFE8', name: 'Light Pink' },
-    { hex: '#E9D5FF', name: 'Lavender' },
-    { hex: '#DDD6FE', name: 'Light Purple' },
-    { hex: '#FDE68A', name: 'Peach' }
-];
-
-/* ═══════════════════════════════════════════════════════════════
-   State
-═══════════════════════════════════════════════════════════════ */
-let allNotes = [];
-let currentFilter = 'all';
-let editingNoteId = null;
-let deleteNoteId = null;
-let deleteNoteModal = null;
-let quill = null;
-let selectedColor = '#FEF3C7';
-
-/* ═══════════════════════════════════════════════════════════════
-   Init
-═══════════════════════════════════════════════════════════════ */
-document.addEventListener('DOMContentLoaded', function () {
-    deleteNoteModal = new bootstrap.Modal(document.getElementById('deleteNoteModal'));
-    document.getElementById('confirmDeleteNoteBtn').addEventListener('click', confirmDeleteNote);
-    buildColorSwatches();
-    initQuill();
-    loadNotes();
-});
-
-/* ═══════════════════════════════════════════════════════════════
-   Quill editor setup
-═══════════════════════════════════════════════════════════════ */
-function initQuill() {
-    quill = new Quill('#noteEditorArea', {
-        theme: 'snow',
-        placeholder: 'Write your note here… Use the toolbar for rich formatting.',
-        modules: { toolbar: false },
-        formats: ['header', 'bold', 'italic', 'underline', 'list', 'align', 'indent']
-    });
-
-    // Wire toolbar buttons
-    document.querySelectorAll('#noteEditorToolbar .tb-btn').forEach(function (btn) {
-        btn.addEventListener('mousedown', function (e) {
-            e.preventDefault(); // prevent editor blur
-            applyFormat(btn.dataset.fmt, btn.dataset.val);
-        });
-    });
-
-    // Update toolbar active state when selection or content changes
-    quill.on('selection-change', refreshToolbar);
-    quill.on('text-change', refreshToolbar);
-
-    // Prevent Quill from stealing focus when user clicks the Title or Tags inputs
-    ['noteTitle', 'noteTags'].forEach(function (id) {
-        var el = document.getElementById(id);
-        if (el) {
-            el.addEventListener('mousedown', function () { if (quill) quill.blur(); });
-            el.addEventListener('focus',     function () { if (quill) quill.blur(); });
-        }
-    });
-}
-
-function applyFormat(fmt, val) {
-    if (!quill) return;
-    const cur = quill.getFormat();
-    if (fmt === 'header') {
-        const h = val ? parseInt(val) : false;
-        quill.format('header', cur.header === h ? false : h, 'user');
-    } else if (fmt === 'bold' || fmt === 'italic' || fmt === 'underline') {
-        quill.format(fmt, !cur[fmt], 'user');
-    } else if (fmt === 'list') {
-        quill.format('list', cur.list === val ? false : val, 'user');
-    } else if (fmt === 'align') {
-        const v = val || false;
-        quill.format('align', (cur.align || '') === (val || '') ? false : v, 'user');
-    }
-    quill.focus();
-    setTimeout(refreshToolbar, 10);
-}
-
-function refreshToolbar() {
-    if (!quill) return;
-    const fmt = quill.getFormat();
-    document.querySelectorAll('#noteEditorToolbar .tb-btn').forEach(function (btn) {
-        const f = btn.dataset.fmt, v = btn.dataset.val || '';
-        let active = false;
-        if (f === 'header')    active = String(fmt.header || '') === v;
-        else if (f === 'bold')      active = !!fmt.bold;
-        else if (f === 'italic')    active = !!fmt.italic;
-        else if (f === 'underline') active = !!fmt.underline;
-        else if (f === 'list')      active = fmt.list === v;
-        else if (f === 'align')     active = (fmt.align || '') === v;
-        btn.classList.toggle('active', active);
-    });
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   Color swatches
-═══════════════════════════════════════════════════════════════ */
-function buildColorSwatches() {
-    const container = document.getElementById('noteColorSwatches');
-    container.innerHTML = NOTE_COLORS.map(function (c) {
-        const hasBorder = (c.hex === '#FFFFFF' || c.hex === '#F3F4F6');
-        return `<button type="button" class="color-swatch" data-color="${c.hex}"
-            style="background:${c.hex};box-shadow:inset 0 0 0 ${hasBorder ? '1.5px rgba(0,0,0,0.18)' : '0px transparent'}"
-            title="${c.name}" onclick="selectColor('${c.hex}')"></button>`;
-    }).join('');
-    selectColor(selectedColor);
-}
-
-function selectColor(hex) {
-    selectedColor = hex;
-    document.querySelectorAll('.color-swatch').forEach(function (s) {
-        s.classList.toggle('selected', s.dataset.color === hex);
-    });
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   Load notes from API
-═══════════════════════════════════════════════════════════════ */
-async function loadNotes() {
-    try {
-        const resp = await fetch('/api/notes');
-        allNotes = await resp.json();
-        renderNotes(applyFilter(allNotes, currentFilter));
-    } catch (err) {
-        console.error('Error loading notes:', err);
-        document.getElementById('notesContainer').innerHTML =
-            '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">Failed to load notes.</div>';
-    }
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   Display notes
-═══════════════════════════════════════════════════════════════ */
-function renderNotes(notes) {
-    const container = document.getElementById('notesContainer');
-    if (!notes.length) {
-        container.innerHTML = `
-            <div style="grid-column:1/-1;text-align:center;padding:56px 24px;color:var(--text-muted)">
-                <i class="fas fa-sticky-note" style="font-size:3.2rem;opacity:.35;margin-bottom:16px;display:block"></i>
-                <p style="font-size:1rem;margin:0">No notes found. Click <strong>+ New Note</strong> to get started!</p>
-            </div>`;
-        return;
-    }
-
-    container.innerHTML = notes.map(function (note) {
-        const dateStr = new Date(note.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-        const tagsHtml = note.tags ? note.tags.split(',').filter(Boolean).map(function (t) {
-            return `<span class="note-tag-chip">${escapeHtml(t.trim())}</span>`;
-        }).join('') : '';
-
-        return `
-        <div class="note-card${note.pinned ? ' pinned' : ''}" style="background-color:${escapeHtml(note.color || '#FEF3C7')}" onclick="editNote(${note.id})">
-            <div class="note-pin-icon" title="Pinned"><i class="fas fa-thumbtack"></i></div>
-            <div class="note-actions">
-                <button class="note-btn" onclick="event.stopPropagation();deleteNote(${note.id})" title="Delete">
-                    <i class="fas fa-trash text-danger" style="font-size:.78rem"></i>
-                </button>
-                <button class="note-btn" onclick="event.stopPropagation();togglePin(${note.id},${note.pinned})" title="${note.pinned ? 'Unpin' : 'Pin'}">
-                    <i class="fas fa-thumbtack ${note.pinned ? 'text-warning' : 'text-muted'}" style="font-size:.78rem"></i>
-                </button>
-            </div>
-            <div class="note-title">${escapeHtml(note.title)}</div>
-            <div class="note-preview">${escapeHtml(note.preview)}</div>
-            ${tagsHtml ? `<div class="note-tags-row">${tagsHtml}</div>` : ''}
-            <div class="note-footer"><span>${dateStr}</span></div>
-        </div>`;
-    }).join('');
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   Open modals
-═══════════════════════════════════════════════════════════════ */
-function openCreateNoteModal() {
-    editingNoteId = null;
-    document.getElementById('noteModalTitle').innerHTML = '<i class="fas fa-note-sticky me-2"></i>New Note';
-    document.getElementById('noteTitle').value = '';
-    document.getElementById('noteTags').value = '';
-    document.getElementById('notePinned').checked = false;
-    selectColor('#FEF3C7');
-    if (quill) {
-        quill.setText('', 'silent');
-        quill.history.clear();
-    }
-    new bootstrap.Modal(document.getElementById('noteModal')).show();
-    // Focus title field when modal finishes opening (not the Quill editor)
-    document.getElementById('noteModal').addEventListener('shown.bs.modal', function titleFocusCreate() {
-        document.getElementById('noteTitle').focus();
-        this.removeEventListener('shown.bs.modal', titleFocusCreate);
-    });
-}
-
-async function editNote(id) {
-    const note = allNotes.find(function (n) { return n.id === id; });
-    if (!note) return;
-
-    editingNoteId = id;
-    document.getElementById('noteModalTitle').innerHTML = '<i class="fas fa-edit me-2"></i>Edit Note';
-    document.getElementById('noteTitle').value = note.title;
-    document.getElementById('noteTags').value = note.tags || '';
-    document.getElementById('notePinned').checked = !!note.pinned;
-    selectColor(note.color || '#FEF3C7');
-
-    if (quill) {
-        if (note.content && note.content.trim()) {
-            quill.clipboard.dangerouslyPasteHTML(note.content, 'silent');
-        } else {
-            quill.setText('', 'silent');
-        }
-        quill.history.clear();
-    }
-
-    new bootstrap.Modal(document.getElementById('noteModal')).show();
-    // Focus title field when modal finishes opening (not the Quill editor)
-    document.getElementById('noteModal').addEventListener('shown.bs.modal', function titleFocusEdit() {
-        document.getElementById('noteTitle').focus();
-        this.removeEventListener('shown.bs.modal', titleFocusEdit);
-    });
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   Save note
-═══════════════════════════════════════════════════════════════ */
-async function saveNote() {
-    const title = document.getElementById('noteTitle').value.trim();
-    if (!title) {
-        document.getElementById('noteTitle').focus();
-        document.getElementById('noteTitle').classList.add('is-invalid');
-        setTimeout(function () { document.getElementById('noteTitle').classList.remove('is-invalid'); }, 2000);
-        return;
-    }
-
-    // Get HTML from Quill editor
-    const editorHtml = quill ? quill.root.innerHTML : '';
-    const isEmpty = !editorHtml || editorHtml === '<p><br></p>' || editorHtml.trim() === '';
-
-    const noteData = {
-        title: title,
-        content: isEmpty ? '' : editorHtml,
-        color: selectedColor,
-        tags: document.getElementById('noteTags').value.trim(),
-        pinned: document.getElementById('notePinned').checked
-    };
-
-    try {
-        const url    = editingNoteId ? `/api/notes/${editingNoteId}` : '/api/notes';
-        const method = editingNoteId ? 'PUT' : 'POST';
-        const resp = await fetch(url, {
-            method: method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(noteData)
-        });
-
-        if (resp.ok) {
-            showToast(editingNoteId ? 'Note updated ✓' : 'Note created ✓', 'success');
-            bootstrap.Modal.getInstance(document.getElementById('noteModal')).hide();
-            await loadNotes();
-        } else {
-            showToast('Failed to save note', 'error');
-        }
-    } catch (err) {
-        console.error('Error saving note:', err);
-        showToast('Error saving note', 'error');
-    }
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   Delete note
-═══════════════════════════════════════════════════════════════ */
-function deleteNote(id) {
-    deleteNoteId = id;
-    deleteNoteModal.show();
-}
-
-async function confirmDeleteNote() {
-    if (deleteNoteId === null) return;
-    try {
-        const resp = await fetch(`/api/notes/${deleteNoteId}`, { method: 'DELETE' });
-        if (resp.ok) {
-            deleteNoteModal.hide();
-            deleteNoteId = null;
-            showToast('Note deleted', 'success');
-            await loadNotes();
-        } else {
-            showToast('Failed to delete note', 'error');
-        }
-    } catch (err) {
-        showToast('Error deleting note', 'error');
-    }
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   Toggle pin
-═══════════════════════════════════════════════════════════════ */
-async function togglePin(id, isPinned) {
-    const note = allNotes.find(function (n) { return n.id === id; });
-    if (!note) return;
-    try {
-        await fetch(`/api/notes/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(Object.assign({}, note, { pinned: !isPinned }))
-        });
-        await loadNotes();
-    } catch (err) {
-        console.error('Error toggling pin:', err);
-    }
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   Search & filter
-═══════════════════════════════════════════════════════════════ */
-function handleSearch() {
-    const q = document.getElementById('searchNotes').value.toLowerCase().trim();
-    const pool = applyFilter(allNotes, currentFilter);
-    if (!q) { renderNotes(pool); return; }
-    renderNotes(pool.filter(function (n) {
-        const plain = stripHtmlClient(n.content || '');
-        return n.title.toLowerCase().includes(q) || plain.toLowerCase().includes(q);
-    }));
-}
-
-function filterNotes(filter, btn) {
-    currentFilter = filter;
-    document.querySelectorAll('.filter-btn').forEach(function (b) { b.classList.remove('active'); });
-    if (btn) btn.classList.add('active');
-    const q = document.getElementById('searchNotes').value.toLowerCase().trim();
-    let pool = applyFilter(allNotes, filter);
-    if (q) pool = pool.filter(function (n) {
-        return n.title.toLowerCase().includes(q) || stripHtmlClient(n.content || '').toLowerCase().includes(q);
-    });
-    renderNotes(pool);
-}
-
-function applyFilter(notes, filter) {
-    if (filter === 'pinned') return notes.filter(function (n) { return n.pinned; });
-    return notes;
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   Utilities
-═══════════════════════════════════════════════════════════════ */
-function stripHtmlClient(html) {
-    var tmp = document.createElement('div');
-    tmp.innerHTML = html;
-    return tmp.textContent || tmp.innerText || '';
-}
-
-function escapeHtml(text) {
-    const m = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-    return text ? String(text).replace(/[&<>"']/g, function (c) { return m[c]; }) : '';
-}
-
-function showToast(msg, type) {
-    const cls = type === 'success' ? 'alert-success' : 'alert-danger';
-    const el = document.createElement('div');
-    el.className = `alert ${cls} alert-dismissible fade show`;
-    el.style.cssText = 'position:fixed;top:20px;right:20px;z-index:99999;min-width:260px;box-shadow:0 4px 16px rgba(0,0,0,0.18)';
-    el.innerHTML = `${escapeHtml(msg)}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
-    document.body.appendChild(el);
-    setTimeout(function () { el.remove(); }, 4000);
-}
-</script>
+<script src="/js/notes.js"></script>
 <script src="/js/sidebar.js"></script>
 </body>
 </html>

@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(netstat -ano)",
+      "Bash(jps -l)",
+      "Bash(xargs grep -o \"Embeddings call failed[^\\\\\"<]*\")",
+      "Bash(xargs grep -o \"Embeddings call failed status=429 body={[^\\\\\"]*\")",
+      "Bash(PGPASSWORD=npg_8gPFMAUCkla0 psql postgresql://neondb_owner@ep-nameless-resonance-atds8oda.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require -c 'SELECT '\\\\''ai_document_embeddings'\\\\'' AS tbl, count\\(*\\) FROM ai_document_embeddings WHERE user_id IN \\(900000001, 900000002\\) UNION ALL SELECT '\\\\''transactions'\\\\'', count\\(*\\) FROM transactions WHERE user_id = 900000001;')",
+      "Bash(ls -la \"C:\\\\Users\\\\BJIT\\\\.claude\\\\projects\\\\d--finzin\\\\memory\\\\\" 2>/dev/null || echo \"empty/nonexistent\")",
+      "Read(//c/Users/BJIT/.claude/projects/d--finzin/memory\" 2>/dev/null \\\\|\\\\| echo empty/**)",
+      "Bash(ls -la \"C:/Users/BJIT/.claude/projects/d--finzin/memory/\")",
+      "Read(//c/Users/BJIT/.claude/projects/d--finzin/memory/**)",
+      "Skill(claude-api)",
+      "Skill(claude-api:*)",
+      "Bash(env -u OPENAI_API_KEY ./gradlew.bat test --console=plain)",
+      "Bash(awk -F'\"' '{tests+=$2; skipped+=$4; failures+=$6; errors+=$8} END {print \"tests=\"tests\" skipped=\"skipped\" failures=\"failures\" errors=\"errors}')",
+      "Bash(wmic process *)",
+      "Bash(powershell -Command \"Get-CimInstance Win32_Process -Filter 'ProcessId=27784' | Select-Object ProcessId,CommandLine | Format-List\")",
+      "Bash(taskkill //F //PID 27784)",
+      "Bash(nohup ./gradlew.bat bootRun --args='--ai.embedding.provider=mock')",
+      "Bash(echo \"started with PID $!\")",
+      "Bash(curl -sf http://localhost:8585/api/ai/settings -o /dev/null)",
+      "Bash(curl -s http://localhost:8585/api/ai/settings)",
+      "Bash(curl -s -X PUT http://localhost:8585/api/ai/settings -H 'Content-Type: application/json' -d '{\"model\":\"gpt-5\",\"maxTokens\":800,\"temperature\":0.3,\"enabled\":true,\"developerMode\":true}')"
+    ]
+  }
+}

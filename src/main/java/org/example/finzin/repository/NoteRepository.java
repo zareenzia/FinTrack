@@ -27,5 +27,7 @@ public interface NoteRepository extends JpaRepository<NoteEntity, Long> {
     
     @Query("SELECT n FROM NoteEntity n WHERE n.userId = :userId AND n.archived = false ORDER BY n.pinned DESC, n.updatedAt DESC")
     List<NoteEntity> findByUserIdAndArchivedFalseOrderByPinnedDescUpdatedAtDesc(@Param("userId") Long userId);
+
+    void deleteByUserId(Long userId);
 }
 

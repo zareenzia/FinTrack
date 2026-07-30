@@ -6,6 +6,7 @@
 
     let allAccounts = [];
     let editAccountId = null;
+    let editingOriginalCurrentBalance = null; // set when opening edit modal, used to detect an explicit override at save time
     let deleteAccountId = null;
     let accountModal = null;
     let deleteModal = null;
@@ -136,6 +137,8 @@
             : '<span class="status-badge-inactive">Inactive</span>';
         const toggleIcon  = a.status === 'ACTIVE' ? 'fa-toggle-off' : 'fa-toggle-on';
         const toggleLabel = a.status === 'ACTIVE' ? 'Deactivate' : 'Activate';
+        const ledgerBtn = `<button class="btn btn-xs btn-outline-info" style="font-size:0.75rem;padding:2px 8px;" onclick="openLedgerModal(${a.id},'${escHtml(a.accountNickname)}')" title="View Ledger"><i class="fas fa-list-ul"></i></button>`;
+        const utilizationRow = isCreditCard ? renderUtilizationRow(a) : '';
         return `<tr>
             <td>
                 <div class="d-flex align-items-center gap-2">
@@ -148,16 +151,32 @@
             </td>
             <td><span style="font-size:0.82rem;">${typeName}</span></td>
             <td style="font-size:0.85rem;">${escHtml(provider)}</td>
-            <td><span class="${balClass}">${balPrefix}৳${fmt(a.currentBalance)}</span></td>
+            <td><span class="${balClass}">${balPrefix}৳${fmt(a.currentBalance)}</span>${utilizationRow}</td>
             <td>${statusBadge}</td>
             <td>
                 <div class="d-flex gap-1 flex-wrap">
                     <button class="btn btn-xs btn-outline-primary" style="font-size:0.75rem;padding:2px 8px;" onclick="openEditModal(${a.id})" title="Edit"><i class="fas fa-edit"></i></button>
+                    ${ledgerBtn}
                     <button class="btn btn-xs btn-outline-secondary" style="font-size:0.75rem;padding:2px 8px;" onclick="toggleStatus(${a.id},'${a.status}')" title="${toggleLabel}"><i class="fas ${toggleIcon}"></i></button>
                     <button class="btn btn-xs btn-outline-danger" style="font-size:0.75rem;padding:2px 8px;" onclick="openDeleteModal(${a.id},'${escHtml(a.accountNickname)}')" title="Delete"><i class="fas fa-trash"></i></button>
                 </div>
             </td>
         </tr>`;
+    }
+
+    function renderUtilizationRow(a) {
+        const util = Math.max(0, a.utilizationPercent || 0);
+        const barPct = Math.min(100, util);
+        const barColor = util >= 90 ? '#dc2626' : (util >= 70 ? '#f59e0b' : '#16a34a');
+        const available = a.availableCredit != null ? fmt(a.availableCredit) : '—';
+        return `<div class="mt-1" style="min-width:150px;">
+            <div class="progress" style="height:5px;">
+                <div class="progress-bar" role="progressbar" style="width:${barPct}%;background:${barColor};"></div>
+            </div>
+            <div style="font-size:0.7rem;color:var(--text-muted-custom);margin-top:2px;">
+                ${util.toFixed(1)}% used · Available ৳${available}
+            </div>
+        </div>`;
     }
 
     // ── Add / Edit Modal ─────────────────────────────────────────────────────
@@ -167,6 +186,8 @@
         document.getElementById('accountModalTitle').innerHTML = '<i class="fas fa-plus-circle me-2"></i>Add Account';
         document.getElementById('editAccountId').value = '';
         resetForm();
+        const curWrap = document.getElementById('currentBalanceWrap');
+        if (curWrap) curWrap.style.display = 'none';
         accountModal.show();
     };
 
@@ -187,8 +208,13 @@
         document.getElementById('acctCreditLimit').value    = a.creditLimit || '';
         document.getElementById('acctStatementDay').value   = a.statementDay || '';
         document.getElementById('acctDueDay').value         = a.dueDay || '';
+        document.getElementById('acctCreditLimitBehavior').value = a.creditLimitBehavior || 'WARN';
         document.getElementById('acctOpeningBalance').value = a.openingBalance != null ? a.openingBalance : 0;
+        editingOriginalCurrentBalance = a.currentBalance != null ? a.currentBalance : 0;
+        document.getElementById('acctCurrentBalance').value = editingOriginalCurrentBalance;
         document.getElementById('acctStatus').value         = a.status || 'ACTIVE';
+        const curWrap = document.getElementById('currentBalanceWrap');
+        if (curWrap) curWrap.style.display = '';
         onAccountTypeChange();
         if (a.linkedAccountId) {
             loadBankAccountsForSelect('acctLinkedAccount', a.linkedAccountId);
@@ -207,6 +233,8 @@
         if (obEl) obEl.value = '0';
         const stEl = document.getElementById('acctStatus');
         if (stEl) stEl.value = 'ACTIVE';
+        const behaviorEl = document.getElementById('acctCreditLimitBehavior');
+        if (behaviorEl) behaviorEl.value = 'WARN';
         hideAllTypeFields();
     }
 
@@ -229,14 +257,14 @@
             document.querySelectorAll('.field-bank.field-debit.field-credit.field-mfs').forEach(el => el.style.display = '');
         }
 
-        const label = document.getElementById('openingBalanceLabel');
-        const hint  = document.getElementById('openingBalanceHint');
+        const curLabel = document.getElementById('currentBalanceLabel');
+        const curHint  = document.getElementById('currentBalanceHint');
         if (type === 'CREDIT_CARD') {
-            if (label) label.textContent = 'Current Outstanding Balance';
-            if (hint)  hint.textContent  = 'Amount you currently owe on this card.';
+            if (curLabel) curLabel.textContent = 'Current Outstanding Balance';
+            if (curHint)  curHint.textContent  = 'Amount you currently owe on this card — edit to correct or reconcile.';
         } else {
-            if (label) label.textContent = 'Opening Balance';
-            if (hint)  hint.textContent  = 'Starting balance for this account.';
+            if (curLabel) curLabel.textContent = 'Current Balance';
+            if (curHint)  curHint.textContent  = 'The actual balance right now — edit to correct or reconcile.';
         }
 
         if (type === 'DEBIT_CARD') {
@@ -289,9 +317,20 @@
             creditLimit:      document.getElementById('acctCreditLimit').value ? parseFloat(document.getElementById('acctCreditLimit').value) : null,
             statementDay:     document.getElementById('acctStatementDay').value ? parseInt(document.getElementById('acctStatementDay').value, 10) : null,
             dueDay:           document.getElementById('acctDueDay').value ? parseInt(document.getElementById('acctDueDay').value, 10) : null,
+            creditLimitBehavior: document.getElementById('acctCreditLimitBehavior').value || 'WARN',
             openingBalance:   parseFloat(document.getElementById('acctOpeningBalance').value) || 0,
             status:           document.getElementById('acctStatus').value || 'ACTIVE'
         };
+
+        // Only sent when the user actually typed a different value — otherwise an untouched,
+        // merely-prefilled Current Balance field would override a concurrent Opening Balance edit
+        // (see AccountApiController#updateAccount for how an explicit currentBalance takes priority).
+        if (editAccountId) {
+            const curVal = parseFloat(document.getElementById('acctCurrentBalance').value);
+            if (!isNaN(curVal) && curVal !== editingOriginalCurrentBalance) {
+                body.currentBalance = curVal;
+            }
+        }
 
         const btn = document.getElementById('saveAccountBtn');
         btn.disabled = true;
@@ -317,6 +356,61 @@
             btn.disabled = false;
         }
     };
+
+    // ── Credit Card Ledger ───────────────────────────────────────────────────
+
+    let ledgerAccountId = null;
+    let ledgerModal = null;
+
+    window.openLedgerModal = function (id, nickname) {
+        ledgerAccountId = id;
+        document.getElementById('ledgerModalTitle').textContent = nickname + ' — Ledger';
+        document.getElementById('ledgerStartDate').value = '';
+        document.getElementById('ledgerEndDate').value = '';
+        document.getElementById('ledgerTypeFilter').value = '';
+        document.getElementById('ledgerSearch').value = '';
+        if (!ledgerModal) ledgerModal = new bootstrap.Modal(document.getElementById('ledgerModal'));
+        ledgerModal.show();
+        loadLedger();
+    };
+
+    window.applyLedgerFilters = function () {
+        loadLedger();
+    };
+
+    async function loadLedger() {
+        const tbody = document.getElementById('ledgerTableBody');
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Loading…</td></tr>';
+        const params = new URLSearchParams();
+        const start = document.getElementById('ledgerStartDate').value;
+        const end = document.getElementById('ledgerEndDate').value;
+        const type = document.getElementById('ledgerTypeFilter').value;
+        const search = document.getElementById('ledgerSearch').value.trim();
+        if (start) params.set('startDate', start);
+        if (end) params.set('endDate', end);
+        if (type) params.set('type', type);
+        if (search) params.set('merchant', search);
+        try {
+            const entries = await apiFetch(`/api/accounts/${ledgerAccountId}/ledger?${params.toString()}`);
+            if (!entries || !entries.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No transactions found.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = entries.map(e => {
+                const amtClass = e.amount >= 0 ? 'balance-credit' : 'balance-positive';
+                return `<tr>
+                    <td style="font-size:0.82rem;">${escHtml(e.date)}</td>
+                    <td style="font-size:0.82rem;">${escHtml(e.description || '')}</td>
+                    <td style="font-size:0.82rem;">${escHtml(e.category || '—')}</td>
+                    <td style="font-size:0.82rem;">${escHtml(e.transactionType)}</td>
+                    <td class="text-end ${amtClass}" style="font-size:0.82rem;">${e.amount >= 0 ? '+' : ''}৳${fmt(e.amount)}</td>
+                    <td class="text-end" style="font-size:0.82rem;">৳${fmt(e.runningBalance)}</td>
+                </tr>`;
+            }).join('');
+        } catch (e) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Failed to load ledger.</td></tr>';
+        }
+    }
 
     // ── Toggle Status ────────────────────────────────────────────────────────
 

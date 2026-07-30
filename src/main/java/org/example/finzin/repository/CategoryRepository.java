@@ -22,5 +22,7 @@ public interface CategoryRepository extends JpaRepository<CategoryEntity, Long> 
     /** Returns categories whose categoryType matches the given type, OR is null/"general" (usable for any type). */
     @Query("SELECT c FROM CategoryEntity c WHERE c.userId = :userId AND (c.categoryType = :type OR c.categoryType = 'general' OR c.categoryType IS NULL)")
     List<CategoryEntity> findByUserIdAndCategoryTypeOrGeneral(@Param("userId") Long userId, @Param("type") String type);
+
+    void deleteByUserId(Long userId);
 }
 

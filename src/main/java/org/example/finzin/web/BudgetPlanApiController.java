@@ -5,9 +5,12 @@ import org.example.finzin.entity.BudgetEntity;
 import org.example.finzin.entity.BudgetPlanEntity;
 import org.example.finzin.entity.CategoryEntity;
 import org.example.finzin.entity.SavingsBudgetEntity;
+import org.example.finzin.gamification.GamificationEvent;
+import org.example.finzin.gamification.GamificationEventType;
 import org.example.finzin.repository.CategoryRepository;
 import org.example.finzin.service.BudgetExportService;
 import org.example.finzin.service.BudgetPlanService;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -30,12 +33,14 @@ public class BudgetPlanApiController {
     private final BudgetPlanService budgetPlanService;
     private final BudgetExportService budgetExportService;
     private final CategoryRepository categoryRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public BudgetPlanApiController(BudgetPlanService budgetPlanService, BudgetExportService budgetExportService,
-                                    CategoryRepository categoryRepository) {
+                                    CategoryRepository categoryRepository, ApplicationEventPublisher eventPublisher) {
         this.budgetPlanService = budgetPlanService;
         this.budgetExportService = budgetExportService;
         this.categoryRepository = categoryRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     private Long getUserId(HttpServletRequest request) {
@@ -56,9 +61,17 @@ public class BudgetPlanApiController {
     }
 
     @GetMapping("/current")
-    public ResponseEntity<?> current(HttpServletRequest request) {
+    public ResponseEntity<?> current(HttpServletRequest request, @RequestParam(required = false) String month) {
         Long userId = getUserId(request);
-        BudgetPlanEntity plan = budgetPlanService.getCurrentPlan(userId);
+        LocalDate date = LocalDate.now();
+        if (month != null && !month.isBlank()) {
+            try {
+                date = java.time.YearMonth.parse(month).atDay(1);
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(Map.of("error", "month must be in yyyy-MM format"));
+            }
+        }
+        BudgetPlanEntity plan = budgetPlanService.getPlanForDate(userId, date);
         if (plan == null) {
             return ResponseEntity.ok(Map.of("hasCurrent", false));
         }
@@ -101,6 +114,8 @@ public class BudgetPlanApiController {
         applyRequestToEntity(body, plan, startDate, endDate);
         plan.setStatus("ACTIVE");
         BudgetPlanEntity saved = budgetPlanService.save(plan);
+        eventPublisher.publishEvent(new GamificationEvent(userId, GamificationEventType.BUDGET_PLAN_CREATED,
+                Map.of("planId", saved.getId())));
         return ResponseEntity.status(HttpStatus.CREATED).body(toPlanResponse(saved));
     }
 
@@ -316,6 +331,7 @@ public class BudgetPlanApiController {
         map.put("summary", summary);
         map.put("score", score);
         map.put("categoryCount", categories.size());
+        map.put("categories", categories);
         return map;
     }
 

@@ -68,46 +68,22 @@
         .dashboard-view-panel { display: none; }
         .dashboard-view-panel.active { display: block; }
 
-        /* Add Transaction Button */
-        .btn-add-transaction {
-            background: var(--color-surface);
-            color: #f5f5f0;
-            border: none;
-            padding: 8px 18px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 2px 8px rgba(31, 125, 83, 0.2);
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-        }
-
-        .btn-add-transaction:hover {
-            background: var(--color-accent);
-            color: #f5f5f0;
-            box-shadow: 0 4px 12px rgba(31, 125, 83, 0.35);
-            transform: translateY(-1px);
-        }
-
-        .btn-add-transaction:active {
-            transform: translateY(0);
-        }
+        /* .btn-add-transaction lives in the shared style.css so transactions.html can use the
+           same header-button style — kept out of this page-scoped block to avoid duplicating it. */
 
         /* Greeting section styling */
         .dashboard-header-greeting {
-            font-size: 0.95rem;
+            font-size: 1.4rem;
+            font-weight: 700;
             color: var(--text-body);
             margin: 0;
         }
         .dashboard-header-greeting small {
             display: block;
-            font-size: 0.8rem;
+            font-size: 0.95rem;
+            font-weight: 400;
             color: var(--text-muted-custom);
-            margin-top: 2px;
+            margin-top: 4px;
         }
 
         /* Shortened side-by-side widgets (default view): Account Balances + Upcoming Recurring */
@@ -121,6 +97,9 @@
         .cb-progress-bar { height: 100%; transition: width 0.3s ease; background: #28a745; }
         .cb-progress-bar.warn { background: #fd7e14; }
         .cb-progress-bar.over { background: #dc3545; }
+        .cb-progress-sm { height: 6px; }
+        .cb-category-list { max-height: 130px; overflow-y: auto; margin-top: 4px; padding-right: 2px; }
+        .cb-category-row:not(:last-child) { margin-bottom: 8px; }
 
         /* Recent Transactions collapse toggle */
         .tx-collapse-toggle {
@@ -135,6 +114,9 @@
         .tx-collapse-toggle.collapsed {
             transform: rotate(-90deg);
         }
+
+        /* Receipt detail modal action buttons */
+        .icon-btn { width: 38px; height: 38px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
     </style>
 </head>
 <body>
@@ -144,12 +126,15 @@
     <div class="row mb-3">
         <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div class="dashboard-header-greeting">
-                <div id="dashboardGreeting" style="font-weight: 600;">Dashboard</div>
+                <div id="dashboardGreeting">Dashboard</div>
                 <small id="monthViewSubtitle">Loading...</small>
             </div>
              <div class="d-flex align-items-center gap-2 flex-wrap">
                 <button type="button" class="btn-add-transaction" id="openAddTxModalBtn" title="Add new transaction">
                     <i class="fas fa-plus"></i>Add Transaction
+                </button>
+                <button type="button" class="btn-add-transaction" id="openScanReceiptBtn" title="Scan a receipt with AI">
+                    <i class="fas fa-camera"></i>Scan Receipt
                 </button>
                 <a href="/budget-planner" class="btn-add-transaction" title="Plan a budget">
                     <i class="fas fa-wallet"></i>Plan a Budget
@@ -171,7 +156,7 @@
 
     <div id="dashboardDefaultView" class="dashboard-view-panel active">
     <div class="row mb-4">
-        <div class="col-xl-2 col-md-4 mb-3">
+        <div class="col-6 col-md-4 col-xl-2 mb-3">
             <div class="card stat-card stat-card--income">
                 <div class="card-body">
                     <div class="sc-top">
@@ -189,7 +174,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-2 col-md-4 mb-3">
+        <div class="col-6 col-md-4 col-xl-2 mb-3">
             <div class="card stat-card stat-card--expense">
                 <div class="card-body">
                     <div class="sc-top">
@@ -207,7 +192,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-2 col-md-4 mb-3">
+        <div class="col-6 col-md-4 col-xl-2 mb-3">
             <div class="card stat-card stat-card--savings">
                 <div class="card-body">
                     <div class="sc-top">
@@ -225,7 +210,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-2 col-md-4 mb-3">
+        <div class="col-6 col-md-4 col-xl-2 mb-3">
             <div class="card stat-card stat-card--balance" id="netBalanceCard">
                 <div class="card-body">
                     <div class="sc-top">
@@ -243,14 +228,14 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-2 col-md-4 mb-3">
+        <div class="col-6 col-md-4 col-xl-2 mb-3">
             <div class="card stat-card stat-card--assets">
                 <div class="card-body">
                     <div class="sc-top">
                         <div class="sc-icon-circle"><i class="fas fa-chart-line"></i></div>
                         <div class="sc-title-block">
                             <div class="sc-title">Assets Value</div>
-                            <div class="sc-subtitle"><i class="fas fa-gem sc-trend-up"></i> Portfolio · All time</div>
+                            <div class="sc-subtitle"><i class="fas fa-gem sc-trend-up"></i> <span class="sc-subtitle-text">Portfolio &middot; All time</span></div>
                         </div>
                         <button class="sc-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
                     </div>
@@ -261,14 +246,14 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-2 col-md-4 mb-3">
+        <div class="col-6 col-md-4 col-xl-2 mb-3">
             <div class="card stat-card stat-card--networth">
                 <div class="card-body">
                     <div class="sc-top">
                         <div class="sc-icon-circle"><i class="fas fa-crown"></i></div>
                         <div class="sc-title-block">
                             <div class="sc-title">Net Worth</div>
-                            <div class="sc-subtitle"><i class="fas fa-star sc-trend-up"></i> Total value · All time</div>
+                            <div class="sc-subtitle"><i class="fas fa-star sc-trend-up"></i> <span class="sc-subtitle-text">Total value &middot; All time</span></div>
                         </div>
                         <button class="sc-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
                     </div>
@@ -315,13 +300,18 @@
             <div class="card">
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h6 class="mb-0"><i class="fas fa-line-chart"></i> Monthly Trend</h6>
-                    <div class="btn-group btn-group-sm" role="group">
-                        <button type="button" class="btn btn-outline-light active" id="monthlyLineBtn" onclick="switchMonthlyChart('line')" title="Line Chart">
-                            <i class="fas fa-line-chart"></i>
-                        </button>
-                        <button type="button" class="btn btn-outline-light" id="monthlyBarBtn" onclick="switchMonthlyChart('bar')" title="Bar Chart">
-                            <i class="fas fa-bars"></i>
-                        </button>
+                    <div class="d-flex align-items-center gap-2">
+                        <select class="tx-filter-select" id="monthlyCategoryFilter" title="Filter expense by category" onchange="onMonthlyCategoryFilterChanged(this.value)">
+                            <option value="">All Categories</option>
+                        </select>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-outline-light active" id="monthlyLineBtn" onclick="switchMonthlyChart('line')" title="Line Chart">
+                                <i class="fas fa-line-chart"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-light" id="monthlyBarBtn" onclick="switchMonthlyChart('bar')" title="Bar Chart">
+                                <i class="fas fa-bars"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body chart-body-monthly" style="display: flex; align-items: center; justify-content: center;">
@@ -413,15 +403,103 @@
         </div>
     </div>
 
-    <!-- Current Budget Widget -->
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
+    <!-- AI Financial Coach + Current Budget + Financial Planner (merged row) -->
+    <div class="row mb-4 g-3 align-items-stretch">
+        <div class="col-md-4" id="aiSummaryRow">
+            <div class="card h-100">
+                <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-robot me-2"></i>AI Financial Coach</h6>
+                    <a href="/ai-assistant" class="btn btn-sm btn-outline-primary" title="Open AI Assistant"><i class="fas fa-comment-dots"></i></a>
+                </div>
+                <div class="card-body" id="aiSummaryBody">
+                    <p class="text-muted small mb-0">Loading…</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
                     <h6 class="mb-0"><i class="fas fa-wallet me-2"></i>Current Budget</h6>
-                    <a href="/budget-planner" class="btn btn-sm btn-outline-primary"><i class="fas fa-external-link-alt"></i> Open Budget Planner</a>
+                    <a href="/budget-planner" class="btn btn-sm btn-outline-primary" title="Open Budget Planner"><i class="fas fa-external-link-alt"></i></a>
                 </div>
                 <div class="card-body" id="currentBudgetBody">
+                    <p class="text-muted small mb-0">Loading…</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-bullseye me-2"></i>Financial Planner</h6>
+                    <a href="/financial-planner" class="btn btn-sm btn-primary" title="Open Financial Planner"><i class="fas fa-arrow-right"></i></a>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2" id="fpWidgetCards">
+                        <div class="col-6">
+                            <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);height:64px;">
+                                <div style="width:32px;height:32px;border-radius:8px;background:rgba(31,125,83,0.15);color:var(--color-surface);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-chart-line"></i></div>
+                                <div style="min-width:0;"><div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwInvValue">—</div><div style="font-size:0.68rem;color:var(--text-muted-custom);">Investments</div></div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);height:64px;">
+                                <div style="width:32px;height:32px;border-radius:8px;background:rgba(239,68,68,0.15);color:#ef4444;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-hand-holding-usd"></i></div>
+                                <div style="min-width:0;"><div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwLoans">—</div><div style="font-size:0.68rem;color:var(--text-muted-custom);">Loans</div></div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);height:64px;">
+                                <div style="width:32px;height:32px;border-radius:8px;background:rgba(249,115,22,0.15);color:#f97316;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-bell"></i></div>
+                                <div style="min-width:0;"><div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwRenewals">—</div><div style="font-size:0.68rem;color:var(--text-muted-custom);">Renewals</div></div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);height:64px;">
+                                <div style="width:32px;height:32px;border-radius:8px;background:rgba(168,85,247,0.15);color:#a855f7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-cart-shopping"></i></div>
+                                <div class="flex-grow-1" style="min-width:0;">
+                                    <div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwWishlistPct">—</div>
+                                    <div style="font-size:0.68rem;color:var(--text-muted-custom);">Wishlist</div>
+                                    <div style="margin-top:3px;height:4px;border-radius:999px;background:var(--bg-input);overflow:hidden;"><div id="fpwWishlistBar" style="height:100%;background:#a855f7;border-radius:999px;width:0%;transition:width 0.4s ease;"></div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gamification (Achievements) summary -->
+    <div class="row mb-4 g-3 align-items-stretch">
+        <div class="col-md-4" id="gamificationRow">
+            <div class="card h-100">
+                <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-trophy me-2"></i>Achievements</h6>
+                    <a href="/achievements" class="btn btn-sm btn-outline-primary" title="Open Achievements"><i class="fas fa-arrow-right"></i></a>
+                </div>
+                <div class="card-body" id="gamificationBody">
+                    <p class="text-muted small mb-0">Loading…</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 d-none" id="familySummaryRow">
+            <div class="card h-100">
+                <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-users me-2"></i>Family Finance</h6>
+                    <a href="/family-finance" class="btn btn-sm btn-outline-primary" title="Open Family Finance"><i class="fas fa-arrow-right"></i></a>
+                </div>
+                <div class="card-body" id="familySummaryBody">
+                    <p class="text-muted small mb-0">Loading…</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-thumbtack me-2"></i>Pinned To-Do</h6>
+                    <a href="/todos" class="btn btn-sm btn-outline-primary" title="Open To-Do"><i class="fas fa-arrow-right"></i></a>
+                </div>
+                <div class="card-body" id="pinnedTodoBody">
                     <p class="text-muted small mb-0">Loading…</p>
                 </div>
             </div>
@@ -612,13 +690,18 @@
                 <div class="card">
                     <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
                         <h6 class="mb-0"><i class="fas fa-line-chart me-2"></i>Monthly Trend</h6>
-                        <div class="btn-group dashboard-chart-toggle" role="group">
-                            <button type="button" class="btn btn-outline-light active" id="monthlyLineBtnCompact" onclick="switchMonthlyChart('line')" title="Line Chart">
-                                <i class="fas fa-line-chart"></i>
-                            </button>
-                            <button type="button" class="btn btn-outline-light" id="monthlyBarBtnCompact" onclick="switchMonthlyChart('bar')" title="Bar Chart">
-                                <i class="fas fa-bars"></i>
-                            </button>
+                        <div class="d-flex align-items-center gap-2">
+                            <select class="tx-filter-select" id="monthlyCategoryFilterCompact" title="Filter expense by category" onchange="onMonthlyCategoryFilterChanged(this.value)">
+                                <option value="">All Categories</option>
+                            </select>
+                            <div class="btn-group dashboard-chart-toggle" role="group">
+                                <button type="button" class="btn btn-outline-light active" id="monthlyLineBtnCompact" onclick="switchMonthlyChart('line')" title="Line Chart">
+                                    <i class="fas fa-line-chart"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-light" id="monthlyBarBtnCompact" onclick="switchMonthlyChart('bar')" title="Bar Chart">
+                                    <i class="fas fa-bars"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div class="card-body chart-body-monthly" style="display: flex; align-items: center; justify-content: center;">
@@ -645,15 +728,103 @@
             </div>
         </div>
 
-        <!-- Current Budget Widget -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
+        <!-- AI Financial Coach + Current Budget + Financial Planner (merged row) -->
+        <div class="row mb-4 g-3 align-items-stretch">
+            <div class="col-md-4" id="aiSummaryRowCompact">
+                <div class="card h-100">
+                    <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="fas fa-robot me-2"></i>AI Financial Coach</h6>
+                        <a href="/ai-assistant" class="btn btn-sm btn-outline-primary" title="Open AI Assistant"><i class="fas fa-comment-dots"></i></a>
+                    </div>
+                    <div class="card-body" id="aiSummaryBodyCompact">
+                        <p class="text-muted small mb-0">Loading…</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
                         <h6 class="mb-0"><i class="fas fa-wallet me-2"></i>Current Budget</h6>
-                        <a href="/budget-planner" class="btn btn-sm btn-outline-primary"><i class="fas fa-external-link-alt"></i> Open Budget Planner</a>
+                        <a href="/budget-planner" class="btn btn-sm btn-outline-primary" title="Open Budget Planner"><i class="fas fa-external-link-alt"></i></a>
                     </div>
                     <div class="card-body" id="currentBudgetBodyCompact">
+                        <p class="text-muted small mb-0">Loading…</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="fas fa-bullseye me-2"></i>Financial Planner</h6>
+                        <a href="/financial-planner" class="btn btn-sm btn-primary" title="Open Financial Planner"><i class="fas fa-arrow-right"></i></a>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-2" id="fpWidgetCardsCompact">
+                            <div class="col-6">
+                                <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);height:64px;">
+                                    <div style="width:32px;height:32px;border-radius:8px;background:rgba(31,125,83,0.15);color:var(--color-surface);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-chart-line"></i></div>
+                                    <div style="min-width:0;"><div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwInvValueCompact">—</div><div style="font-size:0.68rem;color:var(--text-muted-custom);">Investments</div></div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);height:64px;">
+                                    <div style="width:32px;height:32px;border-radius:8px;background:rgba(239,68,68,0.15);color:#ef4444;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-hand-holding-usd"></i></div>
+                                    <div style="min-width:0;"><div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwLoansCompact">—</div><div style="font-size:0.68rem;color:var(--text-muted-custom);">Loans</div></div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);height:64px;">
+                                    <div style="width:32px;height:32px;border-radius:8px;background:rgba(249,115,22,0.15);color:#f97316;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-bell"></i></div>
+                                    <div style="min-width:0;"><div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwRenewalsCompact">—</div><div style="font-size:0.68rem;color:var(--text-muted-custom);">Renewals</div></div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);height:64px;">
+                                    <div style="width:32px;height:32px;border-radius:8px;background:rgba(168,85,247,0.15);color:#a855f7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-cart-shopping"></i></div>
+                                    <div class="flex-grow-1" style="min-width:0;">
+                                        <div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwWishlistPctCompact">—</div>
+                                        <div style="font-size:0.68rem;color:var(--text-muted-custom);">Wishlist</div>
+                                        <div style="margin-top:3px;height:4px;border-radius:999px;background:var(--bg-input);overflow:hidden;"><div id="fpwWishlistBarCompact" style="height:100%;background:#a855f7;border-radius:999px;width:0%;transition:width 0.4s ease;"></div></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gamification (Achievements) summary -->
+        <div class="row mb-4 g-3 align-items-stretch">
+            <div class="col-md-4" id="gamificationRowCompact">
+                <div class="card h-100">
+                    <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="fas fa-trophy me-2"></i>Achievements</h6>
+                        <a href="/achievements" class="btn btn-sm btn-outline-primary" title="Open Achievements"><i class="fas fa-arrow-right"></i></a>
+                    </div>
+                    <div class="card-body" id="gamificationBodyCompact">
+                        <p class="text-muted small mb-0">Loading…</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 d-none" id="familySummaryRowCompact">
+                <div class="card h-100">
+                    <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="fas fa-users me-2"></i>Family Finance</h6>
+                        <a href="/family-finance" class="btn btn-sm btn-outline-primary" title="Open Family Finance"><i class="fas fa-arrow-right"></i></a>
+                    </div>
+                    <div class="card-body" id="familySummaryBodyCompact">
+                        <p class="text-muted small mb-0">Loading…</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="fas fa-thumbtack me-2"></i>Pinned To-Do</h6>
+                        <a href="/todos" class="btn btn-sm btn-outline-primary" title="Open To-Do"><i class="fas fa-arrow-right"></i></a>
+                    </div>
+                    <div class="card-body" id="pinnedTodoBodyCompact">
                         <p class="text-muted small mb-0">Loading…</p>
                     </div>
                 </div>
@@ -675,6 +846,7 @@
                         </div>
                     </div>
                     <div class="tx-header-actions">
+                        <input type="text" class="tx-filter-search" id="txSearchFilter" placeholder="Search transactions…" title="Search by description, category, account, or amount">
                         <select class="tx-filter-select" id="txCategoryFilter" title="Filter by category">
                             <option value="">All Categories</option>
                         </select>
@@ -683,13 +855,25 @@
                             <option value="income">Income</option>
                             <option value="expense">Expense</option>
                             <option value="savings">Savings</option>
-                        </select>                        <select class="tx-filter-select" id="txLimitSelect" title="Transactions to show">
+                            <option value="transfer">Transfer</option>
+                        </select>
+                        <select class="tx-filter-select" id="txAccountFilter" title="Filter by paid from account">
+                            <option value="">All Accounts</option>
+                        </select>
+                        <select class="tx-filter-select" id="txLimitSelect" title="Transactions to show">
                             <option value="5" selected>Show 5</option>
                             <option value="10">Show 10</option>
                             <option value="20">Show 20</option>
                             <option value="50">Show 50</option>
                             <option value="100">Show 100</option>
                         </select>
+                        <button type="button" class="tx-export-btn" id="txImportBtn" title="Import transactions from CSV">
+                            <i class="fas fa-file-import"></i>
+                        </button>
+                        <input type="file" id="txImportFileInput" accept=".csv" style="display:none;">
+                        <button type="button" class="tx-export-btn" id="txExportBtn" title="Export filtered transactions to CSV">
+                            <i class="fas fa-file-export"></i>
+                        </button>
                         <a href="/transactions" class="btn btn-sm tx-view-all-btn">
                             <i class="fas fa-external-link-alt"></i> View All
                         </a>
@@ -705,6 +889,7 @@
                         <span class="tx-col-date"><i class="fas fa-calendar-alt"></i> Date</span>
                         <span class="tx-col-desc"><i class="fas fa-align-left"></i> Description</span>
                         <span class="tx-col-cat"><i class="fas fa-tag"></i> Category</span>
+                        <span class="tx-col-account"><i class="fas fa-wallet"></i> Paid From</span>
                         <span class="tx-col-type"><i class="fas fa-exchange-alt"></i> Type</span>
                         <span class="tx-col-amount"><i class="fas fa-coins"></i> Amount</span>
                         <span class="tx-col-action"></span>
@@ -750,20 +935,26 @@
     let pageSize           = parseInt(localStorage.getItem('tx_page_limit') || '5', 10);
     let txFilterCategory   = '';
     let txFilterType       = '';
+    let txFilterAccount    = ''; // '', 'SAVINGS', 'NONE', or an account id (string)
+    let txFilterSearch     = '';
+    let cachedAccounts     = [];
     let txDeleteId         = null;
     let txDeleteModal      = null;
     let txEditId           = null;
     let txEditModal        = null;
-    let txAddModal         = null;
 
     let categoryChartData    = [];
     let monthlyChartData     = [];
     let categoryChartType    = 'pie';
     let monthlyChartType     = 'line';
     let categoryBreakdownType = 'expense';   // 'expense' | 'savings'
+    let monthlyCategoryFilter = '';   // '' = all categories, otherwise an expense category name
 
     let allTransactions      = [];
     let selectedMonthKey     = null;   // 'YYYY-MM' or 'ALL'
+    let receiptsByTransactionId = {};
+    let receiptDetailModal   = null;
+    let rdCurrentReceiptId   = null;
 
     /** 'YYYY-MM' key for a date string/object */
     function monthKeyOf(dateVal) {
@@ -799,7 +990,7 @@
     /** Format a number as a currency string using saved settings */
     function formatAmount(value) {
         var c = getCurrencySettings();
-        var num = Number(value).toFixed(c.decimals);
+        var num = Number(value).toLocaleString('en-US', { minimumFractionDigits: c.decimals, maximumFractionDigits: c.decimals });
         return c.position === 'before' ? c.symbol + num : num + '\u00a0' + c.symbol;
     }
     let categoryColorMap      = {};
@@ -891,6 +1082,7 @@
         if (categoryChartData.length) drawCategoryChart(categoryChartData, activeSuffix());
         if (monthlyChartData.length)  drawMonthlyChart(monthlyChartData, activeSuffix());
         fitStatAmounts();
+        syncUpcomingRecurringHeight();
         applyCardHideSetting();
     }
 
@@ -997,9 +1189,16 @@
         let income = 0, expense = 0, savings = 0;
         txs.forEach(function (tx) {
             const amt = Number(tx.amount) || 0;
-            if (tx.transaction_type === 'income')       income  += amt;
-            else if (tx.transaction_type === 'expense') expense += amt;
-            else if (tx.transaction_type === 'savings') savings += amt;
+            if (tx.transaction_type === 'income') {
+                income += amt;
+            } else if (tx.transaction_type === 'expense') {
+                expense += amt;
+                // A "spend from savings" expense still counts fully as an expense, but also draws
+                // down this month's savings bucket — same netting rule the backend applies.
+                if (tx.fromSavings) savings -= amt;
+            } else if (tx.transaction_type === 'savings') {
+                savings += amt;
+            }
         });
         return { income: income, expense: expense, savings: savings, net: income - expense - savings, txs: txs };
     }
@@ -1055,6 +1254,8 @@
         categoryChartData = breakdown;
         drawCategoryChart(breakdown, activeSuffix());
 
+        loadCurrentBudget(selectedMonthKey);
+
         currentPage = 0;
         applyFiltersAndDisplay();
     }
@@ -1098,14 +1299,33 @@
         txEditModal = new bootstrap.Modal(document.getElementById('dashboardEditTxModal'));
         document.getElementById('dashboardSaveEditTxBtn').addEventListener('click', saveEditTransaction);
 
-        // Initialise add-transaction modal
-        txAddModal = new bootstrap.Modal(document.getElementById('dashboardAddTxModal'));
+        // "Add Transaction" opens the shared bulk-capable modal on the Transactions page
         document.getElementById('openAddTxModalBtn').addEventListener('click', openAddTransactionModal);
-        document.getElementById('dashboardSaveAddTxBtn').addEventListener('click', saveAddTransaction);
+
+        // "Scan Receipt" opens the shared scanner modal on the Transactions page
+        document.getElementById('openScanReceiptBtn').addEventListener('click', openScanReceiptModal);
+
+        // Receipt detail modal (view/download/replace/delete)
+        receiptDetailModal = new bootstrap.Modal(document.getElementById('receiptDetailModal'));
+        document.getElementById('rdReplaceBtn').addEventListener('click', () => document.getElementById('rdReplaceFileInput').click());
+        document.getElementById('rdReplaceFileInput').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            this.value = '';
+            if (file && validateReceiptFile(file)) replaceReceiptImage(rdCurrentReceiptId, file);
+        });
+        document.getElementById('rdDeleteBtn').addEventListener('click', () => deleteReceipt(rdCurrentReceiptId));
 
         // When type changes in the edit modal, reload categories
         document.getElementById('editTxType').addEventListener('change', function () {
-            loadEditCategories(this.value);
+            if (this.value === 'transfer') {
+                showEditTransferFields();
+                loadEditTransferAccounts(document.getElementById('editTxTransferFrom'), document.getElementById('editTxTransferTo'), '', '');
+            } else {
+                showEditNormalFields();
+                loadEditCategories(this.value);
+                applyAccountFieldLabel('editTxAccountLabel', this.value);
+                applySavingsPseudoOption(document.getElementById('editTxAccount'), this.value);
+            }
         });
 
         // Restore saved limit and wire filter controls
@@ -1117,6 +1337,15 @@
             limitEl.addEventListener('change', function () {
                 pageSize = parseInt(this.value, 10);
                 localStorage.setItem('tx_page_limit', this.value);
+                currentPage = 0;
+                applyFiltersAndDisplay();
+            });
+        }
+
+        const searchEl = document.getElementById('txSearchFilter');
+        if (searchEl) {
+            searchEl.addEventListener('input', function () {
+                txFilterSearch = this.value;
                 currentPage = 0;
                 applyFiltersAndDisplay();
             });
@@ -1140,15 +1369,46 @@
             });
         }
 
+        const acctFilterEl = document.getElementById('txAccountFilter');
+        if (acctFilterEl) {
+            acctFilterEl.addEventListener('change', function () {
+                txFilterAccount = this.value;
+                currentPage = 0;
+                applyFiltersAndDisplay();
+            });
+        }
+
+        const importBtn = document.getElementById('txImportBtn');
+        if (importBtn) {
+            importBtn.addEventListener('click', function () {
+                document.getElementById('txImportFileInput').click();
+            });
+        }
+        const importFileEl = document.getElementById('txImportFileInput');
+        if (importFileEl) {
+            importFileEl.addEventListener('change', function (e) {
+                const file = e.target.files[0];
+                this.value = '';
+                if (file) importTransactionsFromCsv(file);
+            });
+        }
+        const exportBtn = document.getElementById('txExportBtn');
+        if (exportBtn) exportBtn.addEventListener('click', exportFilteredTransactionsToCsv);
+
         // Restore saved dashboard view (Default / Compact) before first paint of data
         const savedView = localStorage.getItem(getUserStorageKey('fintrack_dashboard_view')) || 'default';
         setDashboardView(savedView, true);
 
         updateGreeting();
         loadDashboard();
-        loadAccountBalances();
-        loadUpcomingRecurring();
+        Promise.all([loadAccountBalances(), loadUpcomingRecurring()]).then(syncUpcomingRecurringHeight);
         loadCurrentBudget();
+        loadAiSummary();
+        loadFpWidget();
+        loadGamificationWidget();
+        loadFamilySummaryWidget();
+        loadPinnedTodoWidget();
+        loadReceiptScannerAvailability();
     });
 
     async function loadUpcomingRecurring() {
@@ -1183,13 +1443,158 @@
         }
     }
 
-    async function loadCurrentBudget() {
+    /** Default view only: Account Balances keeps its natural, uncapped height — Upcoming
+     * Recurring Transactions (which has its own fixed 260px cap for the Compact view) is instead
+     * pinned to that exact same height (not just a ceiling — a fixed match, with room left blank
+     * if its own content is shorter), scrolling internally if its content would otherwise be taller. */
+    function syncUpcomingRecurringHeight() {
+        const panel = document.getElementById('dashboardDefaultView');
+        if (!panel || !panel.classList.contains('active')) return; // hidden panel reads 0 height
+        const acctBody = panel.querySelector('.acct-summary-card .card-body');
+        const recurBody = document.getElementById('upcomingRecurringBody');
+        if (!acctBody || !recurBody) return;
+        recurBody.style.height = '';
+        recurBody.style.maxHeight = '';
+        const targetHeight = acctBody.offsetHeight;
+        if (targetHeight > 0) {
+            recurBody.style.height = targetHeight + 'px';
+            recurBody.style.maxHeight = targetHeight + 'px';
+        }
+    }
+
+    function escapeAiSummaryText(text) {
+        const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+        return String(text == null ? '' : text).replace(/[&<>"']/g, m => map[m]);
+    }
+
+    async function loadGamificationWidget() {
+        const bodies = ['gamificationBody', 'gamificationBodyCompact'].map(id => document.getElementById(id)).filter(Boolean);
+        const rows = ['gamificationRow', 'gamificationRowCompact'].map(id => document.getElementById(id)).filter(Boolean);
+        if (!bodies.length) return;
+        try {
+            const data = await fetch('/api/gamification/summary').then(r => r.json());
+            if (!data.enabled) {
+                rows.forEach(r => r.classList.add('d-none'));
+                return;
+            }
+            const span = Math.max(1, data.nextLevelXp ? (data.nextLevelXp - data.currentLevelXp) : 1);
+            const pct = data.nextLevelXp ? Math.max(0, Math.min(100, Math.round(((data.totalXp - data.currentLevelXp) / span) * 100))) : 100;
+            let html = '<div class="d-flex justify-content-between align-items-center mb-1">';
+            html += `<span class="fw-bold small">Lvl ${data.currentLevel} · ${data.currentLevelName}</span>`;
+            html += `<span class="text-muted small">${data.totalXp} XP</span></div>`;
+            html += `<div class="cb-progress mb-2"><div class="cb-progress-bar" style="width:${pct}%"></div></div>`;
+            html += data.nextLevelName
+                ? `<p class="text-muted small mb-2">${Math.max(0, data.nextLevelXp - data.totalXp)} XP to ${data.nextLevelName}</p>`
+                : '<p class="text-muted small mb-2">Max level reached!</p>';
+            html += '<div class="d-flex justify-content-between small">';
+            html += `<span><i class="fas fa-fire text-warning me-1"></i>${data.currentStreak}-day streak</span>`;
+            html += `<span><i class="fas fa-medal text-success me-1"></i>${data.achievementsUnlocked}/${data.achievementsTotal}</span></div>`;
+            bodies.forEach(b => b.innerHTML = html);
+        } catch (e) {
+            bodies.forEach(b => b.innerHTML = '<p class="text-muted small mb-0">Unable to load achievements.</p>');
+        }
+    }
+
+    async function loadFamilySummaryWidget() {
+        const bodies = ['familySummaryBody', 'familySummaryBodyCompact'].map(id => document.getElementById(id)).filter(Boolean);
+        const rows = ['familySummaryRow', 'familySummaryRowCompact'].map(id => document.getElementById(id)).filter(Boolean);
+        if (!bodies.length) return;
+        try {
+            const data = await fetch('/api/households/dashboard-summary').then(r => r.json());
+            if (!data.hasHousehold) {
+                rows.forEach(r => r.classList.add('d-none'));
+                return;
+            }
+            rows.forEach(r => r.classList.remove('d-none'));
+            const balance = data.yourNetBalance || 0;
+            const balanceColor = balance >= 0 ? '#22c55e' : '#ef4444';
+            const balanceLabel = (balance >= 0 ? '+' : '') + formatAmount(balance);
+            let html = `<div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="fw-semibold">${escapeAiSummaryText(data.householdName)}</span>
+                <span class="text-muted small">${data.memberCount} member${data.memberCount !== 1 ? 's' : ''}</span></div>`;
+            html += `<div class="d-flex justify-content-between small text-muted mb-1">
+                <span>Shared This Month</span><span>${formatAmount(data.thisMonthSharedTotal || 0)}</span></div>`;
+            html += `<div class="small">Your Balance: <strong style="color:${balanceColor};">${balanceLabel}</strong></div>`;
+            bodies.forEach(b => b.innerHTML = html);
+        } catch (e) {
+            bodies.forEach(b => b.innerHTML = '<p class="text-muted small mb-0">Unable to load family finance summary.</p>');
+        }
+    }
+
+    /** Always visible (unlike Family Finance) — starring a to-do is always something the user
+     * could do, so there's no "not applicable" state to hide behind. */
+    async function loadPinnedTodoWidget() {
+        const bodies = ['pinnedTodoBody', 'pinnedTodoBodyCompact'].map(id => document.getElementById(id)).filter(Boolean);
+        if (!bodies.length) return;
+        try {
+            const items = await fetch('/api/todo/items/starred').then(r => r.json());
+            let html;
+            if (!items.length) {
+                html = '<p class="text-muted small mb-2">Nothing starred yet.</p>' +
+                    '<p class="text-muted small mb-0">Star a to-do from your <a href="/todos">To-Do list</a> to see it here.</p>';
+            } else {
+                const shown = items.slice(0, 3);
+                html = shown.map(t => `
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="fw-semibold small">${escapeAiSummaryText(t.title)}</span>
+                        ${t.dueDate ? `<span class="text-muted small ms-2">${new Date(t.dueDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</span>` : ''}
+                    </div>`).join('');
+                if (items.length > 3) html += `<div class="text-muted small">+${items.length - 3} more starred</div>`;
+            }
+            bodies.forEach(b => b.innerHTML = html);
+        } catch (e) {
+            bodies.forEach(b => b.innerHTML = '<p class="text-muted small mb-0">Unable to load starred to-dos.</p>');
+        }
+    }
+
+    async function loadAiSummary() {
+        const bodies = ['aiSummaryBody', 'aiSummaryBodyCompact'].map(id => document.getElementById(id)).filter(Boolean);
+        const rows = ['aiSummaryRow', 'aiSummaryRowCompact'].map(id => document.getElementById(id)).filter(Boolean);
+        if (!bodies.length) return;
+        try {
+            const data = await fetch('/api/ai/dashboard-summary').then(r => r.json());
+            if (!data.enabled) {
+                rows.forEach(r => r.classList.add('d-none'));
+                return;
+            }
+            const scoreColor = data.healthScore >= 75 ? '#28a745' : (data.healthScore >= 50 ? '#ffc107' : '#dc3545');
+            let html = '<div class="d-flex align-items-center gap-3 mb-2">';
+            html += `<div class="text-center" style="min-width:70px;"><div class="fw-bold" style="font-size:1.6rem;color:${scoreColor};">${data.healthScore}</div><div class="small text-muted">Health Score</div></div>`;
+            html += '<div class="flex-grow-1">';
+            if (data.todaysInsight) html += `<div class="small mb-1"><i class="fas fa-lightbulb me-1 text-warning"></i>${escapeAiSummaryText(data.todaysInsight)}</div>`;
+            if (data.aiRecommendation) html += `<div class="small mb-1"><i class="fas fa-wand-magic-sparkles me-1" style="color: var(--accent-color);"></i>${escapeAiSummaryText(data.aiRecommendation)}</div>`;
+            if (!data.todaysInsight && !data.aiRecommendation) html += '<div class="small text-muted">No new insights right now — check back after you log more activity.</div>';
+            html += '</div></div>';
+
+            html += '<div class="row g-1 small">';
+            if (data.biggestExpense) {
+                html += `<div class="col-12"><span class="text-muted">Biggest Expense:</span> <strong>${formatAmount(data.biggestExpense.amount)}</strong>${data.biggestExpense.category ? ' (' + escapeAiSummaryText(data.biggestExpense.category) + ')' : ''}</div>`;
+            }
+            if (data.budgetStatus) {
+                html += '<div class="col-12"><span class="text-muted">Budget:</span> ' +
+                    (data.budgetStatus.hasBudget ? `${data.budgetStatus.utilizationPercent.toFixed(0)}% used` : 'No active budget') + '</div>';
+            }
+            if (data.savingsProgress) {
+                html += `<div class="col-12"><span class="text-muted">Emergency Fund:</span> ${data.savingsProgress.emergencyFundProgressPercent.toFixed(0)}%</div>`;
+            }
+            html += '</div>';
+            bodies.forEach(b => b.innerHTML = html);
+        } catch (e) {
+            bodies.forEach(b => b.innerHTML = '<p class="text-muted small mb-0">Unable to load AI summary.</p>');
+        }
+    }
+
+    /** monthKey: 'YYYY-MM' to show that month's budget, or 'ALL'/falsy to show the real current month. */
+    async function loadCurrentBudget(monthKey) {
         const containers = ['currentBudgetBody', 'currentBudgetBodyCompact']
             .map(id => document.getElementById(id))
             .filter(Boolean);
         if (!containers.length) return;
         try {
-            const data = await fetch('/api/budget-plans/current').then(r => r.json());
+            const url = (monthKey && monthKey !== 'ALL')
+                ? '/api/budget-plans/current?month=' + encodeURIComponent(monthKey)
+                : '/api/budget-plans/current';
+            const data = await fetch(url).then(r => r.json());
             if (!data.hasCurrent) {
                 const html = '<p class="text-muted small mb-0">No active budget for this period. <a href="/budget-planner">Create one</a>.</p>';
                 containers.forEach(c => c.innerHTML = html);
@@ -1197,9 +1602,25 @@
             }
             const pct = Math.min(100, data.summary.utilizationPercent);
             const barClass = data.summary.utilizationPercent > 100 ? 'over' : (data.summary.utilizationPercent >= 80 ? 'warn' : '');
+            const categories = data.categories || [];
+            const categoriesHtml = categories.length
+                ? `<div class="small text-muted mt-2 mb-1">By Category</div>
+                   <div class="cb-category-list">${categories.map(c => {
+                       const catPct = Math.min(100, c.percentUsed);
+                       const catBarClass = c.percentUsed > 100 ? 'over' : (c.percentUsed >= 80 ? 'warn' : '');
+                       return `
+                        <div class="cb-category-row">
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span><i class="fas fa-${c.categoryIcon || 'tag'} me-1" style="color:${c.categoryColor || '#6c757d'}"></i>${escHtml(c.categoryName)}</span>
+                                <span class="text-muted">${formatAmount(c.actualAmount)} / ${formatAmount(c.budgetAmount)}</span>
+                            </div>
+                            <div class="cb-progress cb-progress-sm"><div class="cb-progress-bar ${catBarClass}" style="width:${catPct}%"></div></div>
+                        </div>`;
+                   }).join('')}</div>`
+                : '';
             const html = `
                 <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="fw-semibold">${data.name}</span>
+                    <span class="fw-semibold">${escHtml(data.name)}</span>
                     <span class="text-muted small">${data.period}</span>
                 </div>
                 <div class="d-flex justify-content-between small text-muted mb-1">
@@ -1207,14 +1628,50 @@
                     <span>${data.summary.utilizationPercent.toFixed(0)}%</span>
                 </div>
                 <div class="cb-progress mb-2"><div class="cb-progress-bar ${barClass}" style="width:${pct}%"></div></div>
-                <div class="small text-muted">Remaining: <strong style="color: var(--accent-color);">${formatAmount(data.summary.remaining)}</strong></div>`;
+                <div class="small text-muted">Remaining: <strong style="color: var(--accent-color);">${formatAmount(data.summary.remaining)}</strong></div>
+                ${categoriesHtml}`;
             containers.forEach(c => c.innerHTML = html);
         } catch (e) {
             containers.forEach(c => c.innerHTML = '<p class="text-muted small mb-0">Unable to load current budget.</p>');
         }
     }
 
-    window.addEventListener('resize', fitStatAmounts);
+    async function loadFpWidget() {
+        try {
+            const data = await fetch('/api/financial-planner/summary').then(r => r.ok ? r.json() : null);
+            if (!data) return;
+            const fmtC = (v) => {
+                const c = typeof getCurrencySettings === 'function' ? getCurrencySettings() : { symbol: '৳', position: 'before', decimals: 0 };
+                const num = Number(v || 0).toLocaleString('en-BD', { minimumFractionDigits: 0, maximumFractionDigits: c.decimals });
+                return c.position === 'before' ? c.symbol + num : num + '\u00a0' + c.symbol;
+            };
+            const el = id => document.getElementById(id);
+            ['', 'Compact'].forEach(suffix => {
+                if (el('fpwInvValue' + suffix)) el('fpwInvValue' + suffix).textContent = fmtC(data.investmentValue);
+                if (el('fpwLoans' + suffix)) el('fpwLoans' + suffix).textContent = data.activeLoans + ' loan' + (data.activeLoans !== 1 ? 's' : '') + (data.loanRemainingBalance ? ' · ' + fmtC(data.loanRemainingBalance) : '');
+                if (el('fpwRenewals' + suffix)) el('fpwRenewals' + suffix).textContent = data.upcomingRenewals + ' renewal' + (data.upcomingRenewals !== 1 ? 's' : '');
+                if (el('fpwWishlistPct' + suffix) && data.wishlistCount > 0) {
+                    const readyCount = data.wishlistReadyCount || 0;
+                    const pct = Math.min(100, Math.round((readyCount / data.wishlistCount) * 100));
+                    el('fpwWishlistPct' + suffix).textContent = readyCount > 0
+                        ? readyCount + ' ready to buy'
+                        : data.wishlistCount + ' item' + (data.wishlistCount !== 1 ? 's' : '') + ' planned';
+                    if (el('fpwWishlistBar' + suffix)) el('fpwWishlistBar' + suffix).style.width = pct + '%';
+                } else if (el('fpwWishlistPct' + suffix)) {
+                    el('fpwWishlistPct' + suffix).textContent = '0 items planned';
+                }
+            });
+        } catch (e) { /* silently ignore */ }
+    }
+
+    function loadReceiptScannerAvailability() {
+        fetch('/api/receipts/settings').then(r => r.ok ? r.json() : null).then(s => {
+            const btn = document.getElementById('openScanReceiptBtn');
+            if (btn) btn.classList.toggle('d-none', !!s && s.enabled === false);
+        }).catch(() => {});
+    }
+
+    window.addEventListener('resize', function () { fitStatAmounts(); syncUpcomingRecurringHeight(); });
 
     async function loadDashboard() {
         try {
@@ -1246,9 +1703,39 @@
                 catFilter.value = prevCat;
             }
 
+            // Populate the Monthly Trend expense-category filter (expense + general categories only)
+            const expenseCategories = categories.filter(cat => !cat.categoryType || cat.categoryType === 'general' || cat.categoryType === 'expense');
+            ['', 'Compact'].forEach(function (suf) {
+                const sel = document.getElementById('monthlyCategoryFilter' + suf);
+                if (!sel) return;
+                const prev = sel.value;
+                sel.innerHTML = '<option value="">All Categories</option>';
+                expenseCategories.forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value       = cat.name;
+                    opt.textContent = cat.name;
+                    sel.appendChild(opt);
+                });
+                sel.value = prev;
+            });
+
+            const accounts = await fetch('/api/accounts').then(r => r.json()).catch(() => []);
+            cachedAccounts = accounts;
+            const acctFilter = document.getElementById('txAccountFilter');
+            if (acctFilter) {
+                const prevAcct = acctFilter.value;
+                const label = a => a.accountNickname + (a.bankName ? ' (' + a.bankName + ')' : a.provider ? ' (' + a.provider + ')' : '');
+                acctFilter.innerHTML = '<option value="">All Accounts</option>'
+                    + '<option value="SAVINGS">💰 Savings</option>'
+                    + '<option value="NONE">No Account</option>'
+                    + accounts.map(a => `<option value="${a.id}">${escHtml(label(a))}</option>`).join('');
+                acctFilter.value = prevAcct;
+            }
+
             // Load all transactions once — everything month-specific is derived client-side from this
             const transactions = await fetch('/api/transactions?limit=1000').then(r => r.json());
             allTransactions = transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+            await loadReceiptBadges(allTransactions.map(tx => tx.id));
 
             // Set up / refresh the Monthly View dropdown, defaulting to the current calendar month
             populateMonthSelector();
@@ -1270,12 +1757,27 @@
     }
 
     /* ── Filter logic ────────────────────────────────────────────────────── */
+    function txMatchesAccountFilter(tx) {
+        if (!txFilterAccount) return true;
+        if (txFilterAccount === 'SAVINGS') return !!tx.fromSavings;
+        if (txFilterAccount === 'NONE') return !tx.fromSavings && tx.sourceAccountId == null && tx.destinationAccountId == null;
+        const id = parseInt(txFilterAccount, 10);
+        return tx.sourceAccountId === id || tx.destinationAccountId === id;
+    }
+
     function applyFiltersAndDisplay() {
+        const search = txFilterSearch.trim().toLowerCase();
         filteredTransactions = allTransactions.filter(function (tx) {
-            const catOk   = !txFilterCategory || tx.category_name === txFilterCategory;
-            const typeOk  = !txFilterType     || tx.transaction_type === txFilterType;
-            const monthOk = !selectedMonthKey || selectedMonthKey === 'ALL' || monthKeyOf(tx.date) === selectedMonthKey;
-            return catOk && typeOk && monthOk;
+            const catOk    = !txFilterCategory || tx.category_name === txFilterCategory;
+            const typeOk   = !txFilterType     || tx.transaction_type === txFilterType;
+            const monthOk  = !selectedMonthKey || selectedMonthKey === 'ALL' || monthKeyOf(tx.date) === selectedMonthKey;
+            const acctOk   = txMatchesAccountFilter(tx);
+            const searchOk = !search
+                || (tx.description || '').toLowerCase().includes(search)
+                || (tx.category_name || '').toLowerCase().includes(search)
+                || (tx.account_name || '').toLowerCase().includes(search)
+                || String(tx.amount).includes(search);
+            return catOk && typeOk && monthOk && acctOk && searchOk;
         });
         displayTransactionPage();
     }
@@ -1287,7 +1789,7 @@
         const pageTransactions = filteredTransactions.slice(start, end);
         const totalPages = Math.ceil(filteredTransactions.length / pageSize);
 
-        const typeIcon  = { income: 'fa-arrow-up', expense: 'fa-arrow-down', savings: 'fa-piggy-bank' };
+        const typeIcon  = { income: 'fa-arrow-up', expense: 'fa-arrow-down', savings: 'fa-piggy-bank', transfer: 'fa-right-left' };
         const txTypeIcon = (type) => `<i class="fas ${typeIcon[type] || 'fa-circle'}"></i>`;
 
         function getCatIcon(name) {
@@ -1321,7 +1823,11 @@
         } else {
             container.innerHTML = pageTransactions.map((tx, idx) => {
                 const catColor  = categoryColorMap[tx.category_name] || '#6c757d';
-                const isIncome  = tx.transaction_type === 'income';
+                // An External Source -> real account transfer is money entering the system, just
+                // like income — style it the same way rather than defaulting every transfer to
+                // expense-red (a real account -> External Destination correctly stays expense-red).
+                const isExternalIncoming = tx.transaction_type === 'transfer' && !tx.sourceAccountId && !!tx.destinationAccountId;
+                const isIncome  = tx.transaction_type === 'income' || isExternalIncoming;
                 const isSavings = tx.transaction_type === 'savings';
                 const txClass   = isIncome ? 'income' : (isSavings ? 'savings' : 'expense');
                 const dateObj   = new Date(tx.date);
@@ -1346,12 +1852,16 @@
                         <div class="tx-desc-text">
                             <span class="tx-desc-main">${tx.description}</span>
                         </div>
+                        ${receiptsByTransactionId[tx.id] ? `<button type="button" class="tx-receipt-badge" onclick="openReceiptDetailModal(${receiptsByTransactionId[tx.id]})" title="View receipt"><i class="fas fa-receipt"></i></button>` : ''}
                     </div>
                     <div class="tx-col-cat">
                         <span class="tx-category-chip" style="--cat-color: ${catColor}">
                             <i class="fas ${catIcon}"></i>
                             ${tx.category_name || 'Uncategorized'}
                         </span>
+                    </div>
+                    <div class="tx-col-account">
+                        <span class="tx-account-name" title="${tx.account_name || '-'}">${tx.account_name || '-'}</span>
                     </div>
                     <div class="tx-col-type">
                         <span class="tx-type-badge type-${txClass}">
@@ -1373,7 +1883,23 @@
                         </button>
                     </div>
                 </div>`;
-            }).join('');
+            }).join('') + (function () {
+                const netTotal = filteredTransactions.reduce((sum, tx) => {
+                    const isExternalIncoming = tx.transaction_type === 'transfer' && !tx.sourceAccountId && !!tx.destinationAccountId;
+                    const isIncome = tx.transaction_type === 'income' || isExternalIncoming;
+                    return sum + (isIncome ? tx.amount : -tx.amount);
+                }, 0);
+                const totalClass = netTotal >= 0 ? 'income' : 'expense';
+                const totalPrefix = netTotal >= 0 ? '+' : '−';
+                return `
+                <div class="tx-row tx-total-row">
+                    <div class="tx-total-label"><strong>Net Total (${filteredTransactions.length} transaction${filteredTransactions.length !== 1 ? 's' : ''})</strong></div>
+                    <div class="tx-col-amount">
+                        <span class="tx-amount amount-${totalClass}"><strong>${totalPrefix}${formatAmount(Math.abs(netTotal))}</strong></span>
+                    </div>
+                    <div class="tx-col-action"></div>
+                </div>`;
+            })();
         }
 
         // Sub-heading: show filtered count vs total for the selected month (or all time)
@@ -1419,17 +1945,268 @@
     function nextTransactionPage()     { if (currentPage < Math.ceil(filteredTransactions.length / pageSize) - 1) { currentPage++; displayTransactionPage(); } }
     function previousTransactionPage() { if (currentPage > 0) { currentPage--; displayTransactionPage(); } }
 
+    /* ── CSV export / import ─────────────────────────────────────────────── */
+    function csvEscape(val) {
+        const s = String(val == null ? '' : val);
+        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    }
+
+    async function exportFilteredTransactionsToCsv() {
+        if (!filteredTransactions.length) {
+            showNotification('No transactions to export.', 'error');
+            return;
+        }
+        const ok = await confirmAction(`Export ${filteredTransactions.length} transaction${filteredTransactions.length > 1 ? 's' : ''} to CSV?`, { title: 'Export to CSV', confirmText: 'Export' });
+        if (!ok) return;
+        const headers = ['Date', 'Description', 'Category', 'Type', 'Amount', 'Account', 'From Savings', 'Transaction ID', 'Created At'];
+        const rows = filteredTransactions.map(tx => [
+            (tx.date || '').slice(0, 10),
+            tx.description || '',
+            tx.category_name || '',
+            tx.transaction_type || '',
+            tx.amount,
+            tx.account_name || '-',
+            tx.fromSavings ? 'Yes' : 'No',
+            tx.id,
+            tx.created_at || ''
+        ]);
+        const csvContent = [headers, ...rows].map(r => r.map(csvEscape).join(',')).join('\r\n');
+        const blob = new Blob(['﻿' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const stamp = new Date().toISOString().slice(0, 10);
+        a.href = url;
+        a.download = `transactions_${stamp}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showNotification(`Exported ${filteredTransactions.length} transaction${filteredTransactions.length > 1 ? 's' : ''} to CSV.`, 'success');
+    }
+
+    function parseCsv(text) {
+        const rows = [];
+        let row = [], field = '', inQuotes = false;
+        for (let i = 0; i < text.length; i++) {
+            const c = text[i];
+            if (inQuotes) {
+                if (c === '"') {
+                    if (text[i + 1] === '"') { field += '"'; i++; }
+                    else inQuotes = false;
+                } else field += c;
+            } else if (c === '"') {
+                inQuotes = true;
+            } else if (c === ',') {
+                row.push(field); field = '';
+            } else if (c === '\r') {
+                // skip, \n handles the line break
+            } else if (c === '\n') {
+                row.push(field); rows.push(row); row = []; field = '';
+            } else {
+                field += c;
+            }
+        }
+        if (field.length || row.length) { row.push(field); rows.push(row); }
+        return rows.filter(r => r.some(c => c.trim() !== ''));
+    }
+
+    async function importTransactionsFromCsv(file) {
+        const text = (await file.text()).replace(/^﻿/, '');
+        const rows = parseCsv(text);
+        if (rows.length < 2) {
+            showNotification('CSV file has no data rows.', 'error');
+            return;
+        }
+        const header = rows[0].map(h => h.trim().toLowerCase());
+        const idx = {
+            date: header.indexOf('date'),
+            description: header.indexOf('description'),
+            category: header.indexOf('category'),
+            type: header.indexOf('type'),
+            amount: header.indexOf('amount'),
+            account: header.indexOf('account'),
+            fromSavings: header.indexOf('from savings')
+        };
+        if (idx.date === -1 || idx.description === -1 || idx.type === -1 || idx.amount === -1) {
+            showNotification('CSV is missing required columns (Date, Description, Type, Amount).', 'error');
+            return;
+        }
+
+        showNotification('Importing…', 'success');
+        const categories = await fetch('/api/categories').then(r => r.json()).catch(() => []);
+        const accounts = await fetch('/api/accounts').then(r => r.json()).catch(() => []);
+        cachedAccounts = accounts;
+
+        const IMPORT_CATEGORY_COLORS = ['#E53935','#F4511E','#FB8C00','#FDD835','#7CB342','#43A047','#00897B','#00ACC1','#1E88E5','#3949AB','#5E35B1','#8E24AA','#D81B60','#EC407A','#6D4C41','#757575','#546E7A','#90A4AE','#2E7D32','#1565C0'];
+        const createdCategoryNames = [];
+
+        let succeeded = 0, failed = 0;
+        const errors = [];
+        for (const r of rows.slice(1)) {
+            const type = (r[idx.type] || '').trim().toLowerCase();
+            const description = (r[idx.description] || '').trim();
+            const amount = parseFloat(String(r[idx.amount] || '').replace(/[^\d.-]/g, ''));
+            const date = (r[idx.date] || '').trim().slice(0, 10);
+            const categoryName = idx.category !== -1 ? (r[idx.category] || '').trim() : '';
+            const accountText = idx.account !== -1 ? (r[idx.account] || '').trim() : '';
+            const fromSavingsText = idx.fromSavings !== -1 ? (r[idx.fromSavings] || '').trim().toLowerCase() : '';
+
+            if (type === 'transfer') {
+                failed++; errors.push(`"${description || 'row'}" skipped — Transfer rows aren't supported for import; add them via Log Cash Transfer.`);
+                continue;
+            }
+            if (!['income', 'expense', 'savings'].includes(type)) {
+                failed++; errors.push(`"${description || 'row'}" skipped — invalid type "${r[idx.type]}".`);
+                continue;
+            }
+            if (!description || isNaN(amount) || amount <= 0 || !date) {
+                failed++; errors.push(`"${description || 'row'}" skipped — missing or invalid description, amount, or date.`);
+                continue;
+            }
+            if (!categoryName) {
+                failed++; errors.push(`"${description}" skipped — no category specified.`);
+                continue;
+            }
+            let cat = categories.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
+            if (!cat) {
+                try {
+                    const createResp = await fetch('/api/categories', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            name: categoryName,
+                            color: IMPORT_CATEGORY_COLORS[categories.length % IMPORT_CATEGORY_COLORS.length],
+                            icon: 'tag',
+                            categoryType: type
+                        })
+                    });
+                    if (createResp.ok) {
+                        cat = await createResp.json();
+                        categories.push(cat);
+                        createdCategoryNames.push(categoryName);
+                    } else {
+                        const errData = await createResp.json().catch(() => null);
+                        failed++; errors.push(`"${description}" skipped — could not create category "${categoryName}" (${(errData && errData.error) || 'server error'}).`);
+                        continue;
+                    }
+                } catch (e) {
+                    failed++; errors.push(`"${description}" skipped — could not create category "${categoryName}".`);
+                    continue;
+                }
+            }
+            const fromSavings = type === 'expense' && (fromSavingsText === 'yes' || accountText.toUpperCase() === 'SAVINGS');
+            let accountId = null;
+            if (!fromSavings && accountText && accountText !== '-') {
+                const acct = cachedAccounts.find(a => accountText.startsWith(a.accountNickname));
+                accountId = acct ? acct.id : null;
+            }
+
+            try {
+                const response = await fetch('/api/transactions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        description,
+                        amount,
+                        category_id: cat.id,
+                        transaction_type: type,
+                        date,
+                        sourceAccountId: accountId,
+                        destinationAccountId: null,
+                        fromSavings
+                    })
+                });
+                if (response.ok) {
+                    succeeded++;
+                } else {
+                    failed++;
+                    const data = await response.json().catch(() => null);
+                    errors.push(`"${description}" failed — ${(data && data.error) || 'server error'}.`);
+                }
+            } catch (e) {
+                failed++; errors.push(`"${description}" failed — network error.`);
+            }
+        }
+
+        if (succeeded) loadDashboard();
+        const uniqueCreated = [...new Set(createdCategoryNames)];
+        const createdNote = uniqueCreated.length
+            ? ` (${uniqueCreated.length} new categor${uniqueCreated.length > 1 ? 'ies' : 'y'} created: ${uniqueCreated.join(', ')})`
+            : '';
+        if (failed === 0) {
+            showNotification(`Imported ${succeeded} transaction${succeeded > 1 ? 's' : ''} successfully.${createdNote}`, 'success');
+        } else {
+            showNotification(`${succeeded} imported, ${failed} failed.${createdNote} ${errors.slice(0, 2).join(' ')}`, succeeded ? 'warning' : 'error');
+        }
+    }
+
     /* ── Edit transaction ────────────────────────────────────────────────── */
-    function editTransaction(id) {
+    function showEditTransferFields() {
+        document.getElementById('editTxAccountWrap').classList.add('d-none');
+        document.getElementById('editTxCategoryWrap').classList.add('d-none');
+        document.getElementById('editTxTransferWrap').classList.remove('d-none');
+    }
+
+    function showEditNormalFields() {
+        document.getElementById('editTxAccountWrap').classList.remove('d-none');
+        document.getElementById('editTxCategoryWrap').classList.remove('d-none');
+        document.getElementById('editTxTransferWrap').classList.add('d-none');
+    }
+
+    async function loadEditTransferAccounts(fromSel, toSel, selectedFrom, selectedTo) {
+        try {
+            const accounts = await fetch('/api/accounts').then(r => r.json());
+            const label = a => a.accountNickname + (a.bankName ? ' (' + a.bankName + ')' : a.provider ? ' (' + a.provider + ')' : '');
+            const accountOptionsHtml = accounts.map(a => `<option value="${a.id}">${label(a)}</option>`).join('');
+            fromSel.innerHTML = '<option value="">Select source…</option>' + '<option value="EXTERNAL">🌐 External Source</option>' +
+                (accounts.length ? '<option disabled>──────────</option>' : '') + accountOptionsHtml;
+            toSel.innerHTML = '<option value="">Select destination…</option>' + '<option value="EXTERNAL">🌐 External Destination</option>' +
+                (accounts.length ? '<option disabled>──────────</option>' : '') + accountOptionsHtml;
+        } catch (e) {
+            fromSel.innerHTML = '<option value="">Select source…</option>';
+            toSel.innerHTML = '<option value="">Select destination…</option>';
+        }
+        fromSel.value = selectedFrom || '';
+        toSel.value = selectedTo || '';
+    }
+
+    async function editTransaction(id) {
         const tx = allTransactions.find(t => t.id === id);
         if (!tx) return;
         txEditId = id;
         document.getElementById('editTxId').value          = id;
         document.getElementById('editTxDescription').value = tx.description;
+        document.getElementById('editTxDetails').value      = tx.details || '';
         document.getElementById('editTxAmount').value      = Number(tx.amount).toFixed(2);
+        document.getElementById('editTxDate').value        = tx.date ? tx.date.slice(0, 10) : '';
         document.getElementById('editTxType').value        = tx.transaction_type;
-        loadEditCategories(tx.transaction_type, tx.category_id);
+
+        if (tx.transaction_type === 'transfer') {
+            showEditTransferFields();
+            const selectedFrom = tx.sourceAccountId != null ? String(tx.sourceAccountId) : 'EXTERNAL';
+            const selectedTo   = tx.destinationAccountId != null ? String(tx.destinationAccountId) : 'EXTERNAL';
+            await loadEditTransferAccounts(document.getElementById('editTxTransferFrom'), document.getElementById('editTxTransferTo'), selectedFrom, selectedTo);
+        } else {
+            showEditNormalFields();
+            loadEditCategories(tx.transaction_type, tx.category_id);
+            applyAccountFieldLabel('editTxAccountLabel', tx.transaction_type);
+            const selectedAccountValue = tx.fromSavings ? 'SAVINGS' : (tx.sourceAccountId != null ? String(tx.sourceAccountId) : '');
+            loadEditTxAccounts(selectedAccountValue, tx.transaction_type);
+        }
         txEditModal.show();
+    }
+
+    async function loadEditTxAccounts(selectedValue, type) {
+        const sel = document.getElementById('editTxAccount');
+        try {
+            const accounts = await fetch('/api/accounts').then(r => r.json());
+            const label = a => a.accountNickname + (a.bankName ? ' (' + a.bankName + ')' : a.provider ? ' (' + a.provider + ')' : '');
+            sel.innerHTML = '<option value="">-- No account --</option>' + accounts.map(a => `<option value="${a.id}">${label(a)}</option>`).join('');
+        } catch (e) {
+            sel.innerHTML = '<option value="">-- No account --</option>';
+        }
+        applySavingsPseudoOption(sel, type);
+        sel.value = selectedValue || '';
     }
 
     async function loadEditCategories(type, selectedId) {
@@ -1459,34 +2236,71 @@
     async function saveEditTransaction() {
         const id          = parseInt(document.getElementById('editTxId').value, 10);
         const description = document.getElementById('editTxDescription').value.trim();
+        const details     = document.getElementById('editTxDetails').value.trim();
         const amount      = parseFloat(document.getElementById('editTxAmount').value);
+        const date        = document.getElementById('editTxDate').value;
         const type        = document.getElementById('editTxType').value;
-        const categoryId  = parseInt(document.getElementById('editTxCategory').value, 10);
 
-        if (!description || isNaN(amount) || amount <= 0 || !categoryId) {
-            showNotification('Please fill all fields correctly.', 'error');
-            return;
+        let payload;
+        if (type === 'transfer') {
+            const fromVal = document.getElementById('editTxTransferFrom').value;
+            const toVal   = document.getElementById('editTxTransferTo').value;
+            if (!fromVal || !toVal) {
+                showNotification('Select both From and To accounts.', 'error'); return;
+            }
+            if (fromVal === 'EXTERNAL' && toVal === 'EXTERNAL') {
+                showNotification('From and To cannot both be External.', 'error'); return;
+            }
+            if (fromVal === toVal) {
+                showNotification('From and To accounts must be different.', 'error'); return;
+            }
+            if (isNaN(amount) || amount <= 0 || !date) {
+                showNotification('Please fill all fields correctly.', 'error'); return;
+            }
+            payload = {
+                description: description || 'Transfer',
+                details,
+                amount,
+                date,
+                transaction_type: 'transfer',
+                category_id: null,
+                sourceAccountId: fromVal === 'EXTERNAL' ? null : parseInt(fromVal, 10),
+                destinationAccountId: toVal === 'EXTERNAL' ? null : parseInt(toVal, 10)
+            };
+        } else {
+            const categoryId = parseInt(document.getElementById('editTxCategory').value, 10);
+            const acctVal    = document.getElementById('editTxAccount').value;
+            if (!description || isNaN(amount) || amount <= 0 || !date || !categoryId) {
+                showNotification('Please fill all fields correctly.', 'error');
+                return;
+            }
+            payload = {
+                description,
+                details,
+                amount,
+                date,
+                transaction_type: type,
+                category_id: categoryId,
+                sourceAccountId: acctVal && acctVal !== 'SAVINGS' ? parseInt(acctVal, 10) : null,
+                destinationAccountId: null,
+                fromSavings: acctVal === 'SAVINGS'
+            };
         }
 
         try {
             const response = await fetch(`/api/transactions/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    description,
-                    amount,
-                    transaction_type: type,
-                    category_id: categoryId
-                })
+                body: JSON.stringify(payload)
             });
+            const data = await response.json().catch(() => ({}));
             if (response.ok) {
                 txEditModal.hide();
                 txEditId = null;
-                showNotification('Transaction updated successfully', 'success');
+                showNotification(data.warning || 'Transaction updated successfully', data.warning ? 'warning' : 'success');
                 loadDashboard();
             } else {
-                const err = await response.json().catch(() => ({}));
-                showNotification(err.error || 'Failed to update transaction', 'error');
+                showNotification(data.error || 'Failed to update transaction', 'error');
             }
         } catch (e) {
             showNotification('Error updating transaction', 'error');
@@ -1495,76 +2309,96 @@
 
     /* ── Add transaction ─────────────────────────────────────────────────── */
     function openAddTransactionModal() {
-        document.getElementById('dashboardAddTxForm').reset();
-        document.getElementById('dashboardAddTxDate').valueAsDate = new Date();
-        loadAddTxCategories();
-        loadAddTxAccounts();
-        txAddModal.show();
+        window.location.href = 'transactions.html?openAddTx=1';
     }
 
-    async function loadAddTxCategories() {
-        const sel = document.getElementById('dashboardAddTxCategory');
-        sel.innerHTML = '<option value="">Loading…</option>';
+    function openScanReceiptModal() {
+        window.location.href = 'transactions.html?openReceiptScanner=1';
+    }
+
+    async function loadReceiptBadges(transactionIds) {
+        if (!transactionIds.length) { receiptsByTransactionId = {}; return; }
         try {
-            // Show every category regardless of the selected transaction type — categories aren't
-            // strictly tied to one type (e.g. an "income"-tagged category should still be pickable
-            // for an expense entry), and filtering by type was hiding income/savings categories.
-            const cats = await fetch('/api/categories').then(r => r.json());
-            sel.innerHTML = '<option value="">Select category</option>' +
-                (cats.length ? cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('') : '');
+            const res = await fetch('/api/receipts/by-transaction?ids=' + transactionIds.join(','));
+            receiptsByTransactionId = res.ok ? await res.json() : {};
         } catch (e) {
-            sel.innerHTML = '<option value="">Error loading</option>';
+            receiptsByTransactionId = {};
         }
     }
 
-    async function loadAddTxAccounts() {
-        const sel = document.getElementById('dashboardAddTxAccount');
-        try {
-            const accounts = await fetch('/api/accounts').then(r => r.json());
-            const label = a => a.accountNickname + (a.bankName ? ' (' + a.bankName + ')' : a.provider ? ' (' + a.provider + ')' : '');
-            sel.innerHTML = '<option value="">-- No account --</option>' + accounts.map(a => `<option value="${a.id}">${label(a)}</option>`).join('');
-        } catch (e) {
-            sel.innerHTML = '<option value="">-- No account --</option>';
-        }
+    function openReceiptDetailModal(receiptId) {
+        rdCurrentReceiptId = receiptId;
+        const url = `/api/receipts/${receiptId}/image`;
+        document.getElementById('rdPreviewImg').src = url;
+        document.getElementById('rdDownloadLink').href = url;
+        receiptDetailModal.show();
     }
 
-    async function saveAddTransaction() {
-        const description = document.getElementById('dashboardAddTxDescription').value.trim();
-        const amount      = parseFloat(document.getElementById('dashboardAddTxAmount').value);
-        const categoryId  = parseInt(document.getElementById('dashboardAddTxCategory').value, 10);
-        const type        = document.getElementById('dashboardAddTxType').value;
-        const date        = document.getElementById('dashboardAddTxDate').value;
-        const acctEl      = document.getElementById('dashboardAddTxAccount');
-
-        if (!description || isNaN(amount) || amount <= 0 || !categoryId || !date) {
-            showNotification('Please fill all fields correctly.', 'error');
-            return;
-        }
-
+    async function replaceReceiptImage(receiptId, file) {
         try {
-            const response = await fetch('/api/transactions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    description,
-                    amount,
-                    category_id: categoryId,
-                    transaction_type: type,
-                    date,
-                    sourceAccountId: acctEl && acctEl.value ? parseInt(acctEl.value, 10) : null,
-                    destinationAccountId: null
-                })
-            });
-            if (response.ok) {
-                txAddModal.hide();
-                showNotification('Transaction added successfully', 'success');
-                loadDashboard();
-            } else {
-                const err = await response.json().catch(() => ({}));
-                showNotification(err.error || 'Failed to add transaction', 'error');
+            const fd = new FormData();
+            fd.append('file', file);
+            const res = await fetch(`/api/receipts/${receiptId}/image`, { method: 'PUT', body: fd });
+            const data = await res.json().catch(() => null);
+            if (!res.ok) {
+                showNotification((data && data.error) || 'Failed to replace receipt image.', 'error');
+                return;
             }
+            document.getElementById('rdPreviewImg').src = `/api/receipts/${receiptId}/image?t=` + Date.now();
+            showNotification('Receipt image replaced.', 'success');
         } catch (e) {
-            showNotification('Error adding transaction', 'error');
+            showNotification('Unable to replace this receipt right now.', 'error');
+        }
+    }
+
+    async function deleteReceipt(receiptId) {
+        if (!confirm('Delete this receipt? The transaction itself will not be affected.')) return;
+        try {
+            const res = await fetch(`/api/receipts/${receiptId}`, { method: 'DELETE' });
+            if (!res.ok && res.status !== 204) {
+                showNotification('Failed to delete receipt.', 'error');
+                return;
+            }
+            receiptDetailModal.hide();
+            showNotification('Receipt deleted.', 'success');
+            loadDashboard();
+        } catch (e) {
+            showNotification('Unable to delete this receipt right now.', 'error');
+        }
+    }
+
+    function validateReceiptFile(file) {
+        const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!allowed.includes(file.type)) {
+            showNotification('Please choose a JPG, PNG, or WEBP image.', 'error');
+            return false;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+            showNotification('Image is too large — please choose a file under 10MB.', 'error');
+            return false;
+        }
+        return true;
+    }
+
+    const ACCOUNT_FIELD_LABELS = { expense: 'Paid From', income: 'Received Into', savings: 'Savings Account' };
+    function applyAccountFieldLabel(labelElId, type) {
+        const labelEl = document.getElementById(labelElId);
+        if (!labelEl) return;
+        labelEl.innerHTML = (ACCOUNT_FIELD_LABELS[type] || 'Paid From') + ' <small class="text-muted">(optional)</small>';
+    }
+    function applySavingsPseudoOption(selectEl, type) {
+        if (!selectEl) return;
+        const existing = selectEl.querySelector('option[value="SAVINGS"]');
+        if (type === 'expense') {
+            if (!existing) {
+                const opt = document.createElement('option');
+                opt.value = 'SAVINGS';
+                opt.textContent = '💰 Savings (spend from savings)';
+                selectEl.insertBefore(opt, selectEl.options[1] || null);
+            }
+        } else if (existing) {
+            if (selectEl.value === 'SAVINGS') selectEl.value = '';
+            existing.remove();
         }
     }
 
@@ -1706,18 +2540,30 @@
         const months = {};
         fiscalYear.forEach(m => { months[m] = { income: 0, expense: 0, savings: 0 }; });
 
-        data.forEach(d => {
-            if (d.month) {
-                const monthNum = d.month.toString().padStart(7, '0').slice(-2);  // last 2 chars of YYYY-MM
-                const mm = d.month.split('-')[1];
+        if (monthlyCategoryFilter) {
+            // Category-scoped expense trend, computed client-side from the already-loaded transactions
+            allTransactions.forEach(tx => {
+                if (tx.transaction_type !== 'expense') return;
+                if ((tx.category_name || 'Uncategorized') !== monthlyCategoryFilter) return;
+                const mm = String(new Date(tx.date).getMonth() + 1).padStart(2, '0');
                 const monthLabel = monthMap[mm];
                 if (monthLabel && months[monthLabel]) {
-                    if (d.type === 'income')  months[monthLabel].income  = Number(d.total);
-                    if (d.type === 'expense') months[monthLabel].expense = Number(d.total);
-                    if (d.type === 'savings') months[monthLabel].savings = Number(d.total);
+                    months[monthLabel].expense += Number(tx.amount) || 0;
                 }
-            }
-        });
+            });
+        } else {
+            data.forEach(d => {
+                if (d.month) {
+                    const mm = d.month.split('-')[1];
+                    const monthLabel = monthMap[mm];
+                    if (monthLabel && months[monthLabel]) {
+                        if (d.type === 'income')  months[monthLabel].income  = Number(d.total);
+                        if (d.type === 'expense') months[monthLabel].expense = Number(d.total);
+                        if (d.type === 'savings') months[monthLabel].savings = Number(d.total);
+                    }
+                }
+            });
+        }
 
         const ctx = canvasEl.getContext('2d');
         if (monthlyChartInstances[suffix]) monthlyChartInstances[suffix].destroy();
@@ -1734,28 +2580,27 @@
             }
         };
 
+        const expenseLabel = monthlyCategoryFilter ? ('Expense: ' + monthlyCategoryFilter) : 'Expense';
         const incomeDataset  = { label: 'Income',  data: fiscalYear.map(m => months[m].income),  borderColor: '#28a745', backgroundColor: 'rgba(40,167,69,0.1)',  tension: 0.4, fill: true };
-        const expenseDataset = { label: 'Expense', data: fiscalYear.map(m => months[m].expense), borderColor: '#dc3545', backgroundColor: 'rgba(220,53,69,0.1)',   tension: 0.4, fill: true };
+        const expenseDataset = { label: expenseLabel, data: fiscalYear.map(m => months[m].expense), borderColor: '#dc3545', backgroundColor: 'rgba(220,53,69,0.1)',   tension: 0.4, fill: true };
         const savingsDataset = { label: 'Savings', data: fiscalYear.map(m => months[m].savings), borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)',  tension: 0.4, fill: true };
 
+        // A category filter narrows the chart down to that category's expense trend only —
+        // mixing it with unfiltered income/savings totals would be misleading (wildly different scales).
+        const datasets = monthlyCategoryFilter ? [expenseDataset] : [incomeDataset, expenseDataset, savingsDataset];
+
         if (monthlyChartType === 'bar') {
-            incomeDataset.backgroundColor  = '#28a745';
-            incomeDataset.borderRadius     = 6;
-            incomeDataset.borderSkipped    = false;
-            delete incomeDataset.borderColor; delete incomeDataset.tension; delete incomeDataset.fill;
-            expenseDataset.backgroundColor = '#dc3545';
-            expenseDataset.borderRadius    = 6;
-            expenseDataset.borderSkipped   = false;
-            delete expenseDataset.borderColor; delete expenseDataset.tension; delete expenseDataset.fill;
-            savingsDataset.backgroundColor = '#3b82f6';
-            savingsDataset.borderRadius    = 6;
-            savingsDataset.borderSkipped   = false;
-            delete savingsDataset.borderColor; delete savingsDataset.tension; delete savingsDataset.fill;
+            datasets.forEach(ds => {
+                ds.backgroundColor = ds.borderColor;
+                ds.borderRadius    = 6;
+                ds.borderSkipped   = false;
+                delete ds.borderColor; delete ds.tension; delete ds.fill;
+            });
         }
 
         monthlyChartInstances[suffix] = new Chart(ctx, {
             type: monthlyChartType === 'bar' ? 'bar' : 'line',
-            data: { labels: fiscalYear, datasets: [incomeDataset, expenseDataset, savingsDataset] },
+            data: { labels: fiscalYear, datasets: datasets },
             options: commonOptions
         });
     }
@@ -1771,81 +2616,35 @@
         drawMonthlyChart(monthlyChartData, activeSuffix());
     }
 
+    function onMonthlyCategoryFilterChanged(value) {
+        monthlyCategoryFilter = value;
+        ['', 'Compact'].forEach(function (suf) {
+            const sel = document.getElementById('monthlyCategoryFilter' + suf);
+            if (sel) sel.value = value;
+        });
+        drawMonthlyChart(monthlyChartData, activeSuffix());
+    }
+
+    const TOAST_ICONS = { success: 'fa-circle-check', error: 'fa-circle-exclamation', warning: 'fa-triangle-exclamation', info: 'fa-circle-info' };
+
     function showNotification(message, type = 'success') {
         const container = document.getElementById('toastContainer');
         const toast = document.createElement('div');
-        toast.className = `notification-toast notification-${type === 'success' ? 'success' : 'error'}`;
-        toast.textContent = message;
+        toast.className = `notification-toast notification-${type}`;
+        toast.innerHTML = `<i class="fas ${TOAST_ICONS[type] || TOAST_ICONS.success} notification-toast-icon"></i>` +
+            `<span class="notification-toast-message"></span>` +
+            `<button type="button" class="notification-toast-close" aria-label="Dismiss">&times;</button>`;
+        toast.querySelector('.notification-toast-message').textContent = message;
+        const dismiss = () => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); };
+        toast.querySelector('.notification-toast-close').addEventListener('click', dismiss);
         container.appendChild(toast);
         requestAnimationFrame(() => toast.classList.add('show'));
-        setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 300);
-        }, 5000);
+        setTimeout(dismiss, 5000);
     }
 </script>
-<!-- Add New Transaction Modal -->
-<div class="modal fade" id="dashboardAddTxModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>Add New Transaction</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="dashboardAddTxForm">
-                    <div class="row g-3">
-                        <div class="col-md-6 mb-2">
-                            <label for="dashboardAddTxDescription" class="form-label">Description</label>
-                            <input type="text" class="form-control form-control-sm" id="dashboardAddTxDescription" required placeholder="e.g., Grocery shopping">
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <label for="dashboardAddTxAmount" class="form-label">Amount</label>
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text">৳</span>
-                                <input type="number" class="form-control" id="dashboardAddTxAmount" step="0.01" required placeholder="0.00">
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-2">
-                            <label for="dashboardAddTxCategory" class="form-label">Category</label>
-                            <select class="form-select form-select-sm" id="dashboardAddTxCategory" required>
-                                <option value="">Select category</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-2">
-                            <label for="dashboardAddTxType" class="form-label">Type</label>
-                            <select class="form-select form-select-sm" id="dashboardAddTxType" required>
-                                <option value="expense">Expense</option>
-                                <option value="income">Income</option>
-                                <option value="savings">Savings</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-2">
-                            <label for="dashboardAddTxDate" class="form-label">Date</label>
-                            <input type="date" class="form-control form-control-sm" id="dashboardAddTxDate" required>
-                        </div>
-                        <div class="col-md-12 mb-2">
-                            <label for="dashboardAddTxAccount" class="form-label">Account <small class="text-muted">(optional)</small></label>
-                            <select class="form-select form-select-sm" id="dashboardAddTxAccount">
-                                <option value="">-- No account --</option>
-                            </select>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="dashboardSaveAddTxBtn">
-                    <i class="fas fa-plus me-1"></i>Add Transaction
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- Edit Transaction Modal -->
 <div class="modal fade" id="dashboardEditTxModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width:460px">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:700px">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title"><i class="fas fa-pen me-2"></i>Edit Transaction</h5>
@@ -1858,10 +2657,20 @@
                     <input type="text" class="form-control" id="editTxDescription" placeholder="e.g., Grocery shopping" required>
                 </div>
                 <div class="mb-3">
-                    <label for="editTxAmount" class="form-label">Amount</label>
-                    <div class="input-group">
-                        <span class="input-group-text">$</span>
-                        <input type="number" class="form-control" id="editTxAmount" step="0.01" min="0.01" required>
+                    <label for="editTxDetails" class="form-label">Details <small class="text-muted">(optional)</small></label>
+                    <textarea class="form-control" id="editTxDetails" rows="3"></textarea>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-6 mb-3">
+                        <label for="editTxAmount" class="form-label">Amount</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" id="editTxAmount" step="0.01" min="0.01" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="editTxDate" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="editTxDate" required>
                     </div>
                 </div>
                 <div class="mb-3">
@@ -1870,13 +2679,36 @@
                         <option value="expense">Expense</option>
                         <option value="income">Income</option>
                         <option value="savings">Savings</option>
+                        <option value="transfer">Transfer</option>
                     </select>
                 </div>
-                <div class="mb-3">
-                    <label for="editTxCategory" class="form-label">Category</label>
-                    <select class="form-select" id="editTxCategory" required>
-                        <option value="">Loading…</option>
-                    </select>
+                <div class="row g-3">
+                    <div class="col-md-6 mb-3" id="editTxAccountWrap">
+                        <label for="editTxAccount" class="form-label" id="editTxAccountLabel">Paid From <small class="text-muted">(optional)</small></label>
+                        <select class="form-select" id="editTxAccount">
+                            <option value="">-- No account --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3" id="editTxCategoryWrap">
+                        <label for="editTxCategory" class="form-label">Category</label>
+                        <select class="form-select" id="editTxCategory" required>
+                            <option value="">Loading…</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row g-3 d-none" id="editTxTransferWrap">
+                    <div class="col-md-6 mb-3">
+                        <label for="editTxTransferFrom" class="form-label">From Account</label>
+                        <select class="form-select" id="editTxTransferFrom">
+                            <option value="">Select source…</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="editTxTransferTo" class="form-label">To Account</label>
+                        <select class="form-select" id="editTxTransferTo">
+                            <option value="">Select destination…</option>
+                        </select>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -1908,6 +2740,27 @@
             </div>
         </div>
     </div>
+</div>
+
+<!-- Receipt Detail Modal -->
+<div class="modal fade" id="receiptDetailModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-receipt me-2"></i>Receipt</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center">
+        <img id="rdPreviewImg" src="" alt="Receipt" style="max-width:100%;max-height:60vh;border-radius:8px;border:1px solid var(--border-color);">
+        <input type="file" id="rdReplaceFileInput" accept="image/jpeg,image/png,image/webp" style="display:none">
+      </div>
+      <div class="modal-footer">
+        <a id="rdDownloadLink" href="#" download class="btn btn-outline-secondary icon-btn" title="Download"><i class="fas fa-download"></i></a>
+        <button type="button" class="btn btn-outline-primary icon-btn" id="rdReplaceBtn" title="Replace image"><i class="fas fa-file-image"></i></button>
+        <button type="button" class="btn btn-outline-danger icon-btn" id="rdDeleteBtn" title="Delete receipt"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

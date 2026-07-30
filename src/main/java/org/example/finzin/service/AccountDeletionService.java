@@ -1,0 +1,276 @@
+package org.example.finzin.service;
+
+import org.example.finzin.entity.BudgetPlanEntity;
+import org.example.finzin.entity.BudgetTemplateEntity;
+import org.example.finzin.entity.HouseholdEntity;
+import org.example.finzin.entity.HouseholdMemberEntity;
+import org.example.finzin.entity.PurchaseItemEntity;
+import org.example.finzin.entity.ReceiptEntity;
+import org.example.finzin.entity.TransactionEntity;
+import org.example.finzin.entity.UserEntity;
+import org.example.finzin.family.HouseholdService;
+import org.example.finzin.purchaseplanner.PurchaseItemImageStorageService;
+import org.example.finzin.receipts.ReceiptStorageService;
+import org.example.finzin.repository.*;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+/**
+ * Permanently deletes a user account and every row/file tied to it. This is the actual
+ * implementation behind Settings &gt; Danger Zone &gt; Delete My Account, which previously only
+ * showed a toast and redirected to login without deleting anything server-side.
+ *
+ * Deletion order matters in exactly one place: TransactionEntity has a real DB foreign key on
+ * category_id (fk_transaction_category), so transactions must be deleted before categories.
+ * Everything else here is a plain userId column with no enforced FK, so order is otherwise free —
+ * this still deletes children (savings budgets under a plan, template categories under a
+ * template) before their parents for clarity.
+ */
+@Service
+public class AccountDeletionService {
+
+    private final UserRepository userRepository;
+    private final AccountRepository accountRepository;
+    private final TransactionRepository transactionRepository;
+    private final CategoryRepository categoryRepository;
+    private final RecurringTransactionRepository recurringTransactionRepository;
+    private final ReceiptRepository receiptRepository;
+    private final ReceiptSettingsRepository receiptSettingsRepository;
+    private final ReceiptStorageService receiptStorageService;
+    private final NotificationRepository notificationRepository;
+    private final BudgetRepository budgetRepository;
+    private final BudgetPlanRepository budgetPlanRepository;
+    private final SavingsBudgetRepository savingsBudgetRepository;
+    private final BudgetTemplateRepository budgetTemplateRepository;
+    private final BudgetTemplateCategoryRepository budgetTemplateCategoryRepository;
+    private final GoldAssetRepository goldAssetRepository;
+    private final GoldPriceSettingRepository goldPriceSettingRepository;
+    private final AssetRepository assetRepository;
+    private final InvestmentRepository investmentRepository;
+    private final LoanRepository loanRepository;
+    private final SubscriptionRepository subscriptionRepository;
+    private final PurchaseItemRepository purchaseItemRepository;
+    private final PurchaseItemActivityRepository purchaseItemActivityRepository;
+    private final PurchaseItemImageStorageService purchaseItemImageStorageService;
+    private final NetWorthSnapshotRepository netWorthSnapshotRepository;
+    private final NoteRepository noteRepository;
+    private final TodoRepository todoRepository;
+    private final TodoFolderRepository todoFolderRepository;
+    private final TodoListRepository todoListRepository;
+    private final TodoItemRepository todoItemRepository;
+    private final SidebarPreferenceRepository sidebarPreferenceRepository;
+    private final AppearancePreferenceRepository appearancePreferenceRepository;
+    private final AiConversationRepository aiConversationRepository;
+    private final AiMessageRepository aiMessageRepository;
+    private final AiDocumentEmbeddingRepository aiDocumentEmbeddingRepository;
+    private final AiSettingsRepository aiSettingsRepository;
+    private final VoiceCommandHistoryRepository voiceCommandHistoryRepository;
+    private final VoiceSettingsRepository voiceSettingsRepository;
+    private final org.example.finzin.repository.GamificationSettingsRepository gamificationSettingsRepository;
+    private final org.example.finzin.repository.UserXpRepository userXpRepository;
+    private final org.example.finzin.repository.XpHistoryRepository xpHistoryRepository;
+    private final org.example.finzin.repository.UserAchievementRepository userAchievementRepository;
+    private final org.example.finzin.repository.UserStatCounterRepository userStatCounterRepository;
+    private final org.example.finzin.repository.StreakRepository streakRepository;
+    private final org.example.finzin.repository.UserChallengeRepository userChallengeRepository;
+    private final HouseholdMemberRepository householdMemberRepository;
+    private final HouseholdInvitationRepository householdInvitationRepository;
+    private final SharedTransactionRepository sharedTransactionRepository;
+    private final SharedTransactionShareRepository sharedTransactionShareRepository;
+    private final HouseholdGoalContributionRepository householdGoalContributionRepository;
+    private final HouseholdService householdService;
+
+    @Value("${app.upload.dir:user-uploads/profiles}")
+    private String profileUploadDir;
+
+    public AccountDeletionService(UserRepository userRepository, AccountRepository accountRepository,
+            TransactionRepository transactionRepository, CategoryRepository categoryRepository,
+            RecurringTransactionRepository recurringTransactionRepository, ReceiptRepository receiptRepository,
+            ReceiptSettingsRepository receiptSettingsRepository, ReceiptStorageService receiptStorageService,
+            NotificationRepository notificationRepository, BudgetRepository budgetRepository,
+            BudgetPlanRepository budgetPlanRepository, SavingsBudgetRepository savingsBudgetRepository,
+            BudgetTemplateRepository budgetTemplateRepository, BudgetTemplateCategoryRepository budgetTemplateCategoryRepository,
+            GoldAssetRepository goldAssetRepository, GoldPriceSettingRepository goldPriceSettingRepository,
+            AssetRepository assetRepository, InvestmentRepository investmentRepository, LoanRepository loanRepository,
+            SubscriptionRepository subscriptionRepository, PurchaseItemRepository purchaseItemRepository,
+            PurchaseItemActivityRepository purchaseItemActivityRepository, PurchaseItemImageStorageService purchaseItemImageStorageService,
+            NetWorthSnapshotRepository netWorthSnapshotRepository, NoteRepository noteRepository, TodoRepository todoRepository,
+            TodoFolderRepository todoFolderRepository, TodoListRepository todoListRepository, TodoItemRepository todoItemRepository,
+            SidebarPreferenceRepository sidebarPreferenceRepository, AppearancePreferenceRepository appearancePreferenceRepository,
+            AiConversationRepository aiConversationRepository, AiMessageRepository aiMessageRepository,
+            AiDocumentEmbeddingRepository aiDocumentEmbeddingRepository, AiSettingsRepository aiSettingsRepository,
+            VoiceCommandHistoryRepository voiceCommandHistoryRepository, VoiceSettingsRepository voiceSettingsRepository,
+            org.example.finzin.repository.GamificationSettingsRepository gamificationSettingsRepository,
+            org.example.finzin.repository.UserXpRepository userXpRepository,
+            org.example.finzin.repository.XpHistoryRepository xpHistoryRepository,
+            org.example.finzin.repository.UserAchievementRepository userAchievementRepository,
+            org.example.finzin.repository.UserStatCounterRepository userStatCounterRepository,
+            org.example.finzin.repository.StreakRepository streakRepository,
+            org.example.finzin.repository.UserChallengeRepository userChallengeRepository,
+            HouseholdMemberRepository householdMemberRepository, HouseholdInvitationRepository householdInvitationRepository,
+            SharedTransactionRepository sharedTransactionRepository, SharedTransactionShareRepository sharedTransactionShareRepository,
+            HouseholdGoalContributionRepository householdGoalContributionRepository,
+            HouseholdService householdService) {
+        this.userRepository = userRepository;
+        this.accountRepository = accountRepository;
+        this.transactionRepository = transactionRepository;
+        this.categoryRepository = categoryRepository;
+        this.recurringTransactionRepository = recurringTransactionRepository;
+        this.receiptRepository = receiptRepository;
+        this.receiptSettingsRepository = receiptSettingsRepository;
+        this.receiptStorageService = receiptStorageService;
+        this.notificationRepository = notificationRepository;
+        this.budgetRepository = budgetRepository;
+        this.budgetPlanRepository = budgetPlanRepository;
+        this.savingsBudgetRepository = savingsBudgetRepository;
+        this.budgetTemplateRepository = budgetTemplateRepository;
+        this.budgetTemplateCategoryRepository = budgetTemplateCategoryRepository;
+        this.goldAssetRepository = goldAssetRepository;
+        this.goldPriceSettingRepository = goldPriceSettingRepository;
+        this.assetRepository = assetRepository;
+        this.investmentRepository = investmentRepository;
+        this.loanRepository = loanRepository;
+        this.subscriptionRepository = subscriptionRepository;
+        this.purchaseItemRepository = purchaseItemRepository;
+        this.purchaseItemActivityRepository = purchaseItemActivityRepository;
+        this.purchaseItemImageStorageService = purchaseItemImageStorageService;
+        this.netWorthSnapshotRepository = netWorthSnapshotRepository;
+        this.noteRepository = noteRepository;
+        this.todoRepository = todoRepository;
+        this.todoFolderRepository = todoFolderRepository;
+        this.todoListRepository = todoListRepository;
+        this.todoItemRepository = todoItemRepository;
+        this.sidebarPreferenceRepository = sidebarPreferenceRepository;
+        this.appearancePreferenceRepository = appearancePreferenceRepository;
+        this.aiConversationRepository = aiConversationRepository;
+        this.aiMessageRepository = aiMessageRepository;
+        this.aiDocumentEmbeddingRepository = aiDocumentEmbeddingRepository;
+        this.aiSettingsRepository = aiSettingsRepository;
+        this.voiceCommandHistoryRepository = voiceCommandHistoryRepository;
+        this.voiceSettingsRepository = voiceSettingsRepository;
+        this.gamificationSettingsRepository = gamificationSettingsRepository;
+        this.userXpRepository = userXpRepository;
+        this.xpHistoryRepository = xpHistoryRepository;
+        this.userAchievementRepository = userAchievementRepository;
+        this.userStatCounterRepository = userStatCounterRepository;
+        this.streakRepository = streakRepository;
+        this.userChallengeRepository = userChallengeRepository;
+        this.householdMemberRepository = householdMemberRepository;
+        this.householdInvitationRepository = householdInvitationRepository;
+        this.sharedTransactionRepository = sharedTransactionRepository;
+        this.sharedTransactionShareRepository = sharedTransactionShareRepository;
+        this.householdGoalContributionRepository = householdGoalContributionRepository;
+        this.householdService = householdService;
+    }
+
+    @Transactional
+    public void deleteAccount(Long userId) {
+        // Receipt image files live on disk, not in the DB — delete them before the rows that name them.
+        for (ReceiptEntity receipt : receiptRepository.findByUserId(userId)) {
+            receiptStorageService.deleteBestEffort(receipt.getImagePath());
+        }
+        receiptRepository.deleteByUserId(userId);
+        receiptSettingsRepository.deleteByUserId(userId);
+
+        aiMessageRepository.deleteByUserId(userId);
+        aiConversationRepository.deleteByUserId(userId);
+        aiDocumentEmbeddingRepository.deleteByUserId(userId);
+        aiSettingsRepository.deleteByUserId(userId);
+        voiceCommandHistoryRepository.deleteByUserId(userId);
+        voiceSettingsRepository.deleteByUserId(userId);
+
+        notificationRepository.deleteByUserId(userId);
+
+        // Family Finance: any of this user's own transactions that were shared into a household
+        // ledger must be unlinked before the transactions themselves are deleted below (avoids a
+        // dangling shared_transactions.transaction_id reference). Contributions the user made toward
+        // OTHER members' shared expenses are left as-is — those don't reference anything being
+        // deleted here, and keeping them preserves the household's historical accountability.
+        for (TransactionEntity tx : transactionRepository.findByUserId(userId)) {
+            sharedTransactionRepository.findByTransactionId(tx.getId()).ifPresent(shared -> {
+                sharedTransactionShareRepository.deleteBySharedTransactionId(shared.getId());
+                sharedTransactionRepository.deleteById(shared.getId());
+            });
+            householdGoalContributionRepository.deleteByTransactionId(tx.getId());
+        }
+        // Leaving handles ownership transfer (or deleting the household if this user was its last
+        // member) the same way a voluntary "Leave Household" would.
+        HouseholdMemberEntity membership = householdMemberRepository.findByUserId(userId).orElse(null);
+        if (membership != null) {
+            HouseholdEntity household = householdService.requireHousehold(membership.getHouseholdId());
+            householdService.leave(household, userId);
+        }
+        householdInvitationRepository.deleteByInvitedByUserId(userId);
+        householdInvitationRepository.deleteByInviteeUserId(userId);
+
+        // Transactions before categories: transactions.category_id has a real FK constraint.
+        transactionRepository.deleteByUserId(userId);
+        recurringTransactionRepository.deleteByUserId(userId);
+        categoryRepository.deleteByUserId(userId);
+
+        // Savings budgets only reference their plan (no userId column of their own).
+        for (BudgetPlanEntity plan : budgetPlanRepository.findByUserId(userId)) {
+            savingsBudgetRepository.deleteAll(savingsBudgetRepository.findByBudgetPlanId(plan.getId()));
+        }
+        budgetRepository.deleteByUserId(userId);
+        budgetPlanRepository.deleteByUserId(userId);
+
+        // Template categories only reference their template (no userId column of their own).
+        for (BudgetTemplateEntity template : budgetTemplateRepository.findByUserId(userId)) {
+            budgetTemplateCategoryRepository.deleteByTemplateId(template.getId());
+        }
+        budgetTemplateRepository.deleteByUserId(userId);
+
+        accountRepository.deleteByUserId(userId);
+
+        goldAssetRepository.deleteByUserId(userId);
+        goldPriceSettingRepository.deleteByUserId(userId);
+        assetRepository.deleteByUserId(userId);
+        investmentRepository.deleteByUserId(userId);
+        loanRepository.deleteByUserId(userId);
+        subscriptionRepository.deleteByUserId(userId);
+
+        // Purchase item photos live on disk, not in the DB — delete them before the rows that name them.
+        for (PurchaseItemEntity item : purchaseItemRepository.findByUserId(userId)) {
+            purchaseItemImageStorageService.deleteBestEffort(item.getImagePath());
+        }
+        purchaseItemActivityRepository.deleteByUserId(userId);
+        purchaseItemRepository.deleteByUserId(userId);
+
+        netWorthSnapshotRepository.deleteByUserId(userId);
+
+        noteRepository.deleteByUserId(userId);
+        todoItemRepository.deleteByUserId(userId);
+        todoListRepository.deleteByUserId(userId);
+        todoFolderRepository.deleteByUserId(userId);
+        todoRepository.deleteByUserId(userId); // OLD flat entity — kept for GDPR purge of legacy orphaned rows
+
+        sidebarPreferenceRepository.deleteByUserId(userId);
+        appearancePreferenceRepository.deleteByUserId(userId);
+
+        xpHistoryRepository.deleteByUserId(userId);
+        userXpRepository.deleteByUserId(userId);
+        userAchievementRepository.deleteByUserId(userId);
+        userStatCounterRepository.deleteByUserId(userId);
+        streakRepository.deleteByUserId(userId);
+        userChallengeRepository.deleteByUserId(userId);
+        gamificationSettingsRepository.deleteByUserId(userId);
+
+        userRepository.findById(userId).ifPresent(user -> deleteProfilePictureFile(user));
+        userRepository.deleteById(userId);
+    }
+
+    private void deleteProfilePictureFile(UserEntity user) {
+        if (user.getProfilePicture() == null) return;
+        try {
+            Path path = Paths.get(profileUploadDir).resolve(user.getProfilePicture());
+            Files.deleteIfExists(path);
+        } catch (Exception ignored) {
+        }
+    }
+}

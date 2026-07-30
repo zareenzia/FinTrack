@@ -46,6 +46,10 @@ public class AccountEntity {
     @Column(nullable = true)
     private Integer dueDay;
 
+    /** Only meaningful for CREDIT_CARD accounts: BLOCK | WARN | IGNORE when a purchase would exceed creditLimit. */
+    @Column(nullable = false)
+    private String creditLimitBehavior = "WARN";
+
     @Column(nullable = false)
     private Double openingBalance;
 
@@ -98,6 +102,8 @@ public class AccountEntity {
     public void setStatementDay(Integer statementDay) { this.statementDay = statementDay; }
     public Integer getDueDay() { return dueDay; }
     public void setDueDay(Integer dueDay) { this.dueDay = dueDay; }
+    public String getCreditLimitBehavior() { return creditLimitBehavior; }
+    public void setCreditLimitBehavior(String creditLimitBehavior) { this.creditLimitBehavior = creditLimitBehavior; }
     public Double getOpeningBalance() { return openingBalance; }
     public void setOpeningBalance(Double openingBalance) { this.openingBalance = openingBalance; }
     public Double getCurrentBalance() { return currentBalance; }

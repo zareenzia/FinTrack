@@ -8,9 +8,11 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface TransactionRepository extends JpaRepository<TransactionEntity, Long> {
+    Optional<TransactionEntity> findByIdAndUserId(Long id, Long userId);
     List<TransactionEntity> findByCategory_IdOrderByDateDesc(Long categoryId);
     List<TransactionEntity> findByTransactionTypeOrderByDateDesc(String type);
     List<TransactionEntity> findByUserId(Long userId);
@@ -22,7 +24,10 @@ public interface TransactionRepository extends JpaRepository<TransactionEntity, 
     
     @Query("SELECT SUM(t.amount) FROM TransactionEntity t WHERE t.userId = :userId AND t.transactionType = :type")
     Double sumByUserIdAndTransactionType(@Param("userId") Long userId, @Param("type") String type);
-    
+
+    @Query("SELECT SUM(t.amount) FROM TransactionEntity t WHERE t.userId = :userId AND t.transactionType = :type AND t.fromSavings = true")
+    Double sumByUserIdAndTransactionTypeAndFromSavingsTrue(@Param("userId") Long userId, @Param("type") String type);
+
     @Query("SELECT SUM(t.amount) FROM TransactionEntity t WHERE t.userId = :userId AND t.transactionType = :type")
     Double sumByUserIdAndType(@Param("userId") Long userId, @Param("type") String type);
 
@@ -42,5 +47,9 @@ public interface TransactionRepository extends JpaRepository<TransactionEntity, 
     @Query("SELECT t FROM TransactionEntity t WHERE t.userId = :userId AND t.date >= :start AND t.date < :end")
     List<TransactionEntity> findByUserIdAndDateRange(@Param("userId") Long userId,
                                                       @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    List<TransactionEntity> findBySourceAccountIdOrDestinationAccountIdOrderByDateAsc(Long sourceAccountId, Long destinationAccountId);
+
+    void deleteByUserId(Long userId);
 }
 

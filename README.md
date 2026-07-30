@@ -1,6 +1,6 @@
-# 💰 FinTrack — Personal Finance Tracker
+# 💰 FinTrack — Personal Finance Platform
 
-> A full-stack personal finance management web application built with **Spring Boot 4** and **Vanilla JavaScript**. Track your income and expenses, manage assets, organize notes, handle to-dos, and visualize your financial health — all from a clean, modern, responsive UI with light/dark theme support.
+> A full-stack personal finance platform built with **Spring Boot 4** and **Vanilla JavaScript**. Track income, expenses, transfers, and recurring bills across real bank/cash/credit-card accounts; plan budgets and monthly goals; manage investments, loans, subscriptions, and gold holdings; and get AI-powered insights, coaching, and a chat assistant grounded in your own data — all from a clean, responsive UI with light/dark theming and a fully customizable sidebar.
 
 ---
 
@@ -17,7 +17,7 @@
 - [Getting Started](#-getting-started)
 - [Configuration](#-configuration)
 - [Build & Run](#-build--run)
-- [Screenshots](#-screenshots)
+- [Known Limitations](#-known-limitations)
 - [Roadmap](#-roadmap)
 
 ---
@@ -25,64 +25,77 @@
 ## ✨ Features
 
 ### 💳 Dashboard
-- **6 real-time stat cards** — Total Income, Total Expense, Balance, Savings Rate, Assets Value, Net Worth
-- Stat card amounts auto-shrink font size to always fit on a single line regardless of value size
-- **Expense by Category** — interactive Doughnut or Bar chart with a color-coded legend
-- **Monthly Trend** — Line or Bar chart showing income vs. expense over time
-- **Recent Transactions** — modern card-list layout (not a boring table) with:
-  - Date badge (weekday + month+day + year)
-  - Type indicator dot (green for income, red for expense)
-  - Category chip with smart icon detection based on category name keywords
-  - Type badge (Income / Expense pill)
-  - Color-coded amount with `+`/`−` prefix
-  - Per-row delete button
-  - Smart pagination — First / Prev / numbered pages with ellipsis / Next / Last
+- Real-time stat cards (income, expense, balance, savings, assets, net worth) that auto-shrink text to always fit on one line
+- **Expense by Category** (Doughnut/Bar) and **Monthly Trend** (Line/Bar) charts via Chart.js
+- A page-wide **Monthly View** selector drives every dashboard widget (stat cards, charts, category breakdown, Recent Transactions) from one place
+- **Recent Transactions** card with Month / Category / Type / Paid-From-Account filters, a **Net Total** row (income adds, expense/savings/outflow-transfer subtracts, external-source transfers count as income), and one-click **CSV export/import**
+- AI-generated **Dashboard Summary** card (today's insight, biggest expense, budget/savings status, one recommendation, health score) — see [AI Financial Assistant](#-ai-financial-assistant--coach)
 
 ### 💸 Transactions
-- Create, view, and delete financial transactions
-- Categorize every transaction (income or expense)
-- Filter by category or transaction type
-- Dates stored as `LocalDateTime` with flexible parsing (ISO, `yyyy-MM-dd HH:mm:ss`, plain date, etc.)
-- Default limit of 100 transactions per request (configurable via `?limit=N`)
+- Income / Expense / Savings / Transfer entry, each with category, date, and an optional linked account
+- **Bulk Add** — add several transactions (or transfers) in one modal, each row independently validated; partial failures keep only the failed rows so you don't re-enter everything
+- **Log Cash Transfer** between two of your own accounts, *or* to/from money outside the app — an **External Source/Destination** option (🌐) lets you record salary coming in or cash spent externally without inventing a fake account. An optional checkbox lets an external transfer *also* count toward Income/Expense totals (e.g. salary), so you don't have to log it twice
+- **Spend from Savings** — mark an expense as funded from your savings bucket; it still counts as a full expense but also draws down the savings total for the month, matching the same netting rule used everywhere else (dashboard, analytics, monthly trend)
+- **Credit cards behave like real liabilities**: a purchase increases what you owe, a payment (transfer into the card) decreases it, refunds decrease it — see [Accounts](#-accounts--credit-cards) below
+- **Recurring Transactions** (own tab on the Transactions page): schedule a bill/income/transfer to auto-post on a Daily/Weekly/Monthly/Quarterly/Yearly cadence with a custom interval, optional end date, editable next-run date, pause/resume, and a **Next Month Forecast** tab (expected income, outflow, net, and a per-section breakdown)
+- **Filters everywhere**: Recent Transactions and Recurring Transactions both have Search/Type/Category/Frequency/Status/Sort/Page-size controls that stay on one line
+- **CSV export & import** for both one-off and recurring transactions:
+  - Export always respects the current filters, not just the visible page
+  - Import auto-creates any category name it doesn't recognize (color/type inferred), and deliberately **rejects Transfer rows** rather than guessing which account a "From → To" label refers to — money movement isn't something worth risking a wrong guess on. Non-transfer rows fall back to "no account" if the account name can't be matched, rather than picking a wrong one
+
+### 🏦 Accounts & Credit Cards
+- Track Bank, Cash, Mobile Financial Service (MFS), and Credit Card accounts, each with a live running balance
+- **Credit cards are modeled as liabilities, not wallets**: spending on a card increases the outstanding balance instead of decreasing it; a payment (transfer to the card) reduces it; the sign-flip is centralized in one balance service so every code path (create/edit/delete/transfer) stays consistent
+- Per-card **credit limit behavior**: `WARN` (default, purchase succeeds with a warning) or `BLOCK` (purchase rejected) when a charge would exceed the limit; overpaying a card is always blocked
+- Computed card stats: available credit, utilization %, an estimated minimum payment, and days until the statement is due
+- Per-account **ledger** view (`/api/accounts/{id}/ledger`) with a running balance, filterable by date range, category, type, or merchant text
+- Deleting an account is blocked if any transaction still references it
 
 ### 🗂️ Categories
-- Create custom categories with a **name**, **description**, **color** (hex), and **icon**
-- Unique category names enforced per user
-- Categories power the chart breakdown, transaction filters, and the colorful category chips in the transaction list
+- **Bulk category creation** — add several categories in one form, each as its own row with live preview
+- A predefined 20-color palette (swatch picker) instead of a free color input, plus the existing icon picker
+- Categories are unique per user (case-insensitive) and can optionally be scoped to a transaction type
 
-### 🏦 Assets
-- Track owned assets with name, type, description, and value
-- Asset values are summed to produce the **Assets Value** and **Net Worth** stats on the dashboard
-- Full CRUD: create, update, delete
+### 📊 Budget Planner
+- **Budget Plans** for a Month/Quarter/Year period: planned income, planned savings, notes, per-category budget lines, and savings-goal lines, with a live "budgeted vs. actual" view and a computed 0–100 budget health score
+- **Duplicate** a plan or **Copy Previous Period** to roll a budget forward instantly
+- Reusable **Budget Templates** (income/savings defaults + category rows) that can be applied to instantiate a new plan for any period
+- **Export** any plan's report as CSV, Excel, or PDF
+- A daily scheduled job (plus a login-time catch-up) checks every active plan and raises an in-app notification when spending crosses a budget threshold
+
+### 🎯 Financial Planner
+- **Investments** — stocks, mutual funds, ETFs, bonds, crypto, fixed deposits, or other; tracks quantity/purchase/current price with computed value, profit/loss, and return %
+- **Loans** — personal/home/car/education/business, or money borrowed/lent to someone; tracks principal, interest rate, EMI, remaining balance, and status, with a one-click "Pay EMI" action that reduces the balance and auto-closes the loan at zero
+- **Subscriptions** — recurring paid services (monthly/yearly), with auto-renewal flag and days-until-renewal
+- **Wishlist / Savings Goals** — target amount, saved amount, target date, priority, with a "mark complete" action
+- One summary endpoint rolls all four up into a single dashboard view
+
+### 🥇 Gold Assets
+- Track gold holdings by name, type (Ornament/Bar/Coin/Custom), purity (18K–24K, Traditional, Custom), and weight in Gram/Vori/Ana/Rati/Point — all units auto-convert
+- **Live gold price sync** (scraped from goldr.org on a schedule, or triggered manually) with an **Automatic vs. Manual** pricing mode per user
+- Computed current value, gain/loss, gain/loss %, and an adjustable "sell discount %" to preview realistic resale price
+- **CSV export/import**: import requires a name and a positive weight; Gold Type/Purity/Weight Unit default sensibly when blank but are **rejected outright if provided-and-invalid** (a typo'd purity would silently misstate the asset's value, so this one is stricter than the transaction importer)
+
+### 🤖 AI Financial Assistant & Coach
+- **Chat** with an assistant that can call live tools grounded in your real data — balances, monthly income/expense/savings, category breakdowns, recent transactions, budget status, net worth, gold holdings, and month-over-month comparisons — plus genuine **RAG retrieval**: your message is embedded and the most relevant of your own transactions/notes/todos/accounts/gold-assets/budget-plans/past chat turns are pulled in as context (pgvector cosine similarity, strictly scoped to your own data)
+- **Financial Health Score** (0–100) with a breakdown across savings rate, budget adherence, cash-flow stability, cash reserve months, and net-worth trend
+- Deterministic (non-LLM), threshold-based **Insights** — e.g. "You spent 40% more on Dining this month than your 3-month average" — plus evidence-cited **Recommendations**, a dedicated **Budget Coach** and **Savings Coach**, and a structured **Monthly Report** (summary, asset growth, top purchases, health score, recommendations) for any month
+- Full conversation management (create/rename/delete/list), and per-user AI settings (model, max tokens, temperature, on/off, and a toggle for each coaching feature)
+- Works without any OpenAI billing for the retrieval/indexing pipeline via a mock embedding provider (`ai.embedding.provider=mock`) — see [Known Limitations](#-known-limitations) for the chat/tool-calling gap
 
 ### 📝 Notes
-- Rich notes with **title**, **content** (multi-line), **color** (customizable background), and **tags**
-- **Pin** important notes to the top
-- **Archive** notes to declutter without deleting
+- Rich-text notes (Quill editor, including checklists) with pinning, archiving, tags, and a 12-swatch pastel color picker
 - Full-text search across title and content
-- Notes auto-sort: pinned first, then by `updatedAt` descending
 
 ### ✅ To-Dos
-- Task management with **title**, **description**, **due date**, **due time**, **priority** (low / medium / high), **category**, **status** (pending / in_progress / completed), and **color**
-- Mark complete, update status independently
-- Filter by status and priority
-- Search by title
-- Only non-completed todos are returned by default
-
-### 📊 Analytics
-- `/api/analytics/summary` — total income, expense, balance, savings rate, total assets, net worth, transaction count
-- `/api/analytics/savings` — dedicated savings summary endpoint
-- `/api/analytics/category-breakdown` — expense totals per category with color
-- `/api/analytics/monthly` — income and expense totals by `YYYY-MM` for trend charting
+- Title, description, due date/time, priority, category, and status, with search and status/priority filters
 
 ### 🎨 UI / UX
-- **Collapsible left sidebar** replacing traditional top navbar — persists collapse state in `localStorage`
-- **Light / Dark theme toggle** with smooth CSS transitions, system preference detection, and `localStorage` persistence
-- **Responsive** — sidebar collapses to icon-only on mobile with a hamburger toggle
-- Active page is highlighted in the sidebar
-- Animated stat card icons (subtle floating loop)
-- Custom color palette: Primary `#18230F`, Secondary `#27391C`, Accent `#255F38`, Surface `#1F7D53`
-- Full CSS variable system (`--color-primary`, `--color-secondary`, `--color-accent`, `--color-surface`, etc.) for easy theming
+- **Fully customizable sidebar** — drag-and-drop reorder, show/hide, and pin favorite modules; preferences persist to both `localStorage` and the server. Dashboard and Settings are locked in place
+- Built-in floating **Calculator** widget accessible from the sidebar on every page
+- **Notifications** bell with unread badge (budget alerts, etc.)
+- **Light/Dark theme** with system-preference detection and smooth transitions, plus a selectable accent color theme
+- Fully responsive — sidebar collapses to a hamburger menu on mobile
 
 ---
 
@@ -94,13 +107,15 @@
 | **Language** | Java 17 |
 | **Security** | Spring Security 6 + JWT (jjwt 0.12.3, HS512) |
 | **Persistence** | Spring Data JPA (Hibernate) |
-| **Database** | PostgreSQL |
+| **Database** | PostgreSQL (Neon-hosted, serverless) with the `pgvector` extension for AI embeddings |
+| **AI** | OpenAI Responses API (chat + tool-calling) and Embeddings API (`text-embedding-3-small`), with a mock embedding provider for billing-free RAG testing |
+| **Document generation** | Apache POI (Excel export), Apache PDFBox (PDF export), Jsoup (HTML parsing/stripping) |
 | **Build Tool** | Gradle 8 |
-| **Frontend** | Vanilla JavaScript (no framework) |
+| **Frontend** | Vanilla JavaScript (no framework), static HTML per page |
 | **CSS Framework** | Bootstrap 5.3 |
 | **Icons** | Font Awesome 6.4 |
 | **Charts** | Chart.js |
-| **Fonts / CDN** | jsDelivr CDN for Bootstrap + Cloudflare CDN for FA |
+| **Rich text** | Quill (Notes editor), `marked` + `DOMPurify` (Markdown rendering in the AI chat) |
 
 ---
 
@@ -108,660 +123,298 @@
 
 ```
 finzin/
-├── build.gradle                          # Gradle build config
+├── build.gradle                                # Gradle build config
 ├── settings.gradle
-├── gradlew / gradlew.bat                 # Gradle wrapper
+├── gradlew / gradlew.bat                       # Gradle wrapper
 │
 └── src/
-    └── main/
-        ├── java/org/example/finzin/
-        │   ├── FinzinApplication.java     # Spring Boot entry point
-        │   │
-        │   ├── config/
-        │   │   ├── SecurityConfig.java    # Spring Security filter chain
-        │   │   └── JwtAuthFilter.java     # JWT extraction from cookie/header
-        │   │
-        │   ├── entity/
-        │   │   ├── UserEntity.java        # users table
-        │   │   ├── CategoryEntity.java    # categories table
-        │   │   ├── TransactionEntity.java # transactions table
-        │   │   ├── AssetEntity.java       # assets table
-        │   │   ├── NoteEntity.java        # notes table
-        │   │   └── TodoEntity.java        # todos table
-        │   │
-        │   ├── repository/
-        │   │   ├── UserRepository.java
-        │   │   ├── CategoryRepository.java
-        │   │   ├── TransactionRepository.java
-        │   │   ├── AssetRepository.java
-        │   │   ├── NoteRepository.java
-        │   │   └── TodoRepository.java
-        │   │
-        │   ├── service/
-        │   │   ├── AuthService.java       # Register, login, profile update
-        │   │   ├── JwtTokenProvider.java  # Token generation & validation
-        │   │   └── PasswordService.java   # BCrypt password hashing
-        │   │
-        │   └── web/
-        │       ├── PageController.java    # Route → HTML page forwarding
-        │       ├── AuthController.java    # /api/auth/** REST endpoints
-        │       ├── FinanceApiController.java  # All finance REST endpoints
-        │       ├── LoginRequest.java
-        │       ├── RegisterRequest.java
-        │       ├── SimplifiedRegisterRequest.java
-        │       └── ProfileUpdateRequest.java
-        │
-        └── resources/
-            ├── application.properties     # DB, server, JPA config
-            └── static/                    # Served as-is by Spring Boot
-                ├── css/
-                │   └── style.css          # All styles + CSS variables + dark mode
-                ├── js/
-                │   ├── sidebar.js         # Sidebar injection + theme toggle
-                │   ├── auth.js            # Auth guard helpers
-                │   └── auth-ui.js         # UI auth state helpers
-                ├── login.html
-                ├── signup.html
-                ├── dashboard.html
-                ├── transactions.html
-                ├── notes.html
-                ├── todos.html
-                └── profile.html
+    ├── main/
+    │   ├── java/org/example/finzin/
+    │   │   ├── FinzinApplication.java          # Spring Boot entry point
+    │   │   │
+    │   │   ├── config/
+    │   │   │   ├── SecurityConfig.java         # Spring Security filter chain
+    │   │   │   ├── JwtAuthFilter.java          # JWT extraction from cookie/header
+    │   │   │   ├── DatabaseMigration.java      # Idempotent raw-SQL migrations run at startup
+    │   │   │   ├── AsyncConfig.java            # @Async executor for RAG indexing / gold sync
+    │   │   │   ├── JacksonConfig.java
+    │   │   │   └── WebConfig.java
+    │   │   │
+    │   │   ├── entity/                         # 26 JPA entities — see Database Schema
+    │   │   │
+    │   │   ├── repository/                     # One Spring Data repository per entity
+    │   │   │
+    │   │   ├── service/
+    │   │   │   ├── AuthService.java, JwtTokenProvider.java, PasswordService.java
+    │   │   │   ├── AccountBalanceService.java  # Single source of truth for balance math incl. credit-card sign-inversion
+    │   │   │   ├── CreditCardService.java      # Credit limit validation, stats, ledger
+    │   │   │   ├── RecurringTransactionService.java, RecurringTransactionScheduler.java, RecurringTransactionExecutionService.java
+    │   │   │   ├── Budget*.java                # BudgetService, BudgetPlanService, BudgetTemplateService, BudgetScheduler, BudgetExportService
+    │   │   │   ├── FinancialSummaryService.java
+    │   │   │   ├── NotificationService.java
+    │   │   │   └── gold/                       # GoldAssetService, GoldPriceScraper, GoldPriceSyncService, GoldPriceScheduler, GoldWeightConverter
+    │   │   │
+    │   │   ├── ai/                             # AI Assistant + Financial Coach
+    │   │   │   ├── AIController.java, AICoachApiController.java, AiSettingsApiController.java
+    │   │   │   ├── AIService.java, ConversationService.java, FinancialToolExecutor.java, PromptBuilder.java
+    │   │   │   ├── FinancialHealthService.java, InsightService.java, RecommendationService.java, MonthlyReportService.java, DashboardSummaryService.java
+    │   │   │   ├── OpenAIClient.java, OpenAIException.java
+    │   │   │   └── rag/                        # DocumentIndexer, EmbeddingService, SemanticSearchService, VectorRepository, OpenAIEmbeddingClient, MockEmbeddingClient
+    │   │   │
+    │   │   └── web/                            # REST controllers — see REST API Reference
+    │   │
+    │   └── resources/
+    │       ├── application.properties          # DB, server, JWT, gold sync config
+    │       └── static/                         # Served as-is by Spring Boot — no templating engine
+    │           ├── css/style.css                # All styles + CSS variables + dark mode
+    │           ├── js/
+    │           │   ├── auth.js, sidebar.js, profile.js  # Cross-page auth guard, sidebar injection, profile modal
+    │           │   ├── accounts.js, assets.js           # Account Configuration, Gold Assets
+    │           │   ├── budget-planner.js, financial-planner.js
+    │           │   ├── notes.js, ai-assistant.js, calculator.js
+    │           ├── login.html, signup.html, profile.html
+    │           ├── dashboard.html, transactions.html
+    │           ├── budget-planner.html, financial-planner.html, assets.html
+    │           ├── notes.html, todos.html, settings.html, ai-assistant.html
+    │
+    └── test/
+        └── java/org/example/finzin/            # Mockito-based service tests + Spring context tests
 ```
 
 ---
 
 ## 🗄 Database Schema
 
-All tables are managed by Hibernate (JPA) with `spring.jpa.hibernate.ddl-auto` set to `update`.
+Schema is managed by a combination of Hibernate (`ddl-auto=update`, creates new tables/columns automatically) **and** `DatabaseMigration.java` — an idempotent raw-SQL runner executed at startup for changes Hibernate won't do safely on its own (dropping a stale constraint, backfilling data, re-scoping a unique key, recomputing a derived column). If you're chasing a schema quirk that doesn't match the entity class, check that file first.
 
-### `users`
-| Column | Type | Notes |
-|---|---|---|
-| `id` | BIGINT (PK) | Auto-generated |
-| `full_name` | VARCHAR | Nullable (set after signup) |
-| `username` | VARCHAR(30) | Unique, nullable |
-| `email` | VARCHAR | Unique, required |
-| `password_hash` | VARCHAR | BCrypt hashed |
-| `created_at` | TIMESTAMP | Set on insert |
-| `updated_at` | TIMESTAMP | Updated on every save |
+### Core
 
-### `categories`
-| Column | Type | Notes |
-|---|---|---|
-| `id` | BIGINT (PK) | Auto-generated |
-| `user_id` | BIGINT | FK → users.id |
-| `name` | VARCHAR | Required; unique per user |
-| `description` | TEXT | Optional |
-| `color` | VARCHAR | Hex color string (e.g. `#3498db`) |
-| `icon` | VARCHAR | Icon name (e.g. `tag`, `home`) |
+**`users`** — a registered account. `id`, `full_name`, `username` (unique), `email` (unique), `password_hash` (BCrypt), `profile_picture`, `created_at`, `updated_at`.
 
-> **Unique constraint**: `(user_id, name)` — category names are unique per user.
+**`categories`** — a label for classifying transactions/budgets. `id`, `user_id` (null = global), `name`, `description`, `color`, `icon`, `category_type` (nullable — null/"general" applies to any type). Unique on `(user_id, name)` — a stale globally-scoped auto-named constraint from an earlier schema version was dropped by migration since it caused false duplicate-name errors across different users.
 
-### `transactions`
-| Column | Type | Notes |
-|---|---|---|
-| `id` | BIGINT (PK) | Auto-generated |
-| `user_id` | BIGINT | FK → users.id |
-| `amount` | DOUBLE | Required |
-| `description` | TEXT | Required |
-| `category_id` | BIGINT | FK → categories.id |
-| `transaction_type` | VARCHAR | `income` or `expense` |
-| `date` | TIMESTAMP | Transaction date |
-| `created_at` | TIMESTAMP | Record creation time |
+### Accounts, Transactions & Recurring
 
-### `assets`
-| Column | Type | Notes |
-|---|---|---|
-| `id` | BIGINT (PK) | Auto-generated |
-| `user_id` | BIGINT | FK → users.id |
-| `name` | VARCHAR | Required |
-| `type` | VARCHAR | e.g. `Real Estate`, `Vehicle`, `General` |
-| `description` | TEXT | Optional |
-| `value` | DOUBLE | Asset's monetary value |
-| `created_at` | TIMESTAMP | Last updated |
+**`accounts`** — a bank/cash/MFS/credit-card instrument. `id`, `user_id`, `account_type`, `bank_name`, `account_nickname`, `account_number`, `card_type`, `linked_account_id`, `provider`, `mobile_number`, `credit_limit`, `statement_day`, `due_day`, `credit_limit_behavior` (`WARN`/`BLOCK`, default `WARN`), `opening_balance`, `current_balance`, `status`, timestamps.
 
-### `notes`
-| Column | Type | Notes |
-|---|---|---|
-| `id` | BIGINT (PK) | Auto-generated |
-| `user_id` | BIGINT | FK → users.id |
-| `title` | VARCHAR | Required |
-| `content` | TEXT | Multi-line body |
-| `color` | VARCHAR | Hex background color (default `#FFE082`) |
-| `tags` | TEXT | Comma-separated or JSON string |
-| `pinned` | BOOLEAN | Default `false` |
-| `archived` | BOOLEAN | Default `false` |
-| `created_at` | TIMESTAMP | Immutable |
-| `updated_at` | TIMESTAMP | Updated on every save |
+**`transactions`** — a single money movement. `id`, `user_id`, `amount`, `description`, `category_id` (FK, nullable — null for transfers), `transaction_type` (`income`/`expense`/`savings`/`transfer`), `date`, `created_at`, `source_account_id`, `destination_account_id` (either may be null on a transfer to mean "outside the tracked accounts", but not both), `is_auto_generated`, `recurring_transaction_id`, `from_savings`.
 
-### `todos`
-| Column | Type | Notes |
-|---|---|---|
-| `id` | BIGINT (PK) | Auto-generated |
-| `user_id` | BIGINT | FK → users.id |
-| `title` | VARCHAR | Required |
-| `description` | TEXT | Optional |
-| `due_date` | DATE | Optional |
-| `due_time` | VARCHAR | Optional time string |
-| `priority` | VARCHAR | `low` / `medium` / `high` (default `medium`) |
-| `category` | VARCHAR | Free-text category label |
-| `status` | VARCHAR | `pending` / `in_progress` / `completed` (default `pending`) |
-| `completed` | BOOLEAN | Default `false`; setting to `true` also sets `status = completed` |
-| `color` | VARCHAR | Hex color (default `#29B6F6`) |
-| `created_at` | TIMESTAMP | Immutable |
-| `updated_at` | TIMESTAMP | Updated on every save |
+**`recurring_transactions`** — a schedule that materializes real transactions. `id`, `user_id`, `transaction_name`, `description`, `transaction_type`, `category_id`, `amount`, `source_account_id`, `destination_account_id`, `frequency`, `interval_value`, `start_date`, `end_date`, `next_execution_date`, `last_execution_date`, `status` (`ACTIVE`/`PAUSED`/`COMPLETED`).
+
+### Budgeting
+
+**`category_budgets`** — a per-category budget line. `id`, `user_id`, `budget_plan_id` (nullable — links into a plan), `category_id`, `period` ("yyyy-MM"), `budget_amount`. Unique on `(budget_plan_id, category_id)` (re-scoped by migration from an earlier per-user-per-period uniqueness).
+
+**`budget_plans`** — a named budgeting period. `id`, `user_id`, `name`, `period_type` (`MONTH`/`QUARTER`/`YEAR`), `period`, `start_date`, `end_date`, `planned_income`, `planned_savings`, `notes`, `status` (`ACTIVE`/`ARCHIVED`).
+
+**`savings_budgets`** — a savings goal within a plan. `id`, `budget_plan_id`, `category_id`, `target_amount`, `initial_amount` (pre-existing savings not backed by a transaction), `storage_account_id`, `source_account_id`, `source_description`. Unique on `(budget_plan_id, category_id)`.
+
+**`budget_templates`** / **`budget_template_categories`** — reusable templates and their category/amount/is-savings line rows.
+
+### Financial Planner
+
+**`investments`** — `id`, `user_id`, `name`, `investment_type`, `platform`, `purchase_date`, `quantity`, `purchase_price`, `current_price`, `notes`.
+
+**`loans`** — `id`, `user_id`, `loan_name`, `loan_type`, `lender_borrower`, `principal_amount`, `interest_rate`, `emi_amount`, `loan_start_date`, `loan_end_date`, `remaining_balance`, `payment_frequency`, `status` (`ACTIVE`/`CLOSED`/`OVERDUE`), `notes`.
+
+**`subscriptions`** — `id`, `user_id`, `name`, `category`, `billing_cycle`, `cost`, `renewal_date`, `payment_method`, `payment_account`, `auto_renewal`, `status`, `notes`.
+
+**`wishlist_goals`** — `id`, `user_id`, `goal_name`, `category`, `target_amount`, `saved_amount`, `target_date`, `priority`, `status`, `icon`, `notes`.
+
+**`net_worth_snapshots`** — a monthly point-in-time snapshot, upserted as a side effect of the AI Health Score calculation. `id`, `user_id`, `snapshot_month`, `net_worth`, `total_assets`, `balance`, `total_savings_contributed`. Unique on `(user_id, snapshot_month)`.
+
+### Gold Assets
+
+**`gold_assets`** — `id`, `user_id`, `asset_name`, `description`, `gold_type`, `purity`, `weight`, `weight_unit`, `purchase_date`, `purchase_price`, `current_value` (recalculated on each price sync), `notes`.
+
+**`gold_prices`** — historical fetched price points. `id`, `unit`, `purity`, `market_price`, `old_selling_price`, `source`, `retrieved_at`.
+
+**`gold_price_settings`** — one row per user. `id`, `user_id` (unique), `mode` (`AUTOMATIC`/`MANUAL`), `manual_prices_json`.
+
+### AI / RAG
+
+**`ai_conversations`** — `id`, `user_id`, `title`.
+
+**`ai_messages`** — `id`, `conversation_id`, `user_id`, `role` (`user`/`assistant`/`tool`), `content`, `tool_name`, `token_count`.
+
+**`ai_settings`** — one row per user. `provider`, `model`, `max_tokens`, `temperature`, `enabled`, `developer_mode`, plus five feature toggles (proactive insights, budget coaching, savings coaching, monthly reports, dashboard summary).
+
+**`ai_document_embeddings`** — RAG index metadata. `id`, `user_id`, `entity_type`, `entity_id`, `title`, `content`, `content_hash`, `metadata`. Unique on `(user_id, entity_type, entity_id)`. **Not fully mapped by the entity class** — the `embedding vector(1536)` column (pgvector, HNSW cosine-similarity index) is written/read via raw JDBC so Hibernate schema validation never has to understand the `vector` type.
+
+### Other
+
+**`assets`** — a manually tracked non-cash asset (separate from Gold Assets). `id`, `user_id`, `name`, `type`, `description`, `value`.
+
+**`notes`** — `id`, `user_id`, `title`, `content` (rich HTML), `color`, `tags`, `pinned`, `archived`, `done`.
+
+**`todos`** — `id`, `user_id`, `title`, `description`, `due_date`, `due_time`, `priority`, `category`, `status`, `completed`, `color`.
+
+**`notifications`** — `id`, `user_id`, `type`, `title`, `message`, `related_entity_type`, `related_entity_id`, `is_read`.
+
+**`sidebar_preferences`** — one row per user. `user_id` (unique), `preferences_json` (array of `{id, visible, pinned, displayOrder}`).
 
 ---
 
 ## 📡 REST API Reference
 
-All API routes are prefixed with `/api`. Authentication is carried via JWT in either:
-- **Cookie**: `Authorization=<token>` (set automatically on login/register)
-- **Header**: `Authorization: Bearer <token>`
-
----
+All routes are prefixed `/api`. Auth is carried via JWT in the `Authorization: Bearer <token>` header, or (on most controllers) an `Authorization` cookie fallback — see [Authentication & Security](#-authentication--security) for the important caveat about the anonymous fallback.
 
 ### 🔐 Auth — `/api/auth`
-
-#### `POST /api/auth/register`
-Register a new user with full details.
-
-**Request body:**
-```json
-{
-  "fullName": "Jane Doe",
-  "username": "janedoe",
-  "email": "jane@example.com",
-  "password": "securepass",
-  "confirmPassword": "securepass"
-}
-```
-
-**Response `201`:**
-```json
-{
-  "token": "<jwt>",
-  "user": { "id": 1, "fullName": "Jane Doe", "username": "janedoe", "email": "jane@example.com" }
-}
-```
-
-Also sets an `Authorization` cookie valid for **7 days**.
-
----
-
-#### `POST /api/auth/register-simple`
-Simplified registration using only email + password (username auto-generated).
-
-**Request body:**
-```json
-{
-  "email": "jane@example.com",
-  "password": "securepass",
-  "confirmPassword": "securepass"
-}
-```
-
-**Response `201`:** Same structure as full register.
-
----
-
-#### `POST /api/auth/login`
-Authenticate an existing user.
-
-**Request body:**
-```json
-{
-  "usernameOrEmail": "janedoe",
-  "password": "securepass"
-}
-```
-
-**Response `200`:**
-```json
-{
-  "token": "<jwt>",
-  "user": { "id": 1, "fullName": "Jane Doe", "username": "janedoe", "email": "jane@example.com" }
-}
-```
-
-Also sets an `Authorization` cookie valid for **7 days**.
-
----
-
-#### `GET /api/auth/me`
-Get the currently authenticated user's profile.
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Response `200`:**
-```json
-{
-  "userId": 1,
-  "fullName": "Jane Doe",
-  "username": "janedoe",
-  "email": "jane@example.com",
-  "profileComplete": true
-}
-```
-
----
-
-#### `PUT /api/auth/profile`
-Update the authenticated user's full name and username.
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Request body:**
-```json
-{
-  "fullName": "Jane A. Doe",
-  "username": "jane_doe"
-}
-```
-
-**Response `200`:** Updated user object.
-
----
+| Method & Path | Purpose |
+|---|---|
+| `POST /register` | Full registration (fullName, username, email, password) |
+| `POST /register-simple` | Simplified registration (email + password only) |
+| `POST /login` | Login; also triggers recurring-transaction catch-up and budget-alert checks for that user |
+| `GET /me` | Current user profile (includes `profileComplete` flag) |
+| `PUT /profile` | Update fullName/username |
+| `GET /check-username?username=` | Availability check |
+| `POST /change-password` | Change password |
+| `POST /profile-picture` | Upload a profile picture (multipart, ≤5MB, JPG/PNG/WebP) |
+| `DELETE /profile-picture` | Remove profile picture |
 
 ### 🗂️ Categories — `/api/categories`
+`GET /` (optional `?type=`) · `POST /` · `PUT /{id}` · `DELETE /{id}` — case-insensitive unique name per user enforced both client-side and via a DB constraint fallback.
 
-#### `GET /api/categories`
-Returns all categories for the current user, sorted by ID.
+### 💸 Transactions — `/api/transactions`
+| Method & Path | Purpose |
+|---|---|
+| `GET /?category_id=&type=&limit=100` | List, sorted by date descending |
+| `POST /` | Create — see the transfer and credit-card notes below |
+| `PUT /{id}` | Update (reverses old balance effect, validates, reapplies) |
+| `DELETE /{id}` | Delete (reverses balance effect) |
 
-**Response `200`:**
-```json
-[
-  { "id": 1, "name": "Food", "description": "Groceries & eating out", "color": "#e74c3c", "icon": "utensils" }
-]
-```
+Notable conventions:
+- **Transfers**: `sourceAccountId`/`destinationAccountId` may each be `null` to mean "outside the tracked accounts" (external source/destination), but not both. An optional flag lets an external transfer also post as a real income/expense.
+- **Credit cards**: creating/updating a transaction against a credit-card account routes through `AccountBalanceService`, which can reject the request (400, `CreditCardValidationException`, when `creditLimitBehavior=BLOCK` and the limit would be exceeded, or on any overpayment) or attach a non-fatal `warning` string to the response body (when `creditLimitBehavior=WARN`).
+- **fromSavings**: an expense with `fromSavings=true` forces `sourceAccountId` to null and nets against the month's savings total.
 
-#### `POST /api/categories`
-Create a new category.
+### 🏦 Accounts — `/api/accounts`
+| Method & Path | Purpose |
+|---|---|
+| `GET /` | List accounts |
+| `GET /summary` | Totals by type + total available + total credit outstanding |
+| `POST /` | Create (balance seeded from `openingBalance`) |
+| `PUT /{id}` | Update (re-derives `currentBalance` from the opening-balance delta) |
+| `DELETE /{id}` | Delete — blocked (400) if any transaction still references it |
+| `PATCH /{id}/status` | Toggle ACTIVE/INACTIVE |
+| `GET /{id}/ledger?startDate=&endDate=&category=&type=&merchant=` | Running-balance ledger, filterable |
 
-**Request body:**
-```json
-{
-  "name": "Transport",
-  "description": "Fuel, bus, taxi",
-  "color": "#3498db",
-  "icon": "car"
-}
-```
+Credit-card accounts additionally return `availableCredit`, `utilizationPercent`, `minimumPaymentEstimate`, and `daysUntilDue`.
 
-**Response `201`:** The created category object.  
-**Error `400`:** If name is blank or already exists for this user.
+### 🔁 Recurring Transactions — `/api/recurring-transactions`
+| Method & Path | Purpose |
+|---|---|
+| `GET /` | List all |
+| `GET /upcoming?days=14` | Occurrences due within N days |
+| `POST /` | Create |
+| `PUT /{id}` | Update — an explicit `nextExecutionDate` wins outright (rejected if in the past or not after `lastExecutionDate`); otherwise the date only recalculates when the schedule itself changed, so a cosmetic edit never reschedules a due date |
+| `PATCH /{id}/status` | `ACTIVE`/`PAUSED`/`COMPLETED` — resuming jumps to the next occurrence rather than backfilling missed runs |
+| `DELETE /{id}` | Delete the schedule (does not touch already-generated transactions) |
 
-#### `PUT /api/categories/{id}`
-Update an existing category. All fields are optional except `name`.
+### 📊 Budgets — `/api/budgets` (simple) & `/api/budget-plans` & `/api/budget-templates`
+| Method & Path | Purpose |
+|---|---|
+| `GET /api/budgets?period=` | List simple per-category budgets for a month |
+| `GET /api/budgets/status?period=` | Budgeted vs. actual per category |
+| `POST /api/budgets` · `DELETE /api/budgets/{id}` | Create/delete a simple budget line |
+| `GET /api/budget-plans?period=&status=&search=&sort=` | List/filter plans (with summary + score) |
+| `GET /api/budget-plans/current` | The active plan, or `{hasCurrent:false}` |
+| `GET /api/budget-plans/{id}/full` | Full detail: category statuses, savings statuses, summary, score |
+| `POST /api/budget-plans` · `PUT /{id}` · `PATCH /{id}/archive` · `DELETE /{id}` | Plan CRUD/lifecycle |
+| `POST /api/budget-plans/{id}/duplicate` | Clone a plan |
+| `POST /api/budget-plans/copy-previous` | Roll a plan forward from the prior period |
+| `POST /{id}/categories` · `DELETE /{id}/categories/{budgetId}` | Category budget lines within a plan |
+| `POST /{id}/savings` · `DELETE /{id}/savings/{savingsId}` | Savings goal lines within a plan |
+| `GET /{id}/export/{format}` | Export the plan as `csv` / `excel` / `pdf` |
+| `GET /api/budget-templates` · `POST /` · `PUT /{id}` · `DELETE /{id}` | Template CRUD |
+| `POST /api/budget-templates/{id}/apply` | Instantiate a plan from a template |
 
-**Response `200`:** Updated category.  
-**Error `404`:** If category not found or belongs to another user.
+### 🎯 Financial Planner — `/api/financial-planner`
+| Method & Path | Purpose |
+|---|---|
+| `GET /summary` | Combined dashboard across all four sub-modules |
+| `GET/POST/PUT/DELETE /investments{,/{id}}` | Investment CRUD |
+| `GET/POST/PUT/DELETE /loans{,/{id}}` + `POST /loans/{id}/pay-emi` | Loan CRUD + EMI payment |
+| `GET/POST/PUT/DELETE /subscriptions{,/{id}}` | Subscription CRUD |
+| `GET/POST/PUT/DELETE /goals{,/{id}}` + `POST /goals/{id}/complete` | Wishlist goal CRUD + completion |
 
-#### `DELETE /api/categories/{id}`
-Delete a category.
-
-**Response `204`:** No content.
-
----
-
-### 💰 Transactions — `/api/transactions`
-
-#### `GET /api/transactions`
-Returns transactions for the current user, sorted by date descending.
-
-**Query parameters:**
-| Param | Type | Default | Description |
-|---|---|---|---|
-| `limit` | Integer | `100` | Max records to return |
-| `category_id` | Long | — | Filter by category |
-| `type` | String | — | Filter by `income` or `expense` |
-
-**Response `200`:**
-```json
-[
-  {
-    "id": 5,
-    "amount": 120.50,
-    "description": "Grocery shopping",
-    "category_id": 1,
-    "category_name": "Food",
-    "transaction_type": "expense",
-    "date": "2024-06-15T10:30:00",
-    "created_at": "2024-06-15T10:31:00"
-  }
-]
-```
-
-#### `POST /api/transactions`
-Create a new transaction.
-
-**Request body:**
-```json
-{
-  "amount": 3500.00,
-  "description": "Monthly salary",
-  "category_id": 3,
-  "transaction_type": "income",
-  "date": "2024-06-01"
-}
-```
-
-`date` accepts multiple formats: `ISO LocalDateTime`, `yyyy-MM-dd HH:mm:ss`, `yyyy-MM-dd`. If omitted, defaults to now.
-
-**Response `201`:** The created transaction.  
-**Error `400`:** Missing fields, invalid category, or invalid `transaction_type`.
-
-#### `DELETE /api/transactions/{id}`
-Delete a transaction.
-
-**Response `204`:** No content.  
-**Error `404`:** Transaction not found or belongs to another user.
-
----
-
-### 🏦 Assets — `/api/assets`
-
-#### `GET /api/assets`
-Returns all assets for the current user, sorted by ID.
-
-**Response `200`:**
-```json
-[
-  { "id": 1, "name": "Car", "type": "Vehicle", "description": "Honda Civic 2022", "value": 18000.00, "created_at": "..." }
-]
-```
-
-#### `POST /api/assets`
-Create a new asset.
-
-**Request body:**
-```json
-{
-  "name": "Savings Account",
-  "type": "Bank",
-  "description": "Emergency fund",
-  "value": 5000.00
-}
-```
-
-**Response `201`:** The created asset.
-
-#### `PUT /api/assets/{id}`
-Update an existing asset.
-
-**Response `200`:** Updated asset.
-
-#### `DELETE /api/assets/{id}`
-Delete an asset.
-
-**Response `204`:** No content.
-
----
+### 🥇 Gold Assets — `/api/gold`
+| Method & Path | Purpose |
+|---|---|
+| `GET/POST/PUT/DELETE /assets{,/{id}}` | Gold asset CRUD (returns `weightConversions`, `gainLoss`, `gainLossPct`) |
+| `GET /prices/current` | Latest prices per purity/unit + sync status |
+| `POST /prices/sync` | Trigger an async price sync |
+| `POST /prices/mode` | Set `AUTOMATIC` or `MANUAL` pricing (with manual price map) |
+| `GET /summary` | Total value, weight, asset count, current price per purity |
+| `GET /convert-weight?value=&unit=` | Pure unit-conversion utility |
 
 ### 📝 Notes — `/api/notes`
-
-#### `GET /api/notes`
-Returns notes for the current user. Non-archived notes, pinned first, then by `updatedAt` descending.
-
-**Query parameters:**
-| Param | Type | Description |
-|---|---|---|
-| `search` | String | Full-text search across title and content |
-
-**Response `200`:**
-```json
-[
-  {
-    "id": 1,
-    "title": "Budget Plan Q3",
-    "content": "Focus on reducing dining expenses...",
-    "color": "#FFE082",
-    "tags": "budget,planning",
-    "pinned": true,
-    "archived": false,
-    "created_at": "...",
-    "updated_at": "..."
-  }
-]
-```
-
-#### `POST /api/notes`
-Create a new note.
-
-**Request body:**
-```json
-{
-  "title": "Investment Ideas",
-  "content": "Look into index funds...",
-  "color": "#B2EBF2",
-  "tags": "investment,ideas",
-  "pinned": false
-}
-```
-
-Defaults: `color = #FFE082`, `pinned = false`, `archived = false`.
-
-**Response `201`:** The created note.
-
-#### `PUT /api/notes/{id}`
-Update a note. All fields are optional (partial update supported).
-
-**Response `200`:** Updated note.
-
-#### `DELETE /api/notes/{id}`
-Delete a note permanently.
-
-**Response `204`:** No content.
-
----
+`GET /?search=&archived=` · `POST /` · `PUT /{id}` (partial) · `DELETE /{id}` — response includes an HTML-stripped `preview` field.
 
 ### ✅ To-Dos — `/api/todos`
+`GET /?search=&status=&priority=` · `POST /` · `PUT /{id}` (partial) · `DELETE /{id}` — setting `completed=true` also sets `status=completed`.
 
-#### `GET /api/todos`
-Returns incomplete todos for the current user.
+### 📈 Analytics — `/api/analytics`
+`GET /summary` · `GET /category-breakdown?type=` · `GET /monthly` (income/expense/savings per month, savings netted by `fromSavings`).
 
-**Query parameters:**
-| Param | Type | Description |
-|---|---|---|
-| `search` | String | Search by title |
-| `status` | String | Filter: `pending`, `in_progress`, `completed` |
-| `priority` | String | Filter: `low`, `medium`, `high` |
+### 🔔 Notifications — `/api/notifications`
+`GET /` · `GET /unread-count` · `PATCH /{id}/read` · `PATCH /read-all`.
 
-**Response `200`:**
-```json
-[
-  {
-    "id": 1,
-    "title": "Review monthly budget",
-    "description": "Check all categories against targets",
-    "due_date": "2024-07-01",
-    "due_time": "09:00",
-    "priority": "high",
-    "category": "Finance",
-    "status": "pending",
-    "completed": false,
-    "color": "#29B6F6",
-    "created_at": "...",
-    "updated_at": "..."
-  }
-]
-```
+### 🧩 Sidebar Preferences — `/api/sidebar-preferences`
+`GET /` · `PUT /` (body `{preferencesJson}`) · `DELETE /` (reset to defaults).
 
-#### `POST /api/todos`
-Create a new to-do.
-
-**Request body:**
-```json
-{
-  "title": "Pay electricity bill",
-  "description": "Due end of month",
-  "dueDate": "2024-07-31",
-  "dueTime": "18:00",
-  "priority": "medium",
-  "category": "Bills",
-  "color": "#FFCC02"
-}
-```
-
-Defaults: `priority = medium`, `status = pending`, `completed = false`, `color = #29B6F6`.
-
-**Response `201`:** The created to-do.
-
-#### `PUT /api/todos/{id}`
-Update a to-do (partial update). Setting `completed: true` automatically sets `status = completed`.
-
-**Response `200`:** Updated to-do.
-
-#### `DELETE /api/todos/{id}`
-Delete a to-do.
-
-**Response `204`:** No content.
-
----
-
-### 📊 Analytics — `/api/analytics`
-
-#### `GET /api/analytics/summary`
-High-level financial summary for the current user.
-
-**Response `200`:**
-```json
-{
-  "total_income": 8500.00,
-  "total_expense": 3200.00,
-  "balance": 5300.00,
-  "total_savings": 5300.00,
-  "savings_rate": 62.35,
-  "total_assets": 23000.00,
-  "net_worth": 28300.00,
-  "transaction_count": 47
-}
-```
-
-#### `GET /api/analytics/savings`
-Dedicated savings overview.
-
-**Response `200`:**
-```json
-{
-  "total_income": 8500.00,
-  "total_expense": 3200.00,
-  "total_savings": 5300.00,
-  "savings_rate": 62.35
-}
-```
-
-#### `GET /api/analytics/category-breakdown`
-Expense totals grouped by category (used to render the Expense by Category chart).
-
-**Response `200`:**
-```json
-[
-  { "category": "Food", "color": "#e74c3c", "total": 850.00, "count": 12 },
-  { "category": "Transport", "color": "#3498db", "total": 320.00, "count": 8 }
-]
-```
-
-#### `GET /api/analytics/monthly`
-Income and expense totals per calendar month (used to render the Monthly Trend chart).
-
-**Response `200`:**
-```json
-[
-  { "month": "2024-04", "type": "income",  "total": 4200.00 },
-  { "month": "2024-04", "type": "expense", "total": 1800.00 },
-  { "month": "2024-05", "type": "income",  "total": 4300.00 },
-  { "month": "2024-05", "type": "expense", "total": 1600.00 }
-]
-```
+### 🤖 AI Assistant — `/api/ai`
+| Method & Path | Purpose |
+|---|---|
+| `POST /chat` | Send a message (RAG + tool-calling loop); errors are tagged (`RATE_LIMIT`, `AUTH_ERROR`, `NOT_CONFIGURED`, `DISABLED`, `TIMEOUT`, …) with an HTTP status and a `retryable` flag |
+| `GET/POST /conversations` · `PUT/DELETE /conversations/{id}` | Conversation management |
+| `GET /conversations/{id}/messages` | Message history (system/tool messages hidden from the client) |
+| `GET /health` | Financial Health Score + breakdown |
+| `GET /insights` | Generated insights |
+| `GET /recommendations` | Evidence-cited recommendations |
+| `GET /budget-coach` / `GET /savings-coach` | Targeted coaching advice |
+| `GET /dashboard-summary` | AI-generated dashboard blurb |
+| `GET /monthly-report?month=yyyy-MM` | Structured monthly report |
+| `GET /settings` · `PUT /settings` | Model/tokens/temperature + feature toggles (`maxTokens` 100–4000, `temperature` 0–2) |
 
 ---
 
 ## 🔐 Authentication & Security
 
 ### JWT Strategy
-- On login/register, the server generates a **HS512-signed JWT** containing `userId`, `username`, and `email` as claims
-- Token expiry: **7 days**
-- The token is returned in **both** the response body (for `localStorage`) and as an **HTTP cookie** (`Authorization`) for seamless browser requests
-- `JwtAuthFilter` intercepts all requests:
-  1. Checks the `Authorization: Bearer <token>` header
-  2. Falls back to the `Authorization` cookie
-  3. On success, sets `userId` as a `HttpServletRequest` attribute — downstream controllers read this via `request.getAttribute("userId")`
+- On login/register, the server issues an **HS512-signed JWT** (`userId`, `username`, `email` claims), returned in the response body and also set as a 7-day `Authorization` cookie
+- Unlike some earlier versions of this project, the signing secret (`app.jwt.secret`) is now a **fixed configured value** in `application.properties`, not regenerated on every restart — tokens survive a server restart as long as the secret doesn't change
+- `JwtAuthFilter` checks the `Authorization: Bearer <token>` header first, falls back to the `Authorization` cookie, and on success sets `userId` as a request attribute that every controller reads via `request.getAttribute("userId")`
+
+### ⚠️ Anonymous-request fallback
+Nearly every controller's `getUserId(request)` helper defaults to **a hardcoded user ID** when the request attribute is absent (i.e. no valid token was presented) — a leftover "demo mode" convenience rather than a hard failure. This means an unauthenticated request against most endpoints doesn't get rejected; it silently reads/writes that one fallback account. This is fine for local development but **must not reach a real multi-tenant deployment** without being replaced by a proper 401 response. If you're writing scripts or automated tests against this API, always pass an explicit, valid `Authorization` header — do not rely on cookie fallback or omit auth entirely, or you may find yourself reading (or writing!) someone else's data.
 
 ### Page-Level Guards
-`PageController` checks `request.getAttribute("userId")`:
-- **Authenticated**: forwards to the requested HTML page
-- **Unauthenticated** on a protected route: redirects to `/login`
-- **Authenticated** on `/`, `/login`, `/signup`: redirects to `/dashboard`
+`PageController` checks `request.getAttribute("userId")`: authenticated users get forwarded to the requested page; unauthenticated users on a protected route are redirected to `/login`; authenticated users hitting `/`, `/login`, or `/signup` are redirected to `/dashboard`. Note: `profile.html` (the post-signup onboarding screen) is reached directly as a static file and is **not** covered by this gate.
 
 ### Spring Security
-- CSRF disabled (stateless JWT app)
-- Custom form login and HTTP Basic both disabled
-- All routes technically `permitAll()` at the Spring Security layer — actual auth enforcement is done in `PageController` (pages) and `FinanceApiController` via `getUserId()` (API)
-- Passwords are hashed with **BCrypt** via `PasswordService`
+- CSRF disabled (stateless JWT app); custom form login and HTTP Basic both disabled
+- All routes are `permitAll()` at the Spring Security layer — actual enforcement happens in `PageController` (pages) and each controller's `getUserId()` (API), not in the security filter chain
+- Passwords hashed with **BCrypt**
 
 ---
 
 ## 🎨 UI & Frontend Architecture
 
 ### No Framework — Pure JS + Static HTML
-Spring Boot serves static files directly from `src/main/resources/static/`. There is no Thymeleaf, Freemarker, or any other templating engine. Every page is a standalone `.html` file.
+Every page is a standalone `.html` file served directly from `src/main/resources/static/` — no Thymeleaf/Freemarker/templating engine. Some pages keep their logic in a dedicated `js/*.js` file (assets, budget-planner, financial-planner, notes, ai-assistant, accounts); others (dashboard, transactions, todos, login/signup/profile) embed it inline in the page's own `<script>` block.
 
-### Sidebar Injection via `sidebar.js`
-Instead of copy-pasting the sidebar HTML into every page, `sidebar.js` is included as a `<script>` tag at the bottom of each protected page. On `DOMContentLoaded` it:
-1. Wraps all existing body content in a `#main-content` div
-2. Inserts the `<aside id="sidebar">` before it
-3. Adds the `has-sidebar` class to `<body>`, which switches the layout to `display: flex; flex-direction: row`
-4. Sets the active menu item by matching `window.location.pathname`
-5. Restores collapse state from `localStorage`
-6. Applies the saved theme before the page renders (IIFE at top of file, preventing flash of wrong theme)
+### Sidebar Injection & Customization
+`sidebar.js` is included on every protected page and, on `DOMContentLoaded`, wraps existing body content in `#main-content`, injects the `<aside id="sidebar">`, and wires up:
+- **Drag-and-drop reordering, show/hide, and pinning** of sidebar modules — preferences are stored per-user in `localStorage` and best-effort synced to `PUT /api/sidebar-preferences`; Dashboard and Settings are locked in place
+- Collapse/expand state, compact mode, and a mobile hamburger + overlay
+- A floating **Calculator** popup, the **Notifications** panel, and the **Profile** modal, all injected on demand
 
 ### Theme System
-Themes are controlled by a `data-theme` attribute on the `<html>` element:
-- `data-theme=""` → Light mode (`:root` CSS variables)
-- `data-theme="dark"` → Dark mode (`[data-theme="dark"]` overrides)
-
-**Bootstrap internal variables** (`--bs-body-color`, `--bs-heading-color`, etc.) are overridden in the dark block so Bootstrap components respect the theme.
-
-**30+ CSS variables** cover every surface: backgrounds, text, borders, inputs, cards, modals, tables, toasts, sidebar, and stat cards.
-
-**Priority**: `localStorage('fintrack_theme')` → system `prefers-color-scheme` → light default.
-
-### CSS Variable Palette
-```css
-/* Brand palette */
---color-primary:   #18230F;   /* Page background */
---color-secondary: #27391C;   /* Dividers, hover, secondary sections */
---color-accent:    #255F38;   /* Active states, icons, buttons */
---color-surface:   #1F7D53;   /* Stat card backgrounds */
-
-/* Light mode */
---bg-body:     #f0f4f1;
---bg-card:     #ffffff;
---text-body:   #18230F;
---text-muted:  #6c757d;
-
-/* Dark mode (overrides) */
---bg-body:     #18230F;
---bg-card:     #1e2d16;
---text-body:   #d4edda;
-```
-
-### Stat Cards
-- Fixed minimum height (`130px`), equal width via Bootstrap `col-md-2`
-- `fitStatAmounts()` — JavaScript function that shrinks font size from the CSS `clamp()` default down 1px at a time until `scrollWidth ≤ available card width`. Runs after data loads and on `window.resize`
-- Animated FontAwesome icon (16–24px) positioned `absolute bottom-right`, colored with `--stat-card-icon-color`, loops with a subtle float animation
+Controlled by a `data-theme` attribute on `<html>` (`""` = light, `"dark"` = dark), applied *before first paint* to avoid a flash of the wrong theme. Priority: `localStorage` → system `prefers-color-scheme` → light. A separate selectable accent color theme layers on top via `data-color-theme`. Bootstrap's own CSS variables are overridden so its components respect both.
 
 ### Recent Transactions Layout
-Each transaction row uses CSS Grid with 6 columns:
-
-```
-110px   | 1fr     | 160px    | 120px  | 130px   | 50px
-Date    | Desc    | Category | Type   | Amount  | Delete
-```
-
-Rows animate in with `@keyframes txRowIn` (fade + slide up), staggered by `animation-delay: ${idx * 40}ms`.
+Each row is a CSS Grid (`110px 1fr 160px 140px 120px 130px 82px` — Date/Description/Category/Paid-From/Type/Amount/Actions), animating in with a staggered fade-and-slide keyframe. The Net Total row reuses the same grid so its amount column lines up with every row above it.
 
 ---
 
@@ -770,31 +423,21 @@ Rows animate in with `@keyframes txRowIn` (fade + slide up), staggered by `anima
 | URL | HTML File | Description |
 |---|---|---|
 | `/` | — | Redirects to `/login` or `/dashboard` |
-| `/login` | `login.html` | Login form. Stores JWT in `localStorage` and cookie |
-| `/signup` | `signup.html` | Registration form (full or simplified) |
-| `/dashboard` | `dashboard.html` | Stats, charts, recent transactions |
-| `/transactions` | `transactions.html` | Full transaction list + add form + assets |
-| `/notes` | `notes.html` | Notes grid with search, pin, archive, color |
-| `/todos` | `todos.html` | To-do list with priorities, statuses, filters |
-| `/profile` | `profile.html` | User profile view/edit |
-| `/settings` | `settings.html` | App settings *(in progress)* |
+| `/login`, `/signup` | `login.html`, `signup.html` | Combined login/signup screen |
+| — | `profile.html` | Post-signup onboarding (not routed via `PageController`; reached directly) |
+| `/dashboard` | `dashboard.html` | Stats, charts, Recent Transactions, AI dashboard summary |
+| `/transactions` | `transactions.html` | Transactions + Recurring Transactions + Next Month Forecast (all three tabs) |
+| `/budget-planner` | `budget-planner.html` | Budget plans, templates, category/savings budgets, export |
+| `/financial-planner` | `financial-planner.html` | Investments · Loans · Subscriptions · Wishlist Goals (4 tabs) |
+| `/assets` | `assets.html` | Gold asset tracking + live pricing |
+| `/notes` | `notes.html` | Rich-text notes |
+| `/todos` | `todos.html` | To-do list |
+| `/ai-assistant` | `ai-assistant.html` | AI chat assistant |
+| `/settings` | `settings.html` | Appearance, currency/localization, categories, account configuration, AI settings, about |
+| `/recurring-transactions` | — | Redirects to `/transactions` (merged into that page) |
 
-### Sidebar Navigation (all protected pages)
-```
-┌─────────────────┐
-│  FinTrack  [≡]  │  ← collapse toggle
-├─────────────────┤
-│ 🏠 Dashboard    │
-│ 💸 Transactions │
-│ 📝 Notes        │
-│ ✅ To-Dos       │
-│ ⚙️  Settings    │
-├─────────────────┤
-│ [☀️/🌙] Theme  │  ← light/dark toggle
-│ 👤 User Name    │
-│ 🚪 Logout       │
-└─────────────────┘
-```
+### Sidebar Navigation (in order)
+Home · Transactions · Budget Planner · Notes · To-Do · Assets · Financial Planner · Calculator (opens a popup, doesn't navigate) · Settings — plus a fixed bottom section for Notifications, AI Assistant, Theme toggle, Profile, and Logout. Every item except Home and Settings can be hidden, reordered, or pinned via the sidebar customizer.
 
 ---
 
@@ -805,8 +448,8 @@ Rows animate in with `@keyframes txRowIn` (fade + slide up), staggered by `anima
 | Tool | Minimum Version |
 |---|---|
 | Java JDK | 17 |
-| PostgreSQL | 13+ |
-| Gradle | 8 (or use `gradlew` wrapper) |
+| PostgreSQL | 13+ (with the `vector` extension available, if you want real AI/RAG search) |
+| Gradle | 8 (or use the `gradlew` wrapper) |
 
 ### 1. Clone the repository
 
@@ -815,7 +458,9 @@ git clone https://github.com/zareenzia/FinTrack.git
 cd FinTrack
 ```
 
-### 2. Set up the PostgreSQL database
+### 2. Set up PostgreSQL
+
+Any Postgres 13+ instance works (this project currently points at a Neon serverless instance by default — see below). To use your own:
 
 ```sql
 CREATE DATABASE fintrack;
@@ -823,49 +468,45 @@ CREATE USER fintrack_user WITH ENCRYPTED PASSWORD 'yourpassword';
 GRANT ALL PRIVILEGES ON DATABASE fintrack TO fintrack_user;
 ```
 
+If you want real semantic search (not the mock embedding provider), also run `CREATE EXTENSION IF NOT EXISTS vector;` — `DatabaseMigration.java` will otherwise try to enable it itself on startup.
+
 ### 3. Configure the application
 
-Edit `src/main/resources/application.properties`:
+`src/main/resources/application.properties` currently contains a live connection string, JWT secret, and other values checked directly into the repo for convenience. **Before deploying anywhere real**, replace these with environment variables:
 
 ```properties
 # Server
 server.port=8585
 
 # Database
-spring.datasource.url=jdbc:postgresql://localhost:5432/fintrack
-spring.datasource.username=fintrack_user
-spring.datasource.password=yourpassword
-spring.datasource.driver-class-name=org.postgresql.Driver
+spring.datasource.url=jdbc:postgresql://<host>/<database>?sslmode=require
+spring.datasource.username=<username>
+spring.datasource.password=<password>
 
 # JPA / Hibernate
 spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=false
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
 
-# Jackson (Java 8 date/time support)
-spring.jackson.serialization.write-dates-as-timestamps=false
+# JWT (must be ≥ 64 chars for HS512)
+app.jwt.secret=<a long random secret>
+
+# AI Assistant (optional — omit to run with the AI features disabled)
+openai.api.key=<your OpenAI API key>
+# ai.embedding.provider=mock   # uncomment to exercise RAG indexing/retrieval without OpenAI billing
 ```
-
-> **`ddl-auto=update`** means Hibernate will automatically create or update tables on startup. No manual schema migration is needed for a fresh database.
 
 ### 4. Build
 
 ```bash
-# Windows
-.\gradlew.bat build -x test
-
-# Linux / macOS
-./gradlew build -x test
+./gradlew build -x test        # Linux/macOS
+.\gradlew.bat build -x test    # Windows
 ```
 
 ### 5. Run
 
 ```bash
-# Windows
-.\gradlew.bat bootRun
-
-# Linux / macOS
-./gradlew bootRun
+./gradlew bootRun        # Linux/macOS
+.\gradlew.bat bootRun     # Windows
 ```
 
 The app starts at **[http://localhost:8585](http://localhost:8585)** and redirects to the login page.
@@ -876,17 +517,18 @@ The app starts at **[http://localhost:8585](http://localhost:8585)** and redirec
 
 | Property | Default | Description |
 |---|---|---|
-| `server.port` | `8585` | HTTP port the server listens on |
-| `spring.datasource.url` | — | PostgreSQL JDBC URL |
-| `spring.datasource.username` | — | DB username |
-| `spring.datasource.password` | — | DB password |
-| `spring.jpa.hibernate.ddl-auto` | `update` | Schema management strategy |
-| `spring.jpa.show-sql` | `false` | Log generated SQL queries |
-
-### JWT
-The JWT secret key is **generated fresh on every application startup** (in-memory `SecretKey` via `Keys.secretKeyFor(HS512)`). This means:
-- All tokens are invalidated when the server restarts
-- For production, replace with a stable externalized secret key stored in environment variables or a secrets manager
+| `server.port` | `8585` | HTTP port |
+| `spring.datasource.url` / `username` / `password` | — | PostgreSQL connection |
+| `spring.jpa.hibernate.ddl-auto` | `update` | Schema management — combined with `DatabaseMigration.java` for anything Hibernate can't do safely (see [Database Schema](#-database-schema)) |
+| `app.jwt.secret` | — | HS512 signing key, ≥ 64 chars |
+| `app.upload.dir` | `user-uploads/profiles` | Where profile pictures are stored |
+| `openai.api.key` | — | OpenAI API key; if unset, AI chat/embeddings calls fail with `NOT_CONFIGURED` |
+| `openai.api.base-url` | `https://api.openai.com/v1` | OpenAI API base URL |
+| `openai.embedding.model` | `text-embedding-3-small` | Embedding model for RAG |
+| `ai.embedding.provider` | `openai` | Set to `mock` to use deterministic fake embeddings (no OpenAI billing needed, but no real semantic matching either) |
+| `gold.source.url` | `https://www.goldr.org/` | Gold price scrape source |
+| `gold.sync.enabled` | `true` | Enable scheduled gold price sync |
+| `gold.sync.interval-minutes` | `1440` | Sync frequency |
 
 ---
 
@@ -912,18 +554,26 @@ java -jar build/libs/finzin-0.0.1-SNAPSHOT.jar
 
 ---
 
+## ⚠️ Known Limitations
+
+- **OpenAI quota vs. rate limit**: a genuinely exhausted/unfunded OpenAI account and a transient rate limit both surface to the user as the same "our AI assistant is a bit busy, try again in a moment" message — retrying won't fix a billing problem. Worth distinguishing if this ships to real users.
+- **Anonymous-request fallback**: see [Authentication & Security](#-authentication--security) — several controllers silently fall back to a fixed user ID instead of rejecting unauthenticated requests. Fine for local dev, not for production.
+- **Financial Planner request bodies**: the investments/loans/subscriptions/goals endpoints accept raw `Map<String,Object>` bodies rather than typed, validated request records, unlike almost every other controller.
+- **CSV import never guesses at transfers**: for both one-off and recurring transactions, a Transfer-type row in an imported CSV is always rejected rather than parsed, since reliably mapping an account name back to an ID for money that will move automatically isn't safe to get wrong. Add transfers manually via "Log Cash Transfer" instead.
+- **Secrets committed in `application.properties`**: the live Neon connection string and JWT secret currently live directly in the repo rather than environment variables — fine for a shared dev sandbox, not for a real deployment (see [Getting Started](#-getting-started)).
+
+---
+
 ## 🗺 Roadmap
 
-- [ ] Persistent JWT secret (environment variable / secrets vault)
-- [ ] Email verification on registration
-- [ ] Password reset flow
-- [ ] Export transactions to CSV / PDF
-- [ ] Budget limits per category with alerts
-- [ ] Recurring transactions
+- [ ] Externalize secrets (DB credentials, JWT key, OpenAI key) to environment variables / a secrets manager
+- [ ] Replace the anonymous-request fallback with a proper 401 across all controllers
+- [ ] Distinguish OpenAI quota-exhausted errors from transient rate limiting in the chat UI
+- [ ] Typed, validated request DTOs for the Financial Planner endpoints
+- [ ] Email verification on registration; password reset flow
 - [ ] Multi-currency support
-- [ ] Settings page (currency symbol, fiscal year start, notification preferences)
 - [ ] Mobile PWA support
-- [ ] Unit & integration tests
+- [ ] Broader automated test coverage (current suite is Mockito-based service tests + a handful of Spring context tests)
 
 ---
 

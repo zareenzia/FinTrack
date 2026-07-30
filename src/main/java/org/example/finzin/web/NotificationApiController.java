@@ -51,6 +51,13 @@ public class NotificationApiController {
         return ResponseEntity.ok(toResponse(updated));
     }
 
+    @PatchMapping("/read-all")
+    public Map<String, Object> markAllRead(HttpServletRequest request) {
+        Long userId = getUserId(request);
+        int updated = notificationService.markAllRead(userId);
+        return Map.of("updated", updated);
+    }
+
     private Map<String, Object> toResponse(NotificationEntity entity) {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("id", entity.getId());

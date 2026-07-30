@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface BudgetTemplateRepository extends JpaRepository<BudgetTemplateEntity, Long> {
     List<BudgetTemplateEntity> findByUserId(Long userId);
+    void deleteByUserId(Long userId);
 }

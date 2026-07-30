@@ -17,6 +17,12 @@
     --light-color:     #ecf0f1;
     --dark-color:      #18230F;
 
+    /* ===== Gamification Tier Colors (constant - a gold badge stays gold in every theme) ===== */
+    --tier-bronze:  #CD7F32;
+    --tier-silver:  #A8A9AD;
+    --tier-gold:    #D4AF37;
+    --tier-diamond: #7DD3FC;
+
     /* ===== Stat Card Palette (always Surface-based, theme-agnostic) ===== */
     --stat-card-bg:          var(--color-surface);
     --stat-card-border:      var(--color-accent);
@@ -795,8 +801,9 @@ body.has-sidebar {
     padding-left: 5px;
 }
 
-/* Tooltip on collapsed hover */
-#sidebar.collapsed .sidebar-item:hover::after {
+/* Tooltip on collapsed hover (and always for icon-only items, since they never show a label) */
+#sidebar.collapsed .sidebar-item:hover::after,
+.sidebar-item.sidebar-icon-only:hover::after {
     content: attr(title);
     position: absolute;
     left: calc(100% + 10px);
@@ -834,6 +841,47 @@ body.has-sidebar {
 .sidebar-logout:hover {
     background: rgba(239, 68, 68, 0.1) !important;
     color: #ef4444 !important;
+}
+
+/* Icon-only pair (Notifications + AI Assistant) shown side by side above the other bottom items */
+.sidebar-icon-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 3px;
+}
+
+.sidebar-icon-row .sidebar-item {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.sidebar-item.sidebar-icon-only {
+    justify-content: center;
+    padding: 11px 8px;
+}
+
+.sidebar-item.sidebar-icon-only .sidebar-label {
+    /* Tooltip (title attr) carries the label instead — kept in the DOM for accessibility/testability. */
+    opacity: 0;
+    max-width: 0;
+    pointer-events: none;
+}
+
+#sidebar.collapsed .sidebar-icon-row {
+    flex-direction: column;
+}
+
+/* "New" pulse dot on the User Manual icon until a user has opened it once */
+.manual-badge-dot {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ffc107;
+    box-shadow: 0 0 0 rgba(255, 193, 7, 0.6);
+    animation: umDotPing 1.8s ease-out infinite;
 }
 
 /* Avatar */
@@ -900,6 +948,7 @@ body.has-sidebar {
         left: 0;
         top: 0;
         height: 100vh;
+        height: 100dvh; /* real mobile browsers: 100vh can extend behind the address bar, clipping the bottom of the drawer */
         width: 240px !important;
         min-width: 240px !important;
         transform: translateX(-100%);
@@ -909,6 +958,16 @@ body.has-sidebar {
 
     #sidebar.mobile-open {
         transform: translateX(0);
+    }
+
+    /* .sidebar-nav is flex:1 so it shrinks to fill whatever space is left above .sidebar-bottom —
+       correct, since that's what keeps Logout/Profile/theme toggle pinned and always visible
+       without scrolling. But it also had overflow:hidden, so on shorter phones or with more
+       sidebar modules enabled, whatever didn't fit was silently clipped with no way to reach it.
+       Scroll the nav list itself instead of clipping it. */
+    #sidebar .sidebar-nav {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     /* Always show labels on mobile drawer */
@@ -921,6 +980,20 @@ body.has-sidebar {
     #sidebar .sidebar-item {
         justify-content: flex-start !important;
         padding: 11px 12px !important;
+    }
+
+    /* ...except the Notifications/AI Assistant icon-only pair — they only have room for an
+       icon (see .sidebar-icon-row above), so the "always show labels" rule above squeezed
+       "Notifica…"/"AI Assist…" into a truncated, unreadable label instead of leaving them as
+       clean icon buttons like on desktop. Re-hide the label and keep them centered. */
+    #sidebar .sidebar-item.sidebar-icon-only {
+        justify-content: center !important;
+        padding: 11px 8px !important;
+    }
+
+    #sidebar .sidebar-item.sidebar-icon-only .sidebar-label {
+        opacity: 0 !important;
+        max-width: 0 !important;
     }
 
     #main-content {
@@ -980,32 +1053,45 @@ body.has-sidebar {
 .stat-card {
     border: none !important;
     border-radius: 20px !important;
-    height: auto !important;
-    min-height: 160px !important;
-    max-height: none !important;
+    /* A true fixed height (not min-height) so every card is identical regardless of how many
+       lines its title/subtitle wrap to — .sc-title below is clamped to 2 lines specifically so
+       its content always fits within this. */
+    height: 176px !important;
+    min-height: 176px !important;
+    max-height: 176px !important;
     position: relative;
     overflow: hidden;
     box-shadow: 0 8px 32px rgba(0,0,0,0.18) !important;
     transition: transform 0.28s cubic-bezier(.23,1,.32,1), box-shadow 0.28s ease !important;
     animation: none !important;
 }
+/* Glossy corner sheen — same treatment on every card so they all read as one consistent family. */
+.stat-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(130% 100% at 100% 0%, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0) 55%);
+    pointer-events: none;
+}
 .stat-card:hover {
     transform: translateY(-6px) scale(1.025) !important;
     box-shadow: 0 16px 48px rgba(0,0,0,0.28) !important;
 }
 
-/* Per-card gradient backgrounds */
-.stat-card--income  { background: linear-gradient(135deg,#1a9e5c 0%,#27c572 100%) !important; }
-.stat-card--expense { background: linear-gradient(135deg,#e03c3c 0%,#f87171 100%) !important; }
-.stat-card--savings { background: linear-gradient(135deg,#2563eb 0%,#60a5fa 100%) !important; }
-.stat-card--balance { background: linear-gradient(135deg,#d97706 0%,#fbbf24 100%) !important; }
-.stat-card--assets  { background: linear-gradient(135deg,#7c3aed 0%,#a78bfa 100%) !important; }
-.stat-card--networth{ background: linear-gradient(135deg,#0e7490 0%,#22d3ee 100%) !important; }
+/* Per-card gradient backgrounds — a darker anchor stop added to each for more depth/richness
+   than a flat two-tone gradient, while keeping the same hue family as their .sc-icon-circle color. */
+.stat-card--income  { background: linear-gradient(135deg,#0f7a45 0%,#1a9e5c 45%,#34d399 100%) !important; }
+.stat-card--expense { background: linear-gradient(135deg,#b91c1c 0%,#e03c3c 45%,#f87171 100%) !important; }
+.stat-card--savings { background: linear-gradient(135deg,#1d4ed8 0%,#2563eb 45%,#60a5fa 100%) !important; }
+.stat-card--balance { background: linear-gradient(135deg,#b45309 0%,#d97706 45%,#fbbf24 100%) !important; }
+.stat-card--assets  { background: linear-gradient(135deg,#6d28d9 0%,#7c3aed 45%,#a78bfa 100%) !important; }
+.stat-card--networth{ background: linear-gradient(135deg,#0c5c73 0%,#0e7490 45%,#22d3ee 100%) !important; }
 
 .stat-card .card-body {
     padding: 18px 18px 16px 18px !important;
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
     gap: 0;
     height: 100%;
 }
@@ -1015,6 +1101,10 @@ body.has-sidebar {
     display: flex;
     align-items: flex-start;
     gap: 12px;
+    /* Reserve room on the right for the eye button, which is pulled out of this flex row (see
+       .sc-top .sc-eye-btn below) and pinned to the card's corner instead — otherwise the title
+       block would expand to fill that space and its text could run underneath the button. */
+    padding-right: 38px;
 }
 
 /* White circle with colored icon — animated pulse */
@@ -1049,13 +1139,21 @@ body.has-sidebar {
     min-width: 0;
 }
 .sc-title {
-    font-size: 0.95rem;
+    font-size: 0.88rem;
     font-weight: 700;
     color: #fff;
-    white-space: nowrap;
+    line-height: 1.25;
+    /* Clamp to 2 whole-word lines instead of an unbounded wrap (which, combined with the fixed
+       card height above, could otherwise overflow) or a mid-word break (which used to split
+       "Expense" into "Expens"/"e" on narrower cards) — word-break:normal keeps whole words
+       together, wrapping "Total Expense" as "Total"/"Expense" and only falling back to an
+       ellipsis on a label too long to fit even that way. */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.3;
+    word-break: normal;
+    overflow-wrap: normal;
 }
 .sc-subtitle {
     font-size: 0.72rem;
@@ -1064,6 +1162,16 @@ body.has-sidebar {
     display: flex;
     align-items: center;
     gap: 4px;
+    min-width: 0;
+}
+/* Subtitle label text (e.g. "This month", "Total value · All time") — truncate with an
+   ellipsis on narrow cards instead of wrapping word-by-word into a multi-line mess. */
+.sc-subtitle .sc-month-label,
+.sc-subtitle .sc-subtitle-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
 }
 .sc-trend-up   { color: #bbf7d0; }
 .sc-trend-down { color: #fecaca; }
@@ -1086,6 +1194,16 @@ body.has-sidebar {
     flex-shrink: 0;
 }
 .sc-eye-btn:hover { background: rgba(255,255,255,0.35); color: #fff; }
+
+/* In the grid stat-cards specifically (not the Compact view's summary-stat-row, which keeps its
+   own inline eye button), pin the eye button to the card's corner instead of letting it sit in
+   the flex row — that was stealing ~42px from the title/subtitle on every card, which is what
+   was forcing "Total Income", "Net Balance", etc. to wrap even at a normal card width. */
+.sc-top .sc-eye-btn {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+}
 
 /* Divider */
 .sc-divider {
@@ -1219,6 +1337,16 @@ body.has-sidebar {
 .form-control::placeholder {
     color: var(--text-placeholder);
     font-weight: 400;
+}
+
+/* Input-group addons (e.g. the currency symbol prefix on Amount fields) had no theme styling
+   anywhere and fell back to Bootstrap's default light-gray background — a jarring white box
+   in an otherwise dark-themed input. Match the same tokens .form-control/.form-select use. */
+.input-group-text {
+    background-color: var(--bg-table-stripe);
+    border: 2px solid var(--border-input);
+    color: var(--text-secondary-custom);
+    font-weight: 600;
 }
 
 /* ===== BUTTONS ===== */
@@ -1380,6 +1508,37 @@ body.has-sidebar {
     transform: scale(0.95);
 }
 
+/* Shared header action-button style — used for the top-of-page action row on dashboard.html
+   and transactions.html so both pages present the same buttons the same way, instead of one
+   page's plain-text-color, uppercase Bootstrap buttons vs. the other's solid custom style. */
+.btn-add-transaction {
+    background: var(--color-surface);
+    color: #f5f5f0;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(31, 125, 83, 0.2);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.btn-add-transaction:hover {
+    background: var(--color-accent);
+    color: #f5f5f0;
+    box-shadow: 0 4px 12px rgba(31, 125, 83, 0.35);
+    transform: translateY(-1px);
+}
+
+.btn-add-transaction:active {
+    transform: translateY(0);
+}
+
 .btn-outline-primary {
     border: 2px solid var(--accent-color);
     color: var(--accent-color);
@@ -1513,58 +1672,89 @@ body.has-sidebar {
     animation: fadeIn 0.5s ease-out;
 }
 
-/* ===== NOTIFICATIONS ===== */
+/* ===== NOTIFICATIONS =====
+   Anchored bottom-right (not top) so it never overlaps a page's own header
+   controls (action buttons, period selectors, etc.), which vary per page and
+   can wrap unpredictably near the top of the viewport. */
 .notification-toast-container {
     position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 1100;
-    width: min(92vw, 450px);
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    width: min(92vw, 380px);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
     pointer-events: none;
 }
 
 .notification-toast {
-    margin-bottom: 12px;
-    padding: 16px 20px;
-    border-radius: 12px;
-    font-weight: 600;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
     opacity: 0;
-    transform: translateY(-20px);
-    transition: all 0.4s cubic-bezier(0.23, 1, 0.320, 1);
-    border-left: 5px solid transparent;
+    transform: translateX(40px);
+    transition: all 0.35s cubic-bezier(0.23, 1, 0.320, 1);
+    border-left: 4px solid transparent;
     background: var(--bg-notification);
     color: var(--text-notification);
-    letter-spacing: 0.3px;
-    animation: slideIn 0.4s ease-out;
-}
-
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(-30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    pointer-events: auto;
 }
 
 .notification-toast.show {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(0);
 }
 
-.notification-toast.notification-success {
-    border-left-color: #1F7D53;
-    background: linear-gradient(135deg, #f0f9f7 0%, #e8f5f1 100%);
+.notification-toast-icon {
+    flex-shrink: 0;
+    font-size: 1.1rem;
 }
 
-.notification-toast.notification-error {
-    border-left-color: #e74c3c;
-    background: linear-gradient(135deg, #fef5f5 0%, #fce8e6 100%);
+.notification-toast-message {
+    flex: 1;
+    word-break: break-word;
 }
+
+.notification-toast-close {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    padding: 4px;
+    margin: -4px -4px -4px 0;
+    cursor: pointer;
+    color: currentColor;
+    opacity: 0.55;
+    font-size: 0.95rem;
+    line-height: 1;
+    transition: opacity 0.15s ease;
+}
+
+.notification-toast-close:hover {
+    opacity: 1;
+}
+
+/* Card chrome (background/text) always comes from the active color theme via
+   --bg-notification / --text-notification — only the accent bar + icon carry
+   fixed semantic meaning (success/error/warning/info), so a toast always looks
+   native to whichever of the 9 themes is active instead of a foreign pastel box. */
+.notification-toast.notification-success { border-left-color: #1F7D53; }
+.notification-toast.notification-success .notification-toast-icon { color: #1F7D53; }
+
+.notification-toast.notification-error { border-left-color: #e74c3c; }
+.notification-toast.notification-error .notification-toast-icon { color: #e74c3c; }
+
+.notification-toast.notification-warning { border-left-color: #f59e0b; }
+.notification-toast.notification-warning .notification-toast-icon { color: #f59e0b; }
+
+.notification-toast.notification-info { border-left-color: #3b82f6; }
+.notification-toast.notification-info .notification-toast-icon { color: #3b82f6; }
 
 /* ===== COLLAPSE/ACCORDION ===== */
 .card-header[data-bs-toggle="collapse"] {
@@ -1831,13 +2021,10 @@ canvas {
     color: var(--text-body);
 }
 
-/* â”€â”€ Stat cards: force Surface palette in BOTH themes â”€â”€ */
-/* These rules have higher specificity and must come AFTER the generic dark overrides */
-[data-theme="dark"] .stat-card,
-[data-theme="light"] .stat-card,
-.stat-card {
-    background: var(--stat-card-bg) !important;
-}
+/* NOTE: no generic `.stat-card { background: ... }` override here on purpose — every stat card
+   in the app always carries a --type modifier (stat-card--income, --expense, etc., see below),
+   and a same-specificity rule this late in the file would silently beat their per-type gradients
+   (that's exactly what used to flatten every card, regardless of type, to one solid color). */
 
 [data-theme="dark"] .stat-card .card-title,
 .stat-card .card-title {
@@ -2019,15 +2206,6 @@ h3.stat-card-amount,
 
 /* Dark mode scrollbar (inherits from theme variables above — no extra rules needed) */
 
-/* Notification toast dark overrides */
-[data-theme="dark"] .notification-toast.notification-success {
-    background: linear-gradient(135deg, #162e18 0%, #1a3820 100%);
-}
-
-[data-theme="dark"] .notification-toast.notification-error {
-    background: linear-gradient(135deg, #2e1212 0%, #381818 100%);
-}
-
 /* =====================================================
    RECENT TRANSACTIONS â€” Modern Card-List
    ===================================================== */
@@ -2110,6 +2288,31 @@ h3.stat-card-amount,
     background: rgba(255, 255, 255, 0.22) !important;
     border-color: rgba(255, 255, 255, 0.55) !important;
 }
+/* Search input in the card header */
+.tx-filter-search {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border: 1px solid rgba(255, 255, 255, 0.28) !important;
+    color: #fff !important;
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    padding: 4px 8px !important;
+    border-radius: 7px !important;
+    outline: none;
+    min-width: 130px;
+    max-width: 200px;
+    transition: background 0.2s ease, border-color 0.2s ease;
+    line-height: 1.4;
+}
+.tx-filter-search::placeholder {
+    color: rgba(255, 255, 255, 0.75);
+    font-weight: 500;
+}
+.tx-filter-search:hover,
+.tx-filter-search:focus {
+    background: rgba(255, 255, 255, 0.22) !important;
+    border-color: rgba(255, 255, 255, 0.55) !important;
+}
+
 .tx-filter-select option {
     background: var(--bg-modal);
     color: var(--text-body);
@@ -2123,6 +2326,26 @@ h3.stat-card-amount,
     gap: 6px;
     flex-wrap: wrap;
     justify-content: flex-end;
+}
+
+.tx-export-btn {
+    width: 30px;
+    height: 30px;
+    background: rgba(255, 255, 255, 0.12) !important;
+    border: 1px solid rgba(255, 255, 255, 0.28) !important;
+    color: #fff !important;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+.tx-export-btn:hover {
+    background: rgba(255, 255, 255, 0.22) !important;
+    border-color: rgba(255, 255, 255, 0.55) !important;
 }
 
 .tx-header-icon {
@@ -2173,7 +2396,7 @@ h3.stat-card-amount,
 /* â”€â”€ Column labels row â”€â”€ */
 .tx-col-labels {
     display: grid;
-    grid-template-columns: 110px 1fr 160px 120px 130px 82px;
+    grid-template-columns: 110px 1fr 160px 140px 120px 130px 82px;
     padding: 8px 20px;
     font-size: 0.7rem;
     font-weight: 700;
@@ -2193,7 +2416,7 @@ h3.stat-card-amount,
 /* â”€â”€ Transaction row â”€â”€ */
 .tx-row {
     display: grid;
-    grid-template-columns: 110px 1fr 160px 120px 130px 82px;
+    grid-template-columns: 110px 1fr 160px 140px 120px 130px 82px;
     align-items: center;
     padding: 12px 20px;
     gap: 8px;
@@ -2269,6 +2492,17 @@ h3.stat-card-amount,
     font-size: 0.88rem;
     font-weight: 600;
     color: var(--tx-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+}
+
+/* Paid-from account column */
+.tx-account-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--tx-label-color);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -2374,7 +2608,41 @@ h3.stat-card-amount,
     display: flex;
     align-items: center;
     gap: 2px;
-}/* Empty state */
+}
+
+/* Receipt attached indicator (Scan Receipt feature) */
+.tx-receipt-badge {
+    width: 22px;
+    height: 22px;
+    border: none;
+    border-radius: 6px;
+    background: rgba(37, 95, 56, 0.12);
+    color: var(--accent-color);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .7rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-left: 4px;
+}
+.tx-receipt-badge:hover {
+    background: rgba(37, 95, 56, 0.22);
+}
+
+/* Net total row */
+.tx-total-row {
+    background: var(--bg-table-stripe, rgba(0, 0, 0, 0.03));
+    border-top: 2px solid var(--tx-row-border);
+    animation: none;
+}
+.tx-total-label {
+    grid-column: 1 / 6;
+    text-align: right;
+    padding-right: 10px;
+    color: var(--tx-text);
+}
+/* Empty state */
 .tx-empty {
     padding: 48px 24px;
     text-align: center;
@@ -2526,7 +2794,7 @@ h3.stat-card-amount,
 @media (max-width: 900px) {
     .tx-col-labels,
     .tx-row {
-        grid-template-columns: 90px 1fr 130px 100px 110px 68px;
+        grid-template-columns: 90px 1fr 130px 120px 100px 110px 68px;
         padding: 10px 14px;
     }
 }
@@ -2540,12 +2808,13 @@ h3.stat-card-amount,
         padding: 14px 16px;
         position: relative;
     }
-    .tx-col-date  { order: 1; }
-    .tx-col-desc  { order: 2; }
-    .tx-col-cat   { order: 3; }
-    .tx-col-type  { order: 4; }
+    .tx-col-date    { order: 1; }
+    .tx-col-desc    { order: 2; }
+    .tx-col-cat     { order: 3; }
+    .tx-col-account { order: 4; }
+    .tx-col-type    { order: 5; }
     .tx-col-amount {
-        order: 5;
+        order: 6;
         font-size: 1.1rem !important;
     }
     .tx-col-action {
@@ -2865,6 +3134,27 @@ h3.stat-card-amount,
 }
 .dashboard-card-header h6 { color: #f0f0e8; margin: 0; font-size: 0.9rem; }
 
+/* "View All" / open-in-new-tab links in a card header (AI Financial Coach, Current Budget,
+   Financial Planner, Upcoming Recurring Transactions). Every color theme sets --color-accent
+   (this header's background) and --accent-color (what .btn-outline-primary/.btn-primary use
+   for border/background) to the same value, so the themed button becomes invisible against
+   its own header. Just the icon/text in white, no button box, no border. */
+.dashboard-card-header .btn-outline-primary,
+.dashboard-card-header .btn-primary {
+    border: none;
+    background: transparent;
+    color: #fff;
+    padding: 4px 6px;
+    box-shadow: none;
+}
+.dashboard-card-header .btn-outline-primary:hover,
+.dashboard-card-header .btn-primary:hover {
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    transform: none;
+    box-shadow: none;
+}
+
 /* Compact toggle buttons — same size in every header */
 .dashboard-chart-toggle { display: flex; gap: 0; }
 .dashboard-chart-toggle .btn {
@@ -2894,7 +3184,12 @@ h3.stat-card-amount,
     border: none !important;
     border-bottom: 1px solid var(--border-color, rgba(0,0,0,.08)) !important;
     margin: 0 !important;
+    /* The gradient dashboard cards fix .stat-card to a specific height so all 6 measure
+       identically — this compact list-row variant needs its own natural (short) height back,
+       since the base rule doesn't otherwise know to leave these rows alone. */
+    height: auto !important;
     min-height: unset !important;
+    max-height: none !important;
     transition: background 0.18s ease !important;
 }
 .summary-stat-row.stat-card:last-child { border-bottom: none !important; }
@@ -3032,3 +3327,546 @@ h3.stat-card-amount,
 [data-theme="dark"] .balance-positive { color: #4ade80 !important; }
 [data-theme="dark"] .balance-credit { color: #f87171 !important; }
 [data-theme="dark"] .acct-breakdown-bal.bal-credit { color: #f87171; }
+
+/* ===== SIDEBAR COMPACT MODE ===== */
+body.sidebar-compact #sidebar:not(.collapsed) .sidebar-label {
+    opacity: 0;
+    max-width: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+body.sidebar-compact #sidebar:not(.collapsed) .sidebar-item {
+    justify-content: center;
+    padding: 11px 8px;
+}
+body.sidebar-compact #sidebar:not(.collapsed) .sidebar-item:hover::after {
+    content: attr(title);
+    position: absolute;
+    left: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--bg-card);
+    color: var(--text-body);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    z-index: 9999;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+}
+
+/* ===== SIDEBAR PIN DOT ===== */
+.sidebar-pin-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-accent, #255F38);
+    margin-left: auto;
+    flex-shrink: 0;
+    vertical-align: middle;
+}
+
+/* ===== SIDEBAR CUSTOMIZER DRAG & DROP ===== */
+#customizerList .list-group-item.dragging {
+    opacity: 0.5;
+    border: 2px dashed var(--color-accent, #255F38);
+}
+#customizerList .list-group-item.drag-over {
+    border-top: 2px solid var(--color-accent, #255F38);
+    background: rgba(37, 95, 56, 0.08);
+}
+#customizerList .drag-handle {
+    font-size: 0.95rem;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+#customizerList .list-group-item:hover .drag-handle {
+    opacity: 1;
+}
+
+/* ===== USER MANUAL / GETTING STARTED MODAL ===== */
+@keyframes umDotPing {
+    0%   { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.55); }
+    70%  { box-shadow: 0 0 0 7px rgba(255, 193, 7, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+}
+
+@keyframes umCheckPop {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.12); }
+    100% { transform: scale(1); }
+}
+
+@keyframes umFlowIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+#userManualModal .um-layout {
+    display: flex;
+    min-height: 460px;
+}
+
+#userManualModal .um-nav {
+    flex: 0 0 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 16px 10px;
+    border-right: 1px solid var(--border-color);
+    background: var(--bg-table-stripe);
+}
+
+#userManualModal .um-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    background: none;
+    border-radius: 8px;
+    color: var(--text-secondary-custom);
+    font-size: 0.88rem;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+#userManualModal .um-nav-item i:first-child {
+    width: 18px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+#userManualModal .um-nav-item span {
+    flex: 1;
+}
+
+#userManualModal .um-nav-item:hover {
+    background: var(--bg-card);
+    color: var(--text-primary-custom);
+}
+
+#userManualModal .um-nav-item.active {
+    background: var(--accent-color);
+    color: #fff;
+}
+
+#userManualModal .um-nav-badge {
+    flex: 0 0 auto !important;
+    font-size: 0.68rem;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 999px;
+    padding: 1px 6px;
+}
+
+#userManualModal .um-nav-item:not(.active) .um-nav-badge {
+    background: var(--accent-color);
+    color: #fff;
+}
+
+#userManualModal .um-content {
+    flex: 1;
+    padding: 22px 26px;
+    overflow-y: auto;
+    color: var(--text-primary-custom);
+}
+
+#userManualModal .um-pane {
+    display: none;
+    animation: fadeIn 0.25s ease-out;
+}
+
+#userManualModal .um-pane.active {
+    display: block;
+}
+
+/* Welcome pane */
+#userManualModal .um-welcome-hero {
+    text-align: center;
+    padding: 8px 10px 18px;
+}
+
+#userManualModal .um-hero-icon {
+    font-size: 2.6rem;
+    color: var(--accent-color);
+    margin-bottom: 10px;
+    animation: pulse 2.4s ease-in-out infinite;
+    display: inline-block;
+}
+
+#userManualModal .um-welcome-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+#userManualModal .um-welcome-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: var(--bg-table-stripe);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 12px;
+}
+
+#userManualModal .um-welcome-item i {
+    color: var(--accent-color);
+    font-size: 1.1rem;
+    margin-top: 2px;
+}
+
+#userManualModal .um-welcome-item strong {
+    display: block;
+    font-size: 0.85rem;
+    margin-bottom: 2px;
+}
+
+#userManualModal .um-welcome-item span {
+    font-size: 0.8rem;
+    color: var(--text-secondary-custom);
+}
+
+/* Checklist pane */
+#userManualModal .um-progress-track {
+    height: 8px;
+    border-radius: 999px;
+    background: var(--bg-table-stripe);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    margin-top: 8px;
+}
+
+#userManualModal .um-progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--accent-color);
+    transition: width 0.4s ease;
+}
+
+#userManualModal .um-progress-label {
+    font-size: 0.78rem;
+    color: var(--text-secondary-custom);
+    margin-top: 6px;
+    margin-bottom: 4px;
+}
+
+#userManualModal .um-check-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 8px;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+#userManualModal .um-check-item.done {
+    background: var(--bg-table-stripe);
+    border-color: var(--accent-color);
+}
+
+#userManualModal .um-check-item.um-pop {
+    animation: umCheckPop 0.4s ease;
+}
+
+#userManualModal .um-check-box {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid var(--border-color);
+    background: none;
+    color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+#userManualModal .um-check-item.done .um-check-box {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    color: #fff;
+}
+
+#userManualModal .um-check-num {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--bg-table-stripe);
+    color: var(--text-secondary-custom);
+    font-size: 0.72rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#userManualModal .um-check-icon {
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: var(--bg-table-stripe);
+    color: var(--accent-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+}
+
+#userManualModal .um-check-text {
+    flex: 1;
+    min-width: 0;
+}
+
+#userManualModal .um-check-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+#userManualModal .um-check-desc {
+    font-size: 0.78rem;
+    color: var(--text-secondary-custom);
+    margin-top: 2px;
+}
+
+#userManualModal .um-check-link {
+    flex-shrink: 0;
+    white-space: nowrap;
+    font-size: 0.78rem;
+}
+
+/* Workflow pane */
+#userManualModal .um-flow {
+    display: flex;
+    align-items: stretch;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 18px 0;
+}
+
+#userManualModal .um-flow-step {
+    flex: 1 1 150px;
+    position: relative;
+    background: var(--bg-table-stripe);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px 12px;
+    text-align: center;
+    opacity: 0;
+    animation: umFlowIn 0.4s ease forwards;
+    animation-delay: calc(var(--um-d, 0) * 120ms);
+}
+
+#userManualModal .um-flow-num {
+    position: absolute;
+    top: 8px;
+    left: 10px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-secondary-custom);
+}
+
+#userManualModal .um-flow-icon {
+    font-size: 1.4rem;
+    color: var(--accent-color);
+    margin-bottom: 8px;
+}
+
+#userManualModal .um-flow-title {
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+}
+
+#userManualModal .um-flow-desc {
+    font-size: 0.75rem;
+    color: var(--text-secondary-custom);
+}
+
+#userManualModal .um-flow-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-color);
+    opacity: 0.6;
+    flex: 0 0 auto;
+}
+
+#userManualModal .um-flow-note {
+    background: var(--bg-table-stripe);
+    border-left: 3px solid var(--accent-color);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 0.85rem;
+    color: var(--text-secondary-custom);
+}
+
+/* Features pane */
+#userManualModal .um-feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 14px;
+    margin-top: 12px;
+}
+
+#userManualModal .um-feature-card {
+    background: var(--bg-table-stripe);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+#userManualModal .um-feature-card:hover,
+#userManualModal .um-feature-card:focus-visible {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    border-color: var(--accent-color);
+    outline: none;
+}
+
+#userManualModal .um-feature-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 9px;
+    background: var(--accent-color);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    margin-bottom: 10px;
+}
+
+#userManualModal .um-feature-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+}
+
+#userManualModal .um-feature-desc {
+    font-size: 0.78rem;
+    color: var(--text-secondary-custom);
+    margin-bottom: 10px;
+    min-height: 48px;
+}
+
+#userManualModal .um-feature-link {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--accent-color);
+}
+
+/* ── Module Guide (detailed per-module accordion) ────────────────────────── */
+#userManualModal .um-guide-search {
+    background: var(--bg-input);
+    border: 1px solid var(--border-input);
+    color: var(--text-body);
+    border-radius: 10px;
+    padding: 9px 14px 9px 38px;
+    font-size: 0.85rem;
+    width: 100%;
+    margin-bottom: 14px;
+}
+#userManualModal .um-guide-search-wrap { position: relative; }
+#userManualModal .um-guide-search-wrap i {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    color: var(--text-muted-custom); font-size: 0.8rem;
+}
+#userManualModal .um-guide-accordion .accordion-item {
+    background: var(--bg-table-stripe);
+    border: 1px solid var(--border-color);
+    border-radius: 12px !important;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+#userManualModal .um-guide-accordion .accordion-item.um-guide-hidden { display: none; }
+#userManualModal .um-guide-accordion .accordion-button {
+    background: transparent;
+    color: var(--text-primary-custom);
+    box-shadow: none;
+    padding: 14px 16px;
+    gap: 12px;
+}
+#userManualModal .um-guide-accordion .accordion-button:not(.collapsed) {
+    background: var(--bg-table-hover);
+    box-shadow: none;
+}
+#userManualModal .um-guide-accordion .accordion-button:focus { box-shadow: none; }
+#userManualModal .um-guide-accordion .accordion-button::after { filter: none; }
+:root[data-theme="dark"] #userManualModal .um-guide-accordion .accordion-button::after { filter: invert(1); }
+#userManualModal .um-guide-icon {
+    width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+    background: var(--accent-color); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-size: 0.9rem;
+}
+#userManualModal .um-guide-headtext { display: flex; flex-direction: column; gap: 1px; text-align: left; }
+#userManualModal .um-guide-title { font-weight: 600; font-size: 0.92rem; }
+#userManualModal .um-guide-tagline { font-size: 0.76rem; color: var(--text-secondary-custom); font-weight: 400; }
+#userManualModal .um-guide-accordion .accordion-body { padding: 4px 20px 18px 20px; }
+#userManualModal .um-guide-group { margin-bottom: 14px; }
+#userManualModal .um-guide-group:last-of-type { margin-bottom: 16px; }
+#userManualModal .um-guide-group-heading {
+    font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+    color: var(--accent-color); margin-bottom: 6px;
+}
+#userManualModal .um-guide-bullets { margin: 0; padding-left: 1.2rem; }
+#userManualModal .um-guide-bullets li { font-size: 0.85rem; color: var(--text-body); margin-bottom: 6px; line-height: 1.5; }
+#userManualModal .um-guide-bullets li:last-child { margin-bottom: 0; }
+#userManualModal .um-guide-open-btn { font-size: 0.8rem; }
+#userManualModal .um-guide-empty { text-align: center; padding: 2rem 1rem; color: var(--text-muted-custom); }
+
+/* Responsive: stack nav above content on small screens */
+@media (max-width: 768px) {
+    #userManualModal .um-layout {
+        flex-direction: column;
+        min-height: 0;
+    }
+    #userManualModal .um-nav {
+        flex-direction: row;
+        overflow-x: auto;
+        flex: 0 0 auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+    }
+    #userManualModal .um-nav-item {
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+    #userManualModal .um-welcome-grid {
+        grid-template-columns: 1fr;
+    }
+    #userManualModal .um-flow-arrow {
+        transform: rotate(90deg);
+        flex-basis: 100%;
+    }
+    #userManualModal .um-check-item {
+        flex-wrap: wrap;
+        row-gap: 8px;
+    }
+    #userManualModal .um-check-text {
+        flex: 1 1 100%;
+        order: 1;
+    }
+    #userManualModal .um-check-link {
+        flex: 1 1 100%;
+        order: 2;
+        text-align: center;
+    }
+}

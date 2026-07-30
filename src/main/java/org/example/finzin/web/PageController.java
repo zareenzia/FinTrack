@@ -31,6 +31,11 @@ public class PageController {
         return "forward:/signup.html";
     }
 
+    @GetMapping("/reset-password")
+    public String resetPassword() {
+        return "forward:/reset-password.html";
+    }
+
     // Protected routes - require authentication
     @GetMapping("/dashboard")
     public String dashboard(HttpServletRequest request) {
@@ -92,6 +97,38 @@ public class PageController {
             return "redirect:/login";
         }
         return "forward:/budget-planner.html";
+    }
+
+    @GetMapping("/ai-assistant")
+    public String aiAssistant(HttpServletRequest request) {
+        if (request.getAttribute("userId") == null) {
+            return "redirect:/login";
+        }
+        return "forward:/ai-assistant.html";
+    }
+
+    @GetMapping("/financial-planner")
+    public String financialPlanner(HttpServletRequest request) {
+        if (request.getAttribute("userId") == null) {
+            return "redirect:/login";
+        }
+        return "forward:/financial-planner.html";
+    }
+
+    @GetMapping("/achievements")
+    public String achievements(HttpServletRequest request) {
+        if (request.getAttribute("userId") == null) {
+            return "redirect:/login";
+        }
+        return "forward:/achievements.html";
+    }
+
+    @GetMapping("/family-finance")
+    public String familyFinance(HttpServletRequest request) {
+        if (request.getAttribute("userId") == null) {
+            return "redirect:/login";
+        }
+        return "forward:/family-finance.html";
     }
 }
 

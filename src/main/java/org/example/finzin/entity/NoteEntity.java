@@ -28,6 +28,8 @@ public class NoteEntity {
 
     private Boolean archived = false;
 
+    private Boolean done = false;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -69,6 +71,9 @@ public class NoteEntity {
 
     public Boolean getArchived() { return archived; }
     public void setArchived(Boolean archived) { this.archived = archived; }
+
+    public Boolean getDone() { return done; }
+    public void setDone(Boolean done) { this.done = done; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

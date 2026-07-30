@@ -1,5 +1,6 @@
 package org.example.finzin.service.gold;
 
+import org.example.finzin.ai.rag.DocumentIndexer;
 import org.example.finzin.entity.GoldAssetEntity;
 import org.example.finzin.entity.GoldPriceEntity;
 import org.example.finzin.entity.GoldPriceSettingEntity;
@@ -20,13 +21,16 @@ public class GoldAssetService {
     private final GoldAssetRepository assetRepository;
     private final GoldPriceRepository priceRepository;
     private final GoldPriceSettingRepository settingRepository;
+    private final DocumentIndexer documentIndexer;
 
     public GoldAssetService(GoldAssetRepository assetRepository,
                             GoldPriceRepository priceRepository,
-                            GoldPriceSettingRepository settingRepository) {
+                            GoldPriceSettingRepository settingRepository,
+                            DocumentIndexer documentIndexer) {
         this.assetRepository   = assetRepository;
         this.priceRepository   = priceRepository;
         this.settingRepository = settingRepository;
+        this.documentIndexer   = documentIndexer;
     }
 
     // ── CRUD ──────────────────────────────────────────────────────────────────
@@ -39,17 +43,22 @@ public class GoldAssetService {
     public GoldAssetEntity createAsset(GoldAssetEntity asset) {
         GoldAssetEntity saved = assetRepository.save(asset);
         saved.setCurrentValue(calculateValue(saved, getUserPriceMode(saved.getUserId()), saved.getUserId()));
-        return assetRepository.save(saved);
+        GoldAssetEntity finalized = assetRepository.save(saved);
+        documentIndexer.indexGoldAsset(finalized);
+        return finalized;
     }
 
     @Transactional
     public GoldAssetEntity updateAsset(GoldAssetEntity asset) {
         asset.setCurrentValue(calculateValue(asset, getUserPriceMode(asset.getUserId()), asset.getUserId()));
-        return assetRepository.save(asset);
+        GoldAssetEntity saved = assetRepository.save(asset);
+        documentIndexer.indexGoldAsset(saved);
+        return saved;
     }
 
     @Transactional
     public void deleteAsset(Long id) {
+        assetRepository.findById(id).ifPresent(asset -> documentIndexer.deleteGoldAsset(asset.getUserId(), id));
         assetRepository.deleteById(id);
     }
 

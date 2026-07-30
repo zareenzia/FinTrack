@@ -27,6 +27,11 @@ public class TransactionEntity {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
+    /** Longer free-form context (e.g. the raw OCR text from a scanned receipt) — description stays
+     *  short and human-readable (merchant name), this holds the rest. Optional. */
+    @Column(nullable = true, columnDefinition = "TEXT")
+    private String details;
+
     @ManyToOne
     @JoinColumn(name = "category_id", nullable = true, foreignKey = @ForeignKey(name = "fk_transaction_category"))
     private CategoryEntity category;
@@ -85,6 +90,14 @@ public class TransactionEntity {
         this.description = description;
     }
 
+    public String getDetails() {
+        return details;
+    }
+
+    public void setDetails(String details) {
+        this.details = details;
+    }
+
     public CategoryEntity getCategory() {
         return category;
     }
@@ -129,6 +142,9 @@ public class TransactionEntity {
     @Column(nullable = true)
     private Long recurringTransactionId;
 
+    @Column(nullable = true)
+    private Boolean fromSavings = false;
+
     public Long getSourceAccountId() {
         return sourceAccountId;
     }
@@ -159,5 +175,13 @@ public class TransactionEntity {
 
     public void setRecurringTransactionId(Long recurringTransactionId) {
         this.recurringTransactionId = recurringTransactionId;
+    }
+
+    public Boolean getFromSavings() {
+        return fromSavings;
+    }
+
+    public void setFromSavings(Boolean fromSavings) {
+        this.fromSavings = fromSavings != null ? fromSavings : false;
     }
 }

@@ -8,4 +8,5 @@ import java.util.Optional;
 @Repository
 public interface GoldPriceSettingRepository extends JpaRepository<GoldPriceSettingEntity, Long> {
     Optional<GoldPriceSettingEntity> findByUserId(Long userId);
+    void deleteByUserId(Long userId);
 }
