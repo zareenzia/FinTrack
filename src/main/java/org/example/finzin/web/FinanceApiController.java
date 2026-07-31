@@ -13,6 +13,7 @@ import org.example.finzin.repository.NoteRepository;
 import org.example.finzin.repository.TransactionRepository;
 import org.example.finzin.service.FinancialSummaryService;
 import org.example.finzin.service.AccountBalanceService;
+import org.example.finzin.service.CreditCardService;
 import org.example.finzin.service.CreditCardValidationException;
 import org.example.finzin.ai.rag.DocumentIndexer;
 import org.example.finzin.gamification.GamificationEvent;
@@ -298,6 +299,11 @@ public class FinanceApiController {
             }
         }
 
+        String expenseDestinationError = validateExpenseCreditCardDestination(userId, normalizedType, body.destinationAccountId());
+        if (expenseDestinationError != null) {
+            return ResponseEntity.badRequest().body(Map.of("error", expenseDestinationError));
+        }
+
         boolean fromSavings = normalizedType.equals("expense") && Boolean.TRUE.equals(body.fromSavings());
 
         LocalDateTime date = parseDate(body.date);
@@ -366,6 +372,11 @@ public class FinanceApiController {
             }
         }
 
+        String expenseDestinationError = validateExpenseCreditCardDestination(userId, normalizedType, body.destinationAccountId());
+        if (expenseDestinationError != null) {
+            return ResponseEntity.badRequest().body(Map.of("error", expenseDestinationError));
+        }
+
         boolean fromSavings = normalizedType.equals("expense") && Boolean.TRUE.equals(body.fromSavings());
 
         Long oldSourceAccountId = entity.getSourceAccountId();
@@ -411,6 +422,21 @@ public class FinanceApiController {
         accountBalanceService.deleteTransaction(userId, entity);
         documentIndexer.deleteTransaction(userId, id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * An expense may optionally name a destinationAccountId to represent a credit card bill payment
+     * recorded as a normal categorized expense instead of an uncategorized transfer (see
+     * AccountBalanceService.applyBalanceChange) — but only ever a credit card the user owns.
+     * Returns null when there's nothing to reject.
+     */
+    private String validateExpenseCreditCardDestination(Long userId, String normalizedType, Long destinationAccountId) {
+        if (!normalizedType.equals("expense") || destinationAccountId == null) return null;
+        AccountEntity destination = accountRepository.findById(destinationAccountId).orElse(null);
+        if (destination == null || !destination.getUserId().equals(userId) || !CreditCardService.isCreditCard(destination)) {
+            return "The linked account for a bill payment must be one of your credit cards.";
+        }
+        return null;
     }
 
     // ============== NOTE ENDPOINTS ==============

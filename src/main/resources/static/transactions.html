@@ -742,6 +742,14 @@
                         </select>
                     </div>
                 </div>
+                <div class="row g-3 d-none" id="editTxPayDownWrap">
+                    <div class="col-md-6 mb-3">
+                        <label for="editTxPayDown" class="form-label">Also pays down a credit card <small class="text-muted">(optional)</small></label>
+                        <select class="form-select" id="editTxPayDown">
+                            <option value="">None</option>
+                        </select>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -867,10 +875,15 @@
                 populateTxRowTransferSelect(document.getElementById('editTxTransferFrom'), 'Select source…', 'External Source');
                 populateTxRowTransferSelect(document.getElementById('editTxTransferTo'), 'Select destination…', 'External Destination');
             } else {
-                showEditNormalFields();
+                showEditNormalFields(this.value);
                 loadEditCategories(this.value);
                 applyAccountFieldLabel('editTxAccountLabel', this.value);
                 applySavingsPseudoOption(document.getElementById('editTxAccount'), this.value);
+                if (this.value === 'expense') {
+                    populateTxRowPayDownSelect(document.getElementById('editTxPayDown'));
+                } else {
+                    document.getElementById('editTxPayDown').value = '';
+                }
             }
         });
 
@@ -1307,6 +1320,17 @@
             accountOptionsHtml;
     }
 
+    /** Credit-card-only account list, for the "also pays down a credit card" field on an expense
+     *  row — lets a bill payment stay a normal categorized expense (shows correctly in reports)
+     *  while still reducing the card's outstanding balance the same way a transfer would. */
+    function populateTxRowPayDownSelect(selectEl) {
+        if (!selectEl) return;
+        const label = a => a.accountNickname + (a.bankName ? ' (' + a.bankName + ')' : a.provider ? ' (' + a.provider + ')' : '');
+        const cards = cachedAccounts.filter(a => a.accountType === 'CREDIT_CARD');
+        selectEl.innerHTML = '<option value="">None</option>' +
+            cards.map(a => `<option value="${a.id}">${escHtml(label(a))}</option>`).join('');
+    }
+
     function updateTxRowAccountBalance(balanceEl, accountVal) {
         if (!balanceEl) return;
         if (!accountVal || accountVal === 'SAVINGS') { balanceEl.textContent = ''; return; }
@@ -1328,6 +1352,7 @@
             accountVal: data.accountVal || '',
             transferFrom: data.transferFrom || '',
             transferTo: data.transferTo || '',
+            payDownAccountId: data.payDownAccountId || '',
             date: data.date || '',
             error: null
         };
@@ -1383,6 +1408,17 @@
                     </div>
                 </div>`;
 
+            // Lets a credit card bill payment stay a normal categorized expense (so it shows up in
+            // reports/pie charts like any other spending) while still reducing that card's
+            // outstanding balance — same account-level effect a transfer to the card would have.
+            const payDownRowHtml = row.type === 'expense' ? `
+                <div class="row g-2 mt-1">
+                    <div class="col-md-6">
+                        <label class="form-label small mb-1 text-muted">Also pays down a credit card <small class="text-muted">(optional)</small></label>
+                        <select class="form-select form-select-sm tx-row-paydown"><option value="">None</option></select>
+                    </div>
+                </div>` : '';
+
             return `
             <div class="tx-bulk-row${row.error ? ' has-error' : ''}" data-row-uid="${row.uid}">
                 <div class="tx-row-actions">
@@ -1418,6 +1454,7 @@
                     </div>
                 </div>
                 ${sourceRowHtml}
+                ${payDownRowHtml}
                 <div class="tx-row-error small text-danger mt-1${row.error ? '' : ' d-none'}">${escHtml(row.error || '')}</div>
             </div>`;
         }).join('');
@@ -1482,6 +1519,13 @@
                     row.accountVal = this.value;
                     updateTxRowAccountBalance(accountBalanceEl, this.value);
                 });
+
+                if (row.type === 'expense') {
+                    const payDownSel = rowEl.querySelector('.tx-row-paydown');
+                    populateTxRowPayDownSelect(payDownSel);
+                    payDownSel.value = row.payDownAccountId;
+                    payDownSel.addEventListener('change', function () { row.payDownAccountId = this.value; });
+                }
             }
 
             typeSel.addEventListener('change', function () {
@@ -1490,6 +1534,7 @@
                 row.accountVal = '';
                 row.transferFrom = '';
                 row.transferTo = '';
+                row.payDownAccountId = '';
                 renderTxRows();
             });
 
@@ -1502,7 +1547,7 @@
             const dupBtn = rowEl.querySelector('.tx-row-dup');
             dupBtn.addEventListener('click', function () {
                 const idx = txRows.indexOf(row);
-                const copy = newTxRow({ description: row.description, amount: row.amount, categoryId: row.categoryId, type: row.type, accountVal: row.accountVal, transferFrom: row.transferFrom, transferTo: row.transferTo, date: row.date });
+                const copy = newTxRow({ description: row.description, amount: row.amount, categoryId: row.categoryId, type: row.type, accountVal: row.accountVal, transferFrom: row.transferFrom, transferTo: row.transferTo, payDownAccountId: row.payDownAccountId, date: row.date });
                 txRows.splice(idx + 1, 0, copy);
                 renderTxRows();
                 focusTxRowDesc(copy.uid);
@@ -1549,6 +1594,9 @@
                 else if (!row.amount || isNaN(amt) || amt <= 0) { row.error = 'Enter a valid amount.'; hasError = true; }
                 else if (!row.categoryId) { row.error = 'Select a category.'; hasError = true; }
                 else if (!row.date) { row.error = 'Select a date.'; hasError = true; }
+                else if (row.payDownAccountId && row.payDownAccountId === row.accountVal) {
+                    row.error = 'Paid From and the credit card being paid down must be different accounts.'; hasError = true;
+                }
             }
         });
         if (hasError) {
@@ -1573,7 +1621,7 @@
                 transaction_type: row.type,
                 date: row.date,
                 sourceAccountId: row.accountVal && row.accountVal !== 'SAVINGS' ? parseInt(row.accountVal, 10) : null,
-                destinationAccountId: null,
+                destinationAccountId: row.type === 'expense' && row.payDownAccountId ? parseInt(row.payDownAccountId, 10) : null,
                 fromSavings: row.accountVal === 'SAVINGS'
             };
             try {
@@ -2867,12 +2915,14 @@
         document.getElementById('editTxAccountWrap').classList.add('d-none');
         document.getElementById('editTxCategoryWrap').classList.add('d-none');
         document.getElementById('editTxTransferWrap').classList.remove('d-none');
+        document.getElementById('editTxPayDownWrap').classList.add('d-none');
     }
 
-    function showEditNormalFields() {
+    function showEditNormalFields(type) {
         document.getElementById('editTxAccountWrap').classList.remove('d-none');
         document.getElementById('editTxCategoryWrap').classList.remove('d-none');
         document.getElementById('editTxTransferWrap').classList.add('d-none');
+        document.getElementById('editTxPayDownWrap').classList.toggle('d-none', type !== 'expense');
     }
 
     async function editTransaction(id) {
@@ -2896,11 +2946,17 @@
             fromSel.value = tx.sourceAccountId != null ? String(tx.sourceAccountId) : 'EXTERNAL';
             toSel.value   = tx.destinationAccountId != null ? String(tx.destinationAccountId) : 'EXTERNAL';
         } else {
-            showEditNormalFields();
+            showEditNormalFields(tx.transaction_type);
             loadEditCategories(tx.transaction_type, tx.category_id);
             applyAccountFieldLabel('editTxAccountLabel', tx.transaction_type);
             const selectedAccountValue = tx.fromSavings ? 'SAVINGS' : (tx.sourceAccountId != null ? String(tx.sourceAccountId) : '');
             loadEditTxAccounts(selectedAccountValue, tx.transaction_type);
+            if (tx.transaction_type === 'expense') {
+                await loadAccountsIntoSelect();
+                const payDownSel = document.getElementById('editTxPayDown');
+                populateTxRowPayDownSelect(payDownSel);
+                payDownSel.value = tx.destinationAccountId != null ? String(tx.destinationAccountId) : '';
+            }
         }
         txEditModal.show();
     }
@@ -2978,8 +3034,13 @@
         } else {
             const categoryId = parseInt(document.getElementById('editTxCategory').value, 10);
             const acctVal    = document.getElementById('editTxAccount').value;
+            const payDownVal = type === 'expense' ? document.getElementById('editTxPayDown').value : '';
             if (!description || isNaN(amount) || amount <= 0 || !date || !categoryId) {
                 showTopNotification('Please fill all fields correctly.', 'error');
+                return;
+            }
+            if (payDownVal && payDownVal === acctVal) {
+                showTopNotification('Paid From and the credit card being paid down must be different accounts.', 'error');
                 return;
             }
             payload = {
@@ -2990,7 +3051,7 @@
                 transaction_type: type,
                 category_id: categoryId,
                 sourceAccountId: acctVal && acctVal !== 'SAVINGS' ? parseInt(acctVal, 10) : null,
-                destinationAccountId: null,
+                destinationAccountId: payDownVal ? parseInt(payDownVal, 10) : null,
                 fromSavings: acctVal === 'SAVINGS'
             };
         }

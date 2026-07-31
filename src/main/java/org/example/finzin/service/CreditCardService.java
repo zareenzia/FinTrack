@@ -67,7 +67,10 @@ public class CreditCardService {
                 }
             }
         }
-        if ("transfer".equals(type) && destinationAccountId != null) {
+        // A payment can be recorded either as an uncategorized transfer or as a categorized expense
+        // that also names a credit card destination (see AccountBalanceService.applyBalanceChange) —
+        // the overpayment rule must hold either way.
+        if (("transfer".equals(type) || "expense".equals(type)) && destinationAccountId != null) {
             AccountEntity destination = findOwnedForUpdate(destinationAccountId, userId);
             if (isCreditCard(destination) && amount > destination.getCurrentBalance()) {
                 throw new CreditCardValidationException("Payment exceeds current outstanding balance.");

@@ -97,6 +97,29 @@ class CreditCardServiceTest {
     }
 
     // ============================================================================================
+    // Option B: the overpayment rule must hold equally when the payment is recorded as a
+    // categorized "expense" naming the card as destinationAccountId, not just an uncategorized
+    // "transfer" — see AccountBalanceService.applyBalanceChange for why an expense can do this.
+    // ============================================================================================
+
+    @Test
+    void overpaymentIsAlwaysBlockedForExpenseTypeToo() {
+        when(accountRepository.findByIdForUpdate(CARD_ID)).thenReturn(Optional.of(card(12000, 100000, "IGNORE")));
+
+        assertThrows(CreditCardValidationException.class,
+                () -> service.validate(USER_ID, null, CARD_ID, "expense", 20000));
+    }
+
+    @Test
+    void paymentWithinOutstandingIsAllowedForExpenseType() {
+        when(accountRepository.findByIdForUpdate(CARD_ID)).thenReturn(Optional.of(card(12000, 100000, "IGNORE")));
+
+        String warning = service.validate(USER_ID, null, CARD_ID, "expense", 12000);
+
+        assertNull(warning);
+    }
+
+    // ============================================================================================
     // Regression guard for the concurrent-transfer money-duplication bug: validate() MUST fetch
     // accounts via the pessimistic-write-locked repository method, not plain findById. Whichever
     // code path first touches an account within a transaction determines whether later reads in

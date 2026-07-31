@@ -396,4 +396,99 @@ class AccountBalanceServiceTest {
         for (AccountEntity a : accounts) total += a.getCurrentBalance();
         return total;
     }
+
+    // ============================================================================================
+    // Option B regression suite: a credit card bill payment recorded as a normal categorized
+    // "expense" (so it still shows up in Expense by Category reports, unlike an uncategorized
+    // transfer) can optionally name the credit card being paid down as destinationAccountId. These
+    // tests pin that this still reduces the card's outstanding balance exactly like a transfer
+    // would, that a non-credit-card destination on an expense is inert (defense-in-depth; the API
+    // layer already rejects this earlier), and that update/delete symmetry holds.
+    // ============================================================================================
+
+    @Test
+    void expenseWithCreditCardDestinationDebitsSourceAndReducesCardOutstanding() {
+        AccountEntity scb = account(10L, "BANK", 70000.0);
+        AccountEntity card = account(2L, "CREDIT_CARD", 5000.0);
+        when(accountRepository.findByIdForUpdate(10L)).thenReturn(java.util.Optional.of(scb));
+        when(accountRepository.findByIdForUpdate(2L)).thenReturn(java.util.Optional.of(card));
+
+        service.applyBalanceChange(USER_ID, 10L, 2L, "expense", 5000.0, false);
+
+        assertEquals(65000.0, scb.getCurrentBalance(), 0.001, "the paying bank account must still be debited");
+        assertEquals(0.0, card.getCurrentBalance(), 0.001,
+                "the card's outstanding balance must drop by the payment amount, same as a transfer would");
+    }
+
+    @Test
+    void expenseWithNonCreditCardDestinationLeavesDestinationUntouched() {
+        AccountEntity scb = account(10L, "BANK", 70000.0);
+        AccountEntity cityBank = account(11L, "BANK", 20000.0);
+        when(accountRepository.findByIdForUpdate(10L)).thenReturn(java.util.Optional.of(scb));
+        when(accountRepository.findByIdForUpdate(11L)).thenReturn(java.util.Optional.of(cityBank));
+
+        service.applyBalanceChange(USER_ID, 10L, 11L, "expense", 5000.0, false);
+
+        assertEquals(65000.0, scb.getCurrentBalance(), 0.001, "source must still be debited normally");
+        assertEquals(20000.0, cityBank.getCurrentBalance(), 0.001,
+                "a non-credit-card destination on an expense must be ignored entirely");
+    }
+
+    @Test
+    void updatingExpenseCreditCardPaymentReversesOldThenAppliesNewOnBothAccounts() {
+        // Old: 5000 expense-payment already applied (outstanding at 15000 already reflects it).
+        // Editing the amount to 7000 must move an EXTRA 2000, not double-apply anything.
+        AccountEntity scb = account(10L, "BANK", 65000.0);
+        AccountEntity card = account(2L, "CREDIT_CARD", 15000.0);
+        when(accountRepository.findByIdForUpdate(10L)).thenReturn(java.util.Optional.of(scb));
+        when(accountRepository.findByIdForUpdate(2L)).thenReturn(java.util.Optional.of(card));
+
+        service.applyBalanceChange(USER_ID, 10L, 2L, "expense", 5000.0, true);  // reverse old
+        service.applyBalanceChange(USER_ID, 10L, 2L, "expense", 7000.0, false); // apply new
+
+        assertEquals(63000.0, scb.getCurrentBalance(), 0.001, "net effect of editing 5000 -> 7000 must be an extra -2000 on the source");
+        assertEquals(13000.0, card.getCurrentBalance(), 0.001, "net effect must be an extra -2000 on the card's outstanding balance");
+    }
+
+    @Test
+    void deletingExpenseCreditCardPaymentReversesBothAccounts() {
+        AccountEntity scb = account(10L, "BANK", 65000.0);
+        AccountEntity card = account(2L, "CREDIT_CARD", 15000.0);
+        when(accountRepository.findByIdForUpdate(10L)).thenReturn(java.util.Optional.of(scb));
+        when(accountRepository.findByIdForUpdate(2L)).thenReturn(java.util.Optional.of(card));
+
+        TransactionEntity entity = new TransactionEntity(USER_ID, 5000.0, "Credit card bill payment", null, "expense",
+                java.time.LocalDateTime.now(), java.time.LocalDateTime.now());
+        entity.setId(77L);
+        entity.setSourceAccountId(10L);
+        entity.setDestinationAccountId(2L);
+
+        service.deleteTransaction(USER_ID, entity);
+
+        assertEquals(70000.0, scb.getCurrentBalance(), 0.001);
+        assertEquals(20000.0, card.getCurrentBalance(), 0.001);
+        verify(transactionRepository).deleteById(77L);
+    }
+
+    @Test
+    void createTransactionAppliesExpenseWithCreditCardDestinationToBothAccounts() {
+        // Same as expenseWithCreditCardDestinationDebitsSourceAndReducesCardOutstanding but driven
+        // through the public createTransaction() entry point the controller actually calls.
+        AccountEntity scb = account(10L, "BANK", 70000.0);
+        AccountEntity card = account(2L, "CREDIT_CARD", 5000.0);
+        when(accountRepository.findByIdForUpdate(10L)).thenReturn(java.util.Optional.of(scb));
+        when(accountRepository.findByIdForUpdate(2L)).thenReturn(java.util.Optional.of(card));
+        TransactionEntity entity = new TransactionEntity(USER_ID, 5000.0, "Credit card bill payment", null, "expense",
+                java.time.LocalDateTime.now(), java.time.LocalDateTime.now());
+        entity.setSourceAccountId(10L);
+        entity.setDestinationAccountId(2L);
+        entity.setId(101L);
+        when(transactionRepository.save(entity)).thenReturn(entity);
+        lenient().when(creditCardService.validate(USER_ID, 10L, 2L, "expense", 5000.0)).thenReturn(null);
+
+        service.createTransaction(USER_ID, entity);
+
+        assertEquals(65000.0, scb.getCurrentBalance(), 0.001);
+        assertEquals(0.0, card.getCurrentBalance(), 0.001);
+    }
 }

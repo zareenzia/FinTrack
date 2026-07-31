@@ -1321,10 +1321,13 @@
                 showEditTransferFields();
                 loadEditTransferAccounts(document.getElementById('editTxTransferFrom'), document.getElementById('editTxTransferTo'), '', '');
             } else {
-                showEditNormalFields();
+                showEditNormalFields(this.value);
                 loadEditCategories(this.value);
                 applyAccountFieldLabel('editTxAccountLabel', this.value);
                 applySavingsPseudoOption(document.getElementById('editTxAccount'), this.value);
+                if (this.value === 'expense') {
+                    loadEditPayDownAccounts('');
+                }
             }
         });
 
@@ -2145,12 +2148,29 @@
         document.getElementById('editTxAccountWrap').classList.add('d-none');
         document.getElementById('editTxCategoryWrap').classList.add('d-none');
         document.getElementById('editTxTransferWrap').classList.remove('d-none');
+        document.getElementById('editTxPayDownWrap').classList.add('d-none');
     }
 
-    function showEditNormalFields() {
+    function showEditNormalFields(type) {
         document.getElementById('editTxAccountWrap').classList.remove('d-none');
         document.getElementById('editTxCategoryWrap').classList.remove('d-none');
         document.getElementById('editTxTransferWrap').classList.add('d-none');
+        document.getElementById('editTxPayDownWrap').classList.toggle('d-none', type !== 'expense');
+    }
+
+    /** Credit-card-only account list for the edit modal's "also pays down a credit card" field — see
+     *  AccountBalanceService.applyBalanceChange for why an expense can name a credit card destination. */
+    async function loadEditPayDownAccounts(selectedValue) {
+        const sel = document.getElementById('editTxPayDown');
+        try {
+            const accounts = await fetch('/api/accounts').then(r => r.json());
+            const label = a => a.accountNickname + (a.bankName ? ' (' + a.bankName + ')' : a.provider ? ' (' + a.provider + ')' : '');
+            const cards = accounts.filter(a => a.accountType === 'CREDIT_CARD');
+            sel.innerHTML = '<option value="">None</option>' + cards.map(a => `<option value="${a.id}">${label(a)}</option>`).join('');
+        } catch (e) {
+            sel.innerHTML = '<option value="">None</option>';
+        }
+        sel.value = selectedValue || '';
     }
 
     async function loadEditTransferAccounts(fromSel, toSel, selectedFrom, selectedTo) {
@@ -2187,11 +2207,14 @@
             const selectedTo   = tx.destinationAccountId != null ? String(tx.destinationAccountId) : 'EXTERNAL';
             await loadEditTransferAccounts(document.getElementById('editTxTransferFrom'), document.getElementById('editTxTransferTo'), selectedFrom, selectedTo);
         } else {
-            showEditNormalFields();
+            showEditNormalFields(tx.transaction_type);
             loadEditCategories(tx.transaction_type, tx.category_id);
             applyAccountFieldLabel('editTxAccountLabel', tx.transaction_type);
             const selectedAccountValue = tx.fromSavings ? 'SAVINGS' : (tx.sourceAccountId != null ? String(tx.sourceAccountId) : '');
             loadEditTxAccounts(selectedAccountValue, tx.transaction_type);
+            if (tx.transaction_type === 'expense') {
+                loadEditPayDownAccounts(tx.destinationAccountId != null ? String(tx.destinationAccountId) : '');
+            }
         }
         txEditModal.show();
     }
@@ -2270,8 +2293,13 @@
         } else {
             const categoryId = parseInt(document.getElementById('editTxCategory').value, 10);
             const acctVal    = document.getElementById('editTxAccount').value;
+            const payDownVal = type === 'expense' ? document.getElementById('editTxPayDown').value : '';
             if (!description || isNaN(amount) || amount <= 0 || !date || !categoryId) {
                 showNotification('Please fill all fields correctly.', 'error');
+                return;
+            }
+            if (payDownVal && payDownVal === acctVal) {
+                showNotification('Paid From and the credit card being paid down must be different accounts.', 'error');
                 return;
             }
             payload = {
@@ -2282,7 +2310,7 @@
                 transaction_type: type,
                 category_id: categoryId,
                 sourceAccountId: acctVal && acctVal !== 'SAVINGS' ? parseInt(acctVal, 10) : null,
-                destinationAccountId: null,
+                destinationAccountId: payDownVal ? parseInt(payDownVal, 10) : null,
                 fromSavings: acctVal === 'SAVINGS'
             };
         }
@@ -2707,6 +2735,14 @@
                         <label for="editTxTransferTo" class="form-label">To Account</label>
                         <select class="form-select" id="editTxTransferTo">
                             <option value="">Select destination…</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row g-3 d-none" id="editTxPayDownWrap">
+                    <div class="col-md-6 mb-3">
+                        <label for="editTxPayDown" class="form-label">Also pays down a credit card <small class="text-muted">(optional)</small></label>
+                        <select class="form-select" id="editTxPayDown">
+                            <option value="">None</option>
                         </select>
                     </div>
                 </div>
