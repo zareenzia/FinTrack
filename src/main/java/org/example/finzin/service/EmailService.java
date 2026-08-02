@@ -45,13 +45,13 @@ public class EmailService {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromAddress);
         message.setTo(toEmail);
-        message.setSubject("Reset your One Taka Note password");
+        message.setSubject("Reset your TakaFlow password");
         message.setText(
             "Hi " + greetingName + ",\n\n" +
-            "We received a request to reset your One Taka Note password. Click the link below to choose a new one:\n\n" +
+            "We received a request to reset your TakaFlow password. Click the link below to choose a new one:\n\n" +
             resetLink + "\n\n" +
             "This link expires in 30 minutes. If you didn't request this, you can safely ignore this email.\n\n" +
-            "- One Taka Note"
+            "- TakaFlow"
         );
 
         mailSender.send(message);

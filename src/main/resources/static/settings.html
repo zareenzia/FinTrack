@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Settings - One Taka Note</title>
+  <title>Settings - TakaFlow</title>
   <link rel="icon" type="image/png" href="/images/logo.png">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -202,7 +202,7 @@
         <!-- ===== APPEARANCE ===== -->
         <section class="settings-section active" id="section-appearance">
           <div class="settings-section-heading"><i class="fas fa-palette" style="color:var(--accent-color)"></i> Appearance</div>
-          <p class="settings-section-desc">Customize how One Taka Note looks and feels.</p>
+          <p class="settings-section-desc">Customize how TakaFlow looks and feels.</p>
 
           <!-- Theme -->
           <div class="settings-card">
@@ -969,15 +969,15 @@
 
         <!-- ===== ABOUT ===== -->
         <section class="settings-section" id="section-about">
-          <div class="settings-section-heading"><i class="fas fa-info-circle" style="color:var(--accent-color)"></i> About One Taka Note</div>
+          <div class="settings-section-heading"><i class="fas fa-info-circle" style="color:var(--accent-color)"></i> About TakaFlow</div>
           <p class="settings-section-desc">App information, release notes, and support.</p>
 
           <!-- App Info + Developer -->
           <div class="settings-card">
             <div class="d-flex align-items-center gap-3 mb-3">
-              <img src="/images/logo.png" alt="One Taka Note" style="width:52px;height:52px;object-fit:contain;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.12);flex-shrink:0">
+              <img src="/images/logo.png" alt="TakaFlow" style="width:52px;height:52px;object-fit:contain;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.12);flex-shrink:0">
               <div>
-                <h5 class="fw-bold mb-0">One Taka Note <span class="badge rounded-pill ms-1" style="background:var(--accent-color);font-size:.68rem;vertical-align:middle">v1.0.0</span></h5>
+                <h5 class="fw-bold mb-0">TakaFlow <span class="badge rounded-pill ms-1" style="background:var(--accent-color);font-size:.68rem;vertical-align:middle">v1.0.0</span></h5>
                 <p class="text-muted mb-0 small">Personal Finance Tracker &mdash; Built with &#10084;&#65039; for better financial management</p>
               </div>
             </div>
@@ -2571,7 +2571,7 @@ if (btnExportTransactions) {
         return [t.date||'', '"'+(t.description||'').replace(/"/g,'""')+'"', t.amount||0, t.type||'',
           '"'+(((t.category && t.category.name)||'')).replace(/"/g,'""')+'"', '"'+(t.notes||'').replace(/"/g,'""')+'"'].join(',');
       }).join('\n');
-      downloadCSV('fintrack-transactions.csv', csv);
+      downloadCSV('takaflow-transactions.csv', csv);
       showNotification('Transactions exported!', 'success');
     } catch(e) {
       showNotification('Export failed', 'danger');
@@ -2593,7 +2593,7 @@ if (btnExportCategories) {
         return ['"'+(c.name||'').replace(/"/g,'""')+'"', c.categoryType||'', c.color||'', c.icon||'',
           '"'+(c.description||'').replace(/"/g,'""')+'"'].join(',');
       }).join('\n');
-      downloadCSV('fintrack-categories.csv', csv);
+      downloadCSV('takaflow-categories.csv', csv);
       showNotification('Categories exported!', 'success');
     } catch(e) {
       showNotification('Export failed', 'danger');
@@ -2691,8 +2691,8 @@ if (btnSubmitBugReport) {
     if (!subject || !desc) { showNotification('Please fill in all fields', 'warning'); return; }
 
     var mailtoLink = 'mailto:zareenzia801@gmail.com'
-      + '?subject=' + encodeURIComponent('[One Taka Note Bug] ' + subject)
-      + '&body=' + encodeURIComponent('Bug Description:\n\n' + desc + '\n\n---\nSent from One Taka Note Settings');
+      + '?subject=' + encodeURIComponent('[TakaFlow Bug] ' + subject)
+      + '&body=' + encodeURIComponent('Bug Description:\n\n' + desc + '\n\n---\nSent from TakaFlow Settings');
     window.location.href = mailtoLink;
 
     var modal = bootstrap.Modal.getInstance(document.getElementById('bugReportModal'));

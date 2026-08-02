@@ -1,5 +1,5 @@
 /**
- * assets.js — Gold Assets module for One Taka Note
+ * assets.js — Gold Assets module for TakaFlow
  * Handles CRUD for gold assets, gold price sync, pricing modes,
  * weight conversions, and dashboard rendering.
  */

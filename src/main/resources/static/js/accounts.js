@@ -1,5 +1,5 @@
 /**
- * accounts.js — Account Configuration module for One Taka Note
+ * accounts.js — Account Configuration module for TakaFlow
  */
 (function () {
     'use strict';
