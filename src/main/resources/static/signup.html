@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TakaFlow - Login</title>
+    <title>TakaFlow - Sign Up</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="/images/logo.png">
@@ -14,82 +14,139 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --ink: #12190d;
+            --ink-2: #1a2513;
+            --ink-3: #212f18;
+            --accent: #255F38;
+            --accent-bright: #34a35a;
+            --text-hi: #f5f5f0;
+            --text-mid: rgba(245, 245, 240, 0.66);
+            --text-low: rgba(245, 245, 240, 0.4);
+            --border-soft: rgba(245, 245, 240, 0.09);
+            --danger: #e5615c;
+        }
+
         body {
             font-family: 'Inter', 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #18230F 0%, #27391C 100%);
+            background: var(--ink);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 24px;
+            color: var(--text-hi);
+            position: relative;
         }
 
-        .main-container {
+        /* One soft ambient glow — no grain, no diagonal banding */
+        body::before {
+            content: '';
+            position: fixed;
+            width: 900px;
+            height: 900px;
+            background: radial-gradient(circle, rgba(37, 95, 56, 0.16) 0%, transparent 60%);
+            top: -320px;
+            left: -260px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .auth-shell {
+            position: relative;
+            z-index: 1;
             width: 100%;
-            max-width: 1200px;
+            max-width: 1000px;
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0;
-            background: #18230F;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            grid-template-columns: 1fr 1.05fr;
+            background: var(--ink);
+            border: 1px solid var(--border-soft);
+            border-radius: 22px;
+            box-shadow: 0 30px 80px -24px rgba(0, 0, 0, 0.6);
             overflow: hidden;
-            min-height: 600px;
+            min-height: 660px;
         }
 
-        /* Left Section - Image/Background */
-        .left-section {
-            background: linear-gradient(135deg, #27391C 0%, #18230F 100%);
+        /* ── Left / visual panel ─────────────────────────────────────── */
+        .panel-visual {
+            background: linear-gradient(165deg, var(--ink-2) 0%, var(--ink) 100%);
+            padding: 40px;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            padding: 40px;
             position: relative;
-            overflow: hidden;
         }
 
-        .left-section::before {
-            content: '';
-            position: absolute;
-            width: 300px;
-            height: 300px;
-            background: radial-gradient(circle, rgba(37, 95, 56, 0.1) 0%, transparent 70%);
-            border-radius: 50%;
-            bottom: -50px;
-            right: -50px;
-        }
-
-        .logo-left {
-            font-size: 24px;
+        .brand-mark {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
             font-weight: 700;
-            color: white;
+            letter-spacing: -0.01em;
             z-index: 1;
         }
 
-        .logo-left i {
-            color: #255F38;
-            margin-right: 8px;
+        .brand-mark img {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            object-fit: contain;
+        }
+
+        .portfolio-chart {
+            z-index: 1;
+            padding: 20px 0 26px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .portfolio-chart .chart-label {
+            font-size: 11.5px;
+            color: var(--text-low);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 14px;
+            font-weight: 600;
+        }
+
+        .chart-line { animation: chartDraw 1.5s ease-out forwards; }
+        .chart-fill { animation: chartFadeIn 1.5s ease-out 0.3s both; }
+        .portfolio-chart circle { animation: chartFadeIn 0.4s ease-out 1.4s both; }
+
+        @keyframes chartDraw {
+            from { stroke-dashoffset: 600; }
+            to   { stroke-dashoffset: 0; }
+        }
+
+        @keyframes chartFadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
         }
 
         .stats-box {
             z-index: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
 
         .stat-item {
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 15px;
-            padding: 12px;
-            background: rgba(37, 95, 56, 0.1);
-            border-radius: 10px;
-            border: 1px solid rgba(37, 95, 56, 0.2);
+            gap: 14px;
+            padding: 14px 16px;
+            background: rgba(245, 245, 240, 0.03);
+            border-radius: 14px;
+            border: 1px solid var(--border-soft);
         }
 
         .stat-icon {
-            font-size: 20px;
-            color: #255F38;
+            font-size: 17px;
+            color: var(--accent-bright);
             width: 30px;
+            flex-shrink: 0;
         }
 
         .stat-content {
@@ -97,82 +154,104 @@
         }
 
         .stat-label {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.6);
+            font-size: 11.5px;
+            color: var(--text-low);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.05em;
         }
 
         .stat-value {
-            font-size: 14px;
-            color: white;
+            font-size: 14.5px;
+            color: var(--text-hi);
             font-weight: 600;
+            margin-top: 2px;
         }
 
         .stat-change {
-            font-size: 12px;
-            color: #1F7D53;
+            font-size: 12.5px;
+            color: var(--accent-bright);
             margin-left: auto;
+            font-weight: 600;
         }
 
-        /* Right Section - Form */
-        .right-section {
-            background: #18230F;
-            padding: 40px;
+        @keyframes statSlideUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .stat-item:nth-child(1) { animation: statSlideUp 0.5s ease-out 1.6s both; }
+        .stat-item:nth-child(2) { animation: statSlideUp 0.5s ease-out 1.7s both; }
+
+        /* ── Right / form panel ───────────────────────────────────────── */
+        .panel-form {
+            background: var(--ink);
+            padding: 44px 48px;
             display: flex;
             flex-direction: column;
-            justify-content: flex-start;
-            position: relative;
+            justify-content: center;
         }
 
+        .form-shell {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .kicker {
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            color: var(--accent-bright);
+            margin-bottom: 10px;
+        }
 
         .heading {
-            font-size: 28px;
-            color: white;
+            font-size: 27px;
             font-weight: 700;
-            margin-bottom: 30px;
-            margin-top: 0;
             letter-spacing: -0.02em;
+            line-height: 1.15;
+            margin-bottom: 26px;
         }
 
-        .tabs-section {
+        .tab-track {
             display: flex;
-            gap: 15px;
-            margin-bottom: 30px;
+            gap: 4px;
+            padding: 4px;
+            background: var(--ink-3);
+            border-radius: 999px;
+            margin-bottom: 26px;
         }
 
         .tab-btn {
-            padding: 12px 28px;
+            flex: 1;
+            padding: 10px 0;
             background: transparent;
             border: none;
-            color: rgba(255, 255, 255, 0.6);
+            color: var(--text-mid);
             font-size: 13px;
-            font-weight: 700;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            border-radius: 8px;
+            transition: all 0.25s ease;
+            border-radius: 999px;
         }
 
         .tab-btn.active {
-            background: #255F38;
+            background: var(--accent);
             color: white;
-            padding: 12px 32px;
+            box-shadow: 0 6px 16px -4px rgba(37, 95, 56, 0.55);
         }
 
         .tab-btn:hover:not(.active) {
-            color: rgba(255, 255, 255, 0.9);
-            background: rgba(37, 95, 56, 0.12);
-            box-shadow: 0 0 14px rgba(37, 95, 56, 0.18);
+            color: var(--text-hi);
         }
+
         .tab-btn:active {
             transform: scale(0.97);
         }
 
         .form-wrapper {
             position: relative;
-            flex: 1;
         }
 
         .form-section {
@@ -195,117 +274,111 @@
         }
 
         .notification {
-            padding: 12px 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            margin-bottom: 18px;
             font-size: 13px;
             display: none;
+            line-height: 1.5;
         }
 
         .notification.success {
-            background: rgba(37, 95, 56, 0.1);
-            color: #1F7D53;
-            border: 1px solid rgba(37, 95, 56, 0.3);
+            background: rgba(37, 95, 56, 0.14);
+            color: #5fd68a;
+            border: 1px solid rgba(37, 95, 56, 0.35);
             display: block;
         }
 
         .notification.error {
-            background: rgba(239, 68, 68, 0.1);
-            color: #ef4444;
-            border: 1px solid rgba(239, 68, 68, 0.3);
+            background: rgba(229, 97, 92, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(229, 97, 92, 0.3);
             display: block;
         }
 
+        .form-row {
+            display: flex;
+            gap: 14px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+            min-width: 0;
+        }
+
         .form-group {
-            margin-bottom: 16px;
+            margin-bottom: 15px;
             position: relative;
         }
 
         label {
             display: block;
-            color: rgba(255, 255, 255, 0.7);
+            color: var(--text-mid);
             font-size: 11px;
-            margin-bottom: 6px;
+            margin-bottom: 7px;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 700;
+            letter-spacing: 0.06em;
+            font-weight: 600;
         }
 
         input {
             width: 100%;
-            padding: 12px 14px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            color: white;
+            padding: 11.5px 14px;
+            background: rgba(245, 245, 240, 0.04);
+            border: 1px solid var(--border-soft);
+            border-radius: 10px;
+            color: var(--text-hi);
             font-size: 14px;
-            transition: all 0.3s ease;
+            font-family: inherit;
+            transition: all 0.2s ease;
         }
 
         input::placeholder {
-            color: rgba(255, 255, 255, 0.3);
+            color: var(--text-low);
         }
 
         input:focus {
             outline: none;
-            background: rgba(37, 95, 56, 0.08);
-            border-color: #255F38;
-            box-shadow: 0 0 0 3px rgba(37, 95, 56, 0.25), 0 0 12px rgba(37, 95, 56, 0.15);
+            background: rgba(245, 245, 240, 0.05);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(37, 95, 56, 0.22);
         }
 
         input.error {
-            border-color: #ef4444;
-            background: rgba(239, 68, 68, 0.05);
+            border-color: var(--danger);
         }
 
         input.success {
-            border-color: #255F38;
-            background: rgba(37, 95, 56, 0.05);
-        }
-
-        .input-icon {
-            position: absolute;
-            right: 12px;
-            top: 32px;
-            color: rgba(255, 255, 255, 0.4);
-            font-size: 14px;
-            pointer-events: none;
-        }
-
-        .input-icon.success {
-            color: #255F38;
-        }
-
-        .input-icon.error {
-            color: #ef4444;
+            border-color: var(--accent);
         }
 
         .checkbox-group {
             display: flex;
             align-items: center;
             gap: 8px;
-            margin: 18px 0 24px 0;
+            margin: 16px 0 22px 0;
         }
 
         input[type="checkbox"] {
             width: 16px;
             height: 16px;
             cursor: pointer;
-            accent-color: #255F38;
+            accent-color: var(--accent);
+            flex-shrink: 0;
         }
 
         .checkbox-group label {
             margin: 0;
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 12px;
+            color: var(--text-mid);
+            font-size: 12.5px;
             text-transform: none;
             letter-spacing: normal;
-            font-weight: normal;
+            font-weight: 400;
             cursor: pointer;
         }
 
         .checkbox-group a {
-            color: #255F38;
+            color: var(--accent-bright);
             text-decoration: none;
         }
 
@@ -315,38 +388,35 @@
 
         button.btn-submit {
             width: 100%;
-            padding: 12px 24px;
-            background: #255F38;
+            padding: 13px 22px;
+            background: var(--accent);
             color: white;
             border: none;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 700;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            transition: all 0.2s ease;
         }
 
         button.btn-submit:hover {
-            background: #1F7D53;
-            transform: translateY(-2px);
-            box-shadow: 0 10px 24px rgba(37, 95, 56, 0.4), 0 0 0 1px rgba(37, 95, 56, 0.3);
+            background: var(--accent-bright);
+            box-shadow: 0 10px 24px -6px rgba(37, 95, 56, 0.5);
         }
 
         button.btn-submit:active {
-            transform: scale(0.97) !important;
+            transform: scale(0.98);
         }
 
         .footer-link {
             text-align: center;
-            margin-top: 16px;
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 12px;
+            margin-top: 18px;
+            color: var(--text-mid);
+            font-size: 12.5px;
         }
 
         .footer-link a {
-            color: #255F38;
+            color: var(--accent-bright);
             text-decoration: none;
             font-weight: 600;
             cursor: pointer;
@@ -356,35 +426,31 @@
             text-decoration: underline;
         }
 
+        @keyframes notifSlideDown {
+            from { opacity: 0; transform: translateY(-6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .notification.success,
+        .notification.error {
+            animation: notifSlideDown 0.25s ease-out forwards;
+        }
+
         @media (max-width: 900px) {
-            .main-container {
+            .auth-shell {
                 grid-template-columns: 1fr;
                 min-height: 100dvh;
                 border-radius: 0;
                 max-width: 100%;
+                border: none;
             }
 
-            .left-section {
+            .panel-visual {
                 display: none;
             }
 
-            .right-section {
-                padding: 30px 25px;
-            }
-
-            .heading {
-                font-size: 24px;
-                margin-bottom: 20px;
-            }
-
-            .tabs-section {
-                gap: 10px;
-                margin-bottom: 20px;
-            }
-
-            .tab-btn {
-                padding: 10px 16px;
-                font-size: 12px;
+            .panel-form {
+                padding: 32px 24px;
             }
         }
 
@@ -394,17 +460,10 @@
                 align-items: flex-start;
             }
 
-            .main-container {
-                min-height: 100dvh;
-                border-radius: 0;
-                max-width: 100%;
-                width: 100%;
-            }
-
-            .right-section {
-                padding: 36px 20px 40px;
+            .panel-form {
                 min-height: 100dvh;
                 justify-content: center;
+                padding: 40px 20px;
             }
 
             .form-wrapper {
@@ -413,78 +472,27 @@
 
             .heading {
                 font-size: 22px;
-                margin-bottom: 18px;
+                margin-bottom: 20px;
             }
 
-            .tab-btn {
-                padding: 10px 14px;
-                font-size: 11px;
+            .form-row {
+                flex-direction: column;
+                gap: 0;
             }
-        }
-        /* Background glow blob */
-        body::before {
-            content: '';
-            position: fixed;
-            width: 700px;
-            height: 700px;
-            background: radial-gradient(circle, rgba(31, 125, 83, 0.13) 0%, rgba(37, 95, 56, 0.06) 40%, transparent 70%);
-            border-radius: 50%;
-            bottom: -200px;
-            right: -200px;
-            pointer-events: none;
-            z-index: 0;
-        }
-        /* Noise grain overlay */
-        body::after {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
-            opacity: 0.03;
-            pointer-events: none;
-            z-index: 0;
-        }
-        /* SVG chart + stat-card animations */
-        @keyframes chartDraw {
-            from { stroke-dashoffset: 600; }
-            to   { stroke-dashoffset: 0; }
-        }
-        @keyframes chartFadeIn {
-            from { opacity: 0; }
-            to   { opacity: 1; }
-        }
-        @keyframes statSlideUp {
-            from { opacity: 0; transform: translateY(12px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        .stat-item:nth-child(1) { animation: statSlideUp 0.5s ease-out 1.6s both; }
-        .stat-item:nth-child(2) { animation: statSlideUp 0.5s ease-out 1.7s both; }
-        .portfolio-chart { z-index: 1; padding: 16px 0 24px; flex: 1; display: flex; flex-direction: column; justify-content: center; }
-        .portfolio-chart .chart-label { font-size: 11px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
-        .chart-line { animation: chartDraw 1.5s ease-out forwards; }
-        .chart-fill { animation: chartFadeIn 1.5s ease-out 0.3s both; }
-        .portfolio-chart circle { animation: chartFadeIn 0.4s ease-out 1.4s both; }
-        @keyframes notifSlideDown {
-            from { opacity: 0; transform: translateY(-8px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        .notification.success,
-        .notification.error {
-            animation: notifSlideDown 0.3s ease-out forwards;
         }
     </style>
 </head>
 <body>
-    <div class="main-container">
-        <!-- Left Section -->
-        <div class="left-section">
-            <div class="logo-left">
-                <img src="/images/logo.png" alt="TakaFlow" style="width:36px;height:36px;object-fit:contain;border-radius:8px;vertical-align:middle;margin-right:8px;">TakaFlow
+    <div class="auth-shell">
+        <!-- Left / visual panel -->
+        <div class="panel-visual">
+            <div class="brand-mark">
+                <img src="/images/logo.png" alt="TakaFlow">TakaFlow
             </div>
 
-            <!-- Portfolio trend chart -->
+            <!-- Net worth trend chart -->
             <div class="portfolio-chart" aria-hidden="true">
-                <div class="chart-label">Portfolio Performance</div>
+                <div class="chart-label">Net Worth, Last 6 Months</div>
                 <svg viewBox="0 0 260 80" xmlns="http://www.w3.org/2000/svg" style="width:100%;overflow:visible;">
                     <defs>
                         <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
@@ -507,114 +515,110 @@
             <div class="stats-box">
                 <div class="stat-item">
                     <div class="stat-icon">
-                        <i class="fab fa-ethereum"></i>
+                        <i class="fas fa-piggy-bank"></i>
                     </div>
                     <div class="stat-content">
-                        <div class="stat-label">ETH</div>
-                        <div class="stat-value">$2,456.78</div>
+                        <div class="stat-label">Savings Rate</div>
+                        <div class="stat-value">32% of income</div>
                     </div>
-                    <div class="stat-change">+8.5%</div>
+                    <div class="stat-change">+4.1%</div>
                 </div>
 
                 <div class="stat-item">
                     <div class="stat-icon">
-                        <i class="fas fa-dollar-sign"></i>
+                        <i class="fas fa-trophy"></i>
                     </div>
                     <div class="stat-content">
-                        <div class="stat-label">USD</div>
-                        <div class="stat-value">$45,230.12</div>
+                        <div class="stat-label">Budgets On Track</div>
+                        <div class="stat-value">4 of 5 categories</div>
                     </div>
                     <div class="stat-change">+3.2%</div>
                 </div>
             </div>
         </div>
 
-        <!-- Right Section -->
-        <div class="right-section">
-            <div class="heading">Welcome to TakaFlow!</div>
+        <!-- Right / form panel -->
+        <div class="panel-form">
+            <div class="form-shell">
+                <p class="kicker">Personal finance, simplified</p>
+                <div class="heading">Welcome to TakaFlow</div>
 
-            <div class="tabs-section">
-                <button class="tab-btn active" id="login-tab" onclick="switchTab('login')">Login</button>
-                <button class="tab-btn" id="signup-tab" onclick="switchTab('signup')">Sign Up</button>
-            </div>
-
-            <div class="form-wrapper">
-                <!-- Login Form -->
-                <div id="login-form" class="form-section">
-                    <div id="login-notification" class="notification"></div>
-
-                    <div class="form-group">
-                        <label>Email or Username</label>
-                        <input type="text" id="login-username" placeholder="Enter your email or username">
-                        <i class="fas fa-check input-icon"></i>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Password</label>
-                        <input type="password" id="login-password" placeholder="Enter your password">
-                        <i class="fas fa-check input-icon"></i>
-                    </div>
-
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="remember-me">
-                        <label for="remember-me">Remember me</label>
-                    </div>
-
-                    <button class="btn-submit" onclick="handleLogin()">Login</button>
-
-                    <div class="footer-link">
-                        Don't have an account? <a onclick="switchTab('signup'); return false;">Sign Up</a>
-                    </div>
+                <div class="tab-track">
+                    <button class="tab-btn active" id="login-tab" onclick="switchTab('login')">Login</button>
+                    <button class="tab-btn" id="signup-tab" onclick="switchTab('signup')">Sign Up</button>
                 </div>
 
-                <!-- Sign Up Form -->
-                <div id="signup-form" class="form-section hidden">
-                    <div id="signup-notification" class="notification"></div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Full Name</label>
-                            <input type="text" id="signup-fullname" placeholder="Enter your full name">
-                            <i class="fas fa-check input-icon"></i>
-                        </div>
+                <div class="form-wrapper">
+                    <!-- Login Form -->
+                    <div id="login-form" class="form-section">
+                        <div id="login-notification" class="notification"></div>
 
                         <div class="form-group">
-                            <label>Username</label>
-                            <input type="text" id="signup-username" placeholder="Choose a username">
-                            <i class="fas fa-check input-icon"></i>
+                            <label>Email or Username</label>
+                            <input type="text" id="login-username" placeholder="Enter your email or username">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="password" id="login-password" placeholder="Enter your password">
+                        </div>
+
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="remember-me">
+                            <label for="remember-me">Remember me</label>
+                        </div>
+
+                        <button class="btn-submit" onclick="handleLogin()">Login</button>
+
+                        <div class="footer-link">
+                            Don't have an account? <a onclick="switchTab('signup'); return false;">Sign Up</a>
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label>Email</label>
-                        <input type="email" id="signup-email" placeholder="Enter your email address">
-                        <i class="fas fa-check input-icon"></i>
-                    </div>
+                    <!-- Sign Up Form -->
+                    <div id="signup-form" class="form-section hidden">
+                        <div id="signup-notification" class="notification"></div>
 
-                    <div class="form-group">
-                        <label>Password</label>
-                        <input type="password" id="signup-password" placeholder="Create a strong password">
-                        <i class="fas fa-check input-icon"></i>
-                        <div id="pwd-strength-bar" style="margin-top:6px;height:4px;border-radius:2px;background:rgba(255,255,255,0.08);overflow:hidden;">
-                            <div id="pwd-strength-fill" style="height:100%;width:0%;border-radius:2px;transition:width 0.3s ease,background-color 0.3s ease;"></div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Full Name</label>
+                                <input type="text" id="signup-fullname" placeholder="Enter your full name">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Username</label>
+                                <input type="text" id="signup-username" placeholder="Choose a username">
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="form-group">
-                        <label>Confirm Password</label>
-                        <input type="password" id="signup-confirm-password" placeholder="Confirm your password">
-                        <i class="fas fa-check input-icon"></i>
-                    </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="signup-email" placeholder="Enter your email address">
+                        </div>
 
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="agree-terms">
-                        <label for="agree-terms">I agree to the <a href="#">Terms and Conditions</a></label>
-                    </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="password" id="signup-password" placeholder="Create a strong password">
+                            <div id="pwd-strength-bar" style="margin-top:7px;height:4px;border-radius:2px;background:rgba(245,245,240,0.08);overflow:hidden;">
+                                <div id="pwd-strength-fill" style="height:100%;width:0%;border-radius:2px;transition:width 0.3s ease,background-color 0.3s ease;"></div>
+                            </div>
+                        </div>
 
-                    <button class="btn-submit" onclick="handleSignup()">Sign Up</button>
+                        <div class="form-group">
+                            <label>Confirm Password</label>
+                            <input type="password" id="signup-confirm-password" placeholder="Confirm your password">
+                        </div>
 
-                    <div class="footer-link">
-                        Already have an account? <a onclick="switchTab('login'); return false;">Login</a>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="agree-terms">
+                            <label for="agree-terms">I agree to the <a href="#">Terms and Conditions</a></label>
+                        </div>
+
+                        <button class="btn-submit" onclick="handleSignup()">Sign Up</button>
+
+                        <div class="footer-link">
+                            Already have an account? <a onclick="switchTab('login'); return false;">Login</a>
+                        </div>
                     </div>
                 </div>
             </div>
