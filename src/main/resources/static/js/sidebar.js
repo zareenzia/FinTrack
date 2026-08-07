@@ -10,6 +10,18 @@
         return baseKey;
     }
 
+    // Notifications (title/message) carry free text another user typed — a household name, a
+    // transaction description, a goal name — so they're untrusted HTML-injection input here even
+    // though the current user didn't type them. Escape before any innerHTML interpolation.
+    function escHtml(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     const COLLAPSED_KEY  = getUserStorageKey('sidebar_collapsed');
     const THEME_KEY      = getUserStorageKey('fintrack_theme');
     const SETTINGS_KEY   = getUserStorageKey('fintrack_settings');
@@ -744,8 +756,8 @@
                         ? "window.location.href='/family-finance?invite=" + n.relatedEntityId + "'"
                         : 'window.__markNotifRead(' + n.id + ')';
                     return '<div style="padding:8px; border-bottom:1px solid var(--border-input); cursor:pointer; ' + unreadStyle + '" onclick="' + onclick + '">' +
-                        '<div style="font-weight:600; font-size:0.85rem; color:var(--text-primary-custom);">' + n.title + '</div>' +
-                        '<div style="font-size:0.8rem; color:var(--text-secondary-custom);">' + n.message + '</div>' +
+                        '<div style="font-weight:600; font-size:0.85rem; color:var(--text-primary-custom);">' + escHtml(n.title) + '</div>' +
+                        '<div style="font-size:0.8rem; color:var(--text-secondary-custom);">' + escHtml(n.message) + '</div>' +
                         '</div>';
                 }).join('');
             })
@@ -833,8 +845,8 @@
         var toast = document.createElement('div');
         toast.className = 'gam-celebration-toast';
         toast.innerHTML = '<span class="gam-celebration-icon">🎉</span>' +
-            '<div><div class="gam-celebration-title">' + notification.title + '</div>' +
-            '<div class="gam-celebration-msg">' + notification.message + '</div></div>';
+            '<div><div class="gam-celebration-title">' + escHtml(notification.title) + '</div>' +
+            '<div class="gam-celebration-msg">' + escHtml(notification.message) + '</div></div>';
         document.body.appendChild(toast);
         requestAnimationFrame(function () { toast.classList.add('show'); });
         setTimeout(function () {

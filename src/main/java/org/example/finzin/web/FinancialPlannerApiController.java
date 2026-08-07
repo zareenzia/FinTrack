@@ -15,6 +15,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -45,7 +46,10 @@ public class FinancialPlannerApiController {
 
     private Long getUserId(HttpServletRequest request) {
         Object userId = request.getAttribute("userId");
-        return userId != null ? (Long) userId : 1L;
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
+        }
+        return (Long) userId;
     }
 
     // ════════════════════════════════════════════════

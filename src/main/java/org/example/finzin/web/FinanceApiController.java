@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -71,7 +72,10 @@ public class FinanceApiController {
     
     private Long getUserId(HttpServletRequest request) {
         Object userId = request.getAttribute("userId");
-        return userId != null ? (Long) userId : 1L; // Default to Leah (user 1) if not authenticated
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
+        }
+        return (Long) userId;
     }
 
     // ============== CATEGORY ENDPOINTS ==============

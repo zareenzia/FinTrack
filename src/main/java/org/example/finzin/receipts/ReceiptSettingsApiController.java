@@ -3,7 +3,9 @@ package org.example.finzin.receipts;
 import jakarta.servlet.http.HttpServletRequest;
 import org.example.finzin.entity.ReceiptSettingsEntity;
 import org.example.finzin.receipts.dto.UpdateReceiptSettingsRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
 
@@ -18,7 +20,10 @@ public class ReceiptSettingsApiController {
 
     private Long getUserId(HttpServletRequest request) {
         Object userId = request.getAttribute("userId");
-        return userId != null ? (Long) userId : 1L;
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
+        }
+        return (Long) userId;
     }
 
     @GetMapping

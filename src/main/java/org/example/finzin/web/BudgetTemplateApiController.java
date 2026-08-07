@@ -8,6 +8,7 @@ import org.example.finzin.service.BudgetTemplateService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
@@ -27,7 +28,10 @@ public class BudgetTemplateApiController {
 
     private Long getUserId(HttpServletRequest request) {
         Object userId = request.getAttribute("userId");
-        return userId != null ? (Long) userId : 1L;
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
+        }
+        return (Long) userId;
     }
 
     @GetMapping
