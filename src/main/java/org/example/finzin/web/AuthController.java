@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.example.finzin.entity.UserEntity;
 import org.example.finzin.service.AccountDeletionService;
 import org.example.finzin.service.AuthService;
+import org.example.finzin.service.EmailVerificationService;
 import org.example.finzin.service.JwtTokenProvider;
 import org.example.finzin.service.PasswordResetService;
 import org.example.finzin.service.RecurringTransactionExecutionService;
@@ -36,6 +37,7 @@ public class AuthController {
     private final BudgetScheduler budgetScheduler;
     private final AccountDeletionService accountDeletionService;
     private final PasswordResetService passwordResetService;
+    private final EmailVerificationService emailVerificationService;
 
     @Value("${app.upload.dir:user-uploads/profiles}")
     private String uploadDir;
@@ -43,21 +45,33 @@ public class AuthController {
     public AuthController(AuthService authService, JwtTokenProvider jwtTokenProvider,
                            RecurringTransactionExecutionService recurringTransactionExecutionService,
                            BudgetScheduler budgetScheduler, AccountDeletionService accountDeletionService,
-                           PasswordResetService passwordResetService) {
+                           PasswordResetService passwordResetService, EmailVerificationService emailVerificationService) {
         this.authService = authService;
         this.jwtTokenProvider = jwtTokenProvider;
         this.recurringTransactionExecutionService = recurringTransactionExecutionService;
         this.budgetScheduler = budgetScheduler;
         this.accountDeletionService = accountDeletionService;
         this.passwordResetService = passwordResetService;
+        this.emailVerificationService = emailVerificationService;
     }
-    
+
     // --- Helper: extract and validate userId from Authorization header -------
     private Long extractUserIdFromHeader(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) return null;
         String token = authHeader.substring(7);
         if (!jwtTokenProvider.validateToken(token)) return null;
         return jwtTokenProvider.extractUserId(token);
+    }
+
+    // Registration must never fail because mail is unconfigured or SMTP hiccups — this mirrors the
+    // best-effort side-effect pattern already used for recurring-transaction/budget-alert catch-up
+    // inside login() below.
+    private void sendVerificationEmailBestEffort(UserEntity user) {
+        try {
+            emailVerificationService.sendVerificationEmail(user);
+        } catch (Exception e) {
+            System.out.println("⚠️ Failed to send verification email for user " + user.getId() + ": " + e.getMessage());
+        }
     }
     
     @PostMapping("/register")
@@ -93,10 +107,11 @@ public class AuthController {
                 request.getPassword()
             );
             System.out.println("? User registered: " + user.getId());
-            
+            sendVerificationEmailBestEffort(user);
+
             String token = jwtTokenProvider.generateToken(user);
             System.out.println("? Token generated");
-            
+
             jakarta.servlet.http.Cookie cookie = new jakarta.servlet.http.Cookie("Authorization", token);
             cookie.setHttpOnly(false);
             cookie.setPath("/");
@@ -104,7 +119,7 @@ public class AuthController {
             cookie.setSecure(false);
             httpResponse.addCookie(cookie);
             System.out.println("? Authorization cookie set");
-            
+
             Map<String, Object> response = new HashMap<>();
             response.put("token", token);
             response.put("user", Map.of(
@@ -113,7 +128,7 @@ public class AuthController {
                 "username", user.getUsername() != null ? user.getUsername() : "",
                 "email", user.getEmail()
             ));
-            
+
             System.out.println("? Registration successful");
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IllegalArgumentException e) {
@@ -149,7 +164,8 @@ public class AuthController {
                 request.getPassword()
             );
             System.out.println("? User registered: " + user.getId());
-            
+            sendVerificationEmailBestEffort(user);
+
             String token = jwtTokenProvider.generateToken(user);
             System.out.println("? Token generated");
             
@@ -263,6 +279,7 @@ public class AuthController {
             response.put("fullName", user.getFullName() != null ? user.getFullName() : "");
             response.put("username", user.getUsername() != null ? user.getUsername() : "");
             response.put("email", user.getEmail());
+            response.put("emailVerified", user.isEmailVerified());
             response.put("profileComplete", profileComplete);
             response.put("profilePicture", picUrl);
             response.put("createdAt", user.getCreatedAt() != null ? user.getCreatedAt().toString() : null);
@@ -393,6 +410,39 @@ public class AuthController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Failed to reset password"));
+        }
+    }
+
+    @PostMapping("/verify")
+    public ResponseEntity<?> verifyEmail(@RequestBody VerifyEmailRequest request) {
+        if (request.getToken() == null || request.getToken().isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Verification token is required"));
+        }
+        try {
+            emailVerificationService.verifyEmail(request.getToken());
+            return ResponseEntity.ok(Map.of("message", "Email verified successfully. You can now use all features."));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Failed to verify email"));
+        }
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<?> resendVerification(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        Long userId = extractUserIdFromHeader(authHeader);
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Unauthorized"));
+        }
+        try {
+            emailVerificationService.resendVerificationEmail(userId);
+            return ResponseEntity.ok(Map.of("message", "Verification email sent. Please check your inbox."));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Failed to send verification email: " + e.getMessage()));
         }
     }
 

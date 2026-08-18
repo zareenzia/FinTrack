@@ -47,7 +47,7 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/", "/login", "/signup", "/login.html", "/signup.html", "/index.html", "/reset-password", "/reset-password.html").permitAll()
+                .requestMatchers("/", "/login", "/signup", "/login.html", "/signup.html", "/index.html", "/reset-password", "/reset-password.html", "/verify-email", "/verify-email.html").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/static/**", "/css/**", "/js/**", "/images/**").permitAll()
                 .anyRequest().permitAll()

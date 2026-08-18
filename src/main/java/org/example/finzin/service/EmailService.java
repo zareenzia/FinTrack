@@ -56,4 +56,26 @@ public class EmailService {
 
         mailSender.send(message);
     }
+
+    public void sendVerificationEmail(String toEmail, String fullName, String verifyLink) {
+        if (mailSender == null) {
+            throw new IllegalStateException("Email sending is not configured (spring.mail.host is not set).");
+        }
+        String greetingName = (fullName != null && !fullName.isBlank()) ? fullName : "there";
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromAddress);
+        message.setTo(toEmail);
+        message.setSubject("Verify your TakaFlow email");
+        message.setText(
+            "Hi " + greetingName + ",\n\n" +
+            "Welcome to TakaFlow! Please verify your email address by clicking the link below:\n\n" +
+            verifyLink + "\n\n" +
+            "This link expires in 24 hours. Until you verify, you can browse your account but can't add or change anything. " +
+            "If you didn't create this account, you can safely ignore this email.\n\n" +
+            "- TakaFlow"
+        );
+
+        mailSender.send(message);
+    }
 }

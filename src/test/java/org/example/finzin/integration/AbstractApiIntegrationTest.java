@@ -3,6 +3,7 @@ package org.example.finzin.integration;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.finzin.AbstractIntegrationTest;
+import org.example.finzin.repository.UserRepository;
 import org.example.finzin.service.gold.GoldPriceScraper;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,6 +58,9 @@ public abstract class AbstractApiIntegrationTest extends AbstractIntegrationTest
     @MockitoBean
     protected GoldPriceScraper goldPriceScraper;
 
+    @Autowired
+    protected UserRepository userRepository;
+
     @BeforeEach
     void stubGoldPriceScraperAgainstNetworkCalls() throws Exception {
         // Never let GoldPriceScheduler's init-sync thread reach the real goldr.org.
@@ -75,7 +79,13 @@ public abstract class AbstractApiIntegrationTest extends AbstractIntegrationTest
 
     /** Registers a brand-new user through the real POST /api/auth/register endpoint (so the
      *  returned token is a genuine JwtTokenProvider-signed JWT, exactly as a real client would get
-     *  one) and returns its id/token for use as a real Authorization header in later requests. */
+     *  one) and returns its id/token for use as a real Authorization header in later requests.
+     *
+     *  Auto-verifies the user's email immediately after registration: these tests exercise other
+     *  features (transactions, budgets, gamification, etc.) and run through the real JwtAuthFilter,
+     *  which 403s any mutation from an unverified user — see EmailVerificationFlowIntegrationTest
+     *  for dedicated coverage of the unverified-user gate itself, which registers directly instead
+     *  of through this auto-verifying helper. */
     protected RegisteredUser registerUser(String label) throws Exception {
         String suffix = uniqueSuffix();
         String username = (label + suffix).toLowerCase();
@@ -98,6 +108,12 @@ public abstract class AbstractApiIntegrationTest extends AbstractIntegrationTest
         Long userId = json.get("user").get("id").asLong();
         String token = json.get("token").asText();
         assertEquals(email, json.get("user").get("email").asText());
+
+        userRepository.findById(userId).ifPresent(u -> {
+            u.setEmailVerified(true);
+            userRepository.save(u);
+        });
+
         return new RegisteredUser(userId, token, username, email);
     }
 

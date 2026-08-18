@@ -4,6 +4,7 @@ import org.example.finzin.entity.UserEntity;
 import org.example.finzin.service.AccountDeletionService;
 import org.example.finzin.service.AuthService;
 import org.example.finzin.service.BudgetScheduler;
+import org.example.finzin.service.EmailVerificationService;
 import org.example.finzin.service.JwtTokenProvider;
 import org.example.finzin.service.PasswordResetService;
 import org.example.finzin.service.RecurringTransactionExecutionService;
@@ -85,6 +86,9 @@ class AuthControllerTest {
 
     @MockitoBean
     private PasswordResetService passwordResetService;
+
+    @MockitoBean
+    private EmailVerificationService emailVerificationService;
 
     private UserEntity user() {
         UserEntity u = new UserEntity();
