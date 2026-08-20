@@ -107,13 +107,13 @@ class RecurringTransactionApiControllerTest {
     }
 
     @Test
-    void getUpcomingDefaultsToFourteenDays() throws Exception {
-        when(recurringTransactionService.getUpcoming(USER_ID, 14)).thenReturn(List.of());
+    void getUpcomingDefaultsToThreeDays() throws Exception {
+        when(recurringTransactionService.getUpcoming(USER_ID, 3)).thenReturn(List.of());
 
         mockMvc.perform(get("/api/recurring-transactions/upcoming").requestAttr("userId", USER_ID))
                 .andExpect(status().isOk());
 
-        verify(recurringTransactionService).getUpcoming(USER_ID, 14);
+        verify(recurringTransactionService).getUpcoming(USER_ID, 3);
     }
 
     // ── GET /api/recurring-transactions/pending ───────────────────────────────
