@@ -12,6 +12,7 @@ import org.example.finzin.repository.AssetRepository;
 import org.example.finzin.repository.CategoryRepository;
 import org.example.finzin.repository.NoteRepository;
 import org.example.finzin.repository.TransactionRepository;
+import org.example.finzin.repository.UserRepository;
 import org.example.finzin.service.AccountBalanceService;
 import org.example.finzin.service.CreditCardValidationException;
 import org.example.finzin.service.FinancialSummaryService;
@@ -33,6 +34,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -81,6 +83,9 @@ class FinanceApiControllerTest {
     @MockitoBean
     private AccountRepository accountRepository;
 
+    @MockitoBean
+    private UserRepository userRepository;
+
     private CategoryEntity category(Long id, String categoryType) {
         CategoryEntity c = new CategoryEntity(USER_ID, "Food", "desc", "#3498db", "tag");
         c.setId(id);
@@ -99,6 +104,15 @@ class FinanceApiControllerTest {
         a.setStatus("ACTIVE");
         a.setCreditLimitBehavior("WARN");
         return a;
+    }
+
+    private TransactionEntity transaction(Long id, double amount, String txType, CategoryEntity category,
+                                          LocalDateTime date, Long sourceAccountId, Long destinationAccountId) {
+        TransactionEntity tx = new TransactionEntity(USER_ID, amount, "Tx" + id, category, txType, date, date);
+        tx.setId(id);
+        tx.setSourceAccountId(sourceAccountId);
+        tx.setDestinationAccountId(destinationAccountId);
+        return tx;
     }
 
     // ══════════════════ CATEGORY ══════════════════
@@ -591,5 +605,173 @@ class FinanceApiControllerTest {
         mockMvc.perform(get("/api/analytics/monthly").requestAttr("userId", USER_ID))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.type == 'income' && @.month == '2026-06')].total").value(1000.0));
+    }
+
+    @Test
+    void creditCardSpendingIncludesCreditCardExpenseAndExcludesNonCreditCardAndTransferAndBillPayment() throws Exception {
+        CategoryEntity food = category(1L, "expense");
+        food.setName("Food");
+        CategoryEntity shopping = category(2L, "expense");
+        shopping.setName("Shopping");
+        when(categoryRepository.findByUserId(USER_ID)).thenReturn(List.of(food, shopping));
+
+        AccountEntity card = accountEntity(101L, "CREDIT_CARD");
+        AccountEntity bank = accountEntity(201L, "BANK");
+        when(accountRepository.findByUserId(USER_ID)).thenReturn(List.of(card, bank));
+
+        TransactionEntity creditCardPurchase = transaction(1L, 2000.0, "expense", food, LocalDateTime.of(2026, 8, 10, 10, 0), 101L, null);
+        TransactionEntity bankExpense = transaction(2L, 3000.0, "expense", shopping, LocalDateTime.of(2026, 8, 11, 10, 0), 201L, null);
+        TransactionEntity creditCardBillPaymentAsExpense = transaction(3L, 1000.0, "expense", shopping, LocalDateTime.of(2026, 8, 12, 10, 0), 201L, 101L);
+        TransactionEntity transfer = transaction(4L, 500.0, "transfer", food, LocalDateTime.of(2026, 8, 13, 10, 0), 101L, 201L);
+        when(transactionRepository.findByUserId(USER_ID)).thenReturn(List.of(
+                creditCardPurchase, bankExpense, creditCardBillPaymentAsExpense, transfer
+        ));
+
+        mockMvc.perform(get("/api/analytics/credit-card-spending").requestAttr("userId", USER_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalSpending").value(2000.0))
+                .andExpect(jsonPath("$.breakdown.length()").value(1))
+                .andExpect(jsonPath("$.breakdown[0].category").value("Food"))
+                .andExpect(jsonPath("$.breakdown[0].amount").value(2000.0));
+    }
+
+    @Test
+    void creditCardSpendingAppliesRefundAsReduction() throws Exception {
+        CategoryEntity food = category(1L, "expense");
+        food.setName("Food");
+        when(categoryRepository.findByUserId(USER_ID)).thenReturn(List.of(food));
+        when(accountRepository.findByUserId(USER_ID)).thenReturn(List.of(accountEntity(101L, "CREDIT_CARD")));
+
+        TransactionEntity purchase = transaction(1L, 2000.0, "expense", food, LocalDateTime.of(2026, 8, 10, 10, 0), 101L, null);
+        TransactionEntity refund = transaction(2L, 500.0, "income", food, LocalDateTime.of(2026, 8, 11, 10, 0), 101L, null);
+        when(transactionRepository.findByUserId(USER_ID)).thenReturn(List.of(purchase, refund));
+
+        mockMvc.perform(get("/api/analytics/credit-card-spending").requestAttr("userId", USER_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalSpending").value(1500.0))
+                .andExpect(jsonPath("$.breakdown[0].amount").value(1500.0));
+    }
+
+    @Test
+    void creditCardSpendingAggregatesAcrossMultipleCards() throws Exception {
+        CategoryEntity food = category(1L, "expense");
+        food.setName("Food");
+        when(categoryRepository.findByUserId(USER_ID)).thenReturn(List.of(food));
+        when(accountRepository.findByUserId(USER_ID)).thenReturn(List.of(
+                accountEntity(101L, "CREDIT_CARD"),
+                accountEntity(102L, "CREDIT_CARD")
+        ));
+
+        TransactionEntity card1 = transaction(1L, 1200.0, "expense", food, LocalDateTime.of(2026, 8, 10, 10, 0), 101L, null);
+        TransactionEntity card2 = transaction(2L, 800.0, "expense", food, LocalDateTime.of(2026, 8, 11, 10, 0), 102L, null);
+        when(transactionRepository.findByUserId(USER_ID)).thenReturn(List.of(card1, card2));
+
+        mockMvc.perform(get("/api/analytics/credit-card-spending").requestAttr("userId", USER_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalSpending").value(2000.0))
+                .andExpect(jsonPath("$.breakdown[0].amount").value(2000.0));
+    }
+
+    @Test
+    void creditCardSpendingFiltersBySingleCreditCardAndCategoryTogether() throws Exception {
+        CategoryEntity food = category(1L, "expense");
+        food.setName("Food");
+        CategoryEntity shopping = category(2L, "expense");
+        shopping.setName("Shopping");
+        when(categoryRepository.findByUserId(USER_ID)).thenReturn(List.of(food, shopping));
+        when(accountRepository.findByUserId(USER_ID)).thenReturn(List.of(
+                accountEntity(101L, "CREDIT_CARD"),
+                accountEntity(102L, "CREDIT_CARD")
+        ));
+
+        TransactionEntity card1Food = transaction(1L, 1500.0, "expense", food, LocalDateTime.of(2026, 8, 10, 10, 0), 101L, null);
+        TransactionEntity card1Shopping = transaction(2L, 700.0, "expense", shopping, LocalDateTime.of(2026, 8, 11, 10, 0), 101L, null);
+        TransactionEntity card2Food = transaction(3L, 900.0, "expense", food, LocalDateTime.of(2026, 8, 12, 10, 0), 102L, null);
+        when(transactionRepository.findByUserId(USER_ID)).thenReturn(List.of(card1Food, card1Shopping, card2Food));
+
+        mockMvc.perform(get("/api/analytics/credit-card-spending")
+                        .requestAttr("userId", USER_ID)
+                        .param("accountId", "101")
+                        .param("categoryId", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalSpending").value(1500.0))
+                .andExpect(jsonPath("$.breakdown.length()").value(1))
+                .andExpect(jsonPath("$.breakdown[0].category").value("Food"))
+                .andExpect(jsonPath("$.breakdown[0].amount").value(1500.0));
+    }
+
+    @Test
+    void creditCardSpendingUsesDateRangeAndRepositoryRangeQueryWhenBothDatesProvided() throws Exception {
+        CategoryEntity food = category(1L, "expense");
+        food.setName("Food");
+        when(categoryRepository.findByUserId(USER_ID)).thenReturn(List.of(food));
+        when(accountRepository.findByUserId(USER_ID)).thenReturn(List.of(accountEntity(101L, "CREDIT_CARD")));
+
+        TransactionEntity august = transaction(1L, 700.0, "expense", food, LocalDateTime.of(2026, 8, 15, 10, 0), 101L, null);
+        when(transactionRepository.findByUserIdAndDateRange(eq(USER_ID), any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(List.of(august));
+
+        mockMvc.perform(get("/api/analytics/credit-card-spending")
+                        .requestAttr("userId", USER_ID)
+                        .param("startDate", "2026-08-01")
+                        .param("endDate", "2026-08-31"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalSpending").value(700.0))
+                .andExpect(jsonPath("$.breakdown[0].amount").value(700.0));
+
+        verify(transactionRepository).findByUserIdAndDateRange(eq(USER_ID), any(LocalDateTime.class), any(LocalDateTime.class));
+        verify(transactionRepository, never()).findByUserId(USER_ID);
+    }
+
+    @Test
+    void creditCardSpendingRejectsForeignAccountAndForeignCategoryFilters() throws Exception {
+        when(accountRepository.findByUserId(USER_ID)).thenReturn(List.of(accountEntity(101L, "CREDIT_CARD")));
+        when(categoryRepository.findByUserId(USER_ID)).thenReturn(List.of(category(1L, "expense")));
+
+        mockMvc.perform(get("/api/analytics/credit-card-spending")
+                        .requestAttr("userId", USER_ID)
+                        .param("accountId", "999"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Invalid credit card account."));
+
+        mockMvc.perform(get("/api/analytics/credit-card-spending")
+                        .requestAttr("userId", USER_ID)
+                        .param("categoryId", "999"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Invalid category."));
+    }
+
+    @Test
+    void creditCardSpendingReturnsEmptyBreakdownWhenNoCreditCardSpending() throws Exception {
+        CategoryEntity food = category(1L, "expense");
+        food.setName("Food");
+        when(categoryRepository.findByUserId(USER_ID)).thenReturn(List.of(food));
+        when(accountRepository.findByUserId(USER_ID)).thenReturn(List.of(accountEntity(101L, "CREDIT_CARD")));
+        when(transactionRepository.findByUserId(USER_ID)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/analytics/credit-card-spending").requestAttr("userId", USER_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalSpending").value(0.0))
+                .andExpect(jsonPath("$.topCategory").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.breakdown.length()").value(0));
+    }
+
+    @Test
+    void creditCardSpendingRejectsInvalidDateParameters() throws Exception {
+        when(accountRepository.findByUserId(USER_ID)).thenReturn(List.of(accountEntity(101L, "CREDIT_CARD")));
+        when(categoryRepository.findByUserId(USER_ID)).thenReturn(List.of(category(1L, "expense")));
+
+        mockMvc.perform(get("/api/analytics/credit-card-spending")
+                        .requestAttr("userId", USER_ID)
+                        .param("startDate", "2026-08-99"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Invalid startDate. Use YYYY-MM-DD."));
+
+        mockMvc.perform(get("/api/analytics/credit-card-spending")
+                        .requestAttr("userId", USER_ID)
+                        .param("startDate", "2026-08-20")
+                        .param("endDate", "2026-08-01"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("endDate must be on or after startDate."));
     }
 }

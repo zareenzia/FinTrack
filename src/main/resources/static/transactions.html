@@ -748,6 +748,7 @@
                         <select class="form-select" id="editTxPayDown">
                             <option value="">None</option>
                         </select>
+                        <div class="small text-muted mt-1" id="editTxPayDownBalance"></div>
                     </div>
                 </div>
             </div>
@@ -881,6 +882,7 @@
                 applySavingsPseudoOption(document.getElementById('editTxAccount'), this.value);
                 if (this.value === 'expense') {
                     populateTxRowPayDownSelect(document.getElementById('editTxPayDown'));
+                    updateTxRowPayDownBalance(document.getElementById('editTxPayDownBalance'), '');
                 } else {
                     document.getElementById('editTxPayDown').value = '';
                 }
@@ -1341,6 +1343,17 @@
             : 'Available balance: ' + formatAmount(acct.currentBalance);
     }
 
+    /** Shows the selected card's current outstanding balance next to "Also pays down a credit
+     *  card". Paying more than this is allowed — the backend turns the excess into a credit
+     *  balance on the card (see CreditCardService.validate) — so this is informational, not a cap. */
+    function updateTxRowPayDownBalance(balanceEl, accountVal) {
+        if (!balanceEl) return;
+        if (!accountVal) { balanceEl.textContent = ''; return; }
+        const acct = cachedAccounts.find(a => String(a.id) === String(accountVal));
+        if (!acct) { balanceEl.textContent = ''; return; }
+        balanceEl.textContent = 'Outstanding balance: ' + formatAmount(acct.currentBalance);
+    }
+
     function newTxRow(data) {
         data = data || {};
         return {
@@ -1416,6 +1429,7 @@
                     <div class="col-md-6">
                         <label class="form-label small mb-1 text-muted">Also pays down a credit card <small class="text-muted">(optional)</small></label>
                         <select class="form-select form-select-sm tx-row-paydown"><option value="">None</option></select>
+                        <div class="tx-row-paydown-balance small text-muted mt-1"></div>
                     </div>
                 </div>` : '';
 
@@ -1522,9 +1536,14 @@
 
                 if (row.type === 'expense') {
                     const payDownSel = rowEl.querySelector('.tx-row-paydown');
+                    const payDownBalanceEl = rowEl.querySelector('.tx-row-paydown-balance');
                     populateTxRowPayDownSelect(payDownSel);
                     payDownSel.value = row.payDownAccountId;
-                    payDownSel.addEventListener('change', function () { row.payDownAccountId = this.value; });
+                    updateTxRowPayDownBalance(payDownBalanceEl, payDownSel.value);
+                    payDownSel.addEventListener('change', function () {
+                        row.payDownAccountId = this.value;
+                        updateTxRowPayDownBalance(payDownBalanceEl, this.value);
+                    });
                 }
             }
 
@@ -2796,15 +2815,19 @@
                 // like income — style it the same way rather than defaulting every transfer to
                 // expense-red (a real account -> External Destination correctly stays expense-red).
                 const isExternalIncoming = tx.transaction_type === 'transfer' && !tx.sourceAccountId && !!tx.destinationAccountId;
-                const isIncome  = tx.transaction_type === 'income' || isExternalIncoming;
-                const isSavings = tx.transaction_type === 'savings';
-                const txClass   = isIncome ? 'income' : (isSavings ? 'savings' : 'expense');
+                const isIncome   = tx.transaction_type === 'income' || isExternalIncoming;
+                const isSavings  = tx.transaction_type === 'savings';
+                // A transfer that isn't an external-source deposit just moves money between the
+                // user's own accounts (or out to an external destination) — it's neither a gain
+                // nor a loss, so it gets its own neutral styling instead of expense-red with a sign.
+                const isTransfer = tx.transaction_type === 'transfer' && !isExternalIncoming;
+                const txClass   = isIncome ? 'income' : (isSavings ? 'savings' : (isTransfer ? 'transfer' : 'expense'));
                 const dateObj   = new Date(tx.date);
                 const dayName   = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
                 const dateStr   = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 const yearStr   = dateObj.getFullYear();
                 const catIcon   = getCatIcon(tx.category_name);
-                const amtPrefix = isIncome ? '+' : (isSavings ? '⇒' : '−');
+                const amtPrefix = isIncome ? '+' : (isSavings ? '⇒' : (isTransfer ? '' : '−'));
                 return `
                 <div class="tx-row" style="animation-delay: ${idx * 40}ms">
                     <div class="tx-col-date">
@@ -2954,8 +2977,11 @@
             if (tx.transaction_type === 'expense') {
                 await loadAccountsIntoSelect();
                 const payDownSel = document.getElementById('editTxPayDown');
+                const payDownBalanceEl = document.getElementById('editTxPayDownBalance');
                 populateTxRowPayDownSelect(payDownSel);
                 payDownSel.value = tx.destinationAccountId != null ? String(tx.destinationAccountId) : '';
+                updateTxRowPayDownBalance(payDownBalanceEl, payDownSel.value);
+                payDownSel.onchange = function () { updateTxRowPayDownBalance(payDownBalanceEl, this.value); };
             }
         }
         txEditModal.show();

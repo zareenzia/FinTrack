@@ -117,6 +117,160 @@
 
         /* Receipt detail modal action buttons */
         .icon-btn { width: 38px; height: 38px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+
+        .cc-spending-state {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 0 16px;
+            color: var(--text-muted-custom);
+            font-size: 0.9rem;
+            white-space: pre-line;
+        }
+        .cc-spending-state.is-error { color: #dc3545; }
+
+        /* Row: Expense by Category + Monthly Trend/CC Spending — natural height, stretched equal */
+        .chart-pair-row { align-items: stretch; }
+        .chart-pair-row .card-body {
+            display: flex;
+            flex-direction: column;
+        }
+        /* Category card: legend + chart fill available height */
+        .chart-pair-row .chart-row-category {
+            flex: 1 1 auto;
+            display: flex !important;
+            align-items: center;
+            margin: 0;
+        }
+        /* CC spending panel inner layout */
+        .chart-pair-row #ccSpendingPanel > div,
+        #dashboardCompactView .trend-cc-card #ccSpendingPanelCompact > div {
+            display: flex;
+            flex-direction: column;
+        }
+        /* Compact view: tabbed card */
+        #dashboardCompactView .trend-cc-card .card-body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ---- Modern segmented-pill tab switcher (Monthly Trend ↔ Credit Card Spending) ---- */
+        .trend-cc-tabs {
+            border-bottom: none;
+            margin: 0;
+            padding: 3px;
+            display: flex;
+            gap: 2px;
+            background: rgba(0,0,0,0.18);
+            border-radius: 999px;
+        }
+        .trend-cc-tabs .nav-link {
+            color: rgba(255,255,255,0.75);
+            border: none;
+            background: transparent;
+            padding: 6px 16px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border-radius: 999px;
+            white-space: nowrap;
+            transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .trend-cc-tabs .nav-link.active,
+        .trend-cc-tabs .nav-link:focus {
+            color: #ffffff;
+            background: rgba(255,255,255,0.22);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25) inset, 0 1px 0 rgba(255,255,255,0.15);
+            outline: none;
+        }
+        .trend-cc-tabs .nav-link:hover:not(.active) {
+            color: #fff;
+            background: rgba(255,255,255,0.12);
+        }
+        .dashboard-card-header.has-tabs {
+            height: auto;
+            min-height: 44px;
+            padding: 8px 16px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        /* ---- Modern KPI stat chips for CC spending summary (Total / Top Category) ---- */
+        .cc-kpi-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .cc-kpi-card {
+            flex: 1 1 160px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+            background: var(--bg-table-stripe);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 10px 12px 10px 14px;
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+        .cc-kpi-card::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 4px;
+        }
+        .cc-kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 22px rgba(0,0,0,0.16);
+        }
+        .cc-kpi-card--total::before { background: linear-gradient(180deg,#7c3aed,#a78bfa); }
+        .cc-kpi-card--top::before   { background: linear-gradient(180deg,#d97706,#fbbf24); }
+        .cc-kpi-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            flex-shrink: 0;
+            transition: transform 0.2s ease;
+        }
+        .cc-kpi-card:hover .cc-kpi-icon { transform: scale(1.1) rotate(-4deg); }
+        .cc-kpi-card--total .cc-kpi-icon { background: rgba(124,58,237,0.15); color: #7c3aed; }
+        .cc-kpi-card--top .cc-kpi-icon   { background: rgba(217,119,6,0.15);  color: #d97706; }
+        [data-theme="dark"] .cc-kpi-card--total .cc-kpi-icon { background: rgba(167,139,250,0.2); color: #a78bfa; }
+        [data-theme="dark"] .cc-kpi-card--top .cc-kpi-icon   { background: rgba(251,191,36,0.2);  color: #fbbf24; }
+        .cc-kpi-text { display: flex; flex-direction: column; min-width: 0; }
+        .cc-kpi-label {
+            font-size: 0.68rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            color: var(--text-muted-custom);
+        }
+        .cc-kpi-value {
+            font-size: 0.98rem;
+            font-weight: 800;
+            color: var(--text-body);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* ---- Chart backdrop panel: soft inset card so bars feel "framed" ---- */
+        .cc-spending-chart-wrap {
+            position: relative;
+            height: 190px !important;
+            min-height: 190px;
+            border-radius: 12px;
+            background: radial-gradient(120% 140% at 10% 0%, rgba(124,58,237,0.06), transparent 60%);
+            padding: 6px 4px 0;
+        }
     </style>
 </head>
 <body>
@@ -266,9 +420,9 @@
         </div>
     </div>
 
-    <div class="row mb-4">
+    <div class="row mb-4 chart-pair-row">
        <div class="col-md-4">
-            <div class="card">
+            <div class="card h-100">
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center flex-wrap gap-1">
                     <h6 class="mb-0" id="categoryChartTitle"><i class="fas fa-pie-chart"></i> Expense by Category</h6>
                     <div class="d-flex gap-1 flex-wrap">
@@ -288,7 +442,7 @@
                            <div id="categoryLegend"></div>
                        </div>
                        <div class="col-md-7" style="display: flex; align-items: center; justify-content: center;">
-                           <div style="width: 100%; height: 300px; position: relative;">
+                           <div style="width: 100%; height: 230px; position: relative;">
                                <canvas id="categoryChart"></canvas>
                            </div>
                        </div>
@@ -297,26 +451,64 @@
            </div>
        </div>
        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0"><i class="fas fa-line-chart"></i> Monthly Trend</h6>
-                    <div class="d-flex align-items-center gap-2">
-                        <select class="tx-filter-select" id="monthlyCategoryFilter" title="Filter expense by category" onchange="onMonthlyCategoryFilterChanged(this.value)">
-                            <option value="">All Categories</option>
-                        </select>
-                        <div class="btn-group btn-group-sm" role="group">
-                            <button type="button" class="btn btn-outline-light active" id="monthlyLineBtn" onclick="switchMonthlyChart('line')" title="Line Chart">
-                                <i class="fas fa-line-chart"></i>
-                            </button>
-                            <button type="button" class="btn btn-outline-light" id="monthlyBarBtn" onclick="switchMonthlyChart('bar')" title="Bar Chart">
-                                <i class="fas fa-bars"></i>
-                            </button>
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <ul class="nav trend-cc-tabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="monthlyTrendTab" data-bs-toggle="tab" data-bs-target="#monthlyTrendPanel" type="button" role="tab" aria-controls="monthlyTrendPanel" aria-selected="true">
+                                    <i class="fas fa-line-chart me-1"></i>Monthly Trend
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="ccSpendingTab" data-bs-toggle="tab" data-bs-target="#ccSpendingPanel" type="button" role="tab" aria-controls="ccSpendingPanel" aria-selected="false">
+                                    <i class="fas fa-credit-card me-1"></i>Credit Card Spending
+                                </button>
+                            </li>
+                        </ul>
+                        <div class="d-none align-items-center gap-2 flex-wrap" id="ccFiltersDefault">
+                            <select class="tx-filter-select" id="creditCardAccountFilter" title="Filter by credit card account" onchange="onCreditCardAccountFilterChanged(this.value)">
+                                <option value="">All Credit Cards</option>
+                            </select>
+                            <select class="tx-filter-select" id="creditCardCategoryFilter" title="Filter by category" onchange="onCreditCardCategoryFilterChanged(this.value)">
+                                <option value="">All Categories</option>
+                            </select>
                         </div>
                     </div>
                 </div>
-                <div class="card-body chart-body-monthly" style="display: flex; align-items: center; justify-content: center;">
-                    <div style="width: 100%; height: 300px; position: relative;">
-                        <canvas id="monthlyChart"></canvas>
+                <div class="card-body">
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="monthlyTrendPanel" role="tabpanel" aria-labelledby="monthlyTrendTab">
+                            <div style="display:flex; align-items:center; justify-content:center; padding:0.25rem 0;">
+                                <div style="width:100%; height:230px; position:relative;">
+                                    <canvas id="monthlyChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="ccSpendingPanel" role="tabpanel" aria-labelledby="ccSpendingTab">
+                            <div style="height:100%; display:flex; flex-direction:column;">
+                                <div class="cc-kpi-row">
+                                    <div class="cc-kpi-card cc-kpi-card--total">
+                                        <span class="cc-kpi-icon"><i class="fas fa-credit-card"></i></span>
+                                        <div class="cc-kpi-text">
+                                            <span class="cc-kpi-label">Total CC Spending</span>
+                                            <span class="cc-kpi-value" id="creditCardSpendingTotal">Loading...</span>
+                                        </div>
+                                    </div>
+                                    <div class="cc-kpi-card cc-kpi-card--top">
+                                        <span class="cc-kpi-icon"><i class="fas fa-trophy"></i></span>
+                                        <div class="cc-kpi-text">
+                                            <span class="cc-kpi-label">Top Category</span>
+                                            <span class="cc-kpi-value" id="creditCardSpendingTopCategory">Loading...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="cc-spending-chart-wrap">
+                                    <canvas id="creditCardSpendingChart"></canvas>
+                                    <div class="cc-spending-state" id="creditCardSpendingState">Loading spending data...</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -684,29 +876,64 @@
             </div>
         </div>
 
-        <!-- Monthly Trend: Full Width -->
+        <!-- Monthly Trend + Credit Card Spending: Full Width (tabbed) -->
         <div class="row mb-4">
             <div class="col-12">
-                <div class="card">
-                    <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0"><i class="fas fa-line-chart me-2"></i>Monthly Trend</h6>
-                        <div class="d-flex align-items-center gap-2">
-                            <select class="tx-filter-select" id="monthlyCategoryFilterCompact" title="Filter expense by category" onchange="onMonthlyCategoryFilterChanged(this.value)">
+                <div class="card trend-cc-card">
+                        <ul class="nav trend-cc-tabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="monthlyTrendTabCompact" data-bs-toggle="tab" data-bs-target="#monthlyTrendPanelCompact" type="button" role="tab" aria-controls="monthlyTrendPanelCompact" aria-selected="true">
+                                    <i class="fas fa-line-chart me-1"></i>Monthly Trend
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="ccSpendingTabCompact" data-bs-toggle="tab" data-bs-target="#ccSpendingPanelCompact" type="button" role="tab" aria-controls="ccSpendingPanelCompact" aria-selected="false">
+                                    <i class="fas fa-credit-card me-1"></i>Credit Card Spending
+                                </button>
+                            </li>
+                        </ul>
+                        <div class="d-none align-items-center gap-2 flex-wrap" id="ccFiltersCompact">
+                            <select class="tx-filter-select" id="creditCardAccountFilterCompact" title="Filter by credit card account" onchange="onCreditCardAccountFilterChanged(this.value)">
+                                <option value="">All Credit Cards</option>
+                            </select>
+                            <select class="tx-filter-select" id="creditCardCategoryFilterCompact" title="Filter by category" onchange="onCreditCardCategoryFilterChanged(this.value)">
                                 <option value="">All Categories</option>
                             </select>
-                            <div class="btn-group dashboard-chart-toggle" role="group">
-                                <button type="button" class="btn btn-outline-light active" id="monthlyLineBtnCompact" onclick="switchMonthlyChart('line')" title="Line Chart">
-                                    <i class="fas fa-line-chart"></i>
-                                </button>
-                                <button type="button" class="btn btn-outline-light" id="monthlyBarBtnCompact" onclick="switchMonthlyChart('bar')" title="Bar Chart">
-                                    <i class="fas fa-bars"></i>
-                                </button>
-                            </div>
                         </div>
                     </div>
-                    <div class="card-body chart-body-monthly" style="display: flex; align-items: center; justify-content: center;">
-                        <div style="width: 100%; height: 300px; position: relative;">
-                            <canvas id="monthlyChartCompact"></canvas>
+                    <div class="card-body">
+                        <div class="tab-content">
+                            <div class="tab-pane fade show active" id="monthlyTrendPanelCompact" role="tabpanel" aria-labelledby="monthlyTrendTabCompact">
+                                <div style="display:flex; align-items:center; justify-content:center; padding:0.25rem 0;">
+                                    <div style="width:100%; height:230px; position:relative;">
+                                        <canvas id="monthlyChartCompact"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="ccSpendingPanelCompact" role="tabpanel" aria-labelledby="ccSpendingTabCompact">
+                                <div style="height:100%; display:flex; flex-direction:column;">
+                                    <div class="cc-kpi-row">
+                                        <div class="cc-kpi-card cc-kpi-card--total">
+                                            <span class="cc-kpi-icon"><i class="fas fa-credit-card"></i></span>
+                                            <div class="cc-kpi-text">
+                                                <span class="cc-kpi-label">Total CC Spending</span>
+                                                <span class="cc-kpi-value" id="creditCardSpendingTotalCompact">Loading...</span>
+                                            </div>
+                                        </div>
+                                        <div class="cc-kpi-card cc-kpi-card--top">
+                                            <span class="cc-kpi-icon"><i class="fas fa-trophy"></i></span>
+                                            <div class="cc-kpi-text">
+                                                <span class="cc-kpi-label">Top Category</span>
+                                                <span class="cc-kpi-value" id="creditCardSpendingTopCategoryCompact">Loading...</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="cc-spending-chart-wrap">
+                                        <canvas id="creditCardSpendingChartCompact"></canvas>
+                                        <div class="cc-spending-state" id="creditCardSpendingStateCompact">Loading spending data...</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -949,6 +1176,12 @@
     let monthlyChartType     = 'line';
     let categoryBreakdownType = 'expense';   // 'expense' | 'savings'
     let monthlyCategoryFilter = '';   // '' = all categories, otherwise an expense category name
+    let creditCardSpendingAccountFilter = ''; // '' = all credit cards
+    let creditCardSpendingCategoryFilter = ''; // '' = all categories
+    let creditCardSpendingChartData = [];
+    let creditCardSpendingChartInstances = {};
+    let creditCardSpendingRequestSeq = 0;
+    let creditCardSpendingDebounceTimer = null;
 
     let allTransactions      = [];
     let selectedMonthKey     = null;   // 'YYYY-MM' or 'ALL'
@@ -1080,7 +1313,11 @@
         // Charts need to be (re)drawn for the panel that just became visible —
         // canvases inside a display:none panel render at 0 size, so redraw fresh.
         if (categoryChartData.length) drawCategoryChart(categoryChartData, activeSuffix());
-        if (monthlyChartData.length)  drawMonthlyChart(monthlyChartData, activeSuffix());
+        var _suf = activeSuffix();
+        var _ccTabActive = (document.getElementById('ccSpendingTab' + _suf) || {}).classList &&
+                           document.getElementById('ccSpendingTab' + _suf).classList.contains('active');
+        if (!_ccTabActive && monthlyChartData.length)  drawMonthlyChart(monthlyChartData, _suf);
+        if (_ccTabActive && creditCardSpendingChartData.length) drawCreditCardSpendingChart(creditCardSpendingChartData, _suf);
         fitStatAmounts();
         syncUpcomingRecurringHeight();
         applyCardHideSetting();
@@ -1255,9 +1492,134 @@
         drawCategoryChart(breakdown, activeSuffix());
 
         loadCurrentBudget(selectedMonthKey);
+        queueCreditCardSpendingLoad();
 
         currentPage = 0;
         applyFiltersAndDisplay();
+    }
+
+    function accountFilterOptionLabel(account) {
+        if (!account) return '';
+        if (account.bankName) return account.accountNickname + ' (' + account.bankName + ')';
+        if (account.provider) return account.accountNickname + ' (' + account.provider + ')';
+        return account.accountNickname;
+    }
+
+    /** Wire up the Monthly Trend ↔ Credit Card Spending tab toggle for both panels. */
+    function initTrendCCTabs() {
+        ['', 'Compact'].forEach(function(suf) {
+            var monthlyTab = document.getElementById('monthlyTrendTab' + suf);
+            var ccTab      = document.getElementById('ccSpendingTab' + suf);
+            var filterSuffix = suf === '' ? 'Default' : suf;
+            var ccFilters    = document.getElementById('ccFilters' + filterSuffix);
+            if (!monthlyTab || !ccTab) return;
+
+            monthlyTab.addEventListener('shown.bs.tab', function() {
+                if (ccFilters) { ccFilters.classList.add('d-none'); ccFilters.classList.remove('d-flex'); }
+                if (monthlyChartData.length) drawMonthlyChart(monthlyChartData, suf);
+            });
+            ccTab.addEventListener('shown.bs.tab', function() {
+                if (ccFilters) { ccFilters.classList.remove('d-none'); ccFilters.classList.add('d-flex'); }
+                if (creditCardSpendingChartData.length) drawCreditCardSpendingChart(creditCardSpendingChartData, suf);
+            });
+        });
+    }
+
+    function selectedMonthDateRange() {
+        if (!selectedMonthKey || selectedMonthKey === 'ALL') return {};
+        const parts = selectedMonthKey.split('-');
+        if (parts.length !== 2) return {};
+        const year = Number(parts[0]);
+        const month = Number(parts[1]);
+        if (!Number.isFinite(year) || !Number.isFinite(month)) return {};
+        const first = new Date(year, month - 1, 1);
+        const last = new Date(year, month, 0);
+        const fmtDate = (d) => {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return y + '-' + m + '-' + day;
+        };
+        return { startDate: fmtDate(first), endDate: fmtDate(last) };
+    }
+
+    function setCreditCardSpendingState(message, isError) {
+        ['', 'Compact'].forEach(function (suf) {
+            const state = document.getElementById('creditCardSpendingState' + suf);
+            if (!state) return;
+            state.textContent = message;
+            state.style.display = 'flex';
+            state.classList.toggle('is-error', !!isError);
+        });
+    }
+
+    function hideCreditCardSpendingState() {
+        ['', 'Compact'].forEach(function (suf) {
+            const state = document.getElementById('creditCardSpendingState' + suf);
+            if (!state) return;
+            state.style.display = 'none';
+            state.classList.remove('is-error');
+        });
+    }
+
+    function syncCreditCardSpendingFilters(accountValue, categoryValue) {
+        ['', 'Compact'].forEach(function (suf) {
+            const accountSel = document.getElementById('creditCardAccountFilter' + suf);
+            const categorySel = document.getElementById('creditCardCategoryFilter' + suf);
+            if (accountSel) accountSel.value = accountValue || '';
+            if (categorySel) categorySel.value = categoryValue || '';
+        });
+    }
+
+    function populateCreditCardSpendingFilters(categories, accounts) {
+        const creditCards = (accounts || []).filter(function (a) { return a.accountType === 'CREDIT_CARD'; });
+        const expenseCategories = (categories || []).filter(function (cat) {
+            return !cat.categoryType || cat.categoryType === 'general' || cat.categoryType === 'expense';
+        });
+
+        if (creditCardSpendingAccountFilter && !creditCards.some(function (a) { return String(a.id) === String(creditCardSpendingAccountFilter); })) {
+            creditCardSpendingAccountFilter = '';
+        }
+        if (creditCardSpendingCategoryFilter && !expenseCategories.some(function (c) { return String(c.id) === String(creditCardSpendingCategoryFilter); })) {
+            creditCardSpendingCategoryFilter = '';
+        }
+
+        ['', 'Compact'].forEach(function (suf) {
+            const accountSel = document.getElementById('creditCardAccountFilter' + suf);
+            const categorySel = document.getElementById('creditCardCategoryFilter' + suf);
+            if (accountSel) {
+                accountSel.innerHTML = '<option value="">All Credit Cards</option>'
+                    + creditCards.map(function (a) {
+                        return '<option value="' + a.id + '">' + escHtml(accountFilterOptionLabel(a)) + '</option>';
+                    }).join('');
+            }
+            if (categorySel) {
+                categorySel.innerHTML = '<option value="">All Categories</option>'
+                    + expenseCategories.map(function (c) {
+                        return '<option value="' + c.id + '">' + escHtml(c.name) + '</option>';
+                    }).join('');
+            }
+        });
+        syncCreditCardSpendingFilters(creditCardSpendingAccountFilter, creditCardSpendingCategoryFilter);
+    }
+
+    function onCreditCardAccountFilterChanged(value) {
+        creditCardSpendingAccountFilter = value || '';
+        syncCreditCardSpendingFilters(creditCardSpendingAccountFilter, creditCardSpendingCategoryFilter);
+        queueCreditCardSpendingLoad();
+    }
+
+    function onCreditCardCategoryFilterChanged(value) {
+        creditCardSpendingCategoryFilter = value || '';
+        syncCreditCardSpendingFilters(creditCardSpendingAccountFilter, creditCardSpendingCategoryFilter);
+        queueCreditCardSpendingLoad();
+    }
+
+    function queueCreditCardSpendingLoad() {
+        if (creditCardSpendingDebounceTimer) {
+            clearTimeout(creditCardSpendingDebounceTimer);
+        }
+        creditCardSpendingDebounceTimer = setTimeout(loadCreditCardSpendingWidget, 180);
     }
 
     /** Get greeting based on current time of day */
@@ -1401,6 +1763,7 @@
         // Restore saved dashboard view (Default / Compact) before first paint of data
         const savedView = localStorage.getItem(getUserStorageKey('fintrack_dashboard_view')) || 'default';
         setDashboardView(savedView, true);
+        initTrendCCTabs();
 
         updateGreeting();
         loadDashboard();
@@ -1727,13 +2090,13 @@
             const acctFilter = document.getElementById('txAccountFilter');
             if (acctFilter) {
                 const prevAcct = acctFilter.value;
-                const label = a => a.accountNickname + (a.bankName ? ' (' + a.bankName + ')' : a.provider ? ' (' + a.provider + ')' : '');
                 acctFilter.innerHTML = '<option value="">All Accounts</option>'
                     + '<option value="SAVINGS">💰 Savings</option>'
                     + '<option value="NONE">No Account</option>'
-                    + accounts.map(a => `<option value="${a.id}">${escHtml(label(a))}</option>`).join('');
+                    + accounts.map(a => `<option value="${a.id}">${escHtml(accountFilterOptionLabel(a))}</option>`).join('');
                 acctFilter.value = prevAcct;
             }
+            populateCreditCardSpendingFilters(expenseCategories, accounts);
 
             // Load all transactions once — everything month-specific is derived client-side from this
             const transactions = await fetch('/api/transactions?limit=1000').then(r => r.json());
@@ -1751,6 +2114,7 @@
             const monthly = await fetch('/api/analytics/monthly').then(r => r.json());
             monthlyChartData = monthly;
             drawMonthlyChart(monthly, activeSuffix());
+            queueCreditCardSpendingLoad();
 
             currentPage = 0;
             applyFiltersAndDisplay();
@@ -1830,15 +2194,19 @@
                 // like income — style it the same way rather than defaulting every transfer to
                 // expense-red (a real account -> External Destination correctly stays expense-red).
                 const isExternalIncoming = tx.transaction_type === 'transfer' && !tx.sourceAccountId && !!tx.destinationAccountId;
-                const isIncome  = tx.transaction_type === 'income' || isExternalIncoming;
-                const isSavings = tx.transaction_type === 'savings';
-                const txClass   = isIncome ? 'income' : (isSavings ? 'savings' : 'expense');
+                const isIncome   = tx.transaction_type === 'income' || isExternalIncoming;
+                const isSavings  = tx.transaction_type === 'savings';
+                // A transfer that isn't an external-source deposit just moves money between the
+                // user's own accounts (or out to an external destination) — it's neither a gain
+                // nor a loss, so it gets its own neutral styling instead of expense-red with a sign.
+                const isTransfer = tx.transaction_type === 'transfer' && !isExternalIncoming;
+                const txClass   = isIncome ? 'income' : (isSavings ? 'savings' : (isTransfer ? 'transfer' : 'expense'));
                 const dateObj   = new Date(tx.date);
                 const dayName   = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
                 const dateStr   = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 const yearStr   = dateObj.getFullYear();
                 const catIcon   = getCatIcon(tx.category_name);
-                const amtPrefix = isIncome ? '+' : (isSavings ? '⇒' : '−');
+                const amtPrefix = isIncome ? '+' : (isSavings ? '⇒' : (isTransfer ? '' : '−'));
                 return `
                 <div class="tx-row" style="animation-delay: ${idx * 40}ms">
                     <div class="tx-col-date">
@@ -2162,15 +2530,27 @@
      *  AccountBalanceService.applyBalanceChange for why an expense can name a credit card destination. */
     async function loadEditPayDownAccounts(selectedValue) {
         const sel = document.getElementById('editTxPayDown');
+        const balanceEl = document.getElementById('editTxPayDownBalance');
+        let cards = [];
         try {
             const accounts = await fetch('/api/accounts').then(r => r.json());
             const label = a => a.accountNickname + (a.bankName ? ' (' + a.bankName + ')' : a.provider ? ' (' + a.provider + ')' : '');
-            const cards = accounts.filter(a => a.accountType === 'CREDIT_CARD');
+            cards = accounts.filter(a => a.accountType === 'CREDIT_CARD');
             sel.innerHTML = '<option value="">None</option>' + cards.map(a => `<option value="${a.id}">${label(a)}</option>`).join('');
         } catch (e) {
             sel.innerHTML = '<option value="">None</option>';
         }
         sel.value = selectedValue || '';
+        // Shows the selected card's current outstanding balance so it's clear what's owed. Paying
+        // more than this is allowed — the backend turns the excess into a credit balance on the
+        // card (see CreditCardService.validate) — so this is informational, not a hard cap.
+        function updateBalance() {
+            if (!balanceEl) return;
+            const card = cards.find(c => String(c.id) === sel.value);
+            balanceEl.textContent = card ? 'Outstanding balance: ৳' + Number(card.currentBalance).toFixed(2) : '';
+        }
+        updateBalance();
+        sel.onchange = updateBalance;
     }
 
     async function loadEditTransferAccounts(fromSel, toSel, selectedFrom, selectedTo) {
@@ -2452,6 +2832,195 @@
         } catch (error) {
             console.error('Error deleting transaction:', error);
             showNotification('Error deleting transaction', 'error');
+        }
+    }
+
+    function setCreditCardSpendingSummary(totalAmount, topCategoryText) {
+        ['', 'Compact'].forEach(function (suf) {
+            setEl('creditCardSpendingTotal' + suf, totalAmount);
+            setEl('creditCardSpendingTopCategory' + suf, topCategoryText);
+        });
+    }
+
+    // Lighten a hex color by a given amount (0-1) — used for the top of each bar's gradient.
+    function ccLightenColor(hex, amount) {
+        const h = String(hex || '#3498db').replace('#', '');
+        if (h.length !== 6) return hex || '#3498db';
+        const r = parseInt(h.substr(0, 2), 16);
+        const g = parseInt(h.substr(2, 2), 16);
+        const b = parseInt(h.substr(4, 2), 16);
+        const mix = function (c) { return Math.round(c + (255 - c) * amount); };
+        return 'rgb(' + mix(r) + ',' + mix(g) + ',' + mix(b) + ')';
+    }
+
+    // Draws the amount value just above each bar for at-a-glance readability.
+    const ccBarValueLabelPlugin = {
+        id: 'ccBarValueLabel',
+        afterDatasetsDraw: function (chart) {
+            const ctx = chart.ctx;
+            const meta = chart.getDatasetMeta(0);
+            const dataset = chart.data.datasets[0];
+            ctx.save();
+            ctx.font = '600 11px "Inter", "Segoe UI", sans-serif';
+            ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--text-body') || '#333';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            meta.data.forEach(function (bar, i) {
+                const value = dataset.data[i];
+                if (value === undefined || value === null) return;
+                const label = getCurrencySettings().symbol + Number(value).toLocaleString();
+                ctx.fillText(label, bar.x, bar.y - 6);
+            });
+            ctx.restore();
+        }
+    };
+
+    function drawCreditCardSpendingChart(data, suffix) {
+        suffix = suffix || '';
+        const canvasEl = document.getElementById('creditCardSpendingChart' + suffix);
+        if (!canvasEl) return;
+        if (creditCardSpendingChartInstances[suffix]) {
+            creditCardSpendingChartInstances[suffix].destroy();
+        }
+
+        if (!data.length) return;
+
+        const truncate = function (label) {
+            const text = String(label || '');
+            return text.length > 14 ? text.slice(0, 14) + '…' : text;
+        };
+        const labels = data.map(function (d) { return d.category; });
+        const ctx2d = canvasEl.getContext('2d');
+        const totalAmount = data.reduce(function (sum, d) { return sum + (Number(d.amount) || 0); }, 0);
+        const barColors = data.map(function (d) {
+            const base = d.color || '#3498db';
+            const gradient = ctx2d.createLinearGradient(0, 0, 0, 220);
+            gradient.addColorStop(0, ccLightenColor(base, 0.35));
+            gradient.addColorStop(1, base);
+            return gradient;
+        });
+        const hoverColors = data.map(function (d) { return ccLightenColor(d.color || '#3498db', 0.15); });
+
+        creditCardSpendingChartInstances[suffix] = new Chart(ctx2d, {
+            type: 'bar',
+            data: {
+                labels: labels.map(truncate),
+                datasets: [{
+                    label: 'Credit Card Spending',
+                    data: data.map(function (d) { return Number(d.amount) || 0; }),
+                    backgroundColor: barColors,
+                    hoverBackgroundColor: hoverColors,
+                    borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 },
+                    borderSkipped: 'bottom',
+                    barThickness: 44,
+                    minBarLength: 4
+                }]
+            },
+            plugins: [ccBarValueLabelPlugin],
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: { padding: { top: 20 } },
+                animation: { duration: 700, easing: 'easeOutQuart' },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(20, 20, 30, 0.92)',
+                        titleColor: '#fff',
+                        bodyColor: '#e5e7eb',
+                        titleFont: { weight: '700', size: 12 },
+                        bodyFont: { size: 12 },
+                        padding: 10,
+                        cornerRadius: 8,
+                        displayColors: false,
+                        callbacks: {
+                            title: function (ctx) {
+                                const idx = ctx && ctx[0] ? ctx[0].dataIndex : 0;
+                                return labels[idx] || '';
+                            },
+                            label: function (ctx) {
+                                const amt = ctx.raw || 0;
+                                const pct = totalAmount > 0 ? Math.round((amt / totalAmount) * 100) : 0;
+                                return formatAmount(amt) + '  (' + pct + '% of total)';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            maxRotation: 35,
+                            minRotation: 0,
+                            font: { size: 11 }
+                        },
+                        grid: { display: false }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(128,128,128,0.12)' },
+                        ticks: {
+                            callback: function (value) { return getCurrencySettings().symbol + value.toLocaleString(); },
+                            font: { size: 11 }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderCreditCardSpendingCharts(data) {
+        creditCardSpendingChartData = data || [];
+        ['', 'Compact'].forEach(function (suf) {
+            const canvas = document.getElementById('creditCardSpendingChart' + suf);
+            if (canvas) {
+                canvas.style.display = creditCardSpendingChartData.length ? 'block' : 'none';
+            }
+            drawCreditCardSpendingChart(creditCardSpendingChartData, suf);
+        });
+    }
+
+    async function loadCreditCardSpendingWidget() {
+        const requestId = ++creditCardSpendingRequestSeq;
+        setCreditCardSpendingSummary('Loading...', 'Loading...');
+        setCreditCardSpendingState('Loading spending data...');
+        renderCreditCardSpendingCharts([]);
+
+        try {
+            const params = new URLSearchParams();
+            if (creditCardSpendingAccountFilter) params.set('accountId', creditCardSpendingAccountFilter);
+            if (creditCardSpendingCategoryFilter) params.set('categoryId', creditCardSpendingCategoryFilter);
+            const range = selectedMonthDateRange();
+            if (range.startDate) params.set('startDate', range.startDate);
+            if (range.endDate) params.set('endDate', range.endDate);
+            const query = params.toString();
+            const response = await fetch('/api/analytics/credit-card-spending' + (query ? ('?' + query) : ''));
+            if (!response.ok) {
+                throw new Error('credit-card-spending-request-failed');
+            }
+            const data = await response.json();
+            if (requestId !== creditCardSpendingRequestSeq) return;
+
+            const breakdown = Array.isArray(data.breakdown) ? data.breakdown : [];
+            const totalText = formatAmount(data.totalSpending || 0);
+            const topText = data.topCategory
+                ? (data.topCategory.category + ' — ' + formatAmount(data.topCategory.amount || 0))
+                : '—';
+            setCreditCardSpendingSummary(totalText, topText);
+
+            if (!breakdown.length) {
+                renderCreditCardSpendingCharts([]);
+                setCreditCardSpendingState('No credit card spending yet.\n\nUse your credit card for a transaction and your spending analysis will appear here.');
+                return;
+            }
+
+            renderCreditCardSpendingCharts(breakdown);
+            hideCreditCardSpendingState();
+        } catch (e) {
+            if (requestId !== creditCardSpendingRequestSeq) return;
+            setCreditCardSpendingSummary('—', '—');
+            renderCreditCardSpendingCharts([]);
+            setCreditCardSpendingState('Unable to load credit card spending data.\nPlease try again.', true);
+            showNotification('Unable to load credit card spending data. Please try again.', 'error');
         }
     }
 
@@ -2744,6 +3313,7 @@
                         <select class="form-select" id="editTxPayDown">
                             <option value="">None</option>
                         </select>
+                        <div class="small text-muted mt-1" id="editTxPayDownBalance"></div>
                     </div>
                 </div>
             </div>

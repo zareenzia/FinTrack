@@ -68,7 +68,9 @@
 
     async function loadAccounts() {
         try {
-            const data = await apiFetch('/api/accounts');
+            // This is the Accounts Configuration page — the one place inactive accounts/cards
+            // still need to be visible (with a status badge) so the user can reactivate them.
+            const data = await apiFetch('/api/accounts?includeInactive=true');
             allAccounts = data || [];
             window.renderTable();
             renderSummaryBreakdown();
@@ -130,8 +132,13 @@
         const typeName  = acctTypeName(a.accountType);
         const provider  = a.bankName || a.provider || '—';
         const isCreditCard = a.accountType === 'CREDIT_CARD';
-        const balClass  = isCreditCard ? 'balance-credit' : (a.currentBalance >= 0 ? 'balance-positive' : 'balance-negative');
-        const balPrefix = isCreditCard ? 'Outstanding: ' : '';
+        // Overpaying a credit card is allowed — the excess becomes a credit balance (a negative
+        // currentBalance) that offsets future purchases instead of being outstanding debt, so it
+        // gets its own label/color rather than reading as a (confusing) negative "Outstanding".
+        const hasCreditBalance = isCreditCard && a.currentBalance < 0;
+        const balClass  = isCreditCard ? (hasCreditBalance ? 'balance-positive' : 'balance-credit') : (a.currentBalance >= 0 ? 'balance-positive' : 'balance-negative');
+        const balPrefix = isCreditCard ? (hasCreditBalance ? 'Credit balance: ' : 'Outstanding: ') : '';
+        const balValue  = isCreditCard && hasCreditBalance ? Math.abs(a.currentBalance) : a.currentBalance;
         const statusBadge = a.status === 'ACTIVE'
             ? '<span class="status-badge-active">Active</span>'
             : '<span class="status-badge-inactive">Inactive</span>';
@@ -151,7 +158,7 @@
             </td>
             <td><span style="font-size:0.82rem;">${typeName}</span></td>
             <td style="font-size:0.85rem;">${escHtml(provider)}</td>
-            <td><span class="${balClass}">${balPrefix}৳${fmt(a.currentBalance)}</span>${utilizationRow}</td>
+            <td><span class="${balClass}">${balPrefix}৳${fmt(balValue)}</span>${utilizationRow}</td>
             <td>${statusBadge}</td>
             <td>
                 <div class="d-flex gap-1 flex-wrap">

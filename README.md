@@ -46,7 +46,7 @@
 ### 🏦 Accounts & Credit Cards
 - Track Bank, Cash, Mobile Financial Service (MFS), and Credit Card accounts, each with a live running balance
 - **Credit cards are modeled as liabilities, not wallets**: spending on a card increases the outstanding balance instead of decreasing it; a payment (transfer to the card) reduces it; the sign-flip is centralized in one balance service so every code path (create/edit/delete/transfer) stays consistent
-- Per-card **credit limit behavior**: `WARN` (default, purchase succeeds with a warning) or `BLOCK` (purchase rejected) when a charge would exceed the limit; overpaying a card is always blocked
+- Per-card **credit limit behavior**: `WARN` (default, purchase succeeds with a warning) or `BLOCK` (purchase rejected) when a charge would exceed the limit; overpaying a card is allowed — the excess becomes a credit balance (a negative outstanding balance) that offsets future purchases, with a non-fatal warning shown at the time of payment
 - Computed card stats: available credit, utilization %, an estimated minimum payment, and days until the statement is due
 - Per-account **ledger** view (`/api/accounts/{id}/ledger`) with a running balance, filterable by date range, category, type, or merchant text
 - Deleting an account is blocked if any transaction still references it
@@ -285,7 +285,7 @@ All routes are prefixed `/api`. Auth is carried via JWT in the `Authorization: B
 
 Notable conventions:
 - **Transfers**: `sourceAccountId`/`destinationAccountId` may each be `null` to mean "outside the tracked accounts" (external source/destination), but not both. An optional flag lets an external transfer also post as a real income/expense.
-- **Credit cards**: creating/updating a transaction against a credit-card account routes through `AccountBalanceService`, which can reject the request (400, `CreditCardValidationException`, when `creditLimitBehavior=BLOCK` and the limit would be exceeded, or on any overpayment) or attach a non-fatal `warning` string to the response body (when `creditLimitBehavior=WARN`).
+- **Credit cards**: creating/updating a transaction against a credit-card account routes through `AccountBalanceService`, which can reject the request (400, `CreditCardValidationException`, only when `creditLimitBehavior=BLOCK` and the limit would be exceeded) or attach a non-fatal `warning` string to the response body (when `creditLimitBehavior=WARN`, or whenever a payment overpays the card's outstanding balance — the excess becomes a credit balance rather than being rejected).
 - **fromSavings**: an expense with `fromSavings=true` forces `sourceAccountId` to null and nets against the month's savings total.
 
 ### 🏦 Accounts — `/api/accounts`

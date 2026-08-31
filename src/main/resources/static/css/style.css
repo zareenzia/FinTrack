@@ -1853,6 +1853,11 @@ canvas {
     height: 300px !important;
 }
 
+#creditCardSpendingChart,
+#creditCardSpendingChartCompact {
+    height: 320px !important;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
 
@@ -1920,6 +1925,8 @@ canvas {
     }
     #categoryChart { max-height: 220px !important; }
     #monthlyChart  { max-height: 250px !important; height: 250px !important; }
+    #creditCardSpendingChart,
+    #creditCardSpendingChartCompact { max-height: 260px !important; height: 260px !important; }
 
     /* ─ Settings: horizontal scrollable nav tabs ─────── */
     .settings-sidebar {
@@ -2227,6 +2234,7 @@ h3.stat-card-amount,
     --tx-income-color: #16a34a;
     --tx-expense-color:#dc2626;
     --tx-savings-color: #3b82f6;
+    --tx-transfer-color: #64748b;
     --tx-radius:       16px;
 }
 
@@ -2493,6 +2501,8 @@ h3.stat-card-amount,
 
 .dot-savings  { background: rgba(59, 130, 246, 0.15);  color: var(--tx-savings-color, #3b82f6); }
 
+.dot-transfer { background: rgba(100, 116, 139, 0.15); color: var(--tx-transfer-color, #64748b); }
+
 .tx-desc-main {
     font-size: 0.88rem;
     font-weight: 600;
@@ -2548,6 +2558,8 @@ h3.stat-card-amount,
 
 .type-savings { background: rgba(59, 130, 246, 0.12); color: var(--tx-savings-color, #3b82f6); border: 1px solid rgba(59,130,246,0.3); }
 
+.type-transfer { background: rgba(100, 116, 139, 0.12); color: var(--tx-transfer-color, #64748b); border: 1px solid rgba(100,116,139,0.3); }
+
 /* Amount */
 .tx-amount {
     font-size: 0.92rem;
@@ -2559,6 +2571,7 @@ h3.stat-card-amount,
 .amount-income  { color: var(--tx-income-color)  !important; }
 .amount-expense { color: var(--tx-expense-color) !important; }
 .amount-savings { color: var(--tx-savings-color, #3b82f6) !important; }
+.amount-transfer { color: var(--tx-transfer-color, #64748b) !important; }
 
 /* Hide Financial Values — handled via JS text-swap on stat cards only */
 
@@ -2772,6 +2785,7 @@ h3.stat-card-amount,
     --tx-income-color:  #4ade80;
     --tx-expense-color: #f87171;
     --tx-savings-color: #60a5fa;
+    --tx-transfer-color: #94a3b8;
 }
 
 /* ── Dark mode: stat card icon circles stay readable ── */

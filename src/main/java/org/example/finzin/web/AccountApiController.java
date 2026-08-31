@@ -43,9 +43,17 @@ public class AccountApiController {
     }
 
     @GetMapping
-    public List<Map<String, Object>> getAccounts(HttpServletRequest request) {
+    public List<Map<String, Object>> getAccounts(HttpServletRequest request,
+                                                  @RequestParam(name = "includeInactive", defaultValue = "false") boolean includeInactive) {
         Long userId = getUserId(request);
-        return accountRepository.findByUserId(userId).stream()
+        // Inactive (deactivated) accounts/cards are only ever surfaced on the Accounts
+        // Configuration page (which passes includeInactive=true to manage/reactivate them).
+        // Every other consumer of this endpoint — dropdowns, filters, dashboards, planners —
+        // must only ever see active accounts.
+        List<AccountEntity> accounts = includeInactive
+                ? accountRepository.findByUserId(userId)
+                : accountRepository.findByUserIdAndStatus(userId, "ACTIVE");
+        return accounts.stream()
                 .map(this::toAccountResponse)
                 .collect(Collectors.toList());
     }
