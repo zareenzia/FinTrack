@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -50,7 +52,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * filter. So "authenticated" here means stubbing {@code jwtTokenProvider.validateToken/extractUserId}
  * and sending a real {@code Authorization: Bearer <token>} header, not a {@code .requestAttr(...)}.
  */
-@WebMvcTest(AuthController.class)
+@WebMvcTest(controllers = AuthController.class, excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = org.example.finzin.config.JwtAuthFilter.class))
 class AuthControllerTest {
 
     private static final Long USER_ID = 42L;
@@ -580,6 +582,77 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.message").value("Password reset successful. You can now log in."));
 
         verify(passwordResetService).resetPassword("goodtoken", "New1!aaaa");
+    }
+
+    // ══════════════════ POST /api/auth/verify ══════════════════
+
+    @Test
+    void verifyEmailReturnsBadRequestWhenTokenMissing() throws Exception {
+        mockMvc.perform(post("/api/auth/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Verification token is required"));
+
+        verify(emailVerificationService, never()).verifyEmail(any());
+    }
+
+    @Test
+    void verifyEmailReturnsBadRequestWhenTokenInvalidOrExpired() throws Exception {
+        org.mockito.Mockito.doThrow(new IllegalArgumentException("This verification link has expired. Please request a new one."))
+                .when(emailVerificationService).verifyEmail("expiredtoken");
+
+        mockMvc.perform(post("/api/auth/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"token\":\"expiredtoken\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("This verification link has expired. Please request a new one."));
+    }
+
+    @Test
+    void verifyEmailReturnsOkOnSuccess() throws Exception {
+        mockMvc.perform(post("/api/auth/verify")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"token\":\"goodtoken\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Email verified successfully. You can now use all features."));
+
+        verify(emailVerificationService).verifyEmail("goodtoken");
+    }
+
+    // ══════════════════ POST /api/auth/resend-verification ══════════════════
+
+    @Test
+    void resendVerificationReturnsUnauthorizedWhenNoHeader() throws Exception {
+        mockMvc.perform(post("/api/auth/resend-verification"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Unauthorized"));
+
+        verify(emailVerificationService, never()).resendVerificationEmail(any());
+    }
+
+    @Test
+    void resendVerificationReturnsOkOnSuccess() throws Exception {
+        authenticated();
+
+        mockMvc.perform(post("/api/auth/resend-verification")
+                        .header("Authorization", "Bearer " + TOKEN))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Verification email sent. Please check your inbox."));
+
+        verify(emailVerificationService).resendVerificationEmail(USER_ID);
+    }
+
+    @Test
+    void resendVerificationReturnsBadRequestWhenServiceThrows() throws Exception {
+        authenticated();
+        org.mockito.Mockito.doThrow(new IllegalArgumentException("User not found."))
+                .when(emailVerificationService).resendVerificationEmail(USER_ID);
+
+        mockMvc.perform(post("/api/auth/resend-verification")
+                        .header("Authorization", "Bearer " + TOKEN))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("User not found."));
     }
 
     // ══════════════════ POST /api/auth/profile-picture ══════════════════

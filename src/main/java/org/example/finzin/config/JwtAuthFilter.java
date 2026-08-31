@@ -9,6 +9,7 @@ import org.example.finzin.entity.UserEntity;
 import org.example.finzin.gamification.GamificationEvent;
 import org.example.finzin.gamification.GamificationEventType;
 import org.example.finzin.repository.UserRepository;
+import org.example.finzin.service.EmailService;
 import org.example.finzin.service.JwtTokenProvider;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
@@ -27,6 +28,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtTokenProvider jwtTokenProvider;
     private final ApplicationEventPublisher eventPublisher;
     private final UserRepository userRepository;
+    private final EmailService emailService;
 
     // Guards the DAILY_ACTIVE publish so it only does real work once per user per day, keeping
     // this cheap on the hot request path — the DB-level xp_history unique constraint is the
@@ -35,10 +37,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final Map<Long, LocalDate> lastActiveDayByUser = new ConcurrentHashMap<>();
 
     public JwtAuthFilter(JwtTokenProvider jwtTokenProvider, ApplicationEventPublisher eventPublisher,
-                          UserRepository userRepository) {
+                          UserRepository userRepository, EmailService emailService) {
         this.jwtTokenProvider = jwtTokenProvider;
         this.eventPublisher = eventPublisher;
         this.userRepository = userRepository;
+        this.emailService = emailService;
     }
     
     @Override
@@ -96,7 +99,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     System.out.println("✓ UserId set to: " + userId + " for: " + requestURI);
                     markDailyActive(userId);
 
-                    if (MUTATING_METHODS.contains(request.getMethod())) {
+                    if (MUTATING_METHODS.contains(request.getMethod()) && emailService.isConfigured()) {
+                        // Only enforced once outbound mail is actually configured — otherwise
+                        // newly-registered users would never receive a verification link and
+                        // would be locked out of the app permanently. See EmailService.isConfigured().
                         UserEntity user = userRepository.findById(userId).orElse(null);
                         if (user != null && !user.isEmailVerified()) {
                             response.setStatus(HttpServletResponse.SC_FORBIDDEN);

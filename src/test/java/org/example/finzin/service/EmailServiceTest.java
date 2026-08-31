@@ -37,6 +37,22 @@ class EmailServiceTest {
         field.set(service, value);
     }
 
+    /** Sets the private @Value-injected mailHost field, since we're not booting a Spring context. */
+    private void setMailHost(EmailService service, String value) throws Exception {
+        Field field = EmailService.class.getDeclaredField("mailHost");
+        field.setAccessible(true);
+        field.set(service, value);
+    }
+
+    /** Convenience: builds a service with a mail sender present and a non-blank host, mirroring
+     *  a fully-configured production setup (as opposed to a bean created from an empty-string
+     *  default like {@code spring.mail.host=${MAIL_HOST:}}). */
+    private EmailService configuredService() throws Exception {
+        EmailService service = new EmailService(Optional.of(mailSender));
+        setMailHost(service, "smtp.example.com");
+        return service;
+    }
+
     // ================================================================================
     // isConfigured
     // ================================================================================
@@ -49,10 +65,20 @@ class EmailServiceTest {
     }
 
     @Test
-    void isConfiguredReturnsTrueWhenMailSenderIsPresent() {
-        EmailService service = new EmailService(Optional.of(mailSender));
+    void isConfiguredReturnsTrueWhenMailSenderIsPresent() throws Exception {
+        EmailService service = configuredService();
 
         assertTrue(service.isConfigured());
+    }
+
+    @Test
+    void isConfiguredReturnsFalseWhenMailSenderIsPresentButHostIsBlank() {
+        // Mirrors production: spring.mail.host=${MAIL_HOST:} still satisfies Spring's
+        // @ConditionalOnProperty and yields a JavaMailSender bean even when MAIL_HOST is unset,
+        // so isConfigured() must also check that the host itself is non-blank.
+        EmailService service = new EmailService(Optional.of(mailSender));
+
+        assertFalse(service.isConfigured());
     }
 
     // ================================================================================
@@ -71,8 +97,18 @@ class EmailServiceTest {
     }
 
     @Test
-    void sendPasswordResetEmailSendsMessageWithExpectedFieldsWhenConfigured() throws Exception {
+    void sendPasswordResetEmailThrowsIllegalStateWhenHostIsBlankEvenIfMailSenderPresent() {
         EmailService service = new EmailService(Optional.of(mailSender));
+
+        assertThrows(IllegalStateException.class,
+                () -> service.sendPasswordResetEmail("user@example.com", "Nabil", "https://app.test/reset?token=abc"));
+
+        verifyNoInteractions(mailSender);
+    }
+
+    @Test
+    void sendPasswordResetEmailSendsMessageWithExpectedFieldsWhenConfigured() throws Exception {
+        EmailService service = configuredService();
         setFromAddress(service, "TakaFlow <no-reply@takaflow.local>");
 
         service.sendPasswordResetEmail("user@example.com", "Nabil", "https://app.test/reset-password?token=abc123");
@@ -92,7 +128,7 @@ class EmailServiceTest {
 
     @Test
     void sendPasswordResetEmailUsesGenericGreetingWhenFullNameIsNull() throws Exception {
-        EmailService service = new EmailService(Optional.of(mailSender));
+        EmailService service = configuredService();
         setFromAddress(service, "no-reply@takaflow.local");
 
         service.sendPasswordResetEmail("user@example.com", null, "https://app.test/reset?token=xyz");
@@ -104,7 +140,7 @@ class EmailServiceTest {
 
     @Test
     void sendPasswordResetEmailUsesGenericGreetingWhenFullNameIsBlank() throws Exception {
-        EmailService service = new EmailService(Optional.of(mailSender));
+        EmailService service = configuredService();
         setFromAddress(service, "no-reply@takaflow.local");
 
         service.sendPasswordResetEmail("user@example.com", "   ", "https://app.test/reset?token=xyz");
