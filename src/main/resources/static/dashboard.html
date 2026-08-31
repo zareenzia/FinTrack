@@ -1783,9 +1783,9 @@
             .filter(Boolean);
         if (!containers.length) return;
         try {
-            const items = await fetch('/api/recurring-transactions/upcoming?days=14').then(r => r.json());
+            const items = await fetch('/api/recurring-transactions/upcoming?days=3').then(r => r.json());
             if (!items.length) {
-                containers.forEach(c => c.innerHTML = '<p class="text-muted small mb-0">No upcoming recurring transactions in the next 14 days.</p>');
+                containers.forEach(c => c.innerHTML = '<p class="text-muted small mb-0">No upcoming recurring transactions in the next 3 days.</p>');
                 return;
             }
             const today = new Date(); today.setHours(0, 0, 0, 0);

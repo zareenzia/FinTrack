@@ -1845,7 +1845,12 @@
     function rtNextPage() { rtCurrentPage++; renderRtTable(); }
 
     function isRtPending(r) {
-        return r.status === 'ACTIVE' && new Date(r.nextExecutionDate + 'T00:00:00') <= new Date(new Date().toDateString());
+        if (r.status !== 'ACTIVE') return false;
+        const due = new Date(r.nextExecutionDate + 'T00:00:00');
+        const today = new Date(new Date().toDateString());
+        const diffDays = Math.round((due - today) / 86400000);
+        // Show as pending when due within the next 3 days or already overdue
+        return diffDays <= 3;
     }
 
     function renderPendingSection() {
@@ -1865,8 +1870,12 @@
         const today = new Date(new Date().toDateString());
         body.innerHTML = pending.map(r => {
             const due = new Date(r.nextExecutionDate + 'T00:00:00');
-            const daysOverdue = Math.round((today - due) / 86400000);
-            const whenText = daysOverdue <= 0 ? 'due today' : `overdue by ${daysOverdue} day${daysOverdue > 1 ? 's' : ''}`;
+            const diffDays = Math.round((due - today) / 86400000);
+            let whenText;
+            if (diffDays < 0) whenText = `overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) > 1 ? 's' : ''}`;
+            else if (diffDays === 0) whenText = 'due today';
+            else if (diffDays === 1) whenText = 'due tomorrow';
+            else whenText = `due in ${diffDays} days`;
             return `
             <div class="rt-pending-row" data-rt-id="${r.id}">
                 <div class="rt-pending-info">
