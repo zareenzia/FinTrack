@@ -13,6 +13,7 @@ import org.example.finzin.repository.NoteRepository;
 import org.example.finzin.repository.TransactionRepository;
 import org.example.finzin.service.FinancialSummaryService;
 import org.example.finzin.service.AccountBalanceService;
+import org.example.finzin.service.CreditCardService;
 import org.example.finzin.service.CreditCardValidationException;
 import org.example.finzin.ai.rag.DocumentIndexer;
 import org.example.finzin.gamification.GamificationEvent;
@@ -30,17 +31,21 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.time.format.DateTimeParseException;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
@@ -70,7 +75,10 @@ public class FinanceApiController {
     
     private Long getUserId(HttpServletRequest request) {
         Object userId = request.getAttribute("userId");
-        return userId != null ? (Long) userId : 1L; // Default to Leah (user 1) if not authenticated
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
+        }
+        return (Long) userId;
     }
 
     // ============== CATEGORY ENDPOINTS ==============
@@ -298,6 +306,11 @@ public class FinanceApiController {
             }
         }
 
+        String expenseDestinationError = validateExpenseCreditCardDestination(userId, normalizedType, body.destinationAccountId());
+        if (expenseDestinationError != null) {
+            return ResponseEntity.badRequest().body(Map.of("error", expenseDestinationError));
+        }
+
         boolean fromSavings = normalizedType.equals("expense") && Boolean.TRUE.equals(body.fromSavings());
 
         LocalDateTime date = parseDate(body.date);
@@ -366,6 +379,11 @@ public class FinanceApiController {
             }
         }
 
+        String expenseDestinationError = validateExpenseCreditCardDestination(userId, normalizedType, body.destinationAccountId());
+        if (expenseDestinationError != null) {
+            return ResponseEntity.badRequest().body(Map.of("error", expenseDestinationError));
+        }
+
         boolean fromSavings = normalizedType.equals("expense") && Boolean.TRUE.equals(body.fromSavings());
 
         Long oldSourceAccountId = entity.getSourceAccountId();
@@ -411,6 +429,21 @@ public class FinanceApiController {
         accountBalanceService.deleteTransaction(userId, entity);
         documentIndexer.deleteTransaction(userId, id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * An expense may optionally name a destinationAccountId to represent a credit card bill payment
+     * recorded as a normal categorized expense instead of an uncategorized transfer (see
+     * AccountBalanceService.applyBalanceChange) — but only ever a credit card the user owns.
+     * Returns null when there's nothing to reject.
+     */
+    private String validateExpenseCreditCardDestination(Long userId, String normalizedType, Long destinationAccountId) {
+        if (!normalizedType.equals("expense") || destinationAccountId == null) return null;
+        AccountEntity destination = accountRepository.findById(destinationAccountId).orElse(null);
+        if (destination == null || !destination.getUserId().equals(userId) || !CreditCardService.isCreditCard(destination)) {
+            return "The linked account for a bill payment must be one of your credit cards.";
+        }
+        return null;
     }
 
     // ============== NOTE ENDPOINTS ==============
@@ -588,6 +621,112 @@ public class FinanceApiController {
         return response;
     }
 
+    @GetMapping("/analytics/credit-card-spending")
+    public ResponseEntity<?> creditCardSpending(
+            HttpServletRequest request,
+            @RequestParam(required = false) Long accountId,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        Long userId = getUserId(request);
+
+        LocalDate start = parseLocalDateParam(startDate);
+        LocalDate end = parseLocalDateParam(endDate);
+        if (startDate != null && !startDate.isBlank() && start == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid startDate. Use YYYY-MM-DD."));
+        }
+        if (endDate != null && !endDate.isBlank() && end == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid endDate. Use YYYY-MM-DD."));
+        }
+        if (start != null && end != null && end.isBefore(start)) {
+            return ResponseEntity.badRequest().body(Map.of("error", "endDate must be on or after startDate."));
+        }
+
+        List<AccountEntity> ownedAccounts = accountRepository.findByUserId(userId);
+        Set<Long> creditCardAccountIds = ownedAccounts.stream()
+                .filter(CreditCardService::isCreditCard)
+                .map(AccountEntity::getId)
+                .collect(Collectors.toCollection(HashSet::new));
+
+        if (accountId != null && !creditCardAccountIds.contains(accountId)) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid credit card account."));
+        }
+
+        List<CategoryEntity> ownedCategories = categoryRepository.findByUserId(userId);
+        Map<Long, CategoryEntity> categoryById = ownedCategories.stream()
+                .collect(Collectors.toMap(CategoryEntity::getId, c -> c));
+
+        if (categoryId != null && !categoryById.containsKey(categoryId)) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid category."));
+        }
+
+        List<TransactionEntity> transactions = (start != null && end != null)
+                ? transactionRepository.findByUserIdAndDateRange(userId, start.atStartOfDay(), end.plusDays(1).atStartOfDay())
+                : transactionRepository.findByUserId(userId);
+
+        Map<Long, CreditCardCategoryAccumulator> grouped = new LinkedHashMap<>();
+        for (TransactionEntity tx : transactions) {
+            if (tx.getCategory() == null || tx.getSourceAccountId() == null) continue;
+
+            long sourceAccountId = tx.getSourceAccountId();
+            if (accountId != null) {
+                if (sourceAccountId != accountId) continue;
+            } else if (!creditCardAccountIds.contains(sourceAccountId)) {
+                continue;
+            }
+
+            Long txCategoryId = tx.getCategory().getId();
+            if (categoryId != null && !categoryId.equals(txCategoryId)) continue;
+
+            LocalDate txDate = tx.getDate().toLocalDate();
+            if (start != null && txDate.isBefore(start)) continue;
+            if (end != null && txDate.isAfter(end)) continue;
+
+            double signedAmount;
+            if ("expense".equals(tx.getTransactionType())) {
+                signedAmount = tx.getAmount();
+            } else if ("income".equals(tx.getTransactionType())) {
+                // Existing balance semantics treat credit-card income as refund/adjustment that reduces debt.
+                signedAmount = -tx.getAmount();
+            } else {
+                continue;
+            }
+
+            CategoryEntity category = categoryById.get(txCategoryId);
+            if (category == null) continue;
+
+            CreditCardCategoryAccumulator acc = grouped.computeIfAbsent(txCategoryId,
+                    k -> new CreditCardCategoryAccumulator(category.getName(), category.getColor()));
+            acc.total += signedAmount;
+            acc.count += 1;
+        }
+
+        List<Map<String, Object>> breakdown = grouped.entrySet().stream()
+                .map(entry -> {
+                    CreditCardCategoryAccumulator acc = entry.getValue();
+                    Map<String, Object> item = new LinkedHashMap<>();
+                    item.put("categoryId", entry.getKey());
+                    item.put("category", acc.category);
+                    item.put("amount", roundMoney(acc.total));
+                    item.put("count", acc.count);
+                    item.put("color", acc.color);
+                    return item;
+                })
+                .filter(item -> ((Double) item.get("amount")) > 0)
+                .sorted((a, b) -> Double.compare((Double) b.get("amount"), (Double) a.get("amount")))
+                .collect(Collectors.toList());
+
+        double totalSpending = breakdown.stream()
+                .mapToDouble(item -> (Double) item.get("amount"))
+                .sum();
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("totalSpending", roundMoney(totalSpending));
+        response.put("topCategory", breakdown.isEmpty() ? null : breakdown.get(0));
+        response.put("breakdown", breakdown);
+        return ResponseEntity.ok(response);
+    }
+
     // ============== HELPER METHODS ==============
     private Map<String, Object> toCategoryResponse(CategoryEntity entity) {
         Map<String, Object> map = new LinkedHashMap<>();
@@ -682,6 +821,21 @@ public class FinanceApiController {
         return LocalDateTime.now();
     }
 
+    private LocalDate parseLocalDateParam(String dateString) {
+        if (dateString == null || dateString.isBlank()) {
+            return null;
+        }
+        try {
+            return LocalDate.parse(dateString);
+        } catch (DateTimeParseException ignored) {
+            return null;
+        }
+    }
+
+    private double roundMoney(double value) {
+        return Math.round(value * 100.0) / 100.0;
+    }
+
     // ============== INNER CLASSES ==============
     private static class BreakdownAccumulator {
         private double total;
@@ -692,6 +846,18 @@ public class FinanceApiController {
         private double income;
         private double expense;
         private double savings;
+    }
+
+    private static class CreditCardCategoryAccumulator {
+        private final String category;
+        private final String color;
+        private double total;
+        private int count;
+
+        private CreditCardCategoryAccumulator(String category, String color) {
+            this.category = category;
+            this.color = color;
+        }
     }
 
     private record CategoryRequest(String name, String description, String color, String icon, String categoryType) {

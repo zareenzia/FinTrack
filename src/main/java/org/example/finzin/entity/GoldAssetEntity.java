@@ -46,6 +46,10 @@ public class GoldAssetEntity {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    /** User-defined manual row order for the Gold Inventory table (drag-and-drop). Lower = earlier. */
+    @Column(nullable = false)
+    private Integer sortOrder = 0;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -88,6 +92,8 @@ public class GoldAssetEntity {
     public void setCurrentValue(Double currentValue) { this.currentValue = currentValue; }
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
+    public Integer getSortOrder() { return sortOrder; }
+    public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

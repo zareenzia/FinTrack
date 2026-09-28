@@ -34,6 +34,9 @@ public class UserEntity {
     @Column(nullable = true)
     private String profilePicture;
 
+    @Column(nullable = false)
+    private boolean emailVerified = false;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -108,5 +111,13 @@ public class UserEntity {
 
     public void setProfilePicture(String profilePicture) {
         this.profilePicture = profilePicture;
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerified;
+    }
+
+    public void setEmailVerified(boolean emailVerified) {
+        this.emailVerified = emailVerified;
     }
 }

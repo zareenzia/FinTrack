@@ -11,6 +11,11 @@ import java.util.List;
 public interface GoldAssetRepository extends JpaRepository<GoldAssetEntity, Long> {
     List<GoldAssetEntity> findByUserId(Long userId);
 
+    List<GoldAssetEntity> findByUserIdOrderBySortOrderAscIdAsc(Long userId);
+
+    @Query("SELECT MAX(a.sortOrder) FROM GoldAssetEntity a WHERE a.userId = :userId")
+    Integer findMaxSortOrderByUserId(@Param("userId") Long userId);
+
     @Query("SELECT SUM(a.currentValue) FROM GoldAssetEntity a WHERE a.userId = :userId AND a.currentValue IS NOT NULL")
     Double sumCurrentValueByUserId(@Param("userId") Long userId);
 

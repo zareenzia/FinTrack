@@ -47,12 +47,13 @@ public class CreditCardService {
     /**
      * Validates a would-be transaction against credit-card constraints BEFORE it's persisted.
      * Returns a non-null warning message when the account's mode is WARN and the limit would be
-     * exceeded; returns null when there's nothing to flag. Throws for BLOCK-mode limit violations
-     * or any overpayment (overpayment is always enforced — not configurable, per spec).
+     * exceeded, or when a payment overpays the card (the excess becomes a credit balance — see
+     * below); returns null when there's nothing to flag. Throws only for BLOCK-mode limit
+     * violations — overpayment is never blocked, it's a normal real-world scenario.
      */
     public String validate(Long userId, Long sourceAccountId, Long destinationAccountId, String type, double amount) {
         if (sourceAccountId != null) {
-            AccountEntity source = findOwned(sourceAccountId, userId);
+            AccountEntity source = findOwnedForUpdate(sourceAccountId, userId);
             if (isCreditCard(source) && DEBITING_SOURCE_TYPES.contains(type)) {
                 Double limit = source.getCreditLimit();
                 double projectedOutstanding = source.getCurrentBalance() + amount;
@@ -67,10 +68,19 @@ public class CreditCardService {
                 }
             }
         }
-        if ("transfer".equals(type) && destinationAccountId != null) {
-            AccountEntity destination = findOwned(destinationAccountId, userId);
+        // A payment can be recorded either as an uncategorized transfer or as a categorized expense
+        // that also names a credit card destination (see AccountBalanceService.applyBalanceChange).
+        // Paying more than what's currently owed is allowed — real card issuers accept this and
+        // simply carry the excess forward as a credit balance (a negative currentBalance) that
+        // offsets the cardholder's next purchases instead of being outstanding debt. We only warn
+        // so the user knows the extra amount isn't lost, not block the transaction.
+        if (("transfer".equals(type) || "expense".equals(type)) && destinationAccountId != null) {
+            AccountEntity destination = findOwnedForUpdate(destinationAccountId, userId);
             if (isCreditCard(destination) && amount > destination.getCurrentBalance()) {
-                throw new CreditCardValidationException("Payment exceeds current outstanding balance.");
+                double excess = amount - destination.getCurrentBalance();
+                return String.format(Locale.ROOT,
+                        "This payment is ৳%.2f more than the outstanding balance — the extra amount will be added to the card as an available credit balance.",
+                        excess);
             }
         }
         return null;
@@ -79,9 +89,12 @@ public class CreditCardService {
     public CreditCardStats getStats(AccountEntity account) {
         double outstanding = account.getCurrentBalance();
         Double limit = account.getCreditLimit();
-        double availableCredit = (limit != null) ? Math.max(0, limit - outstanding) : 0;
-        double utilizationPercent = (limit != null && limit > 0) ? (outstanding / limit) * 100 : 0;
-        double minimumPaymentEstimate = Math.max(MIN_PAYMENT_FLOOR, outstanding * MIN_PAYMENT_RATE);
+        // A credit balance (outstanding <= 0, from an overpayment) means the full limit is
+        // available and nothing is due, rather than the raw arithmetic producing a value above
+        // the limit or a negative minimum payment.
+        double availableCredit = (limit != null) ? Math.max(0, limit - Math.max(0, outstanding)) : 0;
+        double utilizationPercent = (limit != null && limit > 0) ? (Math.max(0, outstanding) / limit) * 100 : 0;
+        double minimumPaymentEstimate = outstanding <= 0 ? 0.0 : Math.max(MIN_PAYMENT_FLOOR, outstanding * MIN_PAYMENT_RATE);
         Integer daysUntilDue = computeDaysUntilDue(account.getDueDay());
         return new CreditCardStats(availableCredit, utilizationPercent, minimumPaymentEstimate, daysUntilDue);
     }
@@ -130,6 +143,20 @@ public class CreditCardService {
 
     private AccountEntity findOwned(Long accountId, Long userId) {
         AccountEntity account = accountRepository.findById(accountId).orElse(null);
+        return (account != null && account.getUserId().equals(userId)) ? account : null;
+    }
+
+    /**
+     * Same as {@link #findOwned} but with a pessimistic write lock, for use on the transaction
+     * create/update path only (never for read-only display like {@link #getLedger}). This must be
+     * the FIRST read of the account within the enclosing transaction: Hibernate returns the same
+     * already-managed Java instance on a later re-fetch by id rather than refreshing its fields, so
+     * if an earlier, unlocked read had already cached the entity, re-fetching it with a lock later
+     * (e.g. in AccountBalanceService.applyBalanceChange) would still hand back the stale snapshot —
+     * the DB row lock would be acquired correctly, but the balance math would run on stale data.
+     */
+    private AccountEntity findOwnedForUpdate(Long accountId, Long userId) {
+        AccountEntity account = accountRepository.findByIdForUpdate(accountId).orElse(null);
         return (account != null && account.getUserId().equals(userId)) ? account : null;
     }
 }

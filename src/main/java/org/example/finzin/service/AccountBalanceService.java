@@ -86,23 +86,55 @@ public class AccountBalanceService {
      * the destination). For a CREDIT_CARD account in either role, the sign is inverted — spending
      * increases what's owed, a payment (transfer-in) decreases it — because {@code currentBalance}
      * on a credit card means outstanding debt, not available funds.
+     *
+     * An "expense" can ALSO carry a destinationAccountId, but ONLY to represent a credit card bill
+     * payment recorded as a normal categorized expense (e.g. category "Loan Payment") instead of an
+     * uncategorized transfer — this is the one case where an expense still needs to move a second
+     * account's balance. It's scoped tightly to CREDIT_CARD destinations only: an expense has no
+     * other legitimate reason to touch a second account, so a destination that resolves to anything
+     * else is silently ignored here (FinanceApiController rejects it earlier at the input layer).
+     *
+     * Every involved account is fetched with a pessimistic write lock ({@link
+     * AccountRepository#findByIdForUpdate}) BEFORE either is mutated, so two concurrent calls
+     * touching the same account (e.g. several rows from the bulk "Add Transaction" table, which
+     * submits one request per row in parallel) serialize on that row instead of both reading the
+     * same balance and one silently overwriting the other's update. Both ids are locked in a fixed
+     * order (lower id first) rather than source-then-destination, so that a transfer A->B racing
+     * with a concurrent transfer B->A can never deadlock by each holding one row and waiting on
+     * the other.
      */
     @Transactional
     public void applyBalanceChange(Long userId, Long sourceAccountId, Long destinationAccountId, String type, double amount, boolean reverse) {
         double multiplier = reverse ? -1 : 1;
-        if (sourceAccountId != null) {
-            AccountEntity account = accountRepository.findById(sourceAccountId).orElse(null);
-            if (account != null && account.getUserId().equals(userId)) {
-                account.setCurrentBalance(account.getCurrentBalance() + multiplier * signedDelta(account, type, amount, true));
-                accountRepository.save(account);
+        boolean destinationCouldApply = destinationAccountId != null
+                && ("transfer".equals(type) || "expense".equals(type))
+                && !destinationAccountId.equals(sourceAccountId); // defensive — API layer already rejects a self-referencing entry
+
+        AccountEntity account = null;
+        AccountEntity destination = null;
+        if (sourceAccountId != null && destinationCouldApply) {
+            if (sourceAccountId < destinationAccountId) {
+                account = accountRepository.findByIdForUpdate(sourceAccountId).orElse(null);
+                destination = accountRepository.findByIdForUpdate(destinationAccountId).orElse(null);
+            } else {
+                destination = accountRepository.findByIdForUpdate(destinationAccountId).orElse(null);
+                account = accountRepository.findByIdForUpdate(sourceAccountId).orElse(null);
             }
+        } else {
+            if (sourceAccountId != null) account = accountRepository.findByIdForUpdate(sourceAccountId).orElse(null);
+            if (destinationCouldApply) destination = accountRepository.findByIdForUpdate(destinationAccountId).orElse(null);
         }
-        if ("transfer".equals(type) && destinationAccountId != null) {
-            AccountEntity destination = accountRepository.findById(destinationAccountId).orElse(null);
-            if (destination != null && destination.getUserId().equals(userId)) {
-                destination.setCurrentBalance(destination.getCurrentBalance() + multiplier * signedDelta(destination, type, amount, false));
-                accountRepository.save(destination);
-            }
+
+        if (account != null && account.getUserId().equals(userId)) {
+            account.setCurrentBalance(account.getCurrentBalance() + multiplier * signedDelta(account, type, amount, true));
+            accountRepository.save(account);
+        }
+
+        boolean destinationApplies = destinationCouldApply
+                && ("transfer".equals(type) || CreditCardService.isCreditCard(destination));
+        if (destinationApplies && destination != null && destination.getUserId().equals(userId)) {
+            destination.setCurrentBalance(destination.getCurrentBalance() + multiplier * signedDelta(destination, type, amount, false));
+            accountRepository.save(destination);
         }
     }
 
@@ -124,6 +156,9 @@ public class AccountBalanceService {
                 default -> 0;
             };
         }
-        return "transfer".equals(type) ? amount : 0;
+        // Destination role: a transfer's destination is credited; an expense's destination (only
+        // ever a credit card being paid down, see applyBalanceChange) is treated the same way, so
+        // signedDelta's credit-card sign-inversion correctly turns this into a debt reduction.
+        return ("transfer".equals(type) || "expense".equals(type)) ? amount : 0;
     }
 }

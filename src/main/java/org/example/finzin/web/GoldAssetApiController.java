@@ -13,6 +13,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
@@ -42,7 +43,10 @@ public class GoldAssetApiController {
 
     private Long getUserId(HttpServletRequest request) {
         Object id = request.getAttribute("userId");
-        return id != null ? (Long) id : 1L;
+        if (id == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
+        }
+        return (Long) id;
     }
 
     // ── ASSETS ────────────────────────────────────────────────────────────────
@@ -103,6 +107,20 @@ public class GoldAssetApiController {
         }
         assetService.deleteAsset(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/assets/reorder")
+    public ResponseEntity<?> reorderAssets(HttpServletRequest request, @RequestBody ReorderRequest body) {
+        Long userId = getUserId(request);
+        if (body == null || body.order() == null || body.order().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "order is required"));
+        }
+        try {
+            assetService.reorderAssets(userId, body.order());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+        return ResponseEntity.ok(Map.of("message", "Order saved"));
     }
 
     // ── PRICES ────────────────────────────────────────────────────────────────
@@ -214,6 +232,7 @@ public class GoldAssetApiController {
         m.put("gainLoss", currentValue - purchasePrice);
         m.put("gainLossPct", purchasePrice > 0 ? ((currentValue - purchasePrice) / purchasePrice) * 100 : 0);
         m.put("notes", a.getNotes());
+        m.put("sortOrder", a.getSortOrder());
         m.put("createdAt", a.getCreatedAt() != null ? a.getCreatedAt().toString() : null);
         m.put("updatedAt", a.getUpdatedAt() != null ? a.getUpdatedAt().toString() : null);
         return m;
@@ -267,5 +286,9 @@ public class GoldAssetApiController {
     private record PriceModeRequest(
             String mode,
             String manualPricesJson
+    ) {}
+
+    private record ReorderRequest(
+            List<Long> order
     ) {}
 }

@@ -1,5 +1,5 @@
 /**
- * assets.js — Gold Assets module for FinTrack
+ * assets.js — Gold Assets module for TakaFlow
  * Handles CRUD for gold assets, gold price sync, pricing modes,
  * weight conversions, and dashboard rendering.
  */
@@ -12,7 +12,8 @@
     const RATI_PER_GRAM  = 96 / 11.664;
     const POINT_PER_GRAM = 480 / 11.664;
 
-    const PAGE_SIZE = 10;
+    let PAGE_SIZE = 10;
+    let summaryValuesHidden = false;
 
     // ── State ─────────────────────────────────────────────────────────────────
     let allAssets    = [];
@@ -24,6 +25,7 @@
 
     // ── Init ──────────────────────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', function () {
+        loadSummaryVisibilityState();
         loadAll();
     });
 
@@ -96,18 +98,66 @@
 
     // ── SUMMARY ───────────────────────────────────────────────────────────────
 
+    /** Per-user localStorage key so the privacy toggle doesn't leak across accounts on shared machines. */
+    function getUserStorageKey(baseKey) {
+        try {
+            const raw = localStorage.getItem('finzin_user') || localStorage.getItem('user');
+            const u = JSON.parse(raw);
+            if (u && u.id) return baseKey + '_' + u.id;
+        } catch (e) { /* ignore */ }
+        return baseKey;
+    }
+
+    function loadSummaryVisibilityState() {
+        try {
+            summaryValuesHidden = localStorage.getItem(getUserStorageKey('assets_summary_hidden')) === 'true';
+        } catch (e) { /* ignore */ }
+        applyAssetSummaryVisibility();
+    }
+
+    const SUMMARY_VALUE_IDS = ['totalGoldValue', 'totalWeight', 'numberOfAssets', 'currentGoldPrice'];
+    const summaryDisplayValues = {}; // id -> latest real (unmasked) text, refreshed on every loadSummary()
+
+    function setSummaryValue(id, text) {
+        summaryDisplayValues[id] = text;
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = summaryValuesHidden ? '••••••' : text;
+        el.classList.toggle('is-masked', summaryValuesHidden);
+    }
+
+    function applyAssetSummaryVisibility() {
+        SUMMARY_VALUE_IDS.forEach(function (id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const real = summaryDisplayValues[id];
+            el.textContent = summaryValuesHidden ? '••••••' : (real !== undefined ? real : el.textContent);
+            el.classList.toggle('is-masked', summaryValuesHidden);
+        });
+        const icon = document.querySelector('#assetSummaryEyeBtn i');
+        if (icon) icon.className = summaryValuesHidden ? 'fas fa-eye-slash' : 'fas fa-eye';
+    }
+
+    window.toggleAssetSummaryVisibility = function () {
+        summaryValuesHidden = !summaryValuesHidden;
+        try {
+            localStorage.setItem(getUserStorageKey('assets_summary_hidden'), String(summaryValuesHidden));
+        } catch (e) { /* ignore */ }
+        applyAssetSummaryVisibility();
+    };
+
     async function loadSummary() {
         try {
             summary = await apiFetch('/api/gold/summary');
             if (!summary) return;
-            setEl('totalGoldValue', fmt(summary.totalGoldValue));
-            setEl('numberOfAssets', summary.numberOfAssets);
+            setSummaryValue('totalGoldValue', fmt(summary.totalGoldValue));
+            setSummaryValue('numberOfAssets', String(summary.numberOfAssets));
             const vori = summary.totalWeightVori != null
                 ? summary.totalWeightVori.toFixed(4) + ' Vori'
                 : (summary.totalWeightGrams != null ? summary.totalWeightGrams.toFixed(2) + ' g' : '—');
-            setEl('totalWeight', vori);
+            setSummaryValue('totalWeight', vori);
             const p22 = summary.pricesPerGram && summary.pricesPerGram['22K'];
-            setEl('currentGoldPrice', p22 ? '৳' + fmt(p22) + ' /g' : '—');
+            setSummaryValue('currentGoldPrice', p22 ? '৳' + fmt(p22) + ' /g' : '—');
             updatePriceModeUI(summary.priceMode);
         } catch (e) {
             console.error('loadSummary error:', e);
@@ -204,7 +254,7 @@
         const rows = purities.filter(pu => byPurity[pu]);
 
         if (rows.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">No price data. Click "Sync Gold Prices".</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">No price data. Click "Sync Gold Prices".</td></tr>';
             return;
         }
 
@@ -216,14 +266,12 @@
             const voriPrice  = rec['VORI']  ? rec['VORI'].marketPrice  : (gramPrice   ? gramPrice * 11.664 : null);
             const anaPrice   = rec['ANA']   ? rec['ANA'].marketPrice   : (gramPrice   ? gramPrice * 11.664 / 16 : null);
             const ratiPrice  = rec['RATI']  ? rec['RATI'].marketPrice  : (gramPrice   ? gramPrice * 11.664 / 96 : null);
-            const retrievedAt = (rec['GRAM'] || rec['VORI'] || Object.values(rec)[0] || {}).retrievedAt;
             return `<tr>
                 <td>${purityBadge(purity)}</td>
                 <td>${fmtPrice(gramPrice)}</td>
                 <td>${fmtPrice(voriPrice)}</td>
                 <td>${fmtPrice(anaPrice)}</td>
                 <td>${fmtPrice(ratiPrice)}</td>
-                <td style="font-size:0.8rem;color:var(--text-muted-custom);">${retrievedAt ? fmtDateTime(retrievedAt) : '—'}</td>
             </tr>`;
         }).join('');
     }
@@ -272,7 +320,7 @@
         if (!tbody) return;
 
         if (page.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state">
+            tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state">
                 <div class="empty-state-icon"><i class="fas fa-coins"></i></div>
                 <h5 class="text-muted">${total === 0 ? 'No gold assets yet' : 'No assets match your filters'}</h5>
                 ${total === 0 ? `<p class="text-muted mb-3">Click "Add Gold Asset" to start tracking.</p>
@@ -284,6 +332,7 @@
 
         renderPagination(total, pages);
         renderSummaryFoot(filtered);
+        setupRowReordering();
     };
 
     function formatVoriBreakdown(grams) {
@@ -318,7 +367,14 @@
 
         const sellPrice = a.currentValue ? a.currentValue * (1 - sellDiscountPct / 100) : null;
 
-        return `<tr>
+        return `<tr data-id="${a.id}">
+            <td class="drag-handle-cell">
+                <button type="button" class="drag-handle-btn" data-id="${a.id}"
+                        title="Drag to reorder, or focus and press Arrow Up/Down"
+                        aria-label="Reorder ${escHtml(a.assetName)}" aria-roledescription="Sortable row handle">
+                    <i class="fas fa-grip-vertical"></i>
+                </button>
+            </td>
             <td>
                 <div class="d-flex align-items-center gap-2">
                     <div class="asset-type-icon">${goldTypeIcon(a.goldType)}</div>
@@ -367,7 +423,7 @@
         const gainSign = totalGain >= 0 ? '+' : '';
 
         tfoot.innerHTML = `<tr>
-            <td colspan="4" style="color:var(--text-muted-custom);font-size:0.78rem;">Totals (${assets.length} asset${assets.length !== 1 ? 's' : ''})</td>
+            <td colspan="5" style="color:var(--text-muted-custom);font-size:0.78rem;">Totals (${assets.length} asset${assets.length !== 1 ? 's' : ''})</td>
             <td>${hasCurrentValue ? '৳' + fmt(totalCurrentValue) : '<span class="text-muted">—</span>'}</td>
             <td>${hasPurchase ? '৳' + fmt(totalPurchasePrice) : '<span class="text-muted">—</span>'}</td>
             <td><span class="${gainCls}">${hasPurchase ? gainSign + '৳' + fmt(Math.abs(totalGain)) : '<span class="text-muted">—</span>'}</span></td>
@@ -403,6 +459,118 @@
         currentPage = p;
         renderTable();
     };
+
+    window.setPageSize = function (value) {
+        const size = parseInt(value, 10);
+        if (!size || size <= 0) return;
+        PAGE_SIZE = size;
+        currentPage = 1;
+        renderTable();
+    };
+
+    // ── DRAG-AND-DROP ROW REORDERING (Gold Inventory) ────────────────────────
+    // Custom order is only meaningful against the full, unfiltered list, so
+    // reordering is enabled only when no search/purity/type filter is active.
+    // Persisted via /api/gold/assets/reorder (sortOrder column), so it survives reload.
+
+    let rowSortable = null;
+
+    function isReorderActive() {
+        const query  = (document.getElementById('searchInput')?.value || '').trim();
+        const purity = document.getElementById('filterPurity')?.value || '';
+        const type   = document.getElementById('filterType')?.value || '';
+        return !query && !purity && !type;
+    }
+
+    function setupRowReordering() {
+        const tbody = document.getElementById('assetTableBody');
+        const hint  = document.getElementById('reorderHint');
+        if (!tbody) return;
+
+        if (rowSortable) { rowSortable.destroy(); rowSortable = null; }
+
+        const active = isReorderActive();
+        tbody.querySelectorAll('.drag-handle-btn').forEach(btn => {
+            btn.classList.toggle('disabled', !active);
+            btn.tabIndex = active ? 0 : -1;
+            btn.onkeydown = active ? onDragHandleKeydown : null;
+        });
+
+        if (hint) {
+            hint.textContent = active ? '' : 'Clear search/filters to reorder rows.';
+        }
+
+        if (!active || typeof Sortable === 'undefined') return;
+
+        rowSortable = Sortable.create(tbody, {
+            handle: '.drag-handle-btn',
+            animation: 150,
+            ghostClass: 'gp-row-ghost',
+            chosenClass: 'gp-row-chosen',
+            dragClass: 'gp-row-drag',
+            forceFallback: false,
+            onEnd: async function () {
+                await commitRowOrderFromDom();
+            }
+        });
+    }
+
+    /** Reads the tbody's current DOM row order, splices it into allAssets at the current
+     *  page's position, and persists the resulting full order to the backend. */
+    async function commitRowOrderFromDom() {
+        const tbody = document.getElementById('assetTableBody');
+        if (!tbody) return;
+        const pageIds = Array.from(tbody.querySelectorAll('tr[data-id]'))
+            .map(tr => parseInt(tr.dataset.id, 10))
+            .filter(id => !isNaN(id));
+
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const movedAssets = pageIds
+            .map(id => allAssets.find(a => a.id === id))
+            .filter(Boolean);
+        if (movedAssets.length !== pageIds.length) return; // safety guard
+
+        const previousOrder = allAssets.slice();
+        allAssets.splice(start, movedAssets.length, ...movedAssets);
+        renderTable();
+        await persistAssetOrder(previousOrder);
+    }
+
+    async function persistAssetOrder(previousOrderOnFailure) {
+        try {
+            await apiFetch('/api/gold/assets/reorder', {
+                method: 'PUT',
+                body: JSON.stringify({ order: allAssets.map(a => a.id) })
+            });
+        } catch (e) {
+            if (previousOrderOnFailure) { allAssets = previousOrderOnFailure; renderTable(); }
+            showToast(e.message || 'Failed to save row order', 'error');
+        }
+    }
+
+    function onDragHandleKeydown(e) {
+        if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+        e.preventDefault();
+        const id = parseInt(e.currentTarget.dataset.id, 10);
+        const idx = allAssets.findIndex(a => a.id === id);
+        if (idx === -1) return;
+        const swapWith = e.key === 'ArrowUp' ? idx - 1 : idx + 1;
+        if (swapWith < 0 || swapWith >= allAssets.length) return;
+
+        const previousOrder = allAssets.slice();
+        const tmp = allAssets[idx];
+        allAssets[idx] = allAssets[swapWith];
+        allAssets[swapWith] = tmp;
+        renderTable();
+
+        // Keep focus on the moved row's handle after re-render, and stay on its new page.
+        const newPage = Math.floor(swapWith / PAGE_SIZE) + 1;
+        if (newPage !== currentPage) { currentPage = newPage; renderTable(); }
+        const btn = document.querySelector(`.drag-handle-btn[data-id="${id}"]`);
+        if (btn) btn.focus();
+
+        persistAssetOrder(previousOrder);
+    }
 
     // ── CSV EXPORT / IMPORT ──────────────────────────────────────────────────
 
@@ -766,7 +934,7 @@
     function updatePriceModeUI(mode) {
         const label = document.getElementById('priceModeLabel');
         if (label) {
-            label.textContent = mode === 'MANUAL' ? 'Manual Mode' : 'Automatic Mode';
+            label.textContent = mode === 'MANUAL' ? 'Manual' : 'Automatic';
             label.className = 'gold-badge ' + (mode === 'MANUAL' ? 'mode-manual' : 'mode-auto');
         }
         const autoBtn = document.getElementById('btnAutoMode');
@@ -853,7 +1021,15 @@
 
     function fmtDateTime(str) {
         if (!str) return '—';
-        try { return new Date(str).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }); }
+        try {
+            const d = new Date(str);
+            const day = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+            let h = d.getHours();
+            const m = d.getMinutes().toString().padStart(2, '0');
+            const ampm = h >= 12 ? 'pm' : 'am';
+            h = h % 12; if (h === 0) h = 12;
+            return `${day}, ${h}:${m} ${ampm}`;
+        }
         catch { return str; }
     }
 

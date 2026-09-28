@@ -336,6 +336,10 @@
         clearForm(['loanId','loanName','loanType','loanLender','loanPrincipal','loanRate','loanEmi','loanBalance','loanStart','loanEnd','loanFreq','loanStatus','loanNotes']);
         document.getElementById('loanModalTitle').innerHTML = '<i class="fas fa-hand-holding-usd me-2"></i>' + (id ? 'Edit Loan' : 'Add Loan');
         document.getElementById('loanStatus').value = 'ACTIVE';
+        document.getElementById('loanPaymentAmount').value = '';
+        var balanceInput = document.getElementById('loanBalance');
+        var balanceHint = document.getElementById('loanBalanceHint');
+        var paymentRow = document.getElementById('loanPaymentRow');
         if (id) {
             var loan = loanData.find(function (x) { return x.id === id; });
             if (loan) {
@@ -353,12 +357,39 @@
                 document.getElementById('loanStatus').value = loan.status || 'ACTIVE';
                 document.getElementById('loanNotes').value = loan.notes || '';
             }
+            // Existing loans compute their remaining balance from logged payments, not free-hand
+            // edits — see logLoanPayment(). The field stays visible (and still submitted with
+            // Save) but is no longer directly editable.
+            balanceInput.disabled = true;
+            balanceHint.classList.remove('d-none');
+            paymentRow.classList.remove('d-none');
+        } else {
+            balanceInput.disabled = false;
+            balanceHint.classList.add('d-none');
+            paymentRow.classList.add('d-none');
         }
         bootstrap.Modal.getOrCreateInstance(document.getElementById('loanModal')).show();
     };
 
     window.saveLoan = async function () {
         var id = document.getElementById('loanId').value;
+        // If the user entered a payment amount, log it first — the server recomputes the
+        // remaining balance (and auto-closes the loan at zero) instead of the user editing
+        // Remaining Balance by hand. The rest of the form is then saved as usual, including
+        // the freshly-updated balance/status.
+        var paymentAmount = parseFloat(document.getElementById('loanPaymentAmount').value);
+        var paymentLogged = false;
+        if (id && paymentAmount > 0) {
+            var payResult = await apiFetch(BASE + '/loans/' + id + '/pay', { method: 'POST', body: JSON.stringify({ amount: paymentAmount }) });
+            if (!payResult || payResult.error) {
+                showToast((payResult && payResult.error) || 'Failed to log payment.', 'error');
+                return;
+            }
+            document.getElementById('loanBalance').value = payResult.remainingBalance;
+            document.getElementById('loanStatus').value = payResult.status;
+            document.getElementById('loanPaymentAmount').value = '';
+            paymentLogged = true;
+        }
         var body = {
             loanName: document.getElementById('loanName').value.trim(),
             loanType: document.getElementById('loanType').value,
@@ -379,7 +410,7 @@
         var url = id ? BASE + '/loans/' + id : BASE + '/loans';
         var result = await apiFetch(url, { method: id ? 'PUT' : 'POST', body: JSON.stringify(body) });
         if (result && !result.error) {
-            showToast(id ? 'Loan updated.' : 'Loan added.');
+            showToast(paymentLogged ? 'Payment logged and loan updated.' : (id ? 'Loan updated.' : 'Loan added.'));
             bootstrap.Modal.getOrCreateInstance(document.getElementById('loanModal')).hide();
             loadLoans();
         } else if (result) {

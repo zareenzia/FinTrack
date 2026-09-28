@@ -122,7 +122,19 @@ public class OpenAIClient {
         } catch (ResourceAccessException e) {
             throw OpenAIException.timeout();
         } catch (Exception e) {
+            if (isTimeoutCause(e)) {
+                throw OpenAIException.timeout();
+            }
             throw OpenAIException.malformedResponse();
         }
+    }
+
+    /** A read timeout doesn't always surface as {@link ResourceAccessException} — check the cause
+     *  chain directly rather than relying solely on that wrapper type. */
+    private static boolean isTimeoutCause(Throwable e) {
+        for (Throwable t = e; t != null; t = t.getCause()) {
+            if (t instanceof java.net.SocketTimeoutException) return true;
+        }
+        return false;
     }
 }

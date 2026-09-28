@@ -91,8 +91,20 @@ public class OpenAIEmbeddingClient implements EmbeddingClient {
                     body.length() > 300 ? body.substring(0, 300) : body);
             throw new EmbeddingException("Embeddings call failed: HTTP " + e.getStatusCode().value());
         } catch (Exception e) {
+            if (isTimeoutCause(e)) {
+                throw new EmbeddingException("Embeddings request timed out");
+            }
             log.warn("Embeddings call failed errorType={}", e.getClass().getSimpleName());
             throw new EmbeddingException("Embeddings call failed");
         }
+    }
+
+    /** A read timeout doesn't always surface as {@link ResourceAccessException} — check the cause
+     *  chain directly rather than relying solely on that wrapper type. */
+    private static boolean isTimeoutCause(Throwable e) {
+        for (Throwable t = e; t != null; t = t.getCause()) {
+            if (t instanceof java.net.SocketTimeoutException) return true;
+        }
+        return false;
     }
 }

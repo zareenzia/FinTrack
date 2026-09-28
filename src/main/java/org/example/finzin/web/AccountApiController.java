@@ -9,6 +9,7 @@ import org.example.finzin.service.CreditCardService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
@@ -35,13 +36,24 @@ public class AccountApiController {
 
     private Long getUserId(HttpServletRequest request) {
         Object userId = request.getAttribute("userId");
-        return userId != null ? (Long) userId : 1L;
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
+        }
+        return (Long) userId;
     }
 
     @GetMapping
-    public List<Map<String, Object>> getAccounts(HttpServletRequest request) {
+    public List<Map<String, Object>> getAccounts(HttpServletRequest request,
+                                                  @RequestParam(name = "includeInactive", defaultValue = "false") boolean includeInactive) {
         Long userId = getUserId(request);
-        return accountRepository.findByUserId(userId).stream()
+        // Inactive (deactivated) accounts/cards are only ever surfaced on the Accounts
+        // Configuration page (which passes includeInactive=true to manage/reactivate them).
+        // Every other consumer of this endpoint — dropdowns, filters, dashboards, planners —
+        // must only ever see active accounts.
+        List<AccountEntity> accounts = includeInactive
+                ? accountRepository.findByUserId(userId)
+                : accountRepository.findByUserIdAndStatus(userId, "ACTIVE");
+        return accounts.stream()
                 .map(this::toAccountResponse)
                 .collect(Collectors.toList());
     }

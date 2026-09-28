@@ -10,6 +10,18 @@
         return baseKey;
     }
 
+    // Notifications (title/message) carry free text another user typed — a household name, a
+    // transaction description, a goal name — so they're untrusted HTML-injection input here even
+    // though the current user didn't type them. Escape before any innerHTML interpolation.
+    function escHtml(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     const COLLAPSED_KEY  = getUserStorageKey('sidebar_collapsed');
     const THEME_KEY      = getUserStorageKey('fintrack_theme');
     const SETTINGS_KEY   = getUserStorageKey('fintrack_settings');
@@ -270,8 +282,8 @@
         aside.innerHTML = `
             <div class="sidebar-header">
                 <div class="sidebar-brand">
-                    <img src="/images/logo.png" alt="FinTrack" class="sidebar-brand-logo">
-                    <span class="sidebar-label">FinTrack</span>
+                    <img src="/images/logo.png" alt="TakaFlow" class="sidebar-brand-logo">
+                    <span class="sidebar-label">TakaFlow</span>
                 </div>
                 <button class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Toggle sidebar" aria-label="Toggle sidebar">
                     <i class="fas fa-chevron-left" id="sidebarToggleIcon"></i>
@@ -744,8 +756,8 @@
                         ? "window.location.href='/family-finance?invite=" + n.relatedEntityId + "'"
                         : 'window.__markNotifRead(' + n.id + ')';
                     return '<div style="padding:8px; border-bottom:1px solid var(--border-input); cursor:pointer; ' + unreadStyle + '" onclick="' + onclick + '">' +
-                        '<div style="font-weight:600; font-size:0.85rem; color:var(--text-primary-custom);">' + n.title + '</div>' +
-                        '<div style="font-size:0.8rem; color:var(--text-secondary-custom);">' + n.message + '</div>' +
+                        '<div style="font-weight:600; font-size:0.85rem; color:var(--text-primary-custom);">' + escHtml(n.title) + '</div>' +
+                        '<div style="font-size:0.8rem; color:var(--text-secondary-custom);">' + escHtml(n.message) + '</div>' +
                         '</div>';
                 }).join('');
             })
@@ -833,8 +845,8 @@
         var toast = document.createElement('div');
         toast.className = 'gam-celebration-toast';
         toast.innerHTML = '<span class="gam-celebration-icon">🎉</span>' +
-            '<div><div class="gam-celebration-title">' + notification.title + '</div>' +
-            '<div class="gam-celebration-msg">' + notification.message + '</div></div>';
+            '<div><div class="gam-celebration-title">' + escHtml(notification.title) + '</div>' +
+            '<div class="gam-celebration-msg">' + escHtml(notification.message) + '</div></div>';
         document.body.appendChild(toast);
         requestAnimationFrame(function () { toast.classList.add('show'); });
         setTimeout(function () {
@@ -862,7 +874,7 @@
     // ── Global confirmation modal ─────────────────────────────────────────────
     // Replaces the native confirm() dialog (a browser/localhost-styled alert, not part of the
     // app's UI) with an in-app Bootstrap modal so confirmations look and feel consistent with
-    // the rest of FinTrack. Usage: `if (await confirmAction('Delete this?')) { ... }`.
+    // the rest of TakaFlow. Usage: `if (await confirmAction('Delete this?')) { ... }`.
     function injectConfirmModal() {
         if (document.getElementById('appConfirmModal')) return;
         var wrapper = document.createElement('div');
@@ -940,7 +952,7 @@
         { id: 'ai',           icon: 'fa-robot', title: 'Meet your AI Financial Coach',
           desc: 'Once you have a bit of history, ask the AI for a health score, insights, and personalized recommendations.',
           linkLabel: 'Open AI Assistant', href: '/ai-assistant' },
-        { id: 'personalize',  icon: 'fa-palette', title: 'Personalize FinTrack',
+        { id: 'personalize',  icon: 'fa-palette', title: 'Personalize TakaFlow',
           desc: 'Pick a color theme, reorder your sidebar, and choose your currency & date format.',
           linkLabel: 'Open Appearance Settings', href: '/settings?section=appearance' }
     ];
@@ -1001,7 +1013,7 @@
           tagline: 'Category budgets, joint savings goals, templates, charts, and exports.',
           groups: [
             { heading: 'Budget Plans', items: [
-                'Switch between plans from the dropdown at the top — FinTrack auto-selects the one matching the current month.',
+                'Switch between plans from the dropdown at the top — TakaFlow auto-selects the one matching the current month.',
                 'Create Budget opens a form for Name, Period Type (Month/Quarter/Year), Period Label, Start/End Date, Expected Income, Expected Savings, and Notes.',
                 'Copy Last Month or Duplicate (from History) carry forward a prior plan\'s setup instead of starting from scratch.',
                 'Archive a plan to hide it without deleting it, or delete it outright (this also removes its category and savings allocations).'
@@ -1146,7 +1158,7 @@
           groups: [
             { heading: 'What you can do', items: [
                 'Click Scan Receipt (on the Dashboard or Transactions page) and take a photo or choose an image file (JPG/PNG/WEBP, up to 10MB).',
-                'FinTrack extracts the merchant name, total amount, date, and a suggested category automatically — each pre-filled field shows a confidence indicator.',
+                'TakaFlow extracts the merchant name, total amount, date, and a suggested category automatically — each pre-filled field shows a confidence indicator.',
                 'Review and correct any field before saving — nothing posts until you click Confirm &amp; Save; you can also view the raw extracted OCR text.',
                 'Every transaction created this way keeps its original receipt image attached — reopen it anytime to view, download, replace, or delete the photo.',
                 'Turn the feature on or off from Settings → Receipt Scanner.'
@@ -1158,7 +1170,7 @@
             { heading: 'What you can do', items: [
                 'Open it from the floating microphone button or the Ctrl+Shift+V shortcut, available on every page.',
                 'Speak naturally to log an Expense, Income, Savings, or Transfer, add a Note or To-Do, or ask a Query about your finances.',
-                'If a command is ambiguous, FinTrack asks a quick follow-up instead of guessing wrong — and if it truly can\'t parse it, it routes the request to the AI chat instead.',
+                'If a command is ambiguous, TakaFlow asks a quick follow-up instead of guessing wrong — and if it truly can\'t parse it, it routes the request to the AI chat instead.',
                 'Review your full voice command history — including what was understood and its outcome — in Settings → Voice Assistant.',
                 'Turn voice commands on or off, and set the recognition language, from Settings → Voice Assistant (English (US) today; Bangla and mixed Bangla-English are planned).'
             ]}
@@ -1275,7 +1287,7 @@
                     <div class="um-pane active" data-um-pane="welcome">
                       <div class="um-welcome-hero">
                         <i class="fas fa-seedling um-hero-icon"></i>
-                        <h4>Welcome to FinTrack!</h4>
+                        <h4>Welcome to TakaFlow!</h4>
                         <p class="text-muted">Your all-in-one personal finance companion — track spending, plan budgets, manage assets, and get AI-powered coaching, all in one place.</p>
                       </div>
                       <div class="um-welcome-grid">
@@ -1295,7 +1307,7 @@
                       <div class="um-checklist" id="umChecklist"></div>
                     </div>
                     <div class="um-pane" data-um-pane="workflow">
-                      <h5><i class="fas fa-diagram-project me-2"></i>How FinTrack Fits Together</h5>
+                      <h5><i class="fas fa-diagram-project me-2"></i>How TakaFlow Fits Together</h5>
                       <p class="text-muted small">The typical flow through the app, month after month:</p>
                       <div class="um-flow">${workflowHtml}</div>
                       <div class="um-flow-note"><i class="fas fa-lightbulb me-2"></i>At the start of each month: review last month in the AI Coach, set a fresh Budget Plan, then just keep logging as you go — the dashboard and forecasts stay current automatically.</div>

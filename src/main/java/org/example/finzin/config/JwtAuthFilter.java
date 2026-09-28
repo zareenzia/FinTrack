@@ -5,8 +5,11 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.example.finzin.entity.UserEntity;
 import org.example.finzin.gamification.GamificationEvent;
 import org.example.finzin.gamification.GamificationEventType;
+import org.example.finzin.repository.UserRepository;
+import org.example.finzin.service.EmailService;
 import org.example.finzin.service.JwtTokenProvider;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
@@ -15,12 +18,17 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
+    private static final Set<String> MUTATING_METHODS = Set.of("POST", "PUT", "PATCH", "DELETE");
+
     private final JwtTokenProvider jwtTokenProvider;
     private final ApplicationEventPublisher eventPublisher;
+    private final UserRepository userRepository;
+    private final EmailService emailService;
 
     // Guards the DAILY_ACTIVE publish so it only does real work once per user per day, keeping
     // this cheap on the hot request path — the DB-level xp_history unique constraint is the
@@ -28,9 +36,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     // which is harmless for exactly that reason).
     private final Map<Long, LocalDate> lastActiveDayByUser = new ConcurrentHashMap<>();
 
-    public JwtAuthFilter(JwtTokenProvider jwtTokenProvider, ApplicationEventPublisher eventPublisher) {
+    public JwtAuthFilter(JwtTokenProvider jwtTokenProvider, ApplicationEventPublisher eventPublisher,
+                          UserRepository userRepository, EmailService emailService) {
         this.jwtTokenProvider = jwtTokenProvider;
         this.eventPublisher = eventPublisher;
+        this.userRepository = userRepository;
+        this.emailService = emailService;
     }
     
     @Override
@@ -87,6 +98,20 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     request.setAttribute("userId", userId);
                     System.out.println("✓ UserId set to: " + userId + " for: " + requestURI);
                     markDailyActive(userId);
+
+                    if (MUTATING_METHODS.contains(request.getMethod()) && emailService.isConfigured()) {
+                        // Only enforced once outbound mail is actually configured — otherwise
+                        // newly-registered users would never receive a verification link and
+                        // would be locked out of the app permanently. See EmailService.isConfigured().
+                        UserEntity user = userRepository.findById(userId).orElse(null);
+                        if (user != null && !user.isEmailVerified()) {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write(
+                                    "{\"error\":\"Please verify your email to continue. Check your inbox for a verification link.\"}");
+                            return;
+                        }
+                    }
                 } else {
                     System.out.println("⚠️ Could not extract userId from token for: " + requestURI);
                 }
@@ -96,7 +121,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         } else {
             System.out.println("⚠️ No token found in request for: " + requestURI);
         }
-        
+
         filterChain.doFilter(request, response);
     }
 

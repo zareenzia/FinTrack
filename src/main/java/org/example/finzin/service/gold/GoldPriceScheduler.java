@@ -18,8 +18,8 @@ public class GoldPriceScheduler {
         this.syncService = syncService;
     }
 
-    /** Runs at fixed rate (default 60 min). Spring converts the property to ms. */
-    @Scheduled(fixedRateString = "#{${gold.sync.interval-minutes:60} * 60 * 1000}")
+    /** Runs weekly, once every Sunday at 11:11 AM (configurable via gold.sync.cron). */
+    @Scheduled(cron = "${gold.sync.cron:0 11 11 * * SUN}")
     public void scheduledSync() {
         if (syncEnabled) {
             syncService.syncPrices();

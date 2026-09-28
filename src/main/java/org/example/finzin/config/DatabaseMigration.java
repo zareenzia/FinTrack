@@ -9,11 +9,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 /**
- * Runs idempotent DDL fixes that Hibernate ddl-auto=validate won't apply automatically
- * (new tables/columns, constraint tweaks). Implemented as a BeanPostProcessor — rather than
- * a plain @PostConstruct bean — so it runs the moment the DataSource bean itself finishes
- * initializing, which is guaranteed to happen before JPA's EntityManagerFactory validates
- * the schema against that same DataSource.
+ * Runs idempotent DDL fixes that Hibernate's schema management won't apply automatically
+ * (new tables/columns, constraint tweaks, differentiated-default backfills). Implemented as a
+ * BeanPostProcessor — rather than a plain @PostConstruct bean — so it runs the moment the
+ * DataSource bean itself finishes initializing, which is guaranteed to happen before JPA's
+ * EntityManagerFactory (and Hibernate's own ddl-auto=update pass) touches that same DataSource.
  */
 @Component
 public class DatabaseMigration implements BeanPostProcessor {
@@ -325,6 +325,27 @@ public class DatabaseMigration implements BeanPostProcessor {
                 "created_at TIMESTAMP NOT NULL DEFAULT NOW()" +
                 ")");
         runSilently(dataSource, "CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user ON password_reset_tokens (user_id)");
+
+        // ============== Email Verification ==============
+        // Grandfathers every user that already exists at the moment this line first ever runs to
+        // emailVerified=TRUE (ADD COLUMN's DEFAULT backfills all current rows in one metadata-only
+        // op), then flips the column's default to FALSE for every row inserted afterward — new
+        // registrations. IF NOT EXISTS gates this on SCHEMA state (has the column ever been added?)
+        // rather than a DATA predicate like "WHERE created_at < NOW()", which would be wrong: since
+        // this runs on every startup and any existing row's created_at is always in the past
+        // relative to whenever the query runs, a data predicate would silently re-grandfather every
+        // future registrant too on their next server restart.
+        runSilently(dataSource, "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT TRUE");
+        runSilently(dataSource, "ALTER TABLE users ALTER COLUMN email_verified SET DEFAULT FALSE");
+
+        runSilently(dataSource, "CREATE TABLE IF NOT EXISTS email_verification_tokens (" +
+                "id BIGSERIAL PRIMARY KEY, " +
+                "user_id BIGINT NOT NULL, " +
+                "token_hash VARCHAR(64) NOT NULL UNIQUE, " +
+                "expires_at TIMESTAMP NOT NULL, " +
+                "created_at TIMESTAMP NOT NULL DEFAULT NOW()" +
+                ")");
+        runSilently(dataSource, "CREATE INDEX IF NOT EXISTS idx_email_verification_tokens_user ON email_verification_tokens (user_id)");
 
         runSilently(dataSource, "CREATE TABLE IF NOT EXISTS sidebar_preferences (" +
                 "id BIGSERIAL PRIMARY KEY, " +

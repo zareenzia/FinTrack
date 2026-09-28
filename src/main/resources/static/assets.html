@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Assets - FinTrack</title>
+    <title>Assets - TakaFlow</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
@@ -66,19 +66,164 @@
         [data-theme="dark"] .gain-positive { color: #4ade80; }
         [data-theme="dark"] .gain-negative { color: #f87171; }
 
-        /* ═══ SYNC STATUS CARD ═══ */
-        .sync-card {
-            border-left: 4px solid var(--color-accent);
+        /* ═══ GOLD ASSETS SUMMARY BAR (unified, replaces 4 separate stat cards) ═══ */
+        .asset-summary-bar {
+            position: relative;
+            display: flex;
+            flex-wrap: wrap;
+            background: var(--bg-card);
+            border: 1px solid var(--bg-card-border);
+            border-radius: 14px;
+            box-shadow: var(--shadow-card);
+            padding: 8px 44px 8px 16px;
         }
+        .asset-summary-seg {
+            flex: 1 1 0;
+            min-width: 190px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 4px 16px;
+            border-right: 1px solid var(--border-color);
+        }
+        .asset-summary-seg:last-child { border-right: none; }
+        .asset-summary-seg:first-child { padding-left: 4px; }
+        .asset-summary-icon {
+            flex-shrink: 0;
+            width: 32px; height: 32px;
+            border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.9rem;
+        }
+        .asi-purple { background: rgba(124,58,237,0.14); color: #7c3aed; }
+        .asi-green  { background: rgba(22,163,74,0.14);  color: #16a34a; }
+        .asi-blue   { background: rgba(37,99,235,0.14);  color: #2563eb; }
+        .asi-gold   { background: rgba(217,119,6,0.14);  color: #d97706; }
+        [data-theme="dark"] .asi-purple { background: rgba(167,139,250,0.18); color: #a78bfa; }
+        [data-theme="dark"] .asi-green  { background: rgba(74,222,128,0.18);  color: #4ade80; }
+        [data-theme="dark"] .asi-blue   { background: rgba(96,165,250,0.18);  color: #60a5fa; }
+        [data-theme="dark"] .asi-gold   { background: rgba(251,191,36,0.18); color: #fbbf24; }
+        .asset-summary-text {
+            display: flex;
+            flex-direction: row;
+            align-items: baseline;
+            flex-wrap: wrap;
+            column-gap: 8px;
+            row-gap: 0;
+            min-width: 0;
+            line-height: 1.2;
+        }
+        .asset-summary-label-row { display: inline-flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+        .asset-summary-label {
+            font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.03em; color: var(--text-muted-custom);
+        }
+        .asset-summary-sub { font-size: 0.68rem; color: var(--text-muted-custom); opacity: 0.75; }
+        .asset-summary-value {
+            font-size: 1.05rem; font-weight: 700; line-height: 1.2;
+            display: inline-block;
+            transition: filter 0.35s ease, opacity 0.35s ease;
+        }
+        .asset-summary-value.is-masked { filter: blur(6px); opacity: 0.55; user-select: none; }
+        .asset-summary-eye {
+            position: absolute; top: 50%; right: 12px; transform: translateY(-50%);
+            width: 28px; height: 28px; border-radius: 50%;
+            border: 1px solid var(--border-color);
+            background: transparent; color: var(--text-muted-custom);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: background 0.2s ease, color 0.2s ease;
+        }
+        .asset-summary-eye:hover { background: var(--nav-active-bg); color: var(--color-accent); }
+        @media (max-width: 991.98px) {
+            .asset-summary-bar { padding-right: 44px; }
+            .asset-summary-seg {
+                flex: 1 1 45%;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+            .asset-summary-seg:nth-child(2n+1):not(:first-child) { padding-left: 16px; }
+        }
+        @media (max-width: 575.98px) {
+            .asset-summary-seg { flex: 1 1 100%; }
+            .asset-summary-text { flex-direction: column; align-items: flex-start; }
+        }
+
+        /* ═══ GOLD PRICES — UNIFIED CARD (sync status + pricing mode + table merged) ═══ */
         .sync-dot {
-            width: 10px; height: 10px;
+            width: 9px; height: 9px;
             border-radius: 50%;
             display: inline-block;
+            flex-shrink: 0;
         }
         .sync-dot.success { background: #16a34a; }
         .sync-dot.error   { background: #dc2626; }
         .sync-dot.syncing { background: #f59e0b; animation: pulse 1s infinite; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+        .gp-unified-header { padding: 8px 14px; }
+        .gp-unified-title-row {
+            display: flex;
+            align-items: center;
+            flex-wrap: nowrap;
+            gap: 10px 12px;
+            justify-content: space-between;
+        }
+        .gp-unified-title-row h6 { white-space: nowrap; flex-shrink: 0; }
+        .gp-sync-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.76rem;
+            background: rgba(255,255,255,0.08);
+            color: var(--text-muted-custom);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .gp-header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: auto;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+        .gp-source-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            color: var(--color-accent);
+            font-size: 0.76rem;
+            text-decoration: none;
+            border: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+        .gp-source-link:hover { background: var(--nav-active-bg); }
+        .gp-mode-wrap { flex-shrink: 0; }
+        .gp-mode-btn { font-size: 0.78rem; padding: 3px 10px; white-space: nowrap; }
+        .gp-mode-btn #priceModeLabel { font-size: 0.76rem; padding: 1px 7px; }
+        .gp-mode-menu { min-width: 240px; font-size: 0.82rem; }
+        .gp-mode-info { font-size: 0.78rem; color: var(--text-muted-custom); }
+        @media (max-width: 767.98px) {
+            .gp-unified-title-row { flex-wrap: wrap; justify-content: flex-start; }
+            .gp-header-right { margin-left: 0; }
+        }
+        .gp-price-table-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border-top: 1px solid var(--border-color);
+        }
+        .gp-price-table {
+            table-layout: fixed;
+            width: 100%;
+        }
+        .gp-price-table th,
+        .gp-price-table td {
+            width: 20%;
+        }
 
         /* ═══ WEIGHT CONVERTER ═══ */
         .weight-input-group { position: relative; }
@@ -105,6 +250,46 @@
             flex-shrink: 0;
         }
         [data-theme="dark"] .asset-type-icon { color: #f0d060; background: rgba(212,175,55,0.12); }
+
+        /* ═══ GOLD INVENTORY — DRAG-AND-DROP ROW REORDERING ═══ */
+        .drag-handle-cell { width: 34px; text-align: center; vertical-align: middle; }
+        .drag-handle-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px; height: 26px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted-custom);
+            cursor: grab;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            touch-action: none;
+        }
+        .drag-handle-btn:hover { background: var(--nav-active-bg); color: var(--color-accent); }
+        .drag-handle-btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+        .drag-handle-btn:active { cursor: grabbing; }
+        .drag-handle-btn.disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        #assetTableBody tr.gp-row-ghost {
+            opacity: 0.4;
+            background: var(--nav-active-bg);
+        }
+        #assetTableBody tr.gp-row-chosen {
+            box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+            background: var(--bg-card);
+        }
+        #assetTableBody tr.gp-row-drag {
+            box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+        }
+        .gp-reorder-hint {
+            font-size: 0.72rem;
+            color: var(--text-muted-custom);
+            padding: 4px 12px 0;
+        }
 
         /* ═══ EMPTY STATE ═══ */
         .empty-state {
@@ -135,6 +320,7 @@
         .filter-bar #searchInput   { width: 170px; }
         .filter-bar #filterPurity  { width: 125px; }
         .filter-bar #filterType    { width: 115px; }
+        .filter-bar #pageSizeSelect { width: 90px; }
         .filter-bar .sell-disc-wrap { display: flex; align-items: center; gap: 3px; white-space: nowrap; }
         .filter-bar .sell-disc-wrap label { font-size: 0.78rem; color: var(--text-muted-custom); margin-bottom: 0; }
         .filter-bar #sellDiscount  { width: 56px; }
@@ -150,7 +336,7 @@
 <div id="toastContainer" class="notification-toast-container" aria-live="polite" aria-atomic="true"></div>
 
 <div class="container-fluid mt-4">
-    <div class="row mb-3">
+    <div class="row mb-2">
         <div class="col-md-12 d-flex align-items-center justify-content-between flex-wrap gap-2">
             <h2 class="mb-0"><i class="fas fa-coins me-2" style="color:#b8860b;"></i>Assets</h2>
             <div class="d-flex gap-2 flex-wrap">
@@ -164,138 +350,115 @@
         </div>
     </div>
 
-    <!-- ── SUMMARY CARDS ─────────────────────────────────────────── -->
-    <div class="row mb-4 g-3">
-        <div class="col-xl-3 col-md-6">
-            <div class="card stat-card stat-card--assets">
-                <div class="card-body">
-                    <div class="sc-top">
-                        <div class="sc-icon-circle"><i class="fas fa-coins"></i></div>
-                        <div class="sc-title-block">
-                            <div class="sc-title">Total Gold Value</div>
-                            <div class="sc-subtitle"><i class="fas fa-gem sc-trend-up"></i> Current market</div>
-                        </div>
-                    </div>
-                    <hr class="sc-divider">
-                    <div class="sc-bottom">
-                        <h3 class="stat-card-amount" id="totalGoldValue">...</h3>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card stat-card stat-card--income">
-                <div class="card-body">
-                    <div class="sc-top">
-                        <div class="sc-icon-circle"><i class="fas fa-weight-hanging"></i></div>
-                        <div class="sc-title-block">
-                            <div class="sc-title">Total Weight</div>
-                            <div class="sc-subtitle"><i class="fas fa-balance-scale sc-trend-up"></i> Combined</div>
-                        </div>
-                    </div>
-                    <hr class="sc-divider">
-                    <div class="sc-bottom">
-                        <h3 class="stat-card-amount" id="totalWeight">...</h3>
+    <!-- ── SUMMARY BAR (unified) ─────────────────────────────────── -->
+    <div class="row mb-3 g-3">
+        <div class="col-12">
+            <div class="asset-summary-bar" id="assetSummaryBar">
+                <button type="button" class="asset-summary-eye" id="assetSummaryEyeBtn"
+                        onclick="toggleAssetSummaryVisibility()" title="Toggle visibility of values">
+                    <i class="fas fa-eye"></i>
+                </button>
+
+                <div class="asset-summary-seg">
+                    <span class="asset-summary-icon asi-purple"><i class="fas fa-coins"></i></span>
+                    <div class="asset-summary-text">
+                        <span class="asset-summary-label-row">
+                            <span class="asset-summary-label">Total Gold Value</span>
+                            <span class="asset-summary-sub"><i class="fas fa-gem"></i> Current market</span>
+                        </span>
+                        <span class="asset-summary-value" id="totalGoldValue">...</span>
                     </div>
                 </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card stat-card stat-card--savings">
-                <div class="card-body">
-                    <div class="sc-top">
-                        <div class="sc-icon-circle"><i class="fas fa-layer-group"></i></div>
-                        <div class="sc-title-block">
-                            <div class="sc-title">Gold Assets</div>
-                            <div class="sc-subtitle"><i class="fas fa-list sc-trend-up"></i> Total items</div>
-                        </div>
-                    </div>
-                    <hr class="sc-divider">
-                    <div class="sc-bottom">
-                        <h3 class="stat-card-amount" id="numberOfAssets">...</h3>
+
+                <div class="asset-summary-seg">
+                    <span class="asset-summary-icon asi-green"><i class="fas fa-weight-hanging"></i></span>
+                    <div class="asset-summary-text">
+                        <span class="asset-summary-label-row">
+                            <span class="asset-summary-label">Total Weight</span>
+                            <span class="asset-summary-sub"><i class="fas fa-balance-scale"></i> Combined</span>
+                        </span>
+                        <span class="asset-summary-value" id="totalWeight">...</span>
                     </div>
                 </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card stat-card stat-card--balance">
-                <div class="card-body">
-                    <div class="sc-top">
-                        <div class="sc-icon-circle"><i class="fas fa-chart-line"></i></div>
-                        <div class="sc-title-block">
-                            <div class="sc-title">22K Gold / Gram</div>
-                            <div class="sc-subtitle"><i class="fas fa-tag sc-trend-up"></i> Current price</div>
-                        </div>
+
+                <div class="asset-summary-seg">
+                    <span class="asset-summary-icon asi-blue"><i class="fas fa-layer-group"></i></span>
+                    <div class="asset-summary-text">
+                        <span class="asset-summary-label-row">
+                            <span class="asset-summary-label">Gold Assets</span>
+                            <span class="asset-summary-sub"><i class="fas fa-list"></i> Total items</span>
+                        </span>
+                        <span class="asset-summary-value" id="numberOfAssets">...</span>
                     </div>
-                    <hr class="sc-divider">
-                    <div class="sc-bottom">
-                        <h3 class="stat-card-amount" id="currentGoldPrice">...</h3>
+                </div>
+
+                <div class="asset-summary-seg">
+                    <span class="asset-summary-icon asi-gold"><i class="fas fa-chart-line"></i></span>
+                    <div class="asset-summary-text">
+                        <span class="asset-summary-label-row">
+                            <span class="asset-summary-label">22K Gold / Gram</span>
+                            <span class="asset-summary-sub"><i class="fas fa-tag"></i> Current price</span>
+                        </span>
+                        <span class="asset-summary-value" id="currentGoldPrice">...</span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ── SYNC STATUS + PRICE MODE ─────────────────────────────── -->
-    <div class="row mb-4 g-3">
-        <div class="col-md-6">
-            <div class="card sync-card">
-                <div class="card-header d-flex align-items-center justify-content-between">
-                    <h6 class="mb-0"><i class="fas fa-satellite-dish me-2"></i>Price Sync Status</h6>
-                    <span class="gold-badge" id="syncModeBadge" style="font-size:0.75rem;">—</span>
-                </div>
-                <div class="card-body py-3">
-                    <div class="d-flex align-items-center gap-2 mb-2">
-                        <span class="sync-dot" id="syncDot"></span>
-                        <span id="syncStatusText" class="text-muted" style="font-size:0.88rem;">Loading…</span>
-                    </div>
-                    <div class="d-flex align-items-center gap-1 text-muted mb-2" style="font-size:0.82rem;">
-                        <i class="fas fa-clock"></i>
-                        <span id="lastSyncTime">—</span>
-                    </div>
-                    <div class="d-flex align-items-center gap-1 text-muted mb-0" style="font-size:0.82rem;">
-                        <i class="fas fa-link"></i>
-                        <a href="https://www.goldr.org/" target="_blank" class="text-decoration-none" style="color:var(--color-accent);">goldr.org</a>
-                    </div>
-                    <div id="syncErrorBlock" class="alert alert-danger py-2 px-3 mt-2 mb-0 d-none" style="font-size:0.82rem;"></div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
+    <!-- ── CURRENT GOLD PRICES (sync status + pricing mode absorbed into one card header) ── -->
+    <div class="row mb-3">
+        <div class="col-12">
             <div class="card">
-                <div class="card-header d-flex align-items-center justify-content-between">
-                    <h6 class="mb-0"><i class="fas fa-sliders-h me-2"></i>Pricing Mode</h6>
-                    <span class="gold-badge" id="priceModeLabel" style="font-size:0.75rem;">—</span>
-                </div>
-                <div class="card-body py-3">
-                    <p class="text-muted mb-3" style="font-size:0.85rem;">
-                        <b>Automatic:</b> uses latest prices from GoldR.<br>
-                        <b>Manual:</b> uses your custom prices per purity.
-                    </p>
-                    <div class="d-flex gap-2 flex-wrap">
-                        <button class="btn btn-sm btn-success" id="btnAutoMode" onclick="setPriceMode('AUTOMATIC')">
-                            <i class="fas fa-robot me-1"></i> Use Automatic
-                        </button>
-                        <button class="btn btn-sm btn-warning" id="btnManualMode" onclick="openManualPriceModal()">
-                            <i class="fas fa-pencil-alt me-1"></i> Set Manual Prices
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+                <div class="card-header gp-unified-header">
+                    <div class="gp-unified-title-row">
+                        <h6 class="mb-0 gp-title"><i class="fas fa-table me-2"></i>Current Gold Prices</h6>
 
-    <!-- ── CURRENT PRICES TABLE ─────────────────────────────────── -->
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header d-flex align-items-center justify-content-between">
-                    <h6 class="mb-0"><i class="fas fa-table me-2"></i>Current Gold Prices</h6>
-                    <small class="text-muted" id="priceTableUpdated"></small>
+                        <span class="gp-sync-chip" id="syncStatusChip" title="Automatic price sync status">
+                            <span class="sync-dot" id="syncDot"></span>
+                            <span id="syncStatusText">Loading…</span>
+                        </span>
+
+                        <div class="gp-header-right">
+                            <small class="text-muted" id="priceTableUpdated"></small>
+                            <a href="https://www.goldr.org/" target="_blank" class="gp-source-link" title="Source: goldr.org">
+                                <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
+
+                        <div class="dropdown gp-mode-wrap">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle gp-mode-btn" type="button"
+                                    id="priceModeDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false"
+                                    title="Automatic: latest GoldR prices. Manual: your custom prices.">
+                                <i class="fas fa-sliders-h me-1"></i>Mode:
+                                <span class="gold-badge" id="priceModeLabel">—</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end p-2 gp-mode-menu">
+                                <li class="gp-mode-info px-2 pb-2">
+                                    <i class="fas fa-circle-info me-1"></i>
+                                    <b>Automatic:</b> latest GoldR prices.<br>
+                                    <b>Manual:</b> your custom prices.
+                                </li>
+                                <li><hr class="dropdown-divider my-1"></li>
+                                <li>
+                                    <button type="button" class="dropdown-item" id="btnAutoMode" onclick="setPriceMode('AUTOMATIC')">
+                                        <i class="fas fa-robot me-2"></i>Use Automatic
+                                    </button>
+                                </li>
+                                <li>
+                                    <button type="button" class="dropdown-item" id="btnManualMode" onclick="openManualPriceModal()">
+                                        <i class="fas fa-pencil-alt me-2"></i>Set Manual Prices
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div id="syncErrorBlock" class="alert alert-danger py-1 px-2 mt-2 mb-0 d-none" style="font-size:0.78rem;"></div>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-sm asset-table mb-0">
+                    <div class="gp-price-table-wrap">
+                        <table class="table table-sm asset-table mb-0 gp-price-table">
                             <thead>
                                 <tr>
                                     <th>Purity</th>
@@ -303,11 +466,10 @@
                                     <th>Per Vori (৳)</th>
                                     <th>Per Ana (৳)</th>
                                     <th>Per Rati (৳)</th>
-                                    <th>Retrieved At</th>
                                 </tr>
                             </thead>
                             <tbody id="priceTableBody">
-                                <tr><td colspan="6" class="text-center text-muted py-3">Loading prices…</td></tr>
+                                <tr><td colspan="5" class="text-center text-muted py-3">Loading prices…</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -341,6 +503,13 @@
                                 <option value="COIN">Coin</option>
                                 <option value="CUSTOM">Custom</option>
                             </select>
+                            <select class="form-select form-select-sm" id="pageSizeSelect" title="Rows per page" onchange="setPageSize(this.value)">
+                                <option value="5">5 / page</option>
+                                <option value="10" selected>10 / page</option>
+                                <option value="20">20 / page</option>
+                                <option value="50">50 / page</option>
+                                <option value="100">100 / page</option>
+                            </select>
                             <div class="sell-disc-wrap">
                                 <label for="sellDiscount">Sell −</label>
                                 <input type="number" class="form-control form-control-sm" id="sellDiscount" value="17" min="0" max="100" step="0.1" oninput="setSellDiscount(this.value)">
@@ -354,11 +523,13 @@
                         </div>
                     </div>
                 </div>
+                <div class="gp-reorder-hint" id="reorderHint"></div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table asset-table mb-0">
                             <thead>
                                 <tr>
+                                    <th style="width:34px;"></th>
                                     <th>Asset</th>
                                     <th>Type</th>
                                     <th>Purity</th>
@@ -372,7 +543,7 @@
                             </thead>
                             <tbody id="assetTableBody">
                                 <tr>
-                                    <td colspan="9">
+                                    <td colspan="10">
                                         <div class="empty-state">
                                             <div class="empty-state-icon"><i class="fas fa-coins"></i></div>
                                             <h5 class="text-muted">No gold assets yet</h5>
@@ -612,6 +783,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script src="/js/auth.js"></script>
 <script src="/js/sidebar.js"></script>
 <script src="/js/profile.js"></script>

@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'jacoco'
     id 'org.springframework.boot' version '4.1.0'
     id 'io.spring.dependency-management' version '1.1.7'
 }
@@ -35,11 +36,34 @@ dependencies {
     implementation 'org.apache.pdfbox:pdfbox:3.0.2'
     implementation 'net.sourceforge.tess4j:tess4j:5.11.0'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    // Spring Boot 4.x split the old monolithic spring-boot-test-autoconfigure module (which used
+    // to carry every @...Test slice annotation) into one module per technology — spring-boot-starter-test
+    // alone no longer provides @WebMvcTest or @DataJpaTest/TestEntityManager/@AutoConfigureTestDatabase,
+    // matching how spring-boot-starter-web/spring-boot-starter-data-jpa are the main-code deps in use here.
+    testImplementation 'org.springframework.boot:spring-boot-webmvc-test'
+    testImplementation 'org.springframework.boot:spring-boot-data-jpa-test'
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    // Testcontainers 2.x has so far only bumped the core `testcontainers` artifact (transitively
+    // pulled in above at 2.0.5 by Spring Boot 4.1.0's own dependency management) — the accessory
+    // modules below have no 2.x release yet and only exist up to 1.21.4, so core is pinned down to
+    // match them here rather than leaving it on a mismatched 2.x/1.x mix.
+    testImplementation 'org.testcontainers:testcontainers:1.21.4'
+    testImplementation 'org.testcontainers:junit-jupiter:1.21.4'
+    testImplementation 'org.testcontainers:postgresql:1.21.4'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.named('test') {
     useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        html.required = true
+    }
 }
 
 

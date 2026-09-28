@@ -13,6 +13,7 @@ import org.example.finzin.service.RecurringTransactionService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -43,7 +44,10 @@ public class RecurringTransactionApiController {
 
     private Long getUserId(HttpServletRequest request) {
         Object userId = request.getAttribute("userId");
-        return userId != null ? (Long) userId : 1L;
+        if (userId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
+        }
+        return (Long) userId;
     }
 
     @GetMapping
@@ -56,7 +60,7 @@ public class RecurringTransactionApiController {
 
     @GetMapping("/upcoming")
     public List<Map<String, Object>> getUpcoming(HttpServletRequest request,
-                                                  @RequestParam(required = false, defaultValue = "14") Integer days) {
+                                                  @RequestParam(required = false, defaultValue = "3") Integer days) {
         Long userId = getUserId(request);
         return recurringTransactionService.getUpcoming(userId, days).stream()
                 .map(this::toResponse)
