@@ -528,7 +528,7 @@ The app starts at **[http://localhost:8585](http://localhost:8585)** and redirec
 | `ai.embedding.provider` | `openai` | Set to `mock` to use deterministic fake embeddings (no OpenAI billing needed, but no real semantic matching either) |
 | `gold.source.url` | `https://www.goldr.org/` | Gold price scrape source |
 | `gold.sync.enabled` | `true` | Enable scheduled gold price sync |
-| `gold.sync.interval-minutes` | `1440` | Sync frequency |
+| `gold.sync.cron` | `0 11 11 * * SUN` | Sync schedule (cron); default runs weekly, only on Sundays at 11:11 AM |
 
 ---
 
