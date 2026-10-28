@@ -81,7 +81,9 @@
 
     /* Chart row — allow height to be auto on mobile */
     #categoryChart,
-    #monthlyChart {
+    #monthlyChart,
+    #creditCardSpendingChart,
+    #creditCardSpendingChartCompact {
         max-height: 220px !important;
     }
 
@@ -342,7 +344,7 @@
         height: 300px !important;
     }
 
-    #categoryChart, #monthlyChart {
+    #categoryChart, #monthlyChart, #creditCardSpendingChart, #creditCardSpendingChartCompact {
         max-height: 260px;
     }
 }

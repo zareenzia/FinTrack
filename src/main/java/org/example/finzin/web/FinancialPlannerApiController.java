@@ -242,19 +242,42 @@ public class FinancialPlannerApiController {
                 .filter(e -> e.getUserId().equals(userId))
                 .map(entity -> {
                     double payment = entity.getEmiAmount() != null ? entity.getEmiAmount() : 0;
-                    double newBalance = Math.max(0, entity.getRemainingBalance() - payment);
-                    boolean paidOff = newBalance == 0;
-                    entity.setRemainingBalance(newBalance);
-                    if (paidOff) entity.setStatus("CLOSED");
-                    LoanEntity saved = loanRepository.save(entity);
-                    eventPublisher.publishEvent(new GamificationEvent(userId, GamificationEventType.LOAN_EMI_PAID, Map.of(
-                            "loanId", saved.getId(),
-                            "newBalance", newBalance,
-                            "paidOff", paidOff
-                    )));
-                    return ResponseEntity.ok(toLoanMap(saved));
+                    return applyLoanPayment(userId, entity, payment);
                 })
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Records a custom payment against a loan — e.g. "paid ৳20,000 this month" — and lets the
+     * server compute the new remaining balance instead of the user editing it by hand. This is
+     * the general-purpose counterpart to {@link #payEmi}, for payments that don't match the
+     * loan's fixed EMI amount (extra/partial payments, lump sums, etc.).
+     */
+    @PostMapping("/loans/{id}/pay")
+    public ResponseEntity<?> payLoan(HttpServletRequest request, @PathVariable Long id, @RequestBody Map<String, Object> body) {
+        Long userId = getUserId(request);
+        double amount = toDouble(body.get("amount"));
+        if (amount <= 0) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Payment amount must be greater than zero."));
+        }
+        return loanRepository.findById(id)
+                .filter(e -> e.getUserId().equals(userId))
+                .map(entity -> applyLoanPayment(userId, entity, amount))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    private ResponseEntity<?> applyLoanPayment(Long userId, LoanEntity entity, double payment) {
+        double newBalance = Math.max(0, entity.getRemainingBalance() - payment);
+        boolean paidOff = newBalance == 0;
+        entity.setRemainingBalance(newBalance);
+        if (paidOff) entity.setStatus("CLOSED");
+        LoanEntity saved = loanRepository.save(entity);
+        eventPublisher.publishEvent(new GamificationEvent(userId, GamificationEventType.LOAN_EMI_PAID, Map.of(
+                "loanId", saved.getId(),
+                "newBalance", newBalance,
+                "paidOff", paidOff
+        )));
+        return ResponseEntity.ok(toLoanMap(saved));
     }
 
     private void mapToLoan(Map<String, Object> body, LoanEntity entity) {

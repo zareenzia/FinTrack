@@ -740,10 +740,10 @@
                 if (response.ok) {
                     if (data.token) localStorage.setItem('token', data.token);
                     if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
-                    showNotification(notification, '✅ Registration successful! Redirecting...', 'success');
+                    showNotification(notification, '✅ Registration successful! Please check your email to verify your account. Redirecting...', 'success');
                     setTimeout(() => {
                         window.location.href = '/dashboard.html';
-                    }, 1000);
+                    }, 1800);
                 } else {
                     showNotification(notification, data.error || 'Registration failed', 'error');
                 }

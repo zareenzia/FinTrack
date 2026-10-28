@@ -5,6 +5,9 @@ import org.example.finzin.service.JwtTokenProvider;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.example.finzin.config.JwtAuthFilter;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -32,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * VoiceController falls back to userId=1L when unauthenticated (see {@code getUserId}) rather than
  * rejecting the request — the "unauthenticated" cases below assert on that documented fallback.
  */
-@WebMvcTest(VoiceController.class)
+@WebMvcTest(controllers = VoiceController.class, excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = JwtAuthFilter.class))
 class VoiceControllerTest {
 
     private static final Long USER_ID = 42L;

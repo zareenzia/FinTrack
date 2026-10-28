@@ -6,6 +6,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.example.finzin.config.JwtAuthFilter;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -24,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * assertions cover status/content-type/disposition headers only, backed by a real temp file on disk
  * (the controller itself calls {@link java.nio.file.Files#isRegularFile} directly, so that check can't
  * be mocked away — only {@link ReceiptStorageService#resolve} is mocked, pointed at a real temp file). */
-@WebMvcTest(ReceiptImageController.class)
+@WebMvcTest(controllers = ReceiptImageController.class, excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = JwtAuthFilter.class))
 class ReceiptImageControllerTest {
 
     private static final Long USER_ID = 42L;

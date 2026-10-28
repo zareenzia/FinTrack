@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TakaFlow - Verify Email</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="/images/logo.png">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #18230F 0%, #27391C 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 440px;
+            background: #18230F;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            padding: 48px 44px;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 28px;
+        }
+
+        .logo i { color: #255F38; margin-right: 8px; }
+
+        .status-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .status-icon.pending { color: #255F38; }
+        .status-icon.success { color: #1F7D53; }
+        .status-icon.error { color: #ef4444; }
+
+        h1 {
+            font-size: 24px;
+            color: white;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 28px;
+        }
+
+        .btn-submit {
+            display: inline-block;
+            width: 100%;
+            padding: 16px 28px;
+            background: #255F38;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-decoration: none;
+        }
+
+        .btn-submit:hover { background: #1F7D53; }
+
+        .footer-link {
+            text-align: center;
+            margin-top: 20px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 13px;
+        }
+
+        .footer-link a { color: #255F38; text-decoration: none; font-weight: 600; }
+        .footer-link a:hover { text-decoration: underline; }
+
+        .hidden { display: none !important; }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .fa-spin { animation: spin 1s linear infinite; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="logo"><i class="fas fa-chart-line"></i>TakaFlow</div>
+
+        <div id="pending-state">
+            <div class="status-icon pending"><i class="fas fa-spinner fa-spin"></i></div>
+            <h1>Verifying your email…</h1>
+            <p class="subtitle">Please wait a moment while we confirm your verification link.</p>
+        </div>
+
+        <div id="success-state" class="hidden">
+            <div class="status-icon success"><i class="fas fa-circle-check"></i></div>
+            <h1>Email verified!</h1>
+            <p class="subtitle">Your email address has been confirmed. You now have full access to your account.</p>
+            <a class="btn-submit" href="/dashboard.html">Go to Dashboard</a>
+        </div>
+
+        <div id="error-state" class="hidden">
+            <div class="status-icon error"><i class="fas fa-circle-exclamation"></i></div>
+            <h1 id="error-title">Verification failed</h1>
+            <p class="subtitle" id="error-message">This verification link is invalid or has already been used.</p>
+            <button class="btn-submit" id="resend-btn" onclick="handleResend()">Resend Verification Email</button>
+            <div class="footer-link"><a href="/login">Back to Login</a></div>
+        </div>
+    </div>
+
+    <script>
+        var verifyToken = new URLSearchParams(window.location.search).get('token');
+
+        function showState(id) {
+            ['pending-state', 'success-state', 'error-state'].forEach(function (s) {
+                document.getElementById(s).classList.toggle('hidden', s !== id);
+            });
+        }
+
+        async function verify() {
+            if (!verifyToken) {
+                document.getElementById('error-message').textContent = 'This verification link is missing its token. Please request a new one below.';
+                showState('error-state');
+                return;
+            }
+            try {
+                var response = await fetch('/api/auth/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: verifyToken })
+                });
+                var data = await response.json();
+                if (response.ok) {
+                    showState('success-state');
+                } else {
+                    document.getElementById('error-message').textContent = data.error || 'This verification link is invalid or has already been used.';
+                    showState('error-state');
+                }
+            } catch (error) {
+                document.getElementById('error-message').textContent = 'Connection error. Please try again.';
+                showState('error-state');
+            }
+        }
+
+        async function handleResend() {
+            var token = localStorage.getItem('token');
+            if (!token) {
+                document.getElementById('error-message').textContent = 'Please log in first, then use "Resend verification email" from your account.';
+                return;
+            }
+            var btn = document.getElementById('resend-btn');
+            var originalText = btn.textContent;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:6px;"></i>Sending...';
+            try {
+                var response = await fetch('/api/auth/resend-verification', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                var data = await response.json();
+                document.getElementById('error-message').textContent = response.ok
+                    ? (data.message || 'Verification email sent. Please check your inbox.')
+                    : (data.error || 'Failed to send verification email.');
+            } catch (error) {
+                document.getElementById('error-message').textContent = 'Connection error. Please try again.';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        verify();
+    </script>
+</body>
+</html>

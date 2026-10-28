@@ -6,6 +6,9 @@ import org.example.finzin.service.JwtTokenProvider;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.example.finzin.config.JwtAuthFilter;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -29,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Slice test for {@link AIController}. Covers the chat endpoint's validation/error-mapping branches
  * and the conversation CRUD endpoints' not-found / happy-path branches.
  */
-@WebMvcTest(AIController.class)
+@WebMvcTest(controllers = AIController.class, excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = JwtAuthFilter.class))
 class AIControllerTest {
 
     @Autowired private MockMvc mockMvc;

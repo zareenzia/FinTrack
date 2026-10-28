@@ -36,11 +36,13 @@ public class GoldAssetService {
     // ── CRUD ──────────────────────────────────────────────────────────────────
 
     public List<GoldAssetEntity> getAssetsForUser(Long userId) {
-        return assetRepository.findByUserId(userId);
+        return assetRepository.findByUserIdOrderBySortOrderAscIdAsc(userId);
     }
 
     @Transactional
     public GoldAssetEntity createAsset(GoldAssetEntity asset) {
+        Integer maxOrder = assetRepository.findMaxSortOrderByUserId(asset.getUserId());
+        asset.setSortOrder(maxOrder == null ? 0 : maxOrder + 1);
         GoldAssetEntity saved = assetRepository.save(asset);
         saved.setCurrentValue(calculateValue(saved, getUserPriceMode(saved.getUserId()), saved.getUserId()));
         GoldAssetEntity finalized = assetRepository.save(saved);
@@ -64,6 +66,29 @@ public class GoldAssetService {
 
     public Optional<GoldAssetEntity> findById(Long id) {
         return assetRepository.findById(id);
+    }
+
+    /**
+     * Persists a new custom row order for the given user's gold assets (drag-and-drop reordering
+     * in the Gold Inventory table). {@code orderedIds} must contain exactly the same set of asset
+     * IDs the user currently owns; sortOrder is assigned as the 0-based position in that list.
+     */
+    @Transactional
+    public void reorderAssets(Long userId, List<Long> orderedIds) {
+        List<GoldAssetEntity> owned = assetRepository.findByUserId(userId);
+        Map<Long, GoldAssetEntity> byId = new HashMap<>();
+        for (GoldAssetEntity a : owned) byId.put(a.getId(), a);
+
+        if (orderedIds == null || orderedIds.size() != owned.size() || !byId.keySet().containsAll(orderedIds)) {
+            throw new IllegalArgumentException("Reorder list must contain exactly the user's current asset IDs");
+        }
+
+        int position = 0;
+        for (Long id : orderedIds) {
+            GoldAssetEntity asset = byId.get(id);
+            asset.setSortOrder(position++);
+            assetRepository.save(asset);
+        }
     }
 
     // ── VALUATION ─────────────────────────────────────────────────────────────

@@ -79,12 +79,13 @@ class CreditCardServiceTest {
     }
 
     @Test
-    void overpaymentIsAlwaysBlockedRegardlessOfBehaviorMode() {
+    void overpaymentIsAllowedAndReturnsACreditBalanceWarning() {
         // destination is the credit card being paid off; behavior mode is irrelevant to overpayment
         when(accountRepository.findByIdForUpdate(CARD_ID)).thenReturn(Optional.of(card(12000, 100000, "IGNORE")));
 
-        assertThrows(CreditCardValidationException.class,
-                () -> service.validate(USER_ID, null, CARD_ID, "transfer", 20000));
+        String warning = service.validate(USER_ID, null, CARD_ID, "transfer", 20000);
+
+        assertEquals("This payment is ৳8000.00 more than the outstanding balance — the extra amount will be added to the card as an available credit balance.", warning);
     }
 
     @Test
@@ -103,11 +104,12 @@ class CreditCardServiceTest {
     // ============================================================================================
 
     @Test
-    void overpaymentIsAlwaysBlockedForExpenseTypeToo() {
+    void overpaymentIsAllowedAndReturnsACreditBalanceWarningForExpenseTypeToo() {
         when(accountRepository.findByIdForUpdate(CARD_ID)).thenReturn(Optional.of(card(12000, 100000, "IGNORE")));
 
-        assertThrows(CreditCardValidationException.class,
-                () -> service.validate(USER_ID, null, CARD_ID, "expense", 20000));
+        String warning = service.validate(USER_ID, null, CARD_ID, "expense", 20000);
+
+        assertEquals("This payment is ৳8000.00 more than the outstanding balance — the extra amount will be added to the card as an available credit balance.", warning);
     }
 
     @Test

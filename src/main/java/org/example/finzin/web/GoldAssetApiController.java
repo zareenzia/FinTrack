@@ -109,6 +109,20 @@ public class GoldAssetApiController {
         return ResponseEntity.noContent().build();
     }
 
+    @PutMapping("/assets/reorder")
+    public ResponseEntity<?> reorderAssets(HttpServletRequest request, @RequestBody ReorderRequest body) {
+        Long userId = getUserId(request);
+        if (body == null || body.order() == null || body.order().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "order is required"));
+        }
+        try {
+            assetService.reorderAssets(userId, body.order());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+        return ResponseEntity.ok(Map.of("message", "Order saved"));
+    }
+
     // ── PRICES ────────────────────────────────────────────────────────────────
 
     @GetMapping("/prices/current")
@@ -218,6 +232,7 @@ public class GoldAssetApiController {
         m.put("gainLoss", currentValue - purchasePrice);
         m.put("gainLossPct", purchasePrice > 0 ? ((currentValue - purchasePrice) / purchasePrice) * 100 : 0);
         m.put("notes", a.getNotes());
+        m.put("sortOrder", a.getSortOrder());
         m.put("createdAt", a.getCreatedAt() != null ? a.getCreatedAt().toString() : null);
         m.put("updatedAt", a.getUpdatedAt() != null ? a.getUpdatedAt().toString() : null);
         return m;
@@ -271,5 +286,9 @@ public class GoldAssetApiController {
     private record PriceModeRequest(
             String mode,
             String manualPricesJson
+    ) {}
+
+    private record ReorderRequest(
+            List<Long> order
     ) {}
 }

@@ -5,6 +5,9 @@ import org.example.finzin.service.JwtTokenProvider;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.example.finzin.config.JwtAuthFilter;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -26,7 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * when the JwtAuthFilter never set the "userId" request attribute (which is the actual behavior in
  * this codebase — there is no 401 path here).
  */
-@WebMvcTest(AICoachApiController.class)
+@WebMvcTest(controllers = AICoachApiController.class, excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = JwtAuthFilter.class))
 class AICoachApiControllerTest {
 
     @Autowired private MockMvc mockMvc;

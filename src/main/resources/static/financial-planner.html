@@ -727,6 +727,7 @@
                     <div class="col-md-4">
                         <label class="form-label">Remaining Balance *</label>
                         <input type="number" class="form-control" id="loanBalance" step="0.01" min="0" placeholder="0.00">
+                        <small class="text-muted d-none" id="loanBalanceHint">Use "Record a Payment" below to update this.</small>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Start Date *</label>
@@ -753,6 +754,14 @@
                             <option value="CLOSED">Closed</option>
                             <option value="OVERDUE">Overdue</option>
                         </select>
+                    </div>
+                    <div class="col-md-4 d-none" id="loanPaymentRow">
+                        <label class="form-label">Record a Payment</label>
+                        <div class="input-group">
+                            <span class="input-group-text">৳</span>
+                            <input type="number" class="form-control" id="loanPaymentAmount" step="0.01" min="0.01" placeholder="e.g., 20000">
+                        </div>
+                        <small class="text-muted">Paid this period, then click Save below — balance, progress, and status update automatically.</small>
                     </div>
                     <div class="col-12">
                         <label class="form-label">Notes</label>
