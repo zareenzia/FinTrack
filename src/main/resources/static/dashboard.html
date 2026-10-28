@@ -198,7 +198,7 @@
                     <div class="sc-top">
                         <div class="sc-icon-circle"><i class="fas fa-piggy-bank"></i></div>
                         <div class="sc-title-block">
-                            <div class="sc-title">Total Savings</div>
+                            <div class="sc-title">Monthly Savings</div>
                             <div class="sc-subtitle"><i class="fas fa-shield-halved sc-trend-up"></i> <span class="sc-month-label">This month</span></div>
                         </div>
                         <button class="sc-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
@@ -206,6 +206,7 @@
                     <hr class="sc-divider">
                     <div class="sc-bottom">
                         <h3 class="stat-card-amount" id="total-savings">...</h3>
+                        <button class="sc-details-btn" onclick="openSavingsBreakdownModal()" title="View savings breakdown by fund"><i class="fas fa-list-ul"></i></button>
                     </div>
                 </div>
             </div>
@@ -543,10 +544,11 @@
                             <div class="summary-stat-inner">
                                 <span class="summary-stat-icon"><i class="fas fa-piggy-bank"></i></span>
                                 <div class="summary-stat-text">
-                                    <span class="summary-stat-title">Total Savings</span>
+                                    <span class="summary-stat-title">Monthly Savings</span>
                                     <span class="summary-stat-sub"><i class="fas fa-shield-halved sc-trend-up"></i> <span class="sc-month-label">This month</span></span>
                                 </div>
                                 <h3 class="stat-card-amount" id="total-savingsCompact">...</h3>
+                                <button class="summary-details-btn" onclick="openSavingsBreakdownModal()" title="View savings breakdown by fund"><i class="fas fa-list-ul"></i></button>
                                 <button class="sc-eye-btn summary-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
                             </div>
                         </div>
@@ -955,6 +957,7 @@
     let receiptsByTransactionId = {};
     let receiptDetailModal   = null;
     let rdCurrentReceiptId   = null;
+    let savingsBreakdownModal = null;
 
     /** 'YYYY-MM' key for a date string/object */
     function monthKeyOf(dateVal) {
@@ -1003,7 +1006,12 @@
             el.style.fontSize = '';
             const cardBody = el.closest('.card-body');
             if (!cardBody) return;
-            const maxW = cardBody.clientWidth - 48;
+            // The savings card's "view breakdown" button shares this row with the amount — leave
+            // room for it, otherwise this assumes the amount alone owns the full card width and
+            // the button clips it instead of the shrink loop below kicking in.
+            const detailsBtn = el.parentElement && el.parentElement.querySelector('.sc-details-btn, .summary-details-btn');
+            const reserved = 48 + (detailsBtn ? detailsBtn.offsetWidth + 8 : 0);
+            const maxW = cardBody.clientWidth - reserved;
             let fs = parseFloat(window.getComputedStyle(el).fontSize);
             let safety = 0;
             while (el.scrollWidth > maxW && fs > 12 && safety++ < 25) {
@@ -1217,6 +1225,71 @@
         }).sort(function (a, b) { return b.total - a.total; });
     }
 
+    /** Sum of this scope's expense transactions marked "spent from savings" (drawn from the pool, not tied to a fund) */
+    function sumWithdrawnFromSavings(txs) {
+        return txs.reduce(function (sum, tx) {
+            return (tx.transaction_type === 'expense' && tx.fromSavings) ? sum + (Number(tx.amount) || 0) : sum;
+        }, 0);
+    }
+
+    function sbFundListHtml(funds) {
+        if (!funds.length) {
+            return '<p class="mb-0" style="color:var(--text-muted-custom,#888);font-size:0.85rem;">No savings logged yet.</p>';
+        }
+        return funds.map(function (fund) {
+            return '<div class="d-flex align-items-center justify-content-between py-1">' +
+                     '<div class="d-flex align-items-center" style="min-width:0;">' +
+                       '<span style="width:12px;height:12px;border-radius:3px;background:' + (fund.color || '#6c757d') + ';margin-right:8px;flex-shrink:0;"></span>' +
+                       '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escHtml(fund.category) + '</span>' +
+                     '</div>' +
+                     '<span class="fw-semibold ms-2" style="flex-shrink:0;">' + formatAmount(fund.total) + '</span>' +
+                   '</div>';
+        }).join('');
+    }
+
+    function sbWithdrawnRowHtml(amount) {
+        if (amount <= 0) return '';
+        return '<div class="d-flex align-items-center justify-content-between py-1 text-danger" style="font-size:0.85rem;">' +
+                 '<span>Withdrawn from savings</span><span>&minus;' + formatAmount(amount) + '</span></div>';
+    }
+
+    function sbNetRowHtml(label, amount) {
+        return '<div class="d-flex align-items-center justify-content-between py-2 fw-bold" style="border-top:1px solid var(--border-color);margin-top:8px;">' +
+                 '<span>' + escHtml(label) + '</span><span>' + formatAmount(amount) + '</span></div>';
+    }
+
+    /** Build the Savings Breakdown modal body: selected month's per-fund total + all-time per-fund total */
+    function renderSavingsBreakdownModal() {
+        const monthKey = (selectedMonthKey && selectedMonthKey !== 'ALL') ? selectedMonthKey : currentMonthKey();
+        const monthLabel = monthKeyLabel(monthKey);
+
+        const monthFunds     = computeCategoryBreakdown(monthKey, 'savings');
+        const monthStats     = computeMonthStats(monthKey);
+        const monthWithdrawn = sumWithdrawnFromSavings(monthStats.txs);
+
+        const allFunds     = computeCategoryBreakdown('ALL', 'savings');
+        const allStats      = computeMonthStats('ALL');
+        const allWithdrawn = sumWithdrawnFromSavings(allStats.txs);
+
+        let html = '<h6 class="text-uppercase small fw-bold mb-2" style="color:var(--text-muted-custom,#888);">' + escHtml(monthLabel) + '</h6>';
+        html += sbFundListHtml(monthFunds);
+        html += sbWithdrawnRowHtml(monthWithdrawn);
+        html += sbNetRowHtml('Net this month', monthStats.savings);
+
+        html += '<hr style="border-color:var(--border-color);margin:20px 0 16px;">';
+        html += '<h6 class="text-uppercase small fw-bold mb-2" style="color:var(--text-muted-custom,#888);">All-Time by Fund</h6>';
+        html += sbFundListHtml(allFunds);
+        html += sbWithdrawnRowHtml(allWithdrawn);
+        html += sbNetRowHtml('Net all time', allStats.savings);
+
+        document.getElementById('savingsBreakdownBody').innerHTML = html;
+    }
+
+    function openSavingsBreakdownModal() {
+        renderSavingsBreakdownModal();
+        if (savingsBreakdownModal) savingsBreakdownModal.show();
+    }
+
     /** Push the selected month's numbers into the top stat cards + subtitles + net-balance styling */
     function renderMonthCards(monthKey) {
         const stats = computeMonthStats(monthKey);
@@ -1304,6 +1377,9 @@
 
         // "Scan Receipt" opens the shared scanner modal on the Transactions page
         document.getElementById('openScanReceiptBtn').addEventListener('click', openScanReceiptModal);
+
+        // Savings breakdown modal (per-fund monthly + all-time totals)
+        savingsBreakdownModal = new bootstrap.Modal(document.getElementById('savingsBreakdownModal'));
 
         // Receipt detail modal (view/download/replace/delete)
         receiptDetailModal = new bootstrap.Modal(document.getElementById('receiptDetailModal'));
@@ -2794,6 +2870,22 @@
         <a id="rdDownloadLink" href="#" download class="btn btn-outline-secondary icon-btn" title="Download"><i class="fas fa-download"></i></a>
         <button type="button" class="btn btn-outline-primary icon-btn" id="rdReplaceBtn" title="Replace image"><i class="fas fa-file-image"></i></button>
         <button type="button" class="btn btn-outline-danger icon-btn" id="rdDeleteBtn" title="Delete receipt"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Savings Breakdown Modal -->
+<div class="modal fade" id="savingsBreakdownModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:480px">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-piggy-bank me-2"></i>Savings Breakdown</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="savingsBreakdownBody"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>
