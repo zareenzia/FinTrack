@@ -93,12 +93,13 @@
         }
 
         /* Current Budget widget */
+        #currentBudgetBody, #currentBudgetBodyCompact { font-variant-numeric: tabular-nums; }
         .cb-progress { height: 10px; border-radius: 6px; background: var(--bg-input); overflow: hidden; }
         .cb-progress-bar { height: 100%; transition: width 0.3s ease; background: #28a745; }
         .cb-progress-bar.warn { background: #fd7e14; }
         .cb-progress-bar.over { background: #dc3545; }
         .cb-progress-sm { height: 6px; }
-        .cb-category-list { max-height: 130px; overflow-y: auto; margin-top: 4px; padding-right: 2px; }
+        .cb-category-list { margin-top: 4px; padding-right: 2px; }
         .cb-category-row:not(:last-child) { margin-bottom: 8px; }
 
         /* Recent Transactions collapse toggle */
@@ -304,13 +305,34 @@
                 <select class="form-select form-select-sm" id="monthViewSelect" style="width:auto; min-width:190px;">
                     <option value="">Loading…</option>
                 </select>
+                <button type="button" class="btn-add-transaction hide-values-toggle" id="hideValuesToggleBtn"
+                        onclick="toggleHideValues()" title="Hide/Show values" aria-label="Hide values" aria-pressed="false">
+                    <i class="fas fa-eye"></i>
+                </button>
             </div>
         </div>
     </div>
 
     <div id="dashboardDefaultView" class="dashboard-view-panel active">
     <div class="row mb-4">
-        <div class="col-6 col-md-4 col-xl-2 mb-3">
+        <div class="col-12 col-md-12 col-xl-4 mb-3">
+            <div class="card stat-card stat-card--hero">
+                <div class="card-body">
+                    <div class="sc-top">
+                        <div class="sc-icon-circle"><i class="fas fa-arrow-trend-down"></i></div>
+                        <div class="sc-title-block">
+                            <div class="sc-title">Total Expense</div>
+                            <div class="sc-subtitle">This month so far &middot; <span class="sc-month-label">This month</span></div>
+                        </div>
+                    </div>
+                    <hr class="sc-divider">
+                    <div class="sc-bottom">
+                        <h3 class="stat-card-amount stat-card-amount--hero" id="total-expense">...</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-6 col-xl-2 mb-3">
             <div class="card stat-card stat-card--income">
                 <div class="card-body">
                     <div class="sc-top">
@@ -319,7 +341,6 @@
                             <div class="sc-title">Total Income</div>
                             <div class="sc-subtitle"><i class="fas fa-arrow-up sc-trend-up"></i> <span class="sc-month-label">This month</span></div>
                         </div>
-                        <button class="sc-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
                     </div>
                     <hr class="sc-divider">
                     <div class="sc-bottom">
@@ -328,25 +349,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-6 col-md-4 col-xl-2 mb-3">
-            <div class="card stat-card stat-card--expense">
-                <div class="card-body">
-                    <div class="sc-top">
-                        <div class="sc-icon-circle"><i class="fas fa-arrow-trend-down"></i></div>
-                        <div class="sc-title-block">
-                            <div class="sc-title">Total Expense</div>
-                            <div class="sc-subtitle"><i class="fas fa-arrow-down sc-trend-down"></i> <span class="sc-month-label">This month</span></div>
-                        </div>
-                        <button class="sc-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
-                    </div>
-                    <hr class="sc-divider">
-                    <div class="sc-bottom">
-                        <h3 class="stat-card-amount" id="total-expense">...</h3>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-md-4 col-xl-2 mb-3">
+        <div class="col-6 col-md-6 col-xl-2 mb-3">
             <div class="card stat-card stat-card--savings">
                 <div class="card-body">
                     <div class="sc-top">
@@ -355,7 +358,6 @@
                             <div class="sc-title">Monthly Savings</div>
                             <div class="sc-subtitle"><i class="fas fa-shield-halved sc-trend-up"></i> <span class="sc-month-label">This month</span></div>
                         </div>
-                        <button class="sc-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
                     </div>
                     <hr class="sc-divider">
                     <div class="sc-bottom">
@@ -365,7 +367,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-6 col-md-4 col-xl-2 mb-3">
+        <div class="col-6 col-md-6 col-xl-2 mb-3">
             <div class="card stat-card stat-card--balance" id="netBalanceCard">
                 <div class="card-body">
                     <div class="sc-top">
@@ -374,7 +376,6 @@
                             <div class="sc-title">Net Balance</div>
                             <div class="sc-subtitle"><i class="fas fa-circle-check sc-trend-up"></i> <span class="sc-month-label">This month</span></div>
                         </div>
-                        <button class="sc-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
                     </div>
                     <hr class="sc-divider">
                     <div class="sc-bottom">
@@ -383,25 +384,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-6 col-md-4 col-xl-2 mb-3">
-            <div class="card stat-card stat-card--assets">
-                <div class="card-body">
-                    <div class="sc-top">
-                        <div class="sc-icon-circle"><i class="fas fa-chart-line"></i></div>
-                        <div class="sc-title-block">
-                            <div class="sc-title">Assets Value</div>
-                            <div class="sc-subtitle"><i class="fas fa-gem sc-trend-up"></i> <span class="sc-subtitle-text">Portfolio &middot; All time</span></div>
-                        </div>
-                        <button class="sc-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
-                    </div>
-                    <hr class="sc-divider">
-                    <div class="sc-bottom">
-                        <h3 class="stat-card-amount" id="total-assets">...</h3>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-md-4 col-xl-2 mb-3">
+        <div class="col-6 col-md-6 col-xl-2 mb-3">
             <div class="card stat-card stat-card--networth">
                 <div class="card-body">
                     <div class="sc-top">
@@ -410,11 +393,13 @@
                             <div class="sc-title">Net Worth</div>
                             <div class="sc-subtitle"><i class="fas fa-star sc-trend-up"></i> <span class="sc-subtitle-text">Total value &middot; All time</span></div>
                         </div>
-                        <button class="sc-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
                     </div>
                     <hr class="sc-divider">
                     <div class="sc-bottom">
-                        <h3 class="stat-card-amount" id="net-worth">...</h3>
+                        <div>
+                            <h3 class="stat-card-amount" id="net-worth">...</h3>
+                            <div class="sc-sub-line">Assets <span id="total-assets">...</span></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -710,17 +695,6 @@
                         <h6 class="mb-0"><i class="fas fa-layer-group me-2"></i>Financial Overview</h6>
                     </div>
                     <div class="card-body p-0">
-                        <div class="stat-card stat-card--income summary-stat-row">
-                            <div class="summary-stat-inner">
-                                <span class="summary-stat-icon"><i class="fas fa-arrow-trend-up"></i></span>
-                                <div class="summary-stat-text">
-                                    <span class="summary-stat-title">Total Income</span>
-                                    <span class="summary-stat-sub"><i class="fas fa-arrow-up sc-trend-up"></i> <span class="sc-month-label">This month</span></span>
-                                </div>
-                                <h3 class="stat-card-amount" id="total-incomeCompact">...</h3>
-                                <button class="sc-eye-btn summary-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
-                            </div>
-                        </div>
                         <div class="stat-card stat-card--expense summary-stat-row">
                             <div class="summary-stat-inner">
                                 <span class="summary-stat-icon"><i class="fas fa-arrow-trend-down"></i></span>
@@ -729,7 +703,16 @@
                                     <span class="summary-stat-sub"><i class="fas fa-arrow-down sc-trend-down"></i> <span class="sc-month-label">This month</span></span>
                                 </div>
                                 <h3 class="stat-card-amount" id="total-expenseCompact">...</h3>
-                                <button class="sc-eye-btn summary-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-card--income summary-stat-row">
+                            <div class="summary-stat-inner">
+                                <span class="summary-stat-icon"><i class="fas fa-arrow-trend-up"></i></span>
+                                <div class="summary-stat-text">
+                                    <span class="summary-stat-title">Total Income</span>
+                                    <span class="summary-stat-sub"><i class="fas fa-arrow-up sc-trend-up"></i> <span class="sc-month-label">This month</span></span>
+                                </div>
+                                <h3 class="stat-card-amount" id="total-incomeCompact">...</h3>
                             </div>
                         </div>
                         <div class="stat-card stat-card--savings summary-stat-row">
@@ -741,7 +724,6 @@
                                 </div>
                                 <h3 class="stat-card-amount" id="total-savingsCompact">...</h3>
                                 <button class="summary-details-btn" onclick="openSavingsBreakdownModal()" title="View savings breakdown by fund"><i class="fas fa-list-ul"></i></button>
-                                <button class="sc-eye-btn summary-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
                             </div>
                         </div>
                         <div class="stat-card stat-card--balance summary-stat-row" id="netBalanceCardCompact">
@@ -752,18 +734,6 @@
                                     <span class="summary-stat-sub"><i class="fas fa-circle-check sc-trend-up"></i> <span class="sc-month-label">This month</span></span>
                                 </div>
                                 <h3 class="stat-card-amount" id="balanceCompact">...</h3>
-                                <button class="sc-eye-btn summary-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
-                            </div>
-                        </div>
-                        <div class="stat-card stat-card--assets summary-stat-row">
-                            <div class="summary-stat-inner">
-                                <span class="summary-stat-icon"><i class="fas fa-chart-line"></i></span>
-                                <div class="summary-stat-text">
-                                    <span class="summary-stat-title">Assets Value</span>
-                                    <span class="summary-stat-sub"><i class="fas fa-gem sc-trend-up"></i> Portfolio</span>
-                                </div>
-                                <h3 class="stat-card-amount" id="total-assetsCompact">...</h3>
-                                <button class="sc-eye-btn summary-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
                             </div>
                         </div>
                         <div class="stat-card stat-card--networth summary-stat-row">
@@ -771,10 +741,9 @@
                                 <span class="summary-stat-icon"><i class="fas fa-crown"></i></span>
                                 <div class="summary-stat-text">
                                     <span class="summary-stat-title">Net Worth</span>
-                                    <span class="summary-stat-sub"><i class="fas fa-star sc-trend-up"></i> Total value</span>
+                                    <span class="summary-stat-sub"><i class="fas fa-star sc-trend-up"></i> Total value &middot; Assets <span id="total-assetsCompact">...</span></span>
                                 </div>
                                 <h3 class="stat-card-amount" id="net-worthCompact">...</h3>
-                                <button class="sc-eye-btn summary-eye-btn" onclick="toggleCardValues(this)" title="Toggle visibility"><i class="fas fa-eye"></i></button>
                             </div>
                         </div>
                     </div>
@@ -1224,12 +1193,42 @@
         } catch(e) { return { symbol: '৳', position: 'before', decimals: 0 }; }
     }
 
-    /** Format a number as a currency string using saved settings */
-    function formatAmount(value) {
-        var c = getCurrencySettings();
-        var num = Number(value).toLocaleString('en-US', { minimumFractionDigits: c.decimals, maximumFractionDigits: c.decimals });
-        return c.position === 'before' ? c.symbol + num : num + '\u00a0' + c.symbol;
+    const HIDE_VALUES_MASK = '••••••';
+
+    /** Single source of truth for the "hide values" preference — stored alongside the
+     *  other dashboard settings in localStorage so it survives reloads (defaults to visible). */
+    function isHideValuesEnabled() {
+        try {
+            var s = JSON.parse(localStorage.getItem(getUserStorageKey('fintrack_settings')) || '{}');
+            return !!s.hideValues;
+        } catch (e) { return false; }
     }
+    function setHideValuesEnabled(hidden) {
+        try {
+            var key = getUserStorageKey('fintrack_settings');
+            var s = JSON.parse(localStorage.getItem(key) || '{}');
+            s.hideValues = !!hidden;
+            localStorage.setItem(key, JSON.stringify(s));
+        } catch (e) { /* ignore */ }
+    }
+
+    /** One shared money formatter used everywhere on the dashboard — always puts the minus
+     *  sign before the currency symbol ("-৳8,886", never "৳-8,886"), and masks the value
+     *  when the global hide-values toggle is on, so no individual component needs its own
+     *  hide logic. Pass {html:true} to wrap the symbol in a <span> for slightly larger/bolder
+     *  styling (only safe when the caller assigns the result via innerHTML, not textContent). */
+    function formatMoney(value, opts) {
+        opts = opts || {};
+        if (!opts.ignoreHide && isHideValuesEnabled()) return HIDE_VALUES_MASK;
+        var c = getCurrencySettings();
+        var n = Number(value) || 0;
+        var sign = n < 0 ? '-' : '';
+        var num = Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: c.decimals, maximumFractionDigits: c.decimals });
+        var symbol = opts.html ? '<span class="money-symbol">' + c.symbol + '</span>' : c.symbol;
+        return c.position === 'before' ? (sign + symbol + num) : (sign + num + '\u00a0' + symbol);
+    }
+    /** Back-compat alias — formatAmount was the original name used across the dashboard. */
+    function formatAmount(value) { return formatMoney(value); }
     let categoryColorMap      = {};
 
     /** Shrink .stat-card-amount font until text fits on one line */
@@ -1255,44 +1254,48 @@
         });
     }
 
-    /** Toggle individual card value visibility — JS text swap only */
-    function toggleCardValues(btn) {
-        var amount = btn.closest('.stat-card').querySelector('.stat-card-amount');
-        var icon   = btn.querySelector('i');
-        if (amount.dataset.hidden === 'true') {
-            amount.textContent    = amount.dataset.realValue || amount.textContent;
-            amount.dataset.hidden = 'false';
-            icon.className = 'fas fa-eye';
-        } else {
-            amount.dataset.realValue = amount.textContent;
-            amount.textContent    = '•••••••';
-            amount.dataset.hidden = 'true';
-            icon.className = 'fas fa-eye-slash';
-        }
+    /** Flip the single global hide-values preference, then re-render every widget that shows
+     *  money from data already loaded (no fresh network fetch) so the mask state updates
+     *  everywhere at once — formatMoney() itself decides whether to mask on each call. */
+    function toggleHideValues() {
+        setHideValuesEnabled(!isHideValuesEnabled());
+        syncHideValuesButton();
+        refreshMoneyDisplays();
     }
 
-    /** Apply hide-values setting to all stat cards on load */
+    /** Reflect the current hide-values preference on the one top-bar toggle button. */
+    function syncHideValuesButton() {
+        var btn = document.getElementById('hideValuesToggleBtn');
+        if (!btn) return;
+        var hidden = isHideValuesEnabled();
+        var icon = btn.querySelector('i');
+        btn.setAttribute('aria-pressed', hidden ? 'true' : 'false');
+        btn.setAttribute('aria-label', hidden ? 'Show values' : 'Hide values');
+        if (icon) icon.className = hidden ? 'fas fa-eye-slash' : 'fas fa-eye';
+    }
+
+    /** Re-paint every money-bearing widget using its already-loaded data. */
+    function refreshMoneyDisplays() {
+        renderMonthCards(selectedMonthKey);
+        loadAccountBalances();
+        loadCurrentBudget(selectedMonthKey);
+        if (typeof applyFiltersAndDisplay === 'function') applyFiltersAndDisplay();
+    }
+
+    /** Apply the saved hide-values preference to the toggle button on page load. */
     function applyCardHideSetting() {
-        try {
-            var s = JSON.parse(localStorage.getItem(getUserStorageKey('fintrack_settings')) || '{}');
-            if (s.hideValues) {
-                document.querySelectorAll('.stat-card').forEach(function(card) {
-                    var amount = card.querySelector('.stat-card-amount');
-                    var btn    = card.querySelector('.sc-eye-btn i');
-                    if (amount && amount.dataset.hidden !== 'true') {
-                        amount.dataset.realValue = amount.textContent;
-                        amount.textContent    = '•••••••';
-                        amount.dataset.hidden = 'true';
-                        if (btn) btn.className = 'fas fa-eye-slash';
-                    }
-                });
-            }
-        } catch(e) {}
+        syncHideValuesButton();
     }
 
     function setEl(id, val) {
         var el = document.getElementById(id);
         if (el) el.textContent = val;
+    }
+    /** Like setEl, but for money amounts — renders via innerHTML so the currency symbol can be
+     *  wrapped in its own span and styled slightly larger/bolder than the digits. */
+    function setElMoney(id, amount) {
+        var el = document.getElementById(id);
+        if (el) el.innerHTML = formatMoney(amount, { html: true });
     }
     function escHtml(s) {
         return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -1348,11 +1351,11 @@
             if (summaryResp.ok) {
                 var s = await summaryResp.json();
                 ['', 'Compact'].forEach(function (suf) {
-                    setEl('dashboardSummaryBank' + suf, '৳' + fmt(s.totalBank));
-                    setEl('dashboardSummaryMfs' + suf, '৳' + fmt(s.totalMfs));
-                    setEl('dashboardSummaryCash' + suf, '৳' + fmt(s.totalCash));
-                    setEl('dashboardSummaryCreditOutstanding' + suf, '৳' + fmt(s.totalCreditOutstanding));
-                    setEl('dashboardSummaryAvailable' + suf, '৳' + fmt(s.totalAvailable));
+                    setElMoney('dashboardSummaryBank' + suf, s.totalBank);
+                    setElMoney('dashboardSummaryMfs' + suf, s.totalMfs);
+                    setElMoney('dashboardSummaryCash' + suf, s.totalCash);
+                    setElMoney('dashboardSummaryCreditOutstanding' + suf, s.totalCreditOutstanding);
+                    setElMoney('dashboardSummaryAvailable' + suf, s.totalAvailable);
                 });
             }
 
@@ -1369,11 +1372,11 @@
                     if (accts.length === 0) { el.innerHTML = ''; return; }
                     el.innerHTML = accts.map(function(a) {
                         var name = escHtml(a.accountNickname);
-                        var bal = fmt(a.currentBalance);
+                        var bal = formatMoney(a.currentBalance);
                         var cls = isCredit ? 'bal-credit' : '';
                         return '<div class="acct-breakdown-row">' +
                             '<span class="acct-breakdown-name">' + name + '</span>' +
-                            '<span class="acct-breakdown-bal ' + cls + '">৳' + bal + '</span>' +
+                            '<span class="acct-breakdown-bal ' + cls + '">' + bal + '</span>' +
                             '</div>';
                     }).join('');
                 }
@@ -1532,10 +1535,10 @@
     function renderMonthCards(monthKey) {
         const stats = computeMonthStats(monthKey);
         ['', 'Compact'].forEach(function (suf) {
-            setEl('total-income' + suf,  formatAmount(stats.income));
-            setEl('total-expense' + suf, formatAmount(stats.expense));
-            setEl('total-savings' + suf, formatAmount(stats.savings));
-            setEl('balance' + suf,       formatAmount(stats.net));
+            setElMoney('total-income' + suf,  stats.income);
+            setElMoney('total-expense' + suf, stats.expense);
+            setElMoney('total-savings' + suf, stats.savings);
+            setElMoney('balance' + suf,       stats.net);
         });
 
         const label = monthKey === 'ALL' ? 'All time' : monthKeyLabel(monthKey, true);
@@ -2060,23 +2063,25 @@
             // selected month — rather than the plan's own (possibly stale/mismatched) name/period.
             const effectiveMonthKey = (monthKey && monthKey !== 'ALL') ? monthKey : currentMonthKey();
             const remainingHtml = isOverBudget
-                ? `Over by <strong style="color:#dc3545;">${formatAmount((data.summary.actualExpense + data.summary.actualSavings) - data.summary.plannedIncome)}</strong>`
-                : `Remaining: <strong style="color: var(--accent-color);">${formatAmount(data.summary.remaining)}</strong>`;
+                ? `Over by <strong style="color:#dc3545;">${formatMoney((data.summary.actualExpense + data.summary.actualSavings) - data.summary.plannedIncome, { html: true })}</strong>`
+                : `Remaining: <strong style="color: var(--accent-color);">${formatMoney(data.summary.remaining, { html: true })}</strong>`;
             const categories = data.categories || [];
-            const categoriesHtml = categories.length
+            const topCategories = categories.slice().sort((a, b) => b.percentUsed - a.percentUsed).slice(0, 3);
+            const categoriesHtml = topCategories.length
                 ? `<div class="small text-muted mt-2 mb-1">By Category</div>
-                   <div class="cb-category-list">${categories.map(c => {
+                   <div class="cb-category-list">${topCategories.map(c => {
                        const catPct = Math.min(100, c.percentUsed);
                        const catBarClass = c.percentUsed > 100 ? 'over' : (c.percentUsed >= 80 ? 'warn' : '');
                        return `
                         <div class="cb-category-row">
                             <div class="d-flex justify-content-between small mb-1">
                                 <span><i class="fas fa-${c.categoryIcon || 'tag'} me-1" style="color:${c.categoryColor || '#6c757d'}"></i>${escHtml(c.categoryName)}</span>
-                                <span class="text-muted">${formatAmount(c.actualAmount)} / ${formatAmount(c.budgetAmount)}</span>
+                                <span class="text-muted">${formatMoney(c.actualAmount, { html: true })} / ${formatMoney(c.budgetAmount, { html: true })}</span>
                             </div>
                             <div class="cb-progress cb-progress-sm"><div class="cb-progress-bar ${catBarClass}" style="width:${catPct}%"></div></div>
                         </div>`;
-                   }).join('')}</div>`
+                   }).join('')}</div>
+                   ${categories.length > topCategories.length ? '<a href="/budget-planner" class="small d-inline-block mt-1">View all categories</a>' : ''}`
                 : '';
             const html = `
                 <div class="d-flex justify-content-between align-items-center mb-1">
@@ -2100,11 +2105,7 @@
         try {
             const data = await fetch('/api/financial-planner/summary').then(r => r.ok ? r.json() : null);
             if (!data) return;
-            const fmtC = (v) => {
-                const c = typeof getCurrencySettings === 'function' ? getCurrencySettings() : { symbol: '৳', position: 'before', decimals: 0 };
-                const num = Number(v || 0).toLocaleString('en-BD', { minimumFractionDigits: 0, maximumFractionDigits: c.decimals });
-                return c.position === 'before' ? c.symbol + num : num + '\u00a0' + c.symbol;
-            };
+            const fmtC = formatMoney;
             const el = id => document.getElementById(id);
             ['', 'Compact'].forEach(suffix => {
                 if (el('fpwInvValue' + suffix)) el('fpwInvValue' + suffix).textContent = fmtC(data.investmentValue);
@@ -2138,8 +2139,8 @@
             // Assets Value & Net Worth are all-time/portfolio figures — not scoped to a month
             const summary = await fetch('/api/analytics/summary').then(r => r.json());
             ['', 'Compact'].forEach(function (suf) {
-                setEl('total-assets' + suf, formatAmount(summary.total_assets || 0));
-                setEl('net-worth' + suf,    formatAmount(summary.net_worth || 0));
+                setElMoney('total-assets' + suf, summary.total_assets || 0);
+                setElMoney('net-worth' + suf,    summary.net_worth || 0);
             });
 
             const categories = await fetch('/api/categories').then(r => r.json());
@@ -2336,7 +2337,7 @@
                     </div>
                     <div class="tx-col-amount">
                         <span class="tx-amount amount-${txClass}">
-                            ${amtPrefix}${formatAmount(tx.amount)}
+                            ${amtPrefix}${formatMoney(tx.amount, { html: true })}
                         </span>
                     </div>
                     <div class="tx-col-action">
@@ -2360,7 +2361,7 @@
                 <div class="tx-row tx-total-row">
                     <div class="tx-total-label"><strong>Net Total (${filteredTransactions.length} transaction${filteredTransactions.length !== 1 ? 's' : ''})</strong></div>
                     <div class="tx-col-amount">
-                        <span class="tx-amount amount-${totalClass}"><strong>${totalPrefix}${formatAmount(Math.abs(netTotal))}</strong></span>
+                        <span class="tx-amount amount-${totalClass}"><strong>${totalPrefix}${formatMoney(Math.abs(netTotal), { html: true })}</strong></span>
                     </div>
                     <div class="tx-col-action"></div>
                 </div>`;
@@ -3121,44 +3122,139 @@
     /* ── Charts ──────────────────────────────────────────────────────────── */
 
     let categoryChartInstances = {}; // suffix -> Chart instance ('' = default, 'Compact' = compact)
+    let categoryChartSignatures = {}; // suffix -> signature of the data/type last rendered, for memoization
+
+    /** Group categories whose share of the total is under 3% into a single "Other" slice, and
+     *  compute rounded percentages that always add up to exactly 100 (largest-remainder method). */
+    function buildCategoryChartModel(data) {
+        const total = data.reduce((sum, d) => sum + (d.total || 0), 0);
+        if (!total) return { slices: [], percents: [], total: 0 };
+
+        const MIN_SHARE = 0.03;
+        const slices = [];
+        let otherTotal = 0;
+        data.forEach(function (d) {
+            if ((d.total / total) < MIN_SHARE) otherTotal += d.total;
+            else slices.push(d);
+        });
+        if (otherTotal > 0) slices.push({ category: 'Other', total: otherTotal, color: '#9ca3af' });
+
+        const raw = slices.map(function (s) { return (s.total / total) * 100; });
+        const floors = raw.map(Math.floor);
+        const used = floors.reduce(function (a, b) { return a + b; }, 0);
+        let remainder = 100 - used;
+        const order = raw.map(function (v, i) { return { i: i, frac: v - floors[i] }; })
+            .sort(function (a, b) { return b.frac - a.frac; });
+        const percents = floors.slice();
+        for (let k = 0; k < remainder && k < order.length; k++) percents[order[k].i]++;
+
+        return { slices: slices, percents: percents, total: total };
+    }
+
+    /** Legend: category name + % next to it, amount in a muted style — sorted largest first
+     *  (the incoming `data` from computeCategoryBreakdown() is already sorted by amount desc). */
+    function renderCategoryLegend(model, suffix) {
+        const legendContainer = document.getElementById('categoryLegend' + suffix);
+        if (!legendContainer) return;
+        legendContainer.innerHTML = model.slices.map(function (d, i) {
+            return `
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div class="d-flex align-items-center" style="min-width:0;">
+                        <div style="width: 14px; height: 14px; background-color: ${d.color || '#3498db'}; border-radius: 3px; margin-right: 8px; flex-shrink: 0;"></div>
+                        <span style="font-size: 0.88rem;" class="text-truncate">${escHtml(d.category)} ${model.percents[i]}%</span>
+                    </div>
+                    <span class="small text-muted ms-2" style="flex-shrink:0;">${formatAmount(d.total)}</span>
+                </div>
+            `;
+        }).join('');
+    }
 
     function drawCategoryChart(data, suffix) {
         suffix = suffix || '';
         const canvasEl = document.getElementById('categoryChart' + suffix);
         if (!canvasEl) return; // that panel isn't in the DOM (shouldn't happen, but stay safe)
+
+        const model = buildCategoryChartModel(data);
+        renderCategoryLegend(model, suffix);
+
+        // Memoize: skip destroying/recreating the Chart.js instance (and its first-render
+        // animation) when neither the underlying data nor the chart type actually changed —
+        // this keeps re-renders on unrelated dashboard updates (e.g. a hide/show toggle) cheap.
+        const signature = JSON.stringify({
+            type: categoryChartType,
+            slices: model.slices.map(function (s) { return [s.category, s.total, s.color]; })
+        });
+        const legendWrap = document.getElementById('categoryLegendContainer' + suffix);
+        if (categoryChartSignatures[suffix] === signature && categoryChartInstances[suffix]) {
+            if (legendWrap) legendWrap.style.display = categoryChartType === 'pie' ? 'block' : 'none';
+            return;
+        }
+        categoryChartSignatures[suffix] = signature;
+
         const ctx = canvasEl.getContext('2d');
         if (categoryChartInstances[suffix]) {
             categoryChartInstances[suffix].destroy();
         }
 
         if (categoryChartType === 'pie') {
+            const centerTextPlugin = {
+                id: 'categoryCenterText',
+                afterDraw: function (chart) {
+                    const area = chart.chartArea;
+                    const cx = (area.left + area.right) / 2;
+                    const cy = (area.top + area.bottom) / 2;
+                    const c = chart.ctx;
+                    c.save();
+                    c.textAlign = 'center';
+                    c.textBaseline = 'middle';
+                    c.fillStyle = getComputedStyle(document.body).getPropertyValue('--text-body') || '#333';
+                    c.font = '700 1.1rem sans-serif';
+                    c.fillText(formatAmount(model.total), cx, cy - 8);
+                    c.font = '400 0.72rem sans-serif';
+                    c.fillStyle = getComputedStyle(document.body).getPropertyValue('--text-muted-custom') || '#888';
+                    c.fillText('Total expense', cx, cy + 12);
+                    c.restore();
+                }
+            };
             categoryChartInstances[suffix] = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: data.map(d => d.category),
+                    labels: model.slices.map(d => d.category),
                     datasets: [{
-                        data: data.map(d => d.total),
-                        backgroundColor: data.map(d => d.color || '#3498db')
+                        data: model.slices.map(d => d.total),
+                        backgroundColor: model.slices.map(d => d.color || '#3498db'),
+                        borderWidth: 0
                     }]
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 400 },
                     plugins: {
-                        legend: {display: false}
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function (ctx) {
+                                    const i = ctx.dataIndex;
+                                    const s = model.slices[i];
+                                    return s.category + ': ' + formatAmount(s.total) + ' (' + model.percents[i] + '%)';
+                                }
+                            }
+                        }
                     }
-                }
+                },
+                plugins: [centerTextPlugin]
             });
-            const legendWrap = document.getElementById('categoryLegendContainer' + suffix);
             if (legendWrap) legendWrap.style.display = 'block';
         } else if (categoryChartType === 'bar') {
             categoryChartInstances[suffix] = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: data.map(d => d.category),
+                    labels: model.slices.map(d => d.category),
                     datasets: [{
                         label: 'Expense',
-                        data: data.map(d => d.total),
-                        backgroundColor: data.map(d => d.color || '#3498db'),
+                        data: model.slices.map(d => d.total),
+                        backgroundColor: model.slices.map(d => d.color || '#3498db'),
                         borderRadius: 6,
                         borderSkipped: false
                     }]
@@ -3166,9 +3262,18 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    animation: { duration: 400 },
                     indexAxis: 'y',
                     plugins: {
-                        legend: { display: false }
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function (ctx) {
+                                    const i = ctx.dataIndex;
+                                    return formatAmount(model.slices[i].total) + ' (' + model.percents[i] + '%)';
+                                }
+                            }
+                        }
                     },
                     scales: {
                         x: {
@@ -3182,19 +3287,7 @@
                     }
                 }
             });
-            const legendWrap = document.getElementById('categoryLegendContainer' + suffix);
             if (legendWrap) legendWrap.style.display = 'none';
-        }
-
-        // Generate simple category legend
-        const legendContainer = document.getElementById('categoryLegend' + suffix);
-        if (legendContainer) {
-            legendContainer.innerHTML = data.map(d => `
-                <div class="d-flex align-items-center mb-2">
-                    <div style="width: 16px; height: 16px; background-color: ${d.color || '#3498db'}; border-radius: 3px; margin-right: 8px; flex-shrink: 0;"></div>
-                    <span style="font-size: 0.9rem;">${d.category}</span>
-                </div>
-            `).join('');
         }
     }
 

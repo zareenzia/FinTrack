@@ -32,6 +32,19 @@
     --stat-card-height:      130px;
     --stat-card-radius:      14px;
 
+    /* ===== Calm dark stat-card style (one shared card look, theme-agnostic) + per-card
+       accent tokens used only for the small icon badge and, where meaningful, the value text. ===== */
+    --card-dark-bg:          linear-gradient(160deg, #1c2b22 0%, #15201a 100%);
+    --card-dark-border:      rgba(255, 255, 255, 0.08);
+    --card-dark-text:        #f1f5f1;
+    --card-dark-text-muted:  rgba(241, 245, 241, 0.68);
+    --card-accent-income:    #34d399;
+    --card-accent-expense:   #f87171;
+    --card-accent-savings:   #60a5fa;
+    --card-accent-balance:   #fbbf24;
+    --card-accent-networth:  #22d3ee;
+    --card-hero-gradient:    linear-gradient(135deg,#b91c1c 0%,#e03c3c 45%,#f87171 100%);
+
     /* ===== Theme Variables â€” Light Mode ===== */
     --bg-body-1: #f0f4f0;
     --bg-body-2: #e8f1e8;
@@ -1083,14 +1096,26 @@ body.has-sidebar {
     box-shadow: 0 16px 48px rgba(0,0,0,0.28) !important;
 }
 
-/* Per-card gradient backgrounds — a darker anchor stop added to each for more depth/richness
-   than a flat two-tone gradient, while keeping the same hue family as their .sc-icon-circle color. */
-.stat-card--income  { background: linear-gradient(135deg,#0f7a45 0%,#1a9e5c 45%,#34d399 100%) !important; }
-.stat-card--expense { background: linear-gradient(135deg,#b91c1c 0%,#e03c3c 45%,#f87171 100%) !important; }
-.stat-card--savings { background: linear-gradient(135deg,#1d4ed8 0%,#2563eb 45%,#60a5fa 100%) !important; }
-.stat-card--balance { background: linear-gradient(135deg,#b45309 0%,#d97706 45%,#fbbf24 100%) !important; }
-.stat-card--assets  { background: linear-gradient(135deg,#6d28d9 0%,#7c3aed 45%,#a78bfa 100%) !important; }
-.stat-card--networth{ background: linear-gradient(135deg,#0c5c73 0%,#0e7490 45%,#22d3ee 100%) !important; }
+/* Net Worth now carries an extra "Assets ৳…" sub-line, and the hero card's value font is
+   noticeably larger — both need a little more room than the fixed 176px used elsewhere so
+   nothing gets clipped (overflow stays hidden so the corner sheen is still contained). */
+.stat-card--networth, .stat-card--hero {
+    height: auto !important;
+    min-height: 176px !important;
+    max-height: none !important;
+}
+
+/* One consistent dark card look shared by every grid stat-card — individual cards are told
+   apart only by their small colored icon badge and (where meaningful) colored value text,
+   instead of six different bright per-card gradients. */
+.stat-card--income, .stat-card--savings, .stat-card--balance, .stat-card--networth {
+    background: var(--card-dark-bg) !important;
+    border: 1px solid var(--card-dark-border) !important;
+}
+/* Hero card ("Total Expense") keeps the only gradient on the dashboard, per design. */
+.stat-card--hero {
+    background: var(--card-hero-gradient) !important;
+}
 
 .stat-card .card-body {
     padding: 18px 18px 16px 18px !important;
@@ -1101,43 +1126,40 @@ body.has-sidebar {
     height: 100%;
 }
 
-/* ── Top row: white circle icon + title + eye btn ── */
+/* ── Top row: colored icon badge + title ── */
 .sc-top {
     display: flex;
     align-items: flex-start;
     gap: 12px;
-    /* Reserve room on the right for the eye button, which is pulled out of this flex row (see
-       .sc-top .sc-eye-btn below) and pinned to the card's corner instead — otherwise the title
-       block would expand to fill that space and its text could run underneath the button. */
-    padding-right: 38px;
 }
 
-/* White circle with colored icon — animated pulse */
+/* Small colored icon badge — only the hero card keeps the old white-circle treatment, since
+   it sits on a bright gradient rather than the shared dark card background. */
 .sc-icon-circle {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    flex-shrink: 0;
+}
+.stat-card--hero .sc-icon-circle {
     width: 48px;
     height: 48px;
     border-radius: 50%;
     background: rgba(255,255,255,0.92);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.25rem;
-    flex-shrink: 0;
     box-shadow: 0 4px 14px rgba(0,0,0,0.15);
-    animation: scIconPulse 3s ease-in-out infinite;
-}
-@keyframes scIconPulse {
-    0%,100% { transform: scale(1);    box-shadow: 0 4px 14px rgba(0,0,0,0.15); }
-    50%      { transform: scale(1.08); box-shadow: 0 6px 20px rgba(0,0,0,0.22); }
+    color: #b91c1c;
 }
 
-/* Icon color per card type */
-.stat-card--income  .sc-icon-circle { color: #16a34a; }
-.stat-card--expense .sc-icon-circle { color: #dc2626; }
-.stat-card--savings .sc-icon-circle { color: #2563eb; }
-.stat-card--balance .sc-icon-circle { color: #d97706; }
-.stat-card--assets  .sc-icon-circle { color: #7c3aed; }
-.stat-card--networth .sc-icon-circle { color: #0e7490; }
+/* Icon badge background/color per card type — driven by the shared accent tokens above. */
+.stat-card--income  .sc-icon-circle { background: rgba(52,211,153,0.15); color: var(--card-accent-income); }
+.stat-card--savings .sc-icon-circle { background: rgba(96,165,250,0.15); color: var(--card-accent-savings); }
+.stat-card--balance .sc-icon-circle { background: rgba(251,191,36,0.15); color: var(--card-accent-balance); }
+.stat-card--networth .sc-icon-circle { background: rgba(34,211,238,0.15); color: var(--card-accent-networth); }
 
 .sc-title-block {
     flex: 1;
@@ -1181,37 +1203,7 @@ body.has-sidebar {
 .sc-trend-up   { color: #bbf7d0; }
 .sc-trend-down { color: #fecaca; }
 
-/* Eye toggle button */
-.sc-eye-btn {
-    background: rgba(255,255,255,0.18);
-    border: none;
-    border-radius: 8px;
-    color: rgba(255,255,255,0.75);
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 0.82rem;
-    transition: background 0.2s, color 0.2s;
-    padding: 0;
-    flex-shrink: 0;
-}
-.sc-eye-btn:hover { background: rgba(255,255,255,0.35); color: #fff; }
-
-/* In the grid stat-cards specifically (not the Compact view's summary-stat-row, which keeps its
-   own inline eye button), pin the eye button to the card's corner instead of letting it sit in
-   the flex row — that was stealing ~42px from the title/subtitle on every card, which is what
-   was forcing "Total Income", "Net Balance", etc. to wrap even at a normal card width. */
-.sc-top .sc-eye-btn {
-    position: absolute;
-    top: 18px;
-    right: 18px;
-}
-
-/* "View breakdown" button — sits in .sc-bottom next to the amount (savings card only), sized
-   to match .sc-eye-btn so the two buttons read as a matched pair. */
+/* "View breakdown" button — sits in .sc-bottom next to the amount (savings card only). */
 .sc-details-btn {
     background: rgba(255,255,255,0.18);
     border: none;
@@ -1260,6 +1252,18 @@ body.has-sidebar {
     font-size: clamp(1.3rem, 2.2vw, 1.8rem);
     -webkit-text-fill-color: unset !important;
     text-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    font-variant-numeric: tabular-nums;
+}
+/* Hero ("Total Expense") card gets a visibly larger value to read as the dashboard's focal point. */
+.stat-card-amount--hero {
+    font-size: clamp(1.8rem, 3vw, 2.6rem);
+}
+/* Net Worth's merged "Assets ৳…" sub-line */
+.sc-sub-line {
+    font-size: 0.72rem;
+    color: var(--card-dark-text-muted);
+    margin-top: 6px;
+    font-variant-numeric: tabular-nums;
 }
 
 /* Individual card amount hidden — handled via JS text swap */
@@ -1536,6 +1540,13 @@ body.has-sidebar {
 /* Shared header action-button style — used for the top-of-page action row on dashboard.html
    and transactions.html so both pages present the same buttons the same way, instead of one
    page's plain-text-color, uppercase Bootstrap buttons vs. the other's solid custom style. */
+.hide-values-toggle {
+    padding: 8px 12px !important;
+    width: 36px;
+    height: 36px;
+    justify-content: center;
+}
+
 .btn-add-transaction {
     background: var(--color-surface);
     color: #f5f5f0;
@@ -2580,6 +2591,13 @@ h3.stat-card-amount,
 
 .type-transfer { background: rgba(100, 116, 139, 0.12); color: var(--tx-transfer-color, #64748b); border: 1px solid rgba(100,116,139,0.3); }
 
+/* Shared currency-symbol emphasis — set by formatMoney(value, {html:true}) wherever a money
+   amount is rendered via innerHTML, so the ৳ symbol reads slightly larger/bolder than the digits. */
+.money-symbol {
+    font-size: 1.1em;
+    font-weight: 700;
+}
+
 /* Amount */
 .tx-amount {
     font-size: 0.92rem;
@@ -3298,24 +3316,7 @@ h3.stat-card-amount,
 .stat-card--assets.summary-stat-row  .stat-card-amount { color: #7c3aed !important; }
 .stat-card--networth.summary-stat-row .stat-card-amount{ color: #0e7490 !important; }
 
-/* Eye button — re-skin for non-gradient background */
-.summary-combined-card .summary-eye-btn {
-    background: transparent;
-    border: none;
-    color: var(--text-muted-custom, #aaa);
-    padding: 4px 6px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.8rem;
-    flex-shrink: 0;
-    transition: color 0.15s, background 0.15s;
-}
-.summary-combined-card .summary-eye-btn:hover {
-    background: rgba(0,0,0,0.08);
-    color: var(--text-body);
-}
-
-/* "View breakdown" button for the compact/summary savings row — mirrors .summary-eye-btn */
+/* "View breakdown" button for the compact/summary savings row */
 .summary-details-btn {
     background: transparent;
     border: none;
@@ -3347,8 +3348,6 @@ h3.stat-card-amount,
 [data-theme="dark"] .stat-card--assets.summary-stat-row  .stat-card-amount { color: #a78bfa !important; }
 [data-theme="dark"] .stat-card--networth.summary-stat-row .stat-card-amount{ color: #22d3ee !important; }
 
-[data-theme="dark"] .summary-combined-card .summary-eye-btn { color: rgba(255,255,255,0.4); }
-[data-theme="dark"] .summary-combined-card .summary-eye-btn:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.85); }
 [data-theme="dark"] .summary-details-btn { color: rgba(255,255,255,0.4); }
 [data-theme="dark"] .summary-details-btn:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.85); }
 
@@ -3373,8 +3372,8 @@ h3.stat-card-amount,
 .acct-breakdown-list:empty { display: none; }
 .acct-breakdown-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.76rem; color: var(--text-muted-custom, #888); }
 .acct-breakdown-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-.acct-summary-amount { font-size: 0.9rem; font-weight: 700; white-space: nowrap; color: #16a34a; }
-.acct-breakdown-bal { font-weight: 600; white-space: nowrap; margin-left: 8px; color: #16a34a; }
+.acct-summary-amount { font-size: 0.9rem; font-weight: 700; white-space: nowrap; color: #16a34a; font-variant-numeric: tabular-nums; }
+.acct-breakdown-bal { font-weight: 600; white-space: nowrap; margin-left: 8px; color: #16a34a; font-variant-numeric: tabular-nums; }
 .acct-breakdown-bal.bal-credit { color: #dc2626; }
 .balance-positive { color: #16a34a !important; }
 .balance-credit { color: #dc2626 !important; }
