@@ -67,6 +67,59 @@ jacocoTestReport {
 }
 
 
+// Cache-busting for static assets: after resources are copied into the build output, hash every
+// CSS/JS file's *content* and rewrite each HTML file's <link href="..."> / <script src="..."> that
+// points at it to append a "?v=<hash>" query string. Because the hash is derived from the file's
+// bytes, it only changes when the file's content actually changes on a given deploy — so browsers
+// can safely cache "/css/style.css?v=<hash>" forever (see WebConfig's immutable Cache-Control for
+// /css/**, /js/**, /images/**) while always re-fetching the HTML itself (short/no-cache, also in
+// WebConfig) to discover the current hash. This removes any need for a manual hard refresh after
+// a deploy, and requires no manual version bumping — every build recomputes hashes automatically.
+task versionStaticAssets {
+    group = 'build'
+    description = 'Injects a content-hash ?v= query param into CSS/JS references inside the built static HTML for cache-busting.'
+    // Always re-run: it rewrites files Gradle just copied via processResources, so relying on
+    // input/output-directory up-to-date tracking on that same directory would be unreliable.
+    outputs.upToDateWhen { false }
+
+    doLast {
+        def staticDir = layout.buildDirectory.dir('resources/main/static').get().asFile
+        if (!staticDir.exists()) {
+            return
+        }
+
+        def hashes = [:]
+        ['css', 'js', 'images'].each { sub ->
+            def folder = new File(staticDir, sub)
+            if (folder.exists()) {
+                folder.listFiles({ f -> f.isFile() && (f.name.endsWith('.css') || f.name.endsWith('.js')) } as FileFilter)?.each { f ->
+                    def digest = java.security.MessageDigest.getInstance('SHA-256').digest(f.bytes)
+                    def hex = digest.collect { b -> String.format('%02x', b) }.join().substring(0, 10)
+                    hashes["/$sub/${f.name}"] = hex
+                }
+            }
+        }
+        if (hashes.isEmpty()) {
+            return
+        }
+
+        staticDir.listFiles({ f -> f.isFile() && f.name.endsWith('.html') } as FileFilter)?.each { html ->
+            def content = html.getText('UTF-8')
+            def updated = content
+            hashes.each { relPath, hash ->
+                def quoted = java.util.regex.Pattern.quote(relPath)
+                // Only replace the exact attribute value (href="/css/style.css" or
+                // src="/js/app.js"), not arbitrary substring matches elsewhere in the page.
+                updated = updated.replaceAll('(?<=["\'])' + quoted + '(?=["\'])', relPath + '?v=' + hash)
+            }
+            if (updated != content) {
+                html.setText(updated, 'UTF-8')
+            }
+        }
+    }
+}
+processResources.finalizedBy(versionStaticAssets)
+
 task downloadTessdata {
     def tessdataDir = file('tessdata')
     def dest = file('tessdata/eng.traineddata')

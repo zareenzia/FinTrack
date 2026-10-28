@@ -455,6 +455,113 @@
                     </div>
 
                     <div id="syncErrorBlock" class="alert alert-danger py-1 px-2 mt-2 mb-0 d-none" style="font-size:0.78rem;"></div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card stat-card--income">
+                <div class="card-body">
+                    <div class="sc-top">
+                        <div class="sc-icon-circle"><i class="fas fa-weight-hanging"></i></div>
+                        <div class="sc-title-block">
+                            <div class="sc-title">Total Weight</div>
+                            <div class="sc-subtitle"><i class="fas fa-balance-scale sc-trend-up"></i> Combined</div>
+                        </div>
+                    </div>
+                    <hr class="sc-divider">
+                    <div class="sc-bottom">
+                        <h3 class="stat-card-amount" id="totalWeight">...</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card stat-card--savings">
+                <div class="card-body">
+                    <div class="sc-top">
+                        <div class="sc-icon-circle"><i class="fas fa-layer-group"></i></div>
+                        <div class="sc-title-block">
+                            <div class="sc-title">Gold Assets</div>
+                            <div class="sc-subtitle"><i class="fas fa-list sc-trend-up"></i> Total items</div>
+                        </div>
+                    </div>
+                    <hr class="sc-divider">
+                    <div class="sc-bottom">
+                        <h3 class="stat-card-amount" id="numberOfAssets">...</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card stat-card--balance">
+                <div class="card-body">
+                    <div class="sc-top">
+                        <div class="sc-icon-circle"><i class="fas fa-chart-line"></i></div>
+                        <div class="sc-title-block">
+                            <div class="sc-title">22K Gold / Gram</div>
+                            <div class="sc-subtitle"><i class="fas fa-tag sc-trend-up"></i> Current price</div>
+                        </div>
+                    </div>
+                    <hr class="sc-divider">
+                    <div class="sc-bottom">
+                        <h3 class="stat-card-amount" id="currentGoldPrice">...</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── SYNC STATUS + PRICE MODE + CURRENT PRICES ─────────────── -->
+    <div class="row mb-4 g-3">
+        <div class="col-xl-3 col-lg-4 col-md-6">
+            <div class="card sync-card h-100">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <h6 class="mb-0"><i class="fas fa-satellite-dish me-2"></i>Price Sync Status</h6>
+                    <span class="gold-badge" id="syncModeBadge" style="font-size:0.75rem;">—</span>
+                </div>
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="sync-dot" id="syncDot"></span>
+                        <span id="syncStatusText" class="text-muted" style="font-size:0.88rem;">Loading…</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-1 text-muted mb-2" style="font-size:0.82rem;">
+                        <i class="fas fa-clock"></i>
+                        <span id="lastSyncTime">—</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-1 text-muted mb-0" style="font-size:0.82rem;">
+                        <i class="fas fa-link"></i>
+                        <a href="https://www.goldr.org/" target="_blank" class="text-decoration-none" style="color:var(--color-accent);">goldr.org</a>
+                    </div>
+                    <div id="syncErrorBlock" class="alert alert-danger py-2 px-3 mt-2 mb-0 d-none" style="font-size:0.82rem;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-4 col-md-6">
+            <div class="card h-100">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <h6 class="mb-0"><i class="fas fa-sliders-h me-2"></i>Pricing Mode</h6>
+                    <span class="gold-badge" id="priceModeLabel" style="font-size:0.75rem;">—</span>
+                </div>
+                <div class="card-body py-3">
+                    <p class="text-muted mb-3" style="font-size:0.85rem;">
+                        <b>Automatic:</b> uses latest prices from GoldR.<br>
+                        <b>Manual:</b> uses your custom prices per purity.
+                    </p>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button class="btn btn-sm btn-success" id="btnAutoMode" onclick="setPriceMode('AUTOMATIC')">
+                            <i class="fas fa-robot me-1"></i> Use Automatic
+                        </button>
+                        <button class="btn btn-sm btn-warning" id="btnManualMode" onclick="openManualPriceModal()">
+                            <i class="fas fa-pencil-alt me-1"></i> Set Manual Prices
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6 col-lg-4 col-md-12">
+            <div class="card h-100">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <h6 class="mb-0"><i class="fas fa-table me-2"></i>Current Gold Prices</h6>
+                    <small class="text-muted" id="priceTableUpdated"></small>
                 </div>
                 <div class="card-body p-0">
                     <div class="gp-price-table-wrap">
