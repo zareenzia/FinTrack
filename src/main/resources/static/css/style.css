@@ -1172,7 +1172,7 @@ body.has-sidebar {
 .stat-card--hero {
     background: linear-gradient(135deg, var(--accent-soft) 0%, transparent 70%), var(--surface) !important;
     border: 1px solid var(--border) !important;
-    border-top: 3px solid var(--accent) !important;
+    border-top: 1px solid color-mix(in srgb, var(--accent) 40%, transparent) !important;
 }
 
 .stat-card .card-body {
@@ -2667,6 +2667,48 @@ h3.stat-card-amount,
     color: rgba(255,255,255,0.7);
     display: block;
     margin-top: 1px;
+}
+
+/* ===== Dashboard page only: slim Recent Transactions header, to match every other
+   dashboard-card-header. Replaces the filled accent gradient bar with a transparent
+   background, thin bottom divider and an --accent-soft icon badge (transactions.html
+   keeps its own filled-bar header untouched). ===== */
+body.dashboard-page .tx-card-header {
+    background: transparent !important;
+    padding: 0 0 12px !important;
+    border-bottom: 1px solid var(--border) !important;
+    border-radius: 0 !important;
+}
+body.dashboard-page .tx-header-icon {
+    background: var(--accent-soft);
+    color: var(--accent);
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm, 8px);
+    font-size: 0.85rem;
+}
+body.dashboard-page .tx-header-title { color: var(--text) !important; }
+body.dashboard-page .tx-header-sub { color: var(--text-subtle, var(--text-muted)); }
+body.dashboard-page .tx-filter-select,
+body.dashboard-page .tx-filter-search,
+body.dashboard-page .tx-export-btn,
+body.dashboard-page .tx-view-all-btn {
+    background: var(--surface-2, var(--bg-input)) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text) !important;
+}
+body.dashboard-page .tx-filter-select:hover, body.dashboard-page .tx-filter-select:focus,
+body.dashboard-page .tx-filter-search:hover, body.dashboard-page .tx-filter-search:focus,
+body.dashboard-page .tx-export-btn:hover,
+body.dashboard-page .tx-view-all-btn:hover {
+    background: var(--accent-soft) !important;
+    border-color: var(--accent) !important;
+    color: var(--text) !important;
+}
+body.dashboard-page .tx-filter-search::placeholder { color: var(--text-muted); }
+body.dashboard-page .tx-filter-select option {
+    background: var(--bg-modal);
+    color: var(--text-body);
 }
 
 .tx-view-all-btn {
