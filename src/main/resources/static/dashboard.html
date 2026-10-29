@@ -144,6 +144,16 @@
             row-gap: 6px;
         }
         @media (max-width: 420px) { .cat-legend-grid { grid-template-columns: 1fr; } }
+        /* >12 categories: scroll inside the legend instead of stretching the card forever */
+        .cat-legend-grid-scroll {
+            max-height: 260px;
+            overflow-y: auto;
+            padding-right: 4px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border, #333) transparent;
+        }
+        .cat-legend-grid-scroll::-webkit-scrollbar { width: 6px; }
+        .cat-legend-grid-scroll::-webkit-scrollbar-thumb { background: var(--border, #333); border-radius: 6px; }
         .cat-legend-row {
             display: grid;
             grid-template-columns: 12px minmax(0, 1fr) auto;
@@ -365,19 +375,20 @@
                 <select class="form-select form-select-sm dashboard-month-select" id="monthViewSelect">
                     <option value="">Loading…</option>
                 </select>
+                <button type="button" class="btn-add-transaction" id="openAddTxModalBtn" title="Add new transaction">
+                    <i class="fas fa-plus"></i>Add Transaction
+                </button>
                 <button type="button" class="icon-btn hide-values-toggle" id="hideValuesToggleBtn"
                         onclick="toggleHideValues()" title="Hide/Show card values" aria-label="Hide/Show card values" aria-pressed="false">
                     <i class="fas fa-eye"></i>
                 </button>
-                <button type="button" class="icon-btn" id="refreshAllBtn" onclick="refreshAllWidgets()" title="Refresh all widgets" aria-label="Refresh all widgets">
-                    <i class="fas fa-rotate"></i><span class="refresh-all-label d-none d-sm-inline">All</span>
-                </button>
-                <button type="button" class="btn-add-transaction" id="openAddTxModalBtn" title="Add new transaction">
-                    <i class="fas fa-plus"></i>Add Transaction
+                <button type="button" class="icon-btn" id="refreshAllBtn" onclick="refreshAllWidgets()" title="Refresh all" aria-label="Refresh all">
+                    <i class="fas fa-rotate"></i>
                 </button>
                 <div class="dropdown dashboard-more-dropdown">
-                    <button type="button" class="btn-ghost dropdown-toggle" id="dashboardMoreBtn" data-bs-toggle="dropdown" aria-expanded="false" title="More actions">
-                        More
+                    <button type="button" class="icon-btn dropdown-toggle" id="dashboardMoreBtn" data-bs-toggle="dropdown" aria-expanded="false"
+                            title="More actions" aria-label="More actions" aria-haspopup="menu">
+                        <i class="fas fa-ellipsis-vertical"></i>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dashboardMoreBtn">
                         <li><button type="button" class="dropdown-item" id="openScanReceiptBtn"><i class="fas fa-camera me-2"></i>Scan Receipt</button></li>
@@ -477,9 +488,9 @@
                     </div>
                     <hr class="sc-divider">
                     <div class="sc-bottom">
-                        <div>
+                        <div class="sc-bottom-row">
                             <h3 class="stat-card-amount" id="net-worth">...</h3>
-                            <div class="sc-sub-line">Assets <span id="total-assets">...</span></div>
+                            <span class="sc-assets-inline" title="Assets">Assets <span id="total-assets">...</span></span>
                         </div>
                     </div>
                 </div>
@@ -572,97 +583,6 @@
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Account Balances + Current Budget + AI Financial Coach -->
-    <div class="row mb-4 g-3 align-items-stretch">
-        <div class="col-md-4">
-            <div class="card acct-summary-card h-100">
-                <div class="card-header dashboard-card-header">
-                    <h6 class="mb-0"><i class="fas fa-wallet me-2"></i>Account Balances</h6>
-                </div>
-                <div class="card-body p-0">
-                    <ul class="acct-summary-list">
-                        <li class="acct-summary-item acct-summary-group">
-                            <div class="acct-summary-row">
-                                <span class="acct-summary-icon acct-icon-bank"><i class="fas fa-university"></i></span>
-                                <span class="acct-summary-label">
-                                    <span class="acct-summary-title">Bank Balance</span>
-                                    <span class="acct-summary-sub">Bank + Debit</span>
-                                </span>
-                                <span class="acct-summary-amount" id="dashboardSummaryBank">…</span>
-                            </div>
-                            <div class="acct-breakdown-list" id="dashboardSummaryBankSubs"></div>
-                        </li>
-                        <li class="acct-summary-item acct-summary-group">
-                            <div class="acct-summary-row">
-                                <span class="acct-summary-icon acct-icon-mfs"><i class="fas fa-mobile-alt"></i></span>
-                                <span class="acct-summary-label">
-                                    <span class="acct-summary-title">MFS Balance</span>
-                                    <span class="acct-summary-sub">bKash, Nagad…</span>
-                                </span>
-                                <span class="acct-summary-amount" id="dashboardSummaryMfs">…</span>
-                            </div>
-                            <div class="acct-breakdown-list" id="dashboardSummaryMfsSubs"></div>
-                        </li>
-                        <li class="acct-summary-item acct-summary-group">
-                            <div class="acct-summary-row">
-                                <span class="acct-summary-icon acct-icon-cash"><i class="fas fa-money-bill-wave"></i></span>
-                                <span class="acct-summary-label">
-                                    <span class="acct-summary-title">Cash</span>
-                                    <span class="acct-summary-sub">Physical cash</span>
-                                </span>
-                                <span class="acct-summary-amount" id="dashboardSummaryCash">…</span>
-                            </div>
-                            <div class="acct-breakdown-list" id="dashboardSummaryCashSubs"></div>
-                        </li>
-                        <li class="acct-summary-item acct-summary-group">
-                            <div class="acct-summary-row">
-                                <span class="acct-summary-icon acct-icon-credit"><i class="fas fa-credit-card"></i></span>
-                                <span class="acct-summary-label">
-                                    <span class="acct-summary-title">Credit Outstanding</span>
-                                    <span class="acct-summary-sub">Credit cards</span>
-                                </span>
-                                <span class="acct-summary-amount balance-credit" id="dashboardSummaryCreditOutstanding">…</span>
-                            </div>
-                            <div class="acct-breakdown-list" id="dashboardSummaryCreditSubs"></div>
-                        </li>
-                        <li class="acct-summary-item acct-summary-total">
-                            <div class="acct-summary-row">
-                                <span class="acct-summary-icon acct-icon-card"><i class="fas fa-coins"></i></span>
-                                <span class="acct-summary-label">
-                                    <span class="acct-summary-title">Total Available</span>
-                                    <span class="acct-summary-sub">Bank + MFS + Cash</span>
-                                </span>
-                                <span class="acct-summary-amount balance-positive fw-bold" id="dashboardSummaryAvailable">…</span>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
-                    <h6 class="mb-0"><i class="fas fa-wallet me-2"></i>Current Budget</h6>
-                    <a href="/budget-planner" class="small fw-semibold" title="Open Budget Planner">Manage budget <i class="fas fa-arrow-right"></i></a>
-                </div>
-                <div class="card-body" id="currentBudgetBody">
-                    <p class="text-muted small mb-0">Loading…</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4" id="aiSummaryRow">
-            <div class="card h-100">
-                <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
-                    <h6 class="mb-0"><i class="fas fa-robot me-2"></i>AI Financial Coach</h6>
-                    <a href="/ai-assistant" class="btn btn-sm btn-outline-primary" title="Open AI Assistant"><i class="fas fa-comment-dots"></i></a>
-                </div>
-                <div class="card-body" id="aiSummaryBody">
-                    <p class="text-muted small mb-0">Loading…</p>
                 </div>
             </div>
         </div>
@@ -972,7 +892,7 @@
                 <div class="card h-100">
                     <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
                         <h6 class="mb-0"><i class="fas fa-wallet me-2"></i>Current Budget</h6>
-                        <a href="/budget-planner" class="small fw-semibold" title="Open Budget Planner">Manage budget <i class="fas fa-arrow-right"></i></a>
+                        <a href="/budget-planner" class="small fw-semibold dashboard-accent-link" title="Open Budget Planner">Manage budget <i class="fas fa-arrow-right"></i></a>
                     </div>
                     <div class="card-body" id="currentBudgetBodyCompact">
                         <p class="text-muted small mb-0">Loading…</p>
@@ -1146,6 +1066,101 @@
             </div>
         </div>
     </div>
+
+    <!-- Account Balances + Current Budget + AI Financial Coach — Default View only (placed after
+         the shared Recent Transactions block above so it renders last); Compact View keeps its
+         own copy of this row, further up, unaffected by this panel. -->
+    <div id="dashboardDefaultAcctRow" class="dashboard-view-panel active">
+    <div class="row mb-4 g-3 align-items-stretch">
+        <div class="col-md-4">
+            <div class="card acct-summary-card h-100">
+                <div class="card-header dashboard-card-header">
+                    <h6 class="mb-0"><i class="fas fa-wallet me-2"></i>Account Balances</h6>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="acct-summary-list">
+                        <li class="acct-summary-item acct-summary-group">
+                            <div class="acct-summary-row">
+                                <span class="acct-summary-icon acct-icon-bank"><i class="fas fa-university"></i></span>
+                                <span class="acct-summary-label">
+                                    <span class="acct-summary-title">Bank Balance</span>
+                                    <span class="acct-summary-sub">Bank + Debit</span>
+                                </span>
+                                <span class="acct-summary-amount" id="dashboardSummaryBank">…</span>
+                            </div>
+                            <div class="acct-breakdown-list" id="dashboardSummaryBankSubs"></div>
+                        </li>
+                        <li class="acct-summary-item acct-summary-group">
+                            <div class="acct-summary-row">
+                                <span class="acct-summary-icon acct-icon-mfs"><i class="fas fa-mobile-alt"></i></span>
+                                <span class="acct-summary-label">
+                                    <span class="acct-summary-title">MFS Balance</span>
+                                    <span class="acct-summary-sub">bKash, Nagad…</span>
+                                </span>
+                                <span class="acct-summary-amount" id="dashboardSummaryMfs">…</span>
+                            </div>
+                            <div class="acct-breakdown-list" id="dashboardSummaryMfsSubs"></div>
+                        </li>
+                        <li class="acct-summary-item acct-summary-group">
+                            <div class="acct-summary-row">
+                                <span class="acct-summary-icon acct-icon-cash"><i class="fas fa-money-bill-wave"></i></span>
+                                <span class="acct-summary-label">
+                                    <span class="acct-summary-title">Cash</span>
+                                    <span class="acct-summary-sub">Physical cash</span>
+                                </span>
+                                <span class="acct-summary-amount" id="dashboardSummaryCash">…</span>
+                            </div>
+                            <div class="acct-breakdown-list" id="dashboardSummaryCashSubs"></div>
+                        </li>
+                        <li class="acct-summary-item acct-summary-group">
+                            <div class="acct-summary-row">
+                                <span class="acct-summary-icon acct-icon-credit"><i class="fas fa-credit-card"></i></span>
+                                <span class="acct-summary-label">
+                                    <span class="acct-summary-title">Credit Outstanding</span>
+                                    <span class="acct-summary-sub">Credit cards</span>
+                                </span>
+                                <span class="acct-summary-amount balance-credit" id="dashboardSummaryCreditOutstanding">…</span>
+                            </div>
+                            <div class="acct-breakdown-list" id="dashboardSummaryCreditSubs"></div>
+                        </li>
+                        <li class="acct-summary-item acct-summary-total">
+                            <div class="acct-summary-row">
+                                <span class="acct-summary-icon acct-icon-card"><i class="fas fa-coins"></i></span>
+                                <span class="acct-summary-label">
+                                    <span class="acct-summary-title">Total Available</span>
+                                    <span class="acct-summary-sub">Bank + MFS + Cash</span>
+                                </span>
+                                <span class="acct-summary-amount balance-positive fw-bold" id="dashboardSummaryAvailable">…</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-wallet me-2"></i>Current Budget</h6>
+                    <a href="/budget-planner" class="small fw-semibold dashboard-accent-link" title="Open Budget Planner">Manage budget <i class="fas fa-arrow-right"></i></a>
+                </div>
+                <div class="card-body" id="currentBudgetBody">
+                    <p class="text-muted small mb-0">Loading…</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4" id="aiSummaryRow">
+            <div class="card h-100">
+                <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-robot me-2"></i>AI Financial Coach</h6>
+                    <a href="/ai-assistant" class="btn btn-sm btn-outline-primary" title="Open AI Assistant"><i class="fas fa-comment-dots"></i></a>
+                </div>
+                <div class="card-body" id="aiSummaryBody">
+                    <p class="text-muted small mb-0">Loading…</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div><!-- /#dashboardDefaultAcctRow -->
 </div>
 
 <script>
@@ -1272,6 +1287,10 @@
     /** Back-compat alias — formatAmount was the original name used across the dashboard. */
     function formatAmount(value) { return formatMoney(value); }
     let categoryColorMap      = {};
+    /** Alphabetical order of every category the account has (not just ones with spending this
+     *  month) — used to hand out a stable palette slot per category name so its color never
+     *  shifts from month to month just because the set of categories-with-spending changed. */
+    let categoryNameOrder     = [];
 
     /** Reads a semantic design-token CSS variable from the active theme (falls back if unset/unthemed). */
     function cssVar(name, fallback) {
@@ -1307,9 +1326,36 @@
             const toHex = v => Math.round((v + m) * 255).toString(16).padStart(2, '0');
             return '#' + toHex(rr) + toHex(gg) + toHex(bb);
         };
+        // Hue steps evenly around the wheel; lightness cycles through 3 bands so hue repeats
+        // (once count > the number of well-separated hues) still read as visibly different
+        // slices rather than near-duplicates.
+        const lightnessBands = [Math.max(0.4, Math.min(0.62, l)), 0.42, 0.6];
         const palette = [];
-        for (let i = 0; i < count; i++) palette.push(hslToHex((h + (360 / count) * i) % 360, Math.max(0.45, s), Math.max(0.4, Math.min(0.62, l))));
+        for (let i = 0; i < count; i++) {
+            palette.push(hslToHex((h + (360 / count) * i) % 360, Math.max(0.45, s), lightnessBands[i % lightnessBands.length]));
+        }
         return palette;
+    }
+
+    /** Small deterministic string hash (djb2) — used only as a fallback palette-slot picker for
+     *  a category name that isn't in the known category list yet (e.g. just created). */
+    function hashString(str) {
+        let hash = 5381;
+        for (let i = 0; i < str.length; i++) hash = ((hash << 5) + hash) + str.charCodeAt(i);
+        return Math.abs(hash);
+    }
+
+    /** A category's color: its own user-chosen color if set, otherwise a theme-accent palette
+     *  slot picked by the category's stable alphabetical position among ALL known categories
+     *  (not just ones with spending this month) — so the color stays the same across months
+     *  regardless of how many categories happen to have spending in any given one. */
+    function getCategoryColor(name) {
+        if (categoryColorMap[name]) return categoryColorMap[name];
+        const paletteSize = Math.max(20, categoryNameOrder.length);
+        const palette = getThemeCategoryPalette(paletteSize);
+        let idx = categoryNameOrder.indexOf(name);
+        if (idx === -1) idx = hashString(name) % paletteSize;
+        return palette[idx % palette.length];
     }
 
     /** Shrink .stat-card-amount font until text fits on one line */
@@ -1395,8 +1441,13 @@
         currentViewMode = mode === 'compact' ? 'compact' : 'default';
         const defPanel = document.getElementById('dashboardDefaultView');
         const cmpPanel = document.getElementById('dashboardCompactView');
+        // Account Balances / Current Budget / AI Coach render after the shared Recent
+        // Transactions block (so it comes last in Default View's visual order) but is still a
+        // Default-View-only panel, toggled the same way as #dashboardDefaultView itself.
+        const defAcctPanel = document.getElementById('dashboardDefaultAcctRow');
         if (defPanel) defPanel.classList.toggle('active', currentViewMode === 'default');
         if (cmpPanel) cmpPanel.classList.toggle('active', currentViewMode === 'compact');
+        if (defAcctPanel) defAcctPanel.classList.toggle('active', currentViewMode === 'default');
         const defBtn = document.getElementById('viewModeDefaultBtn');
         const cmpBtn = document.getElementById('viewModeCompactBtn');
         if (defBtn) defBtn.classList.toggle('active', currentViewMode === 'default');
@@ -1546,7 +1597,7 @@
             map[name] = (map[name] || 0) + (Number(tx.amount) || 0);
         });
         return Object.keys(map).map(function (name) {
-            return { category: name, total: map[name], color: categoryColorMap[name] || '#6c757d' };
+            return { category: name, total: map[name], color: categoryColorMap[name] || '' };
         }).sort(function (a, b) { return b.total - a.total; });
     }
 
@@ -2191,7 +2242,7 @@
                 : '/api/budget-plans/current';
             const data = await fetch(url).then(r => r.json());
             if (!data.hasCurrent) {
-                const html = '<p class="text-muted small mb-0">No active budget for this period. <a href="/budget-planner">Create one</a>.</p>';
+                const html = '<p class="text-muted small mb-0">No active budget for this period. <a href="/budget-planner" class="dashboard-accent-link">Create one</a>.</p>';
                 containers.forEach(c => c.innerHTML = html);
                 return;
             }
@@ -2286,8 +2337,9 @@
             const categories = await fetch('/api/categories').then(r => r.json());
             categoryColorMap = {};
             categories.forEach(cat => {
-                categoryColorMap[cat.name] = cat.color || '#6c757d';
+                if (cat.color) categoryColorMap[cat.name] = cat.color;
             });
+            categoryNameOrder = categories.map(cat => cat.name).sort(function (a, b) { return a.localeCompare(b); });
 
             // Populate category filter dropdown
             const catFilter = document.getElementById('txCategoryFilter');
@@ -3264,28 +3316,22 @@
     let categoryChartInstances = {}; // suffix -> Chart instance ('' = default, 'Compact' = compact)
     let categoryChartSignatures = {}; // suffix -> signature of the data/type last rendered, for memoization
 
-    const CATEGORY_CHART_TOP_N = 5;
-
-    /** Keep only the top 5 categories by amount; everything else is grouped into one "Other"
-     *  slice (muted neutral color, same order every render), then compute rounded percentages
-     *  that always add up to exactly 100 (largest-remainder method). A percent that rounds to
-     *  0 is never displayed as "0%" — percentLabels substitutes "<1%" for those instead. */
+    /** Show every category that has spending (no top-N truncation, no synthesized "Other"
+     *  slice), sorted by amount largest first, then compute rounded percentages that always
+     *  add up to exactly 100 (largest-remainder method). A percent that rounds to 0 is never
+     *  displayed as "0%" — percentLabels substitutes "<1%" for those instead. */
     function buildCategoryChartModel(data) {
         const total = data.reduce((sum, d) => sum + (d.total || 0), 0);
         if (!total) return { slices: [], percents: [], percentLabels: [], total: 0 };
 
         // `data` from computeCategoryBreakdown() is already sorted by amount desc, but sort
-        // defensively so the top-5 cut is correct regardless of caller order.
-        const sorted = data.slice().sort(function (a, b) { return (b.total || 0) - (a.total || 0); });
-        const slices = sorted.slice(0, CATEGORY_CHART_TOP_N);
-        const otherTotal = sorted.slice(CATEGORY_CHART_TOP_N).reduce(function (sum, d) { return sum + (d.total || 0); }, 0);
+        // defensively so order is correct regardless of caller order.
+        const slices = data.slice().sort(function (a, b) { return (b.total || 0) - (a.total || 0); });
 
-        // Any top category without a user-chosen color falls back to a theme-derived palette
-        // (hue rotations of --accent) instead of a fixed hard-coded blue; "Other" always gets
-        // a muted neutral theme token rather than joining the rotation.
-        const palette = getThemeCategoryPalette(Math.max(1, slices.length));
-        slices.forEach(function (s, i) { if (!s.color) s.color = palette[i % palette.length]; });
-        if (otherTotal > 0) slices.push({ category: 'Other', total: otherTotal, color: cssVar('--text-muted', '#9ca3af') });
+        // Any category without a user-chosen color falls back to a theme-derived palette (hue
+        // rotations of --accent) keyed by the category's own stable identity, not its rank —
+        // so a category keeps the same color across months.
+        slices.forEach(function (s) { if (!s.color) s.color = getCategoryColor(s.category); });
 
         const raw = slices.map(function (s) { return (s.total / total) * 100; });
         const floors = raw.map(Math.floor);
@@ -3307,7 +3353,9 @@
     function renderCategoryLegend(model, suffix) {
         const legendContainer = document.getElementById('categoryLegend' + suffix);
         if (!legendContainer) return;
-        legendContainer.className = 'cat-legend-grid';
+        // More than 12 categories: scope the overflow to the legend itself (max-height + a thin
+        // themed scrollbar) rather than letting the card keep stretching taller and taller.
+        legendContainer.className = 'cat-legend-grid' + (model.slices.length > 12 ? ' cat-legend-grid-scroll' : '');
         legendContainer.innerHTML = model.slices.map(function (d, i) {
             const isLong = d.category.length > 16;
             return `

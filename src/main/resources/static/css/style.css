@@ -1148,8 +1148,7 @@ body.has-sidebar {
     border-radius: var(--radius) !important;
     background: var(--surface) !important;
     min-height: 150px;
-    height: auto !important;
-    max-height: none !important;
+    height: 100%;
     position: relative;
     overflow: hidden;
     box-shadow: none !important;
@@ -1162,8 +1161,6 @@ body.has-sidebar {
     border-color: var(--accent-soft) !important;
     box-shadow: none !important;
 }
-
-.stat-card--networth, .stat-card--hero { height: auto !important; min-height: 150px; max-height: none !important; }
 
 /* Every card shares one calm surface — only the hero card gets a subtle accent treatment. */
 .stat-card--income, .stat-card--savings, .stat-card--balance, .stat-card--networth {
@@ -1289,6 +1286,26 @@ body.has-sidebar {
     align-items: flex-end;
     justify-content: space-between;
     gap: 8px;
+    margin-top: auto;
+}
+/* Net Worth: value + "Assets ৳X" sit on one row/baseline — no extra line, no extra height. */
+.sc-bottom-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+.sc-assets-inline {
+    font-size: var(--font-label);
+    color: var(--text-subtle);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    flex-shrink: 1;
 }
 
 .sc-deco-circles { display: none !important; }
@@ -1687,35 +1704,39 @@ body.dashboard-page .dashboard-month-select:focus {
     box-shadow: 0 0 0 0.2rem var(--accent-soft);
 }
 
+/* "Manage budget →" / "Create one" links — accent-colored instead of the browser-default blue */
+body.dashboard-page .dashboard-accent-link {
+    color: var(--accent);
+    text-decoration: none;
+}
+body.dashboard-page .dashboard-accent-link:hover,
+body.dashboard-page .dashboard-accent-link:focus {
+    color: var(--accent);
+    text-decoration: underline;
+}
+
 body.dashboard-page .icon-btn {
     width: 36px;
     height: 36px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    background: var(--surface);
-    border: 1px solid var(--border);
+    background: transparent;
+    border: none;
     color: var(--text);
-    border-radius: var(--radius-sm, 10px);
+    border-radius: 50%;
     cursor: pointer;
-    transition: border-color 0.15s ease, color 0.15s ease;
+    transition: background-color 0.15s ease, color 0.15s ease;
 }
-body.dashboard-page .icon-btn:hover { border-color: var(--accent-soft); color: var(--accent); }
-body.dashboard-page .icon-btn .refresh-all-label { font-size: 0.75rem; font-weight: 600; }
+body.dashboard-page .icon-btn:hover,
+body.dashboard-page .icon-btn:focus-visible {
+    background: var(--accent-soft);
+    color: var(--accent);
+}
 body.dashboard-page .icon-btn.is-spinning i { animation: dashIconSpin 0.8s linear infinite; }
 @keyframes dashIconSpin { to { transform: rotate(360deg); } }
+body.dashboard-page .dashboard-more-dropdown .dropdown-toggle::after { display: none; }
 
-body.dashboard-page .btn-ghost {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text);
-    border-radius: var(--radius-sm, 10px);
-    padding: 8px 14px;
-    font-size: 0.85rem;
-    font-weight: 600;
-}
-body.dashboard-page .btn-ghost:hover { border-color: var(--accent-soft); color: var(--accent); }
 body.dashboard-page .dashboard-more-dropdown .dropdown-menu {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -1731,7 +1752,8 @@ body.dashboard-page .dashboard-more-dropdown .dropdown-item:hover {
 @media (max-width: 767.98px) {
     body.dashboard-page .dashboard-topbar-inner { flex-direction: column; align-items: stretch; }
     body.dashboard-page .dashboard-topbar-actions { justify-content: space-between; }
-    body.dashboard-page #openAddTxModalBtn { flex: 1 1 100%; justify-content: center; }
+    body.dashboard-page .dashboard-month-select { flex: 1 1 100%; margin-bottom: 4px; }
+    body.dashboard-page #openAddTxModalBtn { flex: 1 1 auto; justify-content: center; }
 }
 
 /* Slim "Upcoming Recurring Transactions" banner — replaces the old full-width card, shown only when items exist */
@@ -2955,6 +2977,12 @@ h3.stat-card-amount,
     border-top: 1px solid var(--tx-row-border);
     flex-wrap: wrap;
     gap: 8px;
+}
+
+/* Keep the floating voice-assistant mic button from ever covering the pagination controls */
+body.dashboard-page .tx-pagination { padding-right: 96px; }
+@media (max-width: 768px) {
+    body.dashboard-page .tx-pagination { padding-right: 76px; }
 }
 
 .tx-page-info {
