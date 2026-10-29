@@ -330,6 +330,13 @@
                 </select>
               </div>
               <div class="compact-pref-row">
+                <label class="compact-pref-label" for="selectDashboardView"><i class="fas fa-table-cells-large"></i> Dashboard View</label>
+                <select id="selectDashboardView" class="form-select compact-pref-select">
+                  <option value="default">🗂 Default — full widgets</option>
+                  <option value="compact">📋 Compact — condensed</option>
+                </select>
+              </div>
+              <div class="compact-pref-row">
                 <label class="compact-pref-label" for="selectAnimations"><i class="fas fa-magic"></i> Animations</label>
                 <select id="selectAnimations" class="form-select compact-pref-select">
                   <option value="true">✨ Enabled</option>
@@ -1839,6 +1846,16 @@ function initAppearanceUI() {
     selectLayout.addEventListener('change', function(e){
       saveSettings({ layout: e.target.value });
       applySettings(getSettings());
+    });
+  }
+  // Dashboard Default/Compact view — previously a toggle in the dashboard top bar,
+  // now lives here. Shares the same localStorage key the dashboard page reads on load.
+  var selectDashboardView = document.getElementById('selectDashboardView');
+  if (selectDashboardView) {
+    var dashViewKey = getUserStorageKey('fintrack_dashboard_view');
+    selectDashboardView.value = localStorage.getItem(dashViewKey) || 'default';
+    selectDashboardView.addEventListener('change', function(e){
+      try { localStorage.setItem(dashViewKey, e.target.value); } catch (err) {}
     });
   }
 
