@@ -128,12 +128,26 @@
         .cb-category-row-pct { font-variant-numeric: tabular-nums; font-weight: 600; margin-left: 6px; flex-shrink: 0; }
         #currentBudgetBody, #currentBudgetBodyCompact { display: flex; flex-direction: column; height: 100%; }
 
-        /* Expense by Category legend: clean 3-column grid — dot / name / percentage+amount */
-        .cat-legend-grid { display: flex; flex-direction: column; gap: 6px; }
+        /* Expense by Category: donut stacked on top, legend below as a 2-column grid —
+           normal document flow (no absolute positioning), so rows never overlap the chart. */
+        .category-donut-wrap {
+            position: relative;
+            width: 100%;
+            max-width: 220px;
+            aspect-ratio: 1 / 1;
+            margin: 0 auto 16px;
+        }
+        .cat-legend-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            column-gap: 14px;
+            row-gap: 6px;
+        }
+        @media (max-width: 420px) { .cat-legend-grid { grid-template-columns: 1fr; } }
         .cat-legend-row {
             display: grid;
-            grid-template-columns: 14px minmax(120px, 1fr) auto;
-            column-gap: 10px;
+            grid-template-columns: 12px minmax(0, 1fr) auto;
+            column-gap: 8px;
             align-items: center;
             padding: 4px 6px;
             border-radius: 8px;
@@ -194,18 +208,15 @@
         }
         .cc-spending-state.is-error { color: #dc3545; }
 
-        /* Row: Expense by Category + Monthly Trend/CC Spending — natural height, stretched equal */
+        /* Row: Expense by Category + Monthly Trend/CC Spending.
+           The donut card has no fixed height and fits its own content (donut stacked above
+           a 2-column legend grid); align-items:stretch on the row means the taller Monthly
+           Trend/CC Spending card determines the row height and the donut card's card-body
+           simply gets extra bottom space — never the other way around. */
         .chart-pair-row { align-items: stretch; }
         .chart-pair-row .card-body {
             display: flex;
             flex-direction: column;
-        }
-        /* Category card: legend + chart fill available height */
-        .chart-pair-row .chart-row-category {
-            flex: 1 1 auto;
-            display: flex !important;
-            align-items: center;
-            margin: 0;
         }
         /* CC spending panel inner layout */
         .chart-pair-row #ccSpendingPanel > div,
@@ -478,7 +489,7 @@
 
     <div class="row mb-4 chart-pair-row">
        <div class="col-md-4">
-            <div class="card h-100">
+            <div class="card">
                 <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center flex-wrap gap-1">
                     <h6 class="mb-0" id="categoryChartTitle"><i class="fas fa-pie-chart"></i> Expense by Category</h6>
                     <div class="d-flex gap-1 flex-wrap">
@@ -493,16 +504,12 @@
                     </div>
                 </div>
                 <div class="card-body">
-                  <div class="row chart-row-category" style="display: flex; align-items: center;">
-                       <div class="col-md-5" id="categoryLegendContainer">
-                           <div id="categoryLegend"></div>
-                       </div>
-                       <div class="col-md-7" style="display: flex; align-items: center; justify-content: center;">
-                           <div style="width: 100%; height: 230px; position: relative;">
-                               <canvas id="categoryChart"></canvas>
-                           </div>
-                       </div>
-                   </div>
+                    <div class="category-donut-wrap">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                    <div id="categoryLegendContainer">
+                        <div id="categoryLegend" class="cat-legend-grid"></div>
+                    </div>
                </div>
            </div>
        </div>
@@ -858,15 +865,11 @@
                         </div>
                     </div>
                     <div class="card-body p-2">
-                        <div class="row chart-row-category" style="display: flex; align-items: center; height: 100%;">
-                            <div class="col-md-5" id="categoryLegendContainerCompact">
-                                <div id="categoryLegendCompact"></div>
-                            </div>
-                            <div class="col-md-7" style="display: flex; align-items: center; justify-content: center;">
-                                <div style="width: 100%; height: 270px; position: relative;">
-                                    <canvas id="categoryChartCompact"></canvas>
-                                </div>
-                            </div>
+                        <div class="category-donut-wrap">
+                            <canvas id="categoryChartCompact"></canvas>
+                        </div>
+                        <div id="categoryLegendContainerCompact">
+                            <div id="categoryLegendCompact" class="cat-legend-grid"></div>
                         </div>
                     </div>
                 </div>
