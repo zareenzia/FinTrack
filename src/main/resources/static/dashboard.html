@@ -121,8 +121,47 @@
         .cb-progress-bar.warn { background: var(--warning, #fd7e14); }
         .cb-progress-bar.over { background: var(--negative, #dc3545); }
         .cb-progress-sm { height: 6px; }
-        .cb-category-list { margin-top: 4px; padding-right: 2px; }
+        .cb-category-list { margin-top: 4px; padding-right: 6px; flex: 1 1 auto; overflow-y: auto; min-height: 0; scrollbar-width: thin; scrollbar-color: var(--border, #333) transparent; }
+        .cb-category-list::-webkit-scrollbar { width: 6px; }
+        .cb-category-list::-webkit-scrollbar-thumb { background: var(--border, #333); border-radius: 6px; }
         .cb-category-row:not(:last-child) { margin-bottom: 8px; }
+        .cb-category-row-pct { font-variant-numeric: tabular-nums; font-weight: 600; margin-left: 6px; flex-shrink: 0; }
+        #currentBudgetBody, #currentBudgetBodyCompact { display: flex; flex-direction: column; height: 100%; }
+
+        /* Expense by Category legend: clean 3-column grid — dot / name / percentage+amount */
+        .cat-legend-grid { display: flex; flex-direction: column; gap: 6px; }
+        .cat-legend-row {
+            display: grid;
+            grid-template-columns: 14px minmax(120px, 1fr) auto;
+            column-gap: 10px;
+            align-items: center;
+            padding: 4px 6px;
+            border-radius: 8px;
+            transition: background-color 0.15s ease;
+        }
+        .cat-legend-row.is-hovered { background: var(--surface-2, rgba(255,255,255,0.06)); }
+        .cat-legend-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+        .cat-legend-name { font-size: 0.88rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cat-legend-meta { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.3; }
+        .cat-legend-pct { font-size: 0.85rem; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+        .cat-legend-amt { font-size: 0.72rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+        /* Monthly Trend: fixed-height wrapper so Chart.js sizes the canvas itself — never
+           stretched by a flex/grid parent — plus clickable legend chips above the chart. */
+        .monthly-trend-chart-wrap { position: relative; height: 320px; padding-right: 8px; }
+        @media (max-width: 768px) { .monthly-trend-chart-wrap { height: 240px; } }
+        .trend-legend-chips { display: flex; flex-wrap: wrap; gap: 8px 14px; padding: 2px 4px 10px; }
+        .trend-legend-chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 0.8rem; color: var(--text-muted); background: none; border: none;
+            padding: 2px 4px; cursor: pointer; opacity: 1; transition: opacity 0.15s ease;
+        }
+        .trend-legend-chip.is-hidden { opacity: 0.4; text-decoration: line-through; }
+        .trend-legend-chip-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+        /* Keep the fixed voice-assistant mic FAB from ever overlapping the last row of content */
+        body.dashboard-page { padding-bottom: 110px; }
+        @media (max-width: 768px) { body.dashboard-page { padding-bottom: 96px; } }
 
         /* Recent Transactions collapse toggle */
         .tx-collapse-toggle {
@@ -316,7 +355,7 @@
                     <option value="">Loading…</option>
                 </select>
                 <button type="button" class="icon-btn hide-values-toggle" id="hideValuesToggleBtn"
-                        onclick="toggleHideValues()" title="Hide/Show values" aria-label="Hide values" aria-pressed="false">
+                        onclick="toggleHideValues()" title="Hide/Show card values" aria-label="Hide/Show card values" aria-pressed="false">
                     <i class="fas fa-eye"></i>
                 </button>
                 <button type="button" class="icon-btn" id="refreshAllBtn" onclick="refreshAllWidgets()" title="Refresh all widgets" aria-label="Refresh all widgets">
@@ -496,10 +535,9 @@
                 <div class="card-body">
                     <div class="tab-content">
                         <div class="tab-pane fade show active" id="monthlyTrendPanel" role="tabpanel" aria-labelledby="monthlyTrendTab">
-                            <div style="display:flex; align-items:center; justify-content:center; padding:0.25rem 0;">
-                                <div style="width:100%; height:230px; position:relative;">
-                                    <canvas id="monthlyChart"></canvas>
-                                </div>
+                            <div class="trend-legend-chips" id="monthlyChartLegend"></div>
+                            <div class="monthly-trend-chart-wrap">
+                                <canvas id="monthlyChart"></canvas>
                             </div>
                         </div>
                         <div class="tab-pane fade" id="ccSpendingPanel" role="tabpanel" aria-labelledby="ccSpendingTab">
@@ -603,7 +641,7 @@
             <div class="card h-100">
                 <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
                     <h6 class="mb-0"><i class="fas fa-wallet me-2"></i>Current Budget</h6>
-                    <a href="/budget-planner" class="btn btn-sm btn-outline-primary" title="Open Budget Planner"><i class="fas fa-external-link-alt"></i></a>
+                    <a href="/budget-planner" class="small fw-semibold" title="Open Budget Planner">Manage budget <i class="fas fa-arrow-right"></i></a>
                 </div>
                 <div class="card-body" id="currentBudgetBody">
                     <p class="text-muted small mb-0">Loading…</p>
@@ -864,10 +902,9 @@
                     <div class="card-body">
                         <div class="tab-content">
                             <div class="tab-pane fade show active" id="monthlyTrendPanelCompact" role="tabpanel" aria-labelledby="monthlyTrendTabCompact">
-                                <div style="display:flex; align-items:center; justify-content:center; padding:0.25rem 0;">
-                                    <div style="width:100%; height:230px; position:relative;">
-                                        <canvas id="monthlyChartCompact"></canvas>
-                                    </div>
+                                <div class="trend-legend-chips" id="monthlyChartLegendCompact"></div>
+                                <div class="monthly-trend-chart-wrap">
+                                    <canvas id="monthlyChartCompact"></canvas>
                                 </div>
                             </div>
                             <div class="tab-pane fade" id="ccSpendingPanelCompact" role="tabpanel" aria-labelledby="ccSpendingTabCompact">
@@ -932,7 +969,7 @@
                 <div class="card h-100">
                     <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
                         <h6 class="mb-0"><i class="fas fa-wallet me-2"></i>Current Budget</h6>
-                        <a href="/budget-planner" class="btn btn-sm btn-outline-primary" title="Open Budget Planner"><i class="fas fa-external-link-alt"></i></a>
+                        <a href="/budget-planner" class="small fw-semibold" title="Open Budget Planner">Manage budget <i class="fas fa-arrow-right"></i></a>
                     </div>
                     <div class="card-body" id="currentBudgetBodyCompact">
                         <p class="text-muted small mb-0">Loading…</p>
@@ -1132,6 +1169,18 @@
 
     let categoryChartData    = [];
     let monthlyChartData     = [];
+    let lastAnalyticsSummary = null; // cached /api/analytics/summary response, re-applied on hide/show toggle
+
+    /** Net Worth + its "Assets ৳X" sub-line are all-time portfolio figures, not scoped to the
+     *  selected month — paint them from the already-fetched summary (if any) so toggling the
+     *  hide-values preference updates them immediately without a fresh network round-trip. */
+    function refreshNetWorthDisplay() {
+        if (!lastAnalyticsSummary) return;
+        ['', 'Compact'].forEach(function (suf) {
+            setElMoney('total-assets' + suf, lastAnalyticsSummary.total_assets || 0, { maskable: true });
+            setElMoney('net-worth' + suf,    lastAnalyticsSummary.net_worth || 0,   { maskable: true });
+        });
+    }
     let categoryChartType    = 'pie';
     let monthlyChartType     = 'line';
     let categoryBreakdownType = 'expense';   // 'expense' | 'savings'
@@ -1201,13 +1250,15 @@
     }
 
     /** One shared money formatter used everywhere on the dashboard — always puts the minus
-     *  sign before the currency symbol ("-৳8,886", never "৳-8,886"), and masks the value
-     *  when the global hide-values toggle is on, so no individual component needs its own
-     *  hide logic. Pass {html:true} to wrap the symbol in a <span> for slightly larger/bolder
-     *  styling (only safe when the caller assigns the result via innerHTML, not textContent). */
+     *  sign before the currency symbol ("-৳8,886", never "৳-8,886"). Only masks the value when
+     *  BOTH the caller explicitly opts in via {maskable:true} AND the global hide-values toggle
+     *  is on — this scopes masking to the 5 top summary cards only; every other money display
+     *  (account balances, budget, transactions, charts) always shows real values. Pass
+     *  {html:true} to wrap the symbol in a <span> for slightly larger/bolder styling (only safe
+     *  when the caller assigns the result via innerHTML, not textContent). */
     function formatMoney(value, opts) {
         opts = opts || {};
-        if (!opts.ignoreHide && isHideValuesEnabled()) return HIDE_VALUES_MASK;
+        if (opts.maskable && isHideValuesEnabled()) return HIDE_VALUES_MASK;
         var c = getCurrencySettings();
         var n = Number(value) || 0;
         var sign = n < 0 ? '-' : '';
@@ -1281,9 +1332,10 @@
         });
     }
 
-    /** Flip the single global hide-values preference, then re-render every widget that shows
-     *  money from data already loaded (no fresh network fetch) so the mask state updates
-     *  everywhere at once — formatMoney() itself decides whether to mask on each call. */
+    /** Flip the single global hide-values preference, then re-render only the widgets whose
+     *  values are maskable (the 5 top summary cards) from data already loaded (no fresh network
+     *  fetch) — formatMoney() itself decides whether to mask on each call. Account Balances,
+     *  Current Budget, and Recent Transactions are NOT re-rendered here because they never mask. */
     function toggleHideValues() {
         setHideValuesEnabled(!isHideValuesEnabled());
         syncHideValuesButton();
@@ -1297,16 +1349,16 @@
         var hidden = isHideValuesEnabled();
         var icon = btn.querySelector('i');
         btn.setAttribute('aria-pressed', hidden ? 'true' : 'false');
-        btn.setAttribute('aria-label', hidden ? 'Show values' : 'Hide values');
+        btn.setAttribute('aria-label', 'Hide/Show card values');
+        btn.setAttribute('title', 'Hide/Show card values');
         if (icon) icon.className = hidden ? 'fas fa-eye-slash' : 'fas fa-eye';
     }
 
-    /** Re-paint every money-bearing widget using its already-loaded data. */
+    /** Re-paint only the maskable summary-card widgets (Total Expense/Income, Monthly Savings,
+     *  Net Balance, Net Worth + its Assets sub-line) using data already loaded. */
     function refreshMoneyDisplays() {
         renderMonthCards(selectedMonthKey);
-        loadAccountBalances();
-        loadCurrentBudget(selectedMonthKey);
-        if (typeof applyFiltersAndDisplay === 'function') applyFiltersAndDisplay();
+        refreshNetWorthDisplay();
     }
 
     /** Apply the saved hide-values preference to the toggle button on page load. */
@@ -1319,10 +1371,12 @@
         if (el) el.textContent = val;
     }
     /** Like setEl, but for money amounts — renders via innerHTML so the currency symbol can be
-     *  wrapped in its own span and styled slightly larger/bolder than the digits. */
-    function setElMoney(id, amount) {
+     *  wrapped in its own span and styled slightly larger/bolder than the digits. Pass
+     *  {maskable:true} only for the 5 top summary cards so they respond to the hide-values
+     *  toggle; every other caller leaves this unset and always shows the real value. */
+    function setElMoney(id, amount, opts) {
         var el = document.getElementById(id);
-        if (el) el.innerHTML = formatMoney(amount, { html: true });
+        if (el) el.innerHTML = formatMoney(amount, Object.assign({ html: true }, opts));
     }
     function escHtml(s) {
         return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -1562,10 +1616,10 @@
     function renderMonthCards(monthKey) {
         const stats = computeMonthStats(monthKey);
         ['', 'Compact'].forEach(function (suf) {
-            setElMoney('total-income' + suf,  stats.income);
-            setElMoney('total-expense' + suf, stats.expense);
-            setElMoney('total-savings' + suf, stats.savings);
-            setElMoney('balance' + suf,       stats.net);
+            setElMoney('total-income' + suf,  stats.income,  { maskable: true });
+            setElMoney('total-expense' + suf, stats.expense, { maskable: true });
+            setElMoney('total-savings' + suf, stats.savings, { maskable: true });
+            setElMoney('balance' + suf,       stats.net,     { maskable: true });
         });
 
         const label = monthKey === 'ALL' ? 'All time' : monthKeyLabel(monthKey, true);
@@ -2140,30 +2194,33 @@
             }
             const pct = Math.min(100, data.summary.utilizationPercent);
             const isOverBudget = data.summary.utilizationPercent > 100;
-            const barClass = isOverBudget ? 'over' : (data.summary.utilizationPercent >= 80 ? 'warn' : '');
+            const barClass = isOverBudget ? 'over' : (data.summary.utilizationPercent >= 90 ? 'warn' : '');
             // Title + secondary label both come from the same source — the dashboard's
             // selected month — rather than the plan's own (possibly stale/mismatched) name/period.
             const effectiveMonthKey = (monthKey && monthKey !== 'ALL') ? monthKey : currentMonthKey();
             const remainingHtml = isOverBudget
                 ? `Over by <strong style="color: var(--negative, #dc3545);">${formatMoney((data.summary.actualExpense + data.summary.actualSavings) - data.summary.plannedIncome, { html: true })}</strong>`
                 : `Remaining: <strong style="color: var(--accent-color);">${formatMoney(data.summary.remaining, { html: true })}</strong>`;
-            const categories = data.categories || [];
-            const topCategories = categories.slice().sort((a, b) => b.percentUsed - a.percentUsed).slice(0, 3);
-            const categoriesHtml = topCategories.length
+            // Every category, sorted by how much of its limit has been used (highest first) —
+            // no "top 3" cap; the list itself scrolls (see .cb-category-list) if it overflows.
+            const categories = (data.categories || []).slice().sort((a, b) => b.percentUsed - a.percentUsed);
+            const categoriesHtml = categories.length
                 ? `<div class="small text-muted mt-2 mb-1">By Category</div>
-                   <div class="cb-category-list">${topCategories.map(c => {
+                   <div class="cb-category-list">${categories.map(c => {
                        const catPct = Math.min(100, c.percentUsed);
-                       const catBarClass = c.percentUsed > 100 ? 'over' : (c.percentUsed >= 80 ? 'warn' : '');
+                       const catBarClass = c.percentUsed > 100 ? 'over' : (c.percentUsed >= 90 ? 'warn' : '');
                        return `
                         <div class="cb-category-row">
                             <div class="d-flex justify-content-between small mb-1">
                                 <span><i class="fas fa-${c.categoryIcon || 'tag'} me-1" style="color:${c.categoryColor || '#6c757d'}"></i>${escHtml(c.categoryName)}</span>
                                 <span class="text-muted">${formatMoney(c.actualAmount, { html: true })} / ${formatMoney(c.budgetAmount, { html: true })}</span>
                             </div>
-                            <div class="cb-progress cb-progress-sm"><div class="cb-progress-bar ${catBarClass}" style="width:${catPct}%"></div></div>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="cb-progress cb-progress-sm flex-grow-1"><div class="cb-progress-bar ${catBarClass}" style="width:${catPct}%"></div></div>
+                                <span class="cb-category-row-pct">${Math.round(c.percentUsed)}%</span>
+                            </div>
                         </div>`;
-                   }).join('')}</div>
-                   ${categories.length > topCategories.length ? '<a href="/budget-planner" class="small d-inline-block mt-1">View all categories</a>' : ''}`
+                   }).join('')}</div>`
                 : '';
             const html = `
                 <div class="d-flex justify-content-between align-items-center mb-1">
@@ -2220,10 +2277,8 @@
         try {
             // Assets Value & Net Worth are all-time/portfolio figures — not scoped to a month
             const summary = await fetch('/api/analytics/summary').then(r => r.json());
-            ['', 'Compact'].forEach(function (suf) {
-                setElMoney('total-assets' + suf, summary.total_assets || 0);
-                setElMoney('net-worth' + suf,    summary.net_worth || 0);
-            });
+            lastAnalyticsSummary = summary;
+            refreshNetWorthDisplay();
 
             const categories = await fetch('/api/categories').then(r => r.json());
             categoryColorMap = {};
@@ -3206,25 +3261,28 @@
     let categoryChartInstances = {}; // suffix -> Chart instance ('' = default, 'Compact' = compact)
     let categoryChartSignatures = {}; // suffix -> signature of the data/type last rendered, for memoization
 
-    /** Group categories whose share of the total is under 3% into a single "Other" slice, and
-     *  compute rounded percentages that always add up to exactly 100 (largest-remainder method). */
+    const CATEGORY_CHART_TOP_N = 5;
+
+    /** Keep only the top 5 categories by amount; everything else is grouped into one "Other"
+     *  slice (muted neutral color, same order every render), then compute rounded percentages
+     *  that always add up to exactly 100 (largest-remainder method). A percent that rounds to
+     *  0 is never displayed as "0%" — percentLabels substitutes "<1%" for those instead. */
     function buildCategoryChartModel(data) {
         const total = data.reduce((sum, d) => sum + (d.total || 0), 0);
-        if (!total) return { slices: [], percents: [], total: 0 };
+        if (!total) return { slices: [], percents: [], percentLabels: [], total: 0 };
 
-        const MIN_SHARE = 0.03;
-        const slices = [];
-        let otherTotal = 0;
-        data.forEach(function (d) {
-            if ((d.total / total) < MIN_SHARE) otherTotal += d.total;
-            else slices.push(d);
-        });
-        if (otherTotal > 0) slices.push({ category: 'Other', total: otherTotal, color: '#9ca3af' });
+        // `data` from computeCategoryBreakdown() is already sorted by amount desc, but sort
+        // defensively so the top-5 cut is correct regardless of caller order.
+        const sorted = data.slice().sort(function (a, b) { return (b.total || 0) - (a.total || 0); });
+        const slices = sorted.slice(0, CATEGORY_CHART_TOP_N);
+        const otherTotal = sorted.slice(CATEGORY_CHART_TOP_N).reduce(function (sum, d) { return sum + (d.total || 0); }, 0);
 
-        // Any category without a user-chosen color falls back to a theme-derived palette
-        // (hue rotations of --accent) instead of a fixed hard-coded blue.
+        // Any top category without a user-chosen color falls back to a theme-derived palette
+        // (hue rotations of --accent) instead of a fixed hard-coded blue; "Other" always gets
+        // a muted neutral theme token rather than joining the rotation.
         const palette = getThemeCategoryPalette(Math.max(1, slices.length));
         slices.forEach(function (s, i) { if (!s.color) s.color = palette[i % palette.length]; });
+        if (otherTotal > 0) slices.push({ category: 'Other', total: otherTotal, color: cssVar('--text-muted', '#9ca3af') });
 
         const raw = slices.map(function (s) { return (s.total / total) * 100; });
         const floors = raw.map(Math.floor);
@@ -3234,26 +3292,42 @@
             .sort(function (a, b) { return b.frac - a.frac; });
         const percents = floors.slice();
         for (let k = 0; k < remainder && k < order.length; k++) percents[order[k].i]++;
+        const percentLabels = percents.map(function (p) { return p <= 0 ? '<1%' : p + '%'; });
 
-        return { slices: slices, percents: percents, total: total };
+        return { slices: slices, percents: percents, percentLabels: percentLabels, total: total };
     }
 
-    /** Legend: category name + % next to it, amount in a muted style — sorted largest first
-     *  (the incoming `data` from computeCategoryBreakdown() is already sorted by amount desc). */
+    /** Legend: a clean 3-column grid — [color dot] [name] [percentage/amount] — sorted largest
+     *  first. Names longer than 16 chars get a title tooltip + ellipsis; every row shows a
+     *  percentage (never a bare "0%"). Rows are keyed with data-idx so a slice hover on the
+     *  chart (see drawCategoryChart's onHover) can highlight the matching row. */
     function renderCategoryLegend(model, suffix) {
         const legendContainer = document.getElementById('categoryLegend' + suffix);
         if (!legendContainer) return;
+        legendContainer.className = 'cat-legend-grid';
         legendContainer.innerHTML = model.slices.map(function (d, i) {
+            const isLong = d.category.length > 16;
             return `
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <div class="d-flex align-items-center" style="min-width:0;">
-                        <div style="width: 14px; height: 14px; background-color: ${d.color || '#3498db'}; border-radius: 3px; margin-right: 8px; flex-shrink: 0;"></div>
-                        <span style="font-size: 0.88rem;" class="text-truncate">${escHtml(d.category)} ${model.percents[i]}%</span>
-                    </div>
-                    <span class="small text-muted ms-2" style="flex-shrink:0;">${formatAmount(d.total)}</span>
+                <div class="cat-legend-row" data-idx="${i}">
+                    <span class="cat-legend-dot" style="background-color: ${d.color || '#3498db'}"></span>
+                    <span class="cat-legend-name"${isLong ? ' title="' + escHtml(d.category) + '"' : ''}>${escHtml(d.category)}</span>
+                    <span class="cat-legend-meta">
+                        <span class="cat-legend-pct">${model.percentLabels[i]}</span>
+                        <span class="cat-legend-amt">${formatAmount(d.total)}</span>
+                    </span>
                 </div>
             `;
         }).join('');
+    }
+
+    /** Toggles the `.is-hovered` highlight on the legend row matching the hovered doughnut
+     *  slice (or clears all highlights when nothing is hovered). */
+    function highlightCategoryLegendRow(suffix, index) {
+        const legendContainer = document.getElementById('categoryLegend' + suffix);
+        if (!legendContainer) return;
+        legendContainer.querySelectorAll('.cat-legend-row').forEach(function (row) {
+            row.classList.toggle('is-hovered', index != null && Number(row.dataset.idx) === index);
+        });
     }
 
     function drawCategoryChart(data, suffix) {
@@ -3310,13 +3384,18 @@
                     datasets: [{
                         data: model.slices.map(d => d.total),
                         backgroundColor: model.slices.map(d => d.color || '#3498db'),
-                        borderWidth: 0
+                        borderWidth: 0,
+                        spacing: 2
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     animation: { duration: 400 },
+                    cutout: '72%',
+                    onHover: function (evt, elements) {
+                        highlightCategoryLegendRow(suffix, elements.length ? elements[0].index : null);
+                    },
                     plugins: {
                         legend: { display: false },
                         tooltip: {
@@ -3329,7 +3408,7 @@
                                 label: function (ctx) {
                                     const i = ctx.dataIndex;
                                     const s = model.slices[i];
-                                    return s.category + ': ' + formatAmount(s.total) + ' (' + model.percents[i] + '%)';
+                                    return s.category + ': ' + formatAmount(s.total) + ' (' + model.percentLabels[i] + ')';
                                 }
                             }
                         }
@@ -3367,7 +3446,7 @@
                             callbacks: {
                                 label: function (ctx) {
                                     const i = ctx.dataIndex;
-                                    return formatAmount(model.slices[i].total) + ' (' + model.percents[i] + '%)';
+                                    return formatAmount(model.slices[i].total) + ' (' + model.percentLabels[i] + ')';
                                 }
                             }
                         }
@@ -3419,6 +3498,52 @@
         return keys;
     }
 
+    /** Compact axis labels: ৳0, ৳20k, ৳100k — never the raw ৳120000. */
+    function formatCompactAxisValue(v) {
+        const c = getCurrencySettings();
+        const n = Number(v) || 0;
+        const abs = Math.abs(n);
+        let num;
+        if (abs >= 1000) {
+            const k = n / 1000;
+            num = (Math.round(k * 10) / 10) + 'k';
+            num = num.replace(/\.0k$/, 'k');
+        } else {
+            num = String(n);
+        }
+        return c.position === 'before' ? (c.symbol + num) : (num + '\u00a0' + c.symbol);
+    }
+
+    let monthlyChartSignatures = {}; // suffix -> signature of the data/type last rendered, for memoization
+    let monthlyTrendHiddenSeries = {}; // suffix -> Set of series labels toggled off via the legend chips
+
+    /** Renders the small clickable legend chips above the Monthly Trend chart (replacing
+     *  Chart.js's default box legend) and wires up click-to-toggle per series. */
+    function renderMonthlyChartLegend(suffix, datasets) {
+        const el = document.getElementById('monthlyChartLegend' + suffix);
+        if (!el) return;
+        const hidden = monthlyTrendHiddenSeries[suffix] || new Set();
+        el.innerHTML = datasets.map(function (ds) {
+            const isHidden = hidden.has(ds.label);
+            return `<button type="button" class="trend-legend-chip${isHidden ? ' is-hidden' : ''}" data-label="${escHtml(ds.label)}">` +
+                `<span class="trend-legend-chip-dot" style="background-color:${ds.borderColor || ds.backgroundColor}"></span>${escHtml(ds.label)}</button>`;
+        }).join('');
+        el.querySelectorAll('.trend-legend-chip').forEach(function (chip) {
+            chip.onclick = function () {
+                const label = chip.dataset.label;
+                const set = monthlyTrendHiddenSeries[suffix] || (monthlyTrendHiddenSeries[suffix] = new Set());
+                if (set.has(label)) set.delete(label); else set.add(label);
+                const chart = monthlyChartInstances[suffix];
+                if (!chart) return;
+                chart.data.datasets.forEach(function (d, i) {
+                    if (d.label === label) chart.getDatasetMeta(i).hidden = set.has(label);
+                });
+                chart.update();
+                chip.classList.toggle('is-hidden', set.has(label));
+            };
+        });
+    }
+
     function drawMonthlyChart(data, suffix) {
         suffix = suffix || '';
         const canvasEl = document.getElementById('monthlyChart' + suffix);
@@ -3428,7 +3553,9 @@
         // never further than that, so future months never appear on the chart.
         const endKey = (selectedMonthKey && selectedMonthKey !== 'ALL') ? selectedMonthKey : currentMonthKey();
         const monthKeys = getLast6MonthKeys(endKey);
-        const monthLabels = monthKeys.map(k => monthKeyLabel(k, true));
+        // X-axis stays short ("May", "Jun", ...) — the year only ever appears in the tooltip title.
+        const monthLabels = monthKeys.map(k => monthKeyLabel(k, true).split(' ')[0]);
+        const monthFullLabels = monthKeys.map(k => monthKeyLabel(k, true));
 
         const months = {};
         monthKeys.forEach(k => { months[k] = { income: 0, expense: 0, savings: 0 }; });
@@ -3455,8 +3582,11 @@
             });
         }
 
-        const ctx = canvasEl.getContext('2d');
-        if (monthlyChartInstances[suffix]) monthlyChartInstances[suffix].destroy();
+        // One shared font family/size across ticks, legend chips (CSS) and tooltip — no
+        // condensed or scaled fonts, so text never looks stretched regardless of canvas size.
+        const appFont = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+        Chart.defaults.font.family = appFont;
+        Chart.defaults.font.size = 12;
 
         // Series colors are read from the active theme's semantic tokens (not hard-coded)
         // so Income/Expense/Savings always mean the same thing while matching the theme.
@@ -3467,43 +3597,73 @@
         const mutedColor = cssVar('--text-muted', '#9a9a9a');
         const gridColor = hexWithAlpha(cssVar('--border', '#333333'), '0d'); // ~5% opacity gridlines
 
+        // Memoize: skip destroying/recreating the Chart.js instance (and its entrance
+        // animation) when neither the underlying numbers nor the chart type/filter changed.
+        const signature = JSON.stringify({ type: monthlyChartType, filter: monthlyCategoryFilter, months: months, keys: monthKeys });
+        if (monthlyChartSignatures[suffix] === signature && monthlyChartInstances[suffix]) return;
+        monthlyChartSignatures[suffix] = signature;
+
+        const ctx = canvasEl.getContext('2d');
+        if (monthlyChartInstances[suffix]) monthlyChartInstances[suffix].destroy();
+
         const commonOptions = {
             responsive: true,
             maintainAspectRatio: false,
-            animation: { duration: 200 },
-            layout: { padding: { top: 8 } },
+            devicePixelRatio: window.devicePixelRatio || 1,
+            animation: { duration: 400 },
+            layout: { padding: { top: 8, right: 16 } },
+            interaction: { mode: 'index', intersect: false },
             plugins: {
-                legend: {
-                    position: 'top',
-                    align: 'center',
-                    labels: { boxWidth: 12, padding: 12, color: textColor }
-                },
+                legend: { display: false }, // replaced by the clickable chips above the canvas
                 tooltip: {
+                    mode: 'index',
+                    intersect: false,
                     backgroundColor: cssVar('--surface-2', '#222'),
                     titleColor: textColor,
                     bodyColor: textColor,
                     borderColor: cssVar('--border', '#333'),
-                    borderWidth: 1
+                    borderWidth: 1,
+                    titleFont: { size: 13, family: appFont },
+                    bodyFont: { size: 13, family: appFont },
+                    callbacks: {
+                        title: function (items) { return items.length ? monthFullLabels[items[0].dataIndex] : ''; },
+                        label: function (item) { return item.dataset.label + ': ' + formatAmount(item.parsed.y); }
+                    }
                 }
             },
             scales: {
-                x: { grid: { color: gridColor }, ticks: { color: mutedColor } },
+                x: {
+                    grid: { display: false },
+                    border: { display: false },
+                    ticks: { color: mutedColor, font: { size: 12, family: appFont } }
+                },
                 y: {
                     beginAtZero: true,
-                    grid: { color: gridColor },
-                    ticks: { color: mutedColor, callback: v => getCurrencySettings().symbol + v }
+                    grid: { color: gridColor, drawTicks: false },
+                    border: { display: false },
+                    ticks: { color: mutedColor, font: { size: 12, family: appFont }, callback: v => formatCompactAxisValue(v) }
                 }
             }
         };
 
         const expenseLabel = monthlyCategoryFilter ? ('Expense: ' + monthlyCategoryFilter) : 'Expense';
-        const incomeDataset  = { label: 'Income',  data: monthKeys.map(k => months[k].income),  borderColor: posColor, backgroundColor: hexWithAlpha(posColor, '1a'),  tension: 0.4, fill: true };
-        const expenseDataset = { label: expenseLabel, data: monthKeys.map(k => months[k].expense), borderColor: negColor, backgroundColor: hexWithAlpha(negColor, '1a'),   tension: 0.4, fill: true };
-        const savingsDataset = { label: 'Savings', data: monthKeys.map(k => months[k].savings), borderColor: accColor, backgroundColor: hexWithAlpha(accColor, '1a'),  tension: 0.4, fill: true };
+        // Only Income gets a very faint gradient fill under its line — Expense and Savings stay
+        // plain strokes, so three overlapping filled areas never muddy the chart.
+        const incomeGradient = ctx.createLinearGradient(0, 0, 0, canvasEl.clientHeight || 320);
+        incomeGradient.addColorStop(0, hexWithAlpha(posColor, '26'));
+        incomeGradient.addColorStop(1, hexWithAlpha(posColor, '00'));
+
+        const lineDefaults = { borderWidth: 2, tension: 0.35, pointRadius: 0, pointHoverRadius: 4, pointHitRadius: 10 };
+        const incomeDataset  = Object.assign({ label: 'Income',  data: monthKeys.map(k => months[k].income),  borderColor: posColor, backgroundColor: incomeGradient, fill: true }, lineDefaults);
+        const expenseDataset = Object.assign({ label: expenseLabel, data: monthKeys.map(k => months[k].expense), borderColor: negColor, backgroundColor: 'transparent', fill: false }, lineDefaults);
+        const savingsDataset = Object.assign({ label: 'Savings', data: monthKeys.map(k => months[k].savings), borderColor: accColor, backgroundColor: 'transparent', fill: false }, lineDefaults);
 
         // A category filter narrows the chart down to that category's expense trend only —
         // mixing it with unfiltered income/savings totals would be misleading (wildly different scales).
         const datasets = monthlyCategoryFilter ? [expenseDataset] : [incomeDataset, expenseDataset, savingsDataset];
+
+        const hiddenSet = monthlyTrendHiddenSeries[suffix] || new Set();
+        datasets.forEach(ds => { ds.hidden = hiddenSet.has(ds.label); });
 
         if (monthlyChartType === 'bar') {
             datasets.forEach(ds => {
@@ -3511,8 +3671,11 @@
                 ds.borderRadius    = 6;
                 ds.borderSkipped   = false;
                 delete ds.borderColor; delete ds.tension; delete ds.fill;
+                delete ds.pointRadius; delete ds.pointHoverRadius; delete ds.pointHitRadius;
             });
         }
+
+        renderMonthlyChartLegend(suffix, datasets);
 
         monthlyChartInstances[suffix] = new Chart(ctx, {
             type: monthlyChartType === 'bar' ? 'bar' : 'line',
