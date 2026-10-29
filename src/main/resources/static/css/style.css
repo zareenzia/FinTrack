@@ -693,7 +693,7 @@ body {
     background: linear-gradient(135deg, var(--bg-body-1) 0%, var(--bg-body-2) 100%);
     color: var(--text-body);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
 }
@@ -702,17 +702,20 @@ main, .container-fluid {
     flex: 1;
 }
 
-/* ===== SIDEBAR LAYOUT ===== */
+/* ===== SIDEBAR LAYOUT =====
+   The document itself scrolls (no inner scroll container on the shell). The sidebar is
+   sticky against that normal document scroll, and #main-content has no fixed height or
+   overflow clipping so it grows with its content — this is what keeps full-page screenshots
+   and tall windows from showing blank space below the old 100vh-clipped viewport. */
 body.has-sidebar {
     flex-direction: row;
-    overflow: hidden;
     align-items: stretch;
 }
 
 #sidebar {
     width: 240px;
     min-width: 240px;
-    height: 100vh;
+    height: 100dvh;
     position: sticky;
     top: 0;
     flex-shrink: 0;
@@ -746,9 +749,10 @@ body.has-sidebar {
 #main-content {
     flex: 1;
     min-width: 0;
-    height: 100vh;
-    overflow-y: auto;
-    overflow-x: hidden;
+    /* No fixed height / overflow here: this column must grow with its content and let the
+       document scroll normally. (Previously `height: 100vh; overflow-y: auto;` turned this
+       into an inner scroll container capped at the viewport height, clipping everything
+       below ~870px from full-page captures.) */
 }
 
 /* Sidebar Header */
@@ -1089,8 +1093,6 @@ body.has-sidebar {
 
     #main-content {
         width: 100%;
-        height: 100vh;
-        overflow-y: auto;
         padding-top: 56px;
     }
 
@@ -2174,22 +2176,10 @@ canvas {
         width: 50%;
     }
 
-    /* ─ Dashboard: chart containers — remove fixed heights ─ */
-    .card-body > .row[style],
-    .card-body > [style*="height"] {
-        height: auto !important;
-        min-height: 0 !important;
-    }
-    .card-body[style*="height"],
-    .card-body[style*="420px"] {
-        height: auto !important;
-        min-height: 0 !important;
-    }
-    /* category chart inner row must stack its legend + canvas */
+    /* ─ Dashboard: category donut legend stays full-width under the chart on mobile ─ */
     #categoryLegendContainer {
         width: 100% !important;
         max-width: 100% !important;
-        flex: 0 0 100%;
         margin-bottom: 8px;
     }
     #categoryChart { max-height: 220px !important; }
