@@ -1,13 +1,16 @@
 package org.example.finzin.ai;
 
 import org.example.finzin.entity.AiSettingsEntity;
+import org.example.finzin.entity.BudgetPlanEntity;
 import org.example.finzin.entity.TransactionEntity;
 import org.example.finzin.repository.TransactionRepository;
+import org.example.finzin.service.BudgetPlanService;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,28 +32,47 @@ public class DashboardSummaryService {
     private final RecommendationService recommendationService;
     private final FinancialHealthService financialHealthService;
     private final TransactionRepository transactionRepository;
-    private final TtlCache<Long, DashboardSummary> cache = new TtlCache<>(CACHE_TTL);
+    private final BudgetPlanService budgetPlanService;
+    /** Keyed by userId + the requested month ('YYYY-MM') so switching the dashboard's month
+     *  filter never serves another month's cached biggest-expense/budget-status payload. */
+    private final TtlCache<String, DashboardSummary> cache = new TtlCache<>(CACHE_TTL);
 
     public DashboardSummaryService(AiSettingsService aiSettingsService, InsightService insightService,
                                     RecommendationService recommendationService, FinancialHealthService financialHealthService,
-                                    TransactionRepository transactionRepository) {
+                                    TransactionRepository transactionRepository, BudgetPlanService budgetPlanService) {
         this.aiSettingsService = aiSettingsService;
         this.insightService = insightService;
         this.recommendationService = recommendationService;
         this.financialHealthService = financialHealthService;
         this.transactionRepository = transactionRepository;
+        this.budgetPlanService = budgetPlanService;
     }
 
     public record DashboardSummary(boolean enabled, String todaysInsight, Map<String, Object> biggestExpense,
                                     Map<String, Object> budgetStatus, Map<String, Object> savingsProgress,
                                     String aiRecommendation, int healthScore) {}
 
-    /** Cached per user for {@link #CACHE_TTL} — the dashboard card re-fetches this on every page load. */
-    public DashboardSummary summarize(Long userId) {
-        return cache.getOrCompute(userId, () -> summarizeInternal(userId));
+    /** Cached per user+month for {@link #CACHE_TTL} — the dashboard card re-fetches this on every
+     *  page load / month change. {@code month} is an optional 'YYYY-MM' string; null/blank means
+     *  the real current month. */
+    public DashboardSummary summarize(Long userId, String month) {
+        YearMonth targetMonth = parseMonth(month);
+        String cacheKey = userId + ":" + targetMonth;
+        return cache.getOrCompute(cacheKey, () -> summarizeInternal(userId, targetMonth));
     }
 
-    private DashboardSummary summarizeInternal(Long userId) {
+    private YearMonth parseMonth(String month) {
+        if (month != null && !month.isBlank() && !"ALL".equalsIgnoreCase(month.trim())) {
+            try {
+                return YearMonth.parse(month.trim(), DateTimeFormatter.ofPattern("yyyy-MM"));
+            } catch (Exception ignored) {
+                // fall through to current month
+            }
+        }
+        return YearMonth.now();
+    }
+
+    private DashboardSummary summarizeInternal(Long userId, YearMonth targetMonth) {
         AiSettingsEntity settings = aiSettingsService.getOrDefault(userId);
         if (!Boolean.TRUE.equals(settings.getEnableDashboardSummary())) {
             return new DashboardSummary(false, null, null, null, null, null, 0);
@@ -73,11 +95,7 @@ public class DashboardSummaryService {
 
         Map<String, Object> budgetStatus = null;
         if (Boolean.TRUE.equals(settings.getEnableBudgetCoaching())) {
-            RecommendationService.BudgetCoachAdvice advice = recommendationService.getBudgetCoachAdvice(userId);
-            budgetStatus = new LinkedHashMap<>();
-            budgetStatus.put("hasBudget", advice.hasBudget());
-            budgetStatus.put("planName", advice.planName());
-            budgetStatus.put("utilizationPercent", advice.overallUtilizationPercent());
+            budgetStatus = buildBudgetStatus(userId, targetMonth);
         }
 
         Map<String, Object> savingsProgress = null;
@@ -88,16 +106,36 @@ public class DashboardSummaryService {
             savingsProgress.put("emergencyFundProgressPercent", advice.emergencyFundProgressPercent());
         }
 
-        Map<String, Object> biggestExpense = findBiggestExpense(userId);
+        Map<String, Object> biggestExpense = findBiggestExpense(userId, targetMonth);
 
         return new DashboardSummary(true, todaysInsight, biggestExpense, budgetStatus, savingsProgress,
                 aiRecommendation, health.overallHealthScore());
     }
 
-    private Map<String, Object> findBiggestExpense(Long userId) {
-        YearMonth month = YearMonth.now();
-        LocalDateTime start = month.atDay(1).atStartOfDay();
-        LocalDateTime end = month.plusMonths(1).atDay(1).atStartOfDay();
+    /** Budget utilization for the requested month specifically (mirrors {@link MonthlyReportService}'s
+     *  pattern) rather than {@link RecommendationService#getBudgetCoachAdvice}, which only ever looks
+     *  at the currently-active plan — that would show the wrong month's percentage, or none at all,
+     *  once the dashboard's month filter moves away from the current month. */
+    private Map<String, Object> buildBudgetStatus(Long userId, YearMonth targetMonth) {
+        BudgetPlanEntity plan = budgetPlanService.listForUser(userId, targetMonth.toString(), "ACTIVE", null, null).stream()
+                .findFirst()
+                .orElse(null);
+        Map<String, Object> budgetStatus = new LinkedHashMap<>();
+        if (plan == null) {
+            budgetStatus.put("hasBudget", false);
+            return budgetStatus;
+        }
+        List<Map<String, Object>> categoryStatuses = budgetPlanService.computeCategoryStatuses(plan);
+        Map<String, Object> summary = budgetPlanService.computeSummary(plan, categoryStatuses);
+        budgetStatus.put("hasBudget", true);
+        budgetStatus.put("planName", plan.getName());
+        budgetStatus.put("utilizationPercent", summary.get("utilizationPercent"));
+        return budgetStatus;
+    }
+
+    private Map<String, Object> findBiggestExpense(Long userId, YearMonth targetMonth) {
+        LocalDateTime start = targetMonth.atDay(1).atStartOfDay();
+        LocalDateTime end = targetMonth.plusMonths(1).atDay(1).atStartOfDay();
         List<TransactionEntity> transactions = transactionRepository.findByUserIdAndDateRange(userId, start, end);
 
         TransactionEntity biggest = transactions.stream()

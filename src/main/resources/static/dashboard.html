@@ -459,6 +459,7 @@
                             <div class="sc-title">Monthly Savings</div>
                             <div class="sc-subtitle"><i class="fas fa-shield-halved sc-trend-up"></i> <span class="sc-month-label">This month</span></div>
                         </div>
+                        <button class="sc-details-btn" onclick="openSavingsBreakdownModal()" title="View savings breakdown by fund"><i class="fas fa-list-ul"></i></button>
                     </div>
                     <hr class="sc-divider">
                     <div class="sc-bottom">
@@ -466,7 +467,6 @@
                             <h3 class="stat-card-amount" id="total-savings">...</h3>
                             <div class="sc-value-sub">&nbsp;</div>
                         </div>
-                        <button class="sc-details-btn" onclick="openSavingsBreakdownModal()" title="View savings breakdown by fund"><i class="fas fa-list-ul"></i></button>
                     </div>
                 </div>
             </div>
@@ -1373,27 +1373,38 @@
         return palette[idx % palette.length];
     }
 
-    /** Shrink .stat-card-amount font until text fits on one line */
+    /** Shrink .stat-card-amount font until text fits on one line.
+     *  The 5 Default-View summary cards (`.sc-value-block .stat-card-amount`) share one base
+     *  style, so instead of shrinking each independently (which used to make cards with shorter
+     *  values, e.g. Monthly Savings, look bigger than cards with longer ones at the same base
+     *  size) the 4 non-hero cards are shrunk in lockstep to one common font-size: whichever
+     *  card needs the smallest size to fit wins, and that size is applied to all of them. The
+     *  Hero card keeps its own larger, independent size since it's intentionally bigger. */
     function fitStatAmounts() {
+        const groupEls = [];
         document.querySelectorAll('.stat-card-amount').forEach(function (el) {
             const panel = el.closest('.dashboard-view-panel');
             if (panel && !panel.classList.contains('active')) return; // hidden panel — skip, sized 0
             el.style.fontSize = '';
             const cardBody = el.closest('.card-body');
             if (!cardBody) return;
-            // The savings card's "view breakdown" button shares this row with the amount — leave
-            // room for it, otherwise this assumes the amount alone owns the full card width and
-            // the button clips it instead of the shrink loop below kicking in.
-            const detailsBtn = el.parentElement && el.parentElement.querySelector('.sc-details-btn, .summary-details-btn');
-            const reserved = 48 + (detailsBtn ? detailsBtn.offsetWidth + 8 : 0);
-            const maxW = cardBody.clientWidth - reserved;
+            const isHero = el.classList.contains('stat-card-amount--hero');
+            const isGrouped = el.closest('.sc-value-block') && !isHero;
+            const maxW = cardBody.clientWidth - 48;
             let fs = parseFloat(window.getComputedStyle(el).fontSize);
             let safety = 0;
             while (el.scrollWidth > maxW && fs > 12 && safety++ < 25) {
                 fs -= 1;
                 el.style.fontSize = fs + 'px';
             }
+            if (isGrouped) groupEls.push({ el: el, fs: fs });
         });
+        // Apply the smallest required size across the synchronized group so every non-hero
+        // summary card renders its value at the exact same font-size.
+        if (groupEls.length) {
+            const uniformFs = Math.min.apply(null, groupEls.map(g => g.fs));
+            groupEls.forEach(g => { g.el.style.fontSize = uniformFs + 'px'; });
+        }
     }
 
     /** Flip the single global hide-values preference, then re-render only the widgets whose
@@ -1729,6 +1740,7 @@
         }
 
         loadCurrentBudget(selectedMonthKey);
+        loadAiSummary();
         queueCreditCardSpendingLoad();
 
         currentPage = 0;
@@ -2056,9 +2068,24 @@
                 if (!items.length) {
                     banner.classList.add('d-none');
                 } else {
-                    const names = items.slice(0, 3).map(r => r.transactionName).join(', ');
-                    bannerText.textContent = items.length + ' upcoming recurring transaction' + (items.length !== 1 ? 's' : '') +
-                        ' in the next 3 days' + (names ? ' — ' + names : '') + (items.length > 3 ? '…' : '');
+                    const today = new Date(); today.setHours(0, 0, 0, 0);
+                    const isDueToday = (r) => {
+                        const d = new Date(r.nextExecutionDate); d.setHours(0, 0, 0, 0);
+                        return d.getTime() === today.getTime();
+                    };
+                    if (items.every(isDueToday)) {
+                        // All items are due today — call that out explicitly with separate
+                        // Income vs. Bills (everything else) subtotals instead of the generic phrasing.
+                        const incomeTotal = items.filter(r => r.transactionType === 'income').reduce((s, r) => s + r.amount, 0);
+                        const billsTotal = items.filter(r => r.transactionType !== 'income').reduce((s, r) => s + r.amount, 0);
+                        bannerText.textContent = items.length + ' due today' +
+                            (incomeTotal > 0 ? ' — Income ' + formatAmount(incomeTotal) : '') +
+                            (billsTotal > 0 ? ' · Bills ' + formatAmount(billsTotal) : '');
+                    } else {
+                        const names = items.slice(0, 3).map(r => r.transactionName).join(', ');
+                        bannerText.textContent = items.length + ' upcoming recurring transaction' + (items.length !== 1 ? 's' : '') +
+                            ' in the next 3 days' + (names ? ' — ' + names : '') + (items.length > 3 ? '…' : '');
+                    }
                     banner.classList.remove('d-none');
                 }
             }
@@ -2213,7 +2240,10 @@
         const rows = ['aiSummaryRow', 'aiSummaryRowCompact'].map(id => document.getElementById(id)).filter(Boolean);
         if (!bodies.length) return;
         try {
-            const data = await fetch('/api/ai/dashboard-summary').then(r => r.json());
+            // Follows the dashboard's own month filter (not always "now") so the health score,
+            // biggest expense and budget % all describe the same month the rest of the page shows.
+            const monthParam = (selectedMonthKey && selectedMonthKey !== 'ALL') ? selectedMonthKey : currentMonthKey();
+            const data = await fetch('/api/ai/dashboard-summary?month=' + encodeURIComponent(monthParam)).then(r => r.json());
             if (!data.enabled) {
                 rows.forEach(r => r.classList.add('d-none'));
                 return;
@@ -2233,7 +2263,7 @@
             }
             if (data.budgetStatus) {
                 html += '<div class="col-12"><span class="text-muted">Budget:</span> ' +
-                    (data.budgetStatus.hasBudget ? `${data.budgetStatus.utilizationPercent.toFixed(0)}% used` : 'No active budget') + '</div>';
+                    (data.budgetStatus.hasBudget ? `${data.budgetStatus.utilizationPercent.toFixed(0)}% used` : 'No budget set') + '</div>';
             }
             if (data.savingsProgress) {
                 // No contributions at all means there's no real emergency fund target to track
@@ -2262,7 +2292,9 @@
                 : '/api/budget-plans/current';
             const data = await fetch(url).then(r => r.json());
             if (!data.hasCurrent) {
-                const html = '<p class="text-muted small mb-0">No active budget for this period. <a href="/budget-planner" class="dashboard-accent-link">Create one</a>.</p>';
+                const html = '<p class="text-muted small mb-0">No budget for this period — ' +
+                    '<a href="/budget-planner" class="dashboard-accent-link">Create one</a> or ' +
+                    '<a href="/budget-planner?action=copy-last-month" class="dashboard-accent-link">copy last month\'s</a>.</p>';
                 containers.forEach(c => c.innerHTML = html);
                 return;
             }
@@ -3629,10 +3661,7 @@
         // Always the last 6 months ending at the dashboard's selected (or current) month —
         // never further than that, so future months never appear on the chart.
         const endKey = (selectedMonthKey && selectedMonthKey !== 'ALL') ? selectedMonthKey : currentMonthKey();
-        const monthKeys = getLast6MonthKeys(endKey);
-        // X-axis stays short ("May", "Jun", ...) — the year only ever appears in the tooltip title.
-        const monthLabels = monthKeys.map(k => monthKeyLabel(k, true).split(' ')[0]);
-        const monthFullLabels = monthKeys.map(k => monthKeyLabel(k, true));
+        let monthKeys = getLast6MonthKeys(endKey);
 
         const months = {};
         monthKeys.forEach(k => { months[k] = { income: 0, expense: 0, savings: 0 }; });
@@ -3658,6 +3687,22 @@
                 }
             });
         }
+
+        // Trim any leading months with no activity at all (e.g. a brand-new account) so the
+        // chart starts at the first month that actually has data, instead of a flat run of zeros.
+        // Always keep at least the final (current/selected) month, even if it's also empty.
+        const firstDataIdx = monthKeys.findIndex(k => months[k].income || months[k].expense || months[k].savings);
+        if (firstDataIdx > 0) {
+            monthKeys = monthKeys.slice(firstDataIdx);
+        }
+        // X-axis stays short ("May", "Jun", ...) — the year only ever appears in the tooltip title.
+        const monthLabels = monthKeys.map(k => monthKeyLabel(k, true).split(' ')[0]);
+        const monthFullLabels = monthKeys.map(k => monthKeyLabel(k, true));
+        // The last point is a dashed "(so far)" segment only when it's the real current month
+        // (an in-progress month, not a fully-closed past one) and there's a prior point to
+        // connect from.
+        const isPartialLastMonth = monthKeys.length > 1 && monthKeys[monthKeys.length - 1] === currentMonthKey();
+
 
         // One shared font family/size across ticks, legend chips (CSS) and tooltip — no
         // condensed or scaled fonts, so text never looks stretched regardless of canvas size.
@@ -3703,7 +3748,11 @@
                     titleFont: { size: 13, family: appFont },
                     bodyFont: { size: 13, family: appFont },
                     callbacks: {
-                        title: function (items) { return items.length ? monthFullLabels[items[0].dataIndex] : ''; },
+                        title: function (items) {
+                            if (!items.length) return '';
+                            const label = monthFullLabels[items[0].dataIndex];
+                            return (isPartialLastMonth && items[0].dataIndex === monthKeys.length - 1) ? label + ' (so far)' : label;
+                        },
                         label: function (item) { return item.dataset.label + ': ' + formatAmount(item.parsed.y); }
                     }
                 }
@@ -3731,6 +3780,14 @@
         incomeGradient.addColorStop(1, hexWithAlpha(posColor, '00'));
 
         const lineDefaults = { borderWidth: 2, tension: 0.35, pointRadius: 0, pointHoverRadius: 4, pointHitRadius: 10 };
+        // The final segment (connecting into the current, still-in-progress month) is dashed to
+        // visually flag it as partial/provisional data, not a fully-closed month like the rest.
+        if (isPartialLastMonth && monthlyChartType !== 'bar') {
+            const lastSegmentIdx = monthKeys.length - 2; // segment index = index of its starting point
+            lineDefaults.segment = {
+                borderDash: ctx => ctx.p0DataIndex === lastSegmentIdx ? [6, 4] : undefined
+            };
+        }
         const incomeDataset  = Object.assign({ label: 'Income',  data: monthKeys.map(k => months[k].income),  borderColor: posColor, backgroundColor: incomeGradient, fill: true }, lineDefaults);
         const expenseDataset = Object.assign({ label: expenseLabel, data: monthKeys.map(k => months[k].expense), borderColor: negColor, backgroundColor: 'transparent', fill: false }, lineDefaults);
         const savingsDataset = Object.assign({ label: 'Savings', data: monthKeys.map(k => months[k].savings), borderColor: accColor, backgroundColor: 'transparent', fill: false }, lineDefaults);

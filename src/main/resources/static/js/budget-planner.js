@@ -89,6 +89,12 @@
         document.getElementById('bpConfirmDeleteBtn').addEventListener('click', handleConfirmedDelete);
 
         loadPlanList();
+
+        // Deep-link support: the dashboard's "Copy last month's budget" empty-state action
+        // lands here with ?action=copy-last-month and reuses this page's own copy flow.
+        if (new URLSearchParams(window.location.search).get('action') === 'copy-last-month') {
+            copyPreviousBudget();
+        }
     });
 
     // ============== Plan list / selection ==============
