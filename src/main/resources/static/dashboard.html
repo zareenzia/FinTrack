@@ -173,6 +173,56 @@
         .cat-legend-amt { font-size: 0.72rem; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
         .cat-legend-pct { font-size: 0.85rem; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 
+        /* ---- Expense by Category: "List" view (replaces the old Bar Chart toggle) ---- */
+        .cat-list-view { display: flex; flex-direction: column; gap: 2px; }
+        .cat-list-view.cat-list-scroll {
+            max-height: 360px;
+            overflow-y: auto;
+            padding-right: 6px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border, #333) transparent;
+        }
+        .cat-list-view.cat-list-scroll::-webkit-scrollbar { width: 6px; }
+        .cat-list-view.cat-list-scroll::-webkit-scrollbar-thumb { background: var(--border, #333); border-radius: 6px; }
+        .cat-list-row {
+            min-height: 44px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 5px;
+            padding: 4px 6px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            transition: background-color 0.15s ease;
+        }
+        .cat-list-row:hover, .cat-list-row.is-hovered { background: var(--surface-2, rgba(255,255,255,0.06)); }
+        .cat-list-row-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .cat-list-row-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+        .cat-list-row-icon {
+            width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0;
+            display: inline-flex; align-items: center; justify-content: center; font-size: 0.72rem;
+        }
+        .cat-list-row-name { font-size: 0.86rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cat-list-row-right { display: flex; align-items: baseline; gap: 8px; flex-shrink: 0; }
+        .cat-list-row-amt { font-size: 0.74rem; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .cat-list-row-pct { font-size: 0.85rem; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .cat-list-row-bar-track { height: 6px; border-radius: 4px; background: var(--surface-2, var(--bg-input)); overflow: hidden; }
+        .cat-list-row-bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s ease; }
+
+        /* "Filtered · Clear" chip shown in the Recent Transactions header when a category was
+           picked from the Expense-by-Category list (or legend) view. */
+        .tx-filter-chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 0.72rem; font-weight: 600; color: var(--accent);
+            background: var(--accent-soft); border: none; border-radius: 999px;
+            padding: 2px 10px; margin-left: 8px; cursor: pointer;
+        }
+        .tx-filter-chip:hover { filter: brightness(1.05); }
+
         /* Monthly Trend: fixed-height wrapper so Chart.js sizes the canvas itself — never
            stretched by a flex/grid parent — plus clickable legend chips above the chart. */
         .monthly-trend-chart-wrap { position: relative; height: 320px; padding-right: 8px; }
@@ -243,18 +293,18 @@
             flex-direction: column;
         }
 
-        /* ---- Modern segmented-pill tab switcher (Monthly Trend ↔ Credit Card Spending) ---- */
+        /* ---- Modern segmented-pill tab switcher (Monthly Trend / Category Trend / Credit Card Spending) ---- */
         .trend-cc-tabs {
             border-bottom: none;
             margin: 0;
             padding: 3px;
             display: flex;
             gap: 2px;
-            background: rgba(0,0,0,0.18);
+            background: var(--surface-2, var(--bg-input));
             border-radius: 999px;
         }
         .trend-cc-tabs .nav-link {
-            color: rgba(255,255,255,0.75);
+            color: var(--text-muted);
             border: none;
             background: transparent;
             padding: 6px 16px;
@@ -266,14 +316,14 @@
         }
         .trend-cc-tabs .nav-link.active,
         .trend-cc-tabs .nav-link:focus {
-            color: #ffffff;
-            background: rgba(255,255,255,0.22);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.25) inset, 0 1px 0 rgba(255,255,255,0.15);
+            color: #fff;
+            background: var(--accent);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.18);
             outline: none;
         }
         .trend-cc-tabs .nav-link:hover:not(.active) {
-            color: #fff;
-            background: rgba(255,255,255,0.12);
+            color: var(--text);
+            background: var(--accent-soft);
         }
         .dashboard-card-header.has-tabs {
             height: auto;
@@ -283,7 +333,7 @@
             gap: 8px;
         }
 
-        /* ---- Modern KPI stat chips for CC spending summary (Total / Top Category) ---- */
+        /* ---- Modern KPI stat chips for CC spending summary (Total / Top Category / Transactions) ---- */
         .cc-kpi-row {
             display: flex;
             gap: 10px;
@@ -308,13 +358,12 @@
             position: absolute;
             left: 0; top: 0; bottom: 0;
             width: 4px;
+            background: var(--accent);
         }
         .cc-kpi-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 22px rgba(0,0,0,0.16);
         }
-        .cc-kpi-card--total::before { background: linear-gradient(180deg,#7c3aed,#a78bfa); }
-        .cc-kpi-card--top::before   { background: linear-gradient(180deg,#d97706,#fbbf24); }
         .cc-kpi-icon {
             width: 36px;
             height: 36px;
@@ -325,12 +374,10 @@
             font-size: 0.95rem;
             flex-shrink: 0;
             transition: transform 0.2s ease;
+            background: var(--accent-soft);
+            color: var(--accent);
         }
         .cc-kpi-card:hover .cc-kpi-icon { transform: scale(1.1) rotate(-4deg); }
-        .cc-kpi-card--total .cc-kpi-icon { background: rgba(124,58,237,0.15); color: #7c3aed; }
-        .cc-kpi-card--top .cc-kpi-icon   { background: rgba(217,119,6,0.15);  color: #d97706; }
-        [data-theme="dark"] .cc-kpi-card--total .cc-kpi-icon { background: rgba(167,139,250,0.2); color: #a78bfa; }
-        [data-theme="dark"] .cc-kpi-card--top .cc-kpi-icon   { background: rgba(251,191,36,0.2);  color: #fbbf24; }
         .cc-kpi-text { display: flex; flex-direction: column; min-width: 0; }
         .cc-kpi-label {
             font-size: 0.68rem;
@@ -351,12 +398,45 @@
         /* ---- Chart backdrop panel: soft inset card so bars feel "framed" ---- */
         .cc-spending-chart-wrap {
             position: relative;
-            height: 190px !important;
-            min-height: 190px;
+            height: 280px;
+            min-height: 280px;
             border-radius: 12px;
-            background: radial-gradient(120% 140% at 10% 0%, rgba(124,58,237,0.06), transparent 60%);
-            padding: 6px 4px 0;
+            background: radial-gradient(120% 140% at 10% 0%, var(--accent-soft), transparent 60%);
+            padding: 6px 10px 0 4px;
         }
+        @media (max-width: 768px) {
+            .cc-spending-chart-wrap { height: 220px; min-height: 220px; }
+        }
+
+        /* Per-credit-card breakdown rows (shown under the chart when "All Credit Cards" is selected) */
+        .cc-card-breakdown { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+        .cc-card-breakdown-row { font-size: 0.8rem; }
+        .cc-card-breakdown-row-top { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px; color: var(--text); }
+        .cc-card-breakdown-row-amt { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+        .cc-card-breakdown-bar-track { height: 6px; border-radius: 4px; background: var(--surface-2, var(--bg-input)); overflow: hidden; }
+        .cc-card-breakdown-bar-fill { height: 100%; border-radius: 4px; background: var(--accent); }
+
+        /* CC filter row + tabs on one line on wide screens */
+        .cc-filters-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+        /* ---- Category Trend tab ---- */
+        .cat-trend-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+        .cat-trend-controls .tx-filter-select { min-width: 150px; }
+        .cat-trend-chips { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+        .cat-trend-chip {
+            flex: 1 1 150px;
+            background: var(--bg-table-stripe);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 8px 12px;
+        }
+        .cat-trend-chip-label { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted-custom); display: block; margin-bottom: 2px; }
+        .cat-trend-chip-value { font-size: 0.92rem; font-weight: 800; color: var(--text-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cat-trend-chip-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 0.78rem; font-weight: 700; border-radius: 999px; padding: 1px 8px; margin-left: 6px; }
+        .cat-trend-chip-badge.is-up { color: var(--negative); background: color-mix(in srgb, var(--negative) 15%, transparent); }
+        .cat-trend-chip-badge.is-down { color: var(--positive); background: color-mix(in srgb, var(--positive) 15%, transparent); }
+        .cat-trend-chart-wrap { position: relative; height: 320px; padding-right: 8px; }
+        @media (max-width: 768px) { .cat-trend-chart-wrap { height: 240px; } }
     </style>
 </head>
 <body class="dashboard-page">
@@ -523,19 +603,20 @@
                             <button type="button" class="btn btn-outline-primary active" id="categoryPieBtn" onclick="switchCategoryChart('pie')" title="Pie Chart">
                                 <i class="fas fa-chart-pie"></i>
                             </button>
-                            <button type="button" class="btn btn-outline-primary" id="categoryBarBtn" onclick="switchCategoryChart('bar')" title="Bar Chart">
-                                <i class="fas fa-bars"></i>
+                            <button type="button" class="btn btn-outline-primary" id="categoryListBtn" onclick="switchCategoryChart('list')" title="List view">
+                                <i class="fas fa-list"></i>
                             </button>
                         </div>
                     </div>
                 </div>
                 <div class="card-body">
-                    <div class="category-donut-wrap">
+                    <div class="category-donut-wrap" id="categoryDonutWrap">
                         <canvas id="categoryChart"></canvas>
                     </div>
                     <div id="categoryLegendContainer">
                         <div id="categoryLegend" class="cat-legend-grid"></div>
                     </div>
+                    <div id="categoryListContainer" class="cat-list-view" style="display:none;"></div>
                </div>
            </div>
        </div>
@@ -550,12 +631,17 @@
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="categoryTrendTab" data-bs-toggle="tab" data-bs-target="#categoryTrendPanel" type="button" role="tab" aria-controls="categoryTrendPanel" aria-selected="false">
+                                    <i class="fas fa-chart-area me-1"></i>Category Trend
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="ccSpendingTab" data-bs-toggle="tab" data-bs-target="#ccSpendingPanel" type="button" role="tab" aria-controls="ccSpendingPanel" aria-selected="false">
                                     <i class="fas fa-credit-card me-1"></i>Credit Card Spending
                                 </button>
                             </li>
                         </ul>
-                        <div class="d-none align-items-center gap-2 flex-wrap" id="ccFiltersDefault">
+                        <div class="d-none cc-filters-row" id="ccFiltersDefault">
                             <select class="tx-filter-select" id="creditCardAccountFilter" title="Filter by credit card account" onchange="onCreditCardAccountFilterChanged(this.value)">
                                 <option value="">All Credit Cards</option>
                             </select>
@@ -571,6 +657,23 @@
                             <div class="trend-legend-chips" id="monthlyChartLegend"></div>
                             <div class="monthly-trend-chart-wrap">
                                 <canvas id="monthlyChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="categoryTrendPanel" role="tabpanel" aria-labelledby="categoryTrendTab">
+                            <div class="cat-trend-controls">
+                                <select class="tx-filter-select" id="catTrendCategorySelect" title="Category" onchange="onCatTrendCategoryChanged(this.value)">
+                                </select>
+                                <select class="tx-filter-select" id="catTrendRangeSelect" title="Range" onchange="onCatTrendRangeChanged(this.value)">
+                                    <option value="last12">Last 12 months</option>
+                                    <option value="thisyear">This year</option>
+                                </select>
+                                <select class="tx-filter-select" id="catTrendCompareSelect" title="Compare (up to 3 total)" multiple onchange="onCatTrendCompareChanged(this)">
+                                </select>
+                            </div>
+                            <div class="cat-trend-chips" id="catTrendChips"></div>
+                            <div class="cat-trend-chart-wrap">
+                                <canvas id="categoryTrendChart"></canvas>
+                                <div class="cc-spending-state" id="categoryTrendState" style="display:none;">No spending in this range yet.</div>
                             </div>
                         </div>
                         <div class="tab-pane fade" id="ccSpendingPanel" role="tabpanel" aria-labelledby="ccSpendingTab">
@@ -590,11 +693,19 @@
                                             <span class="cc-kpi-value" id="creditCardSpendingTopCategory">Loading...</span>
                                         </div>
                                     </div>
+                                    <div class="cc-kpi-card cc-kpi-card--count">
+                                        <span class="cc-kpi-icon"><i class="fas fa-receipt"></i></span>
+                                        <div class="cc-kpi-text">
+                                            <span class="cc-kpi-label">Transactions</span>
+                                            <span class="cc-kpi-value" id="creditCardSpendingCount">Loading...</span>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="cc-spending-chart-wrap">
                                     <canvas id="creditCardSpendingChart"></canvas>
                                     <div class="cc-spending-state" id="creditCardSpendingState">Loading spending data...</div>
                                 </div>
+                                <div class="cc-card-breakdown" id="creditCardBreakdown"></div>
                             </div>
                         </div>
                     </div>
@@ -794,18 +905,19 @@
                             <button type="button" class="btn btn-outline-light active" id="categoryPieBtnCompact" onclick="switchCategoryChart('pie')" title="Pie Chart">
                                 <i class="fas fa-chart-pie"></i>
                             </button>
-                            <button type="button" class="btn btn-outline-light" id="categoryBarBtnCompact" onclick="switchCategoryChart('bar')" title="Bar Chart">
-                                <i class="fas fa-bars"></i>
+                            <button type="button" class="btn btn-outline-light" id="categoryListBtnCompact" onclick="switchCategoryChart('list')" title="List view">
+                                <i class="fas fa-list"></i>
                             </button>
                         </div>
                     </div>
                     <div class="card-body p-2">
-                        <div class="category-donut-wrap">
+                        <div class="category-donut-wrap" id="categoryDonutWrapCompact">
                             <canvas id="categoryChartCompact"></canvas>
                         </div>
                         <div id="categoryLegendContainerCompact">
                             <div id="categoryLegendCompact" class="cat-legend-grid"></div>
                         </div>
+                        <div id="categoryListContainerCompact" class="cat-list-view" style="display:none;"></div>
                     </div>
                 </div>
             </div>
@@ -823,12 +935,17 @@
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="categoryTrendTabCompact" data-bs-toggle="tab" data-bs-target="#categoryTrendPanelCompact" type="button" role="tab" aria-controls="categoryTrendPanelCompact" aria-selected="false">
+                                    <i class="fas fa-chart-area me-1"></i>Category Trend
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="ccSpendingTabCompact" data-bs-toggle="tab" data-bs-target="#ccSpendingPanelCompact" type="button" role="tab" aria-controls="ccSpendingPanelCompact" aria-selected="false">
                                     <i class="fas fa-credit-card me-1"></i>Credit Card Spending
                                 </button>
                             </li>
                         </ul>
-                        <div class="d-none align-items-center gap-2 flex-wrap" id="ccFiltersCompact">
+                        <div class="d-none cc-filters-row" id="ccFiltersCompact">
                             <select class="tx-filter-select" id="creditCardAccountFilterCompact" title="Filter by credit card account" onchange="onCreditCardAccountFilterChanged(this.value)">
                                 <option value="">All Credit Cards</option>
                             </select>
@@ -843,6 +960,23 @@
                                 <div class="trend-legend-chips" id="monthlyChartLegendCompact"></div>
                                 <div class="monthly-trend-chart-wrap">
                                     <canvas id="monthlyChartCompact"></canvas>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="categoryTrendPanelCompact" role="tabpanel" aria-labelledby="categoryTrendTabCompact">
+                                <div class="cat-trend-controls">
+                                    <select class="tx-filter-select" id="catTrendCategorySelectCompact" title="Category" onchange="onCatTrendCategoryChanged(this.value)">
+                                    </select>
+                                    <select class="tx-filter-select" id="catTrendRangeSelectCompact" title="Range" onchange="onCatTrendRangeChanged(this.value)">
+                                        <option value="last12">Last 12 months</option>
+                                        <option value="thisyear">This year</option>
+                                    </select>
+                                    <select class="tx-filter-select" id="catTrendCompareSelectCompact" title="Compare (up to 3 total)" multiple onchange="onCatTrendCompareChanged(this)">
+                                    </select>
+                                </div>
+                                <div class="cat-trend-chips" id="catTrendChipsCompact"></div>
+                                <div class="cat-trend-chart-wrap">
+                                    <canvas id="categoryTrendChartCompact"></canvas>
+                                    <div class="cc-spending-state" id="categoryTrendStateCompact" style="display:none;">No spending in this range yet.</div>
                                 </div>
                             </div>
                             <div class="tab-pane fade" id="ccSpendingPanelCompact" role="tabpanel" aria-labelledby="ccSpendingTabCompact">
@@ -862,16 +996,25 @@
                                                 <span class="cc-kpi-value" id="creditCardSpendingTopCategoryCompact">Loading...</span>
                                             </div>
                                         </div>
+                                        <div class="cc-kpi-card cc-kpi-card--count">
+                                            <span class="cc-kpi-icon"><i class="fas fa-receipt"></i></span>
+                                            <div class="cc-kpi-text">
+                                                <span class="cc-kpi-label">Transactions</span>
+                                                <span class="cc-kpi-value" id="creditCardSpendingCountCompact">Loading...</span>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="cc-spending-chart-wrap">
                                         <canvas id="creditCardSpendingChartCompact"></canvas>
                                         <div class="cc-spending-state" id="creditCardSpendingStateCompact">Loading spending data...</div>
                                     </div>
+                                    <div class="cc-card-breakdown" id="creditCardBreakdownCompact"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+
             </div>
         </div>
 
@@ -1005,6 +1148,9 @@
                         <div>
                             <h6 class="mb-0 tx-header-title">Recent Transactions</h6>
                             <span class="tx-header-sub" id="tx-total-count"></span>
+                            <button type="button" class="tx-filter-chip" id="txCategoryFilterChip" style="display:none;" onclick="clearCategoryFilterFromChip()">
+                                Filtered <i class="fas fa-xmark"></i> Clear
+                            </button>
                         </div>
                     </div>
                     <div class="tx-header-actions">
@@ -1224,6 +1370,20 @@
     let creditCardSpendingChartInstances = {};
     let creditCardSpendingRequestSeq = 0;
     let creditCardSpendingDebounceTimer = null;
+    let categoryIconMap = {}; // category name -> fa icon name (for the List view row icon)
+    let expenseCategoryList = []; // cached expense categories, for the Category Trend dropdown
+
+    /* ── Category Trend tab state ──────────────────────────────────────────
+       catTrendCategory: single selected category; catTrendCompare: up to 2 more
+       categories added via the "Compare" multi-select (3 lines total, including
+       catTrendCategory). Data is cached per "category|range" key so switching
+       back and forth between already-seen combinations never re-aggregates. */
+    let catTrendCategory  = '';
+    let catTrendRange     = 'last12'; // 'last12' | 'thisyear'
+    let catTrendCompare   = [];
+    let catTrendLoaded    = false;    // true once the tab has been opened at least once (lazy-load)
+    let catTrendCache     = {};       // 'category|range' -> { months, series, ... }
+    let categoryTrendChartInstances = {};
 
     let allTransactions      = [];
     let selectedMonthKey     = null;   // 'YYYY-MM' or 'ALL'
@@ -1754,10 +1914,11 @@
         return account.accountNickname;
     }
 
-    /** Wire up the Monthly Trend ↔ Credit Card Spending tab toggle for both panels. */
+    /** Wire up the Monthly Trend / Category Trend / Credit Card Spending tab toggle for both panels. */
     function initTrendCCTabs() {
         ['', 'Compact'].forEach(function(suf) {
             var monthlyTab = document.getElementById('monthlyTrendTab' + suf);
+            var catTrendTab = document.getElementById('categoryTrendTab' + suf);
             var ccTab      = document.getElementById('ccSpendingTab' + suf);
             var filterSuffix = suf === '' ? 'Default' : suf;
             var ccFilters    = document.getElementById('ccFilters' + filterSuffix);
@@ -1767,6 +1928,13 @@
                 if (ccFilters) { ccFilters.classList.add('d-none'); ccFilters.classList.remove('d-flex'); }
                 if (monthlyChartData.length) drawMonthlyChart(monthlyChartData, suf);
             });
+            if (catTrendTab) {
+                catTrendTab.addEventListener('shown.bs.tab', function() {
+                    if (ccFilters) { ccFilters.classList.add('d-none'); ccFilters.classList.remove('d-flex'); }
+                    // Lazy-load: only aggregate Category Trend data the first time this tab opens.
+                    loadCategoryTrend(suf);
+                });
+            }
             ccTab.addEventListener('shown.bs.tab', function() {
                 if (ccFilters) { ccFilters.classList.remove('d-none'); ccFilters.classList.add('d-flex'); }
                 if (creditCardSpendingChartData.length) drawCreditCardSpendingChart(creditCardSpendingChartData, suf);
@@ -2016,6 +2184,23 @@
         const savedView = localStorage.getItem(getUserStorageKey('fintrack_dashboard_view')) || 'default';
         setDashboardView(savedView, true);
         initTrendCCTabs();
+
+        // Restore the saved Expense-by-Category chart type (pie/list) before first draw
+        categoryChartType = localStorage.getItem(getUserStorageKey('fintrack_category_chart_type')) || 'pie';
+        ['', 'Compact'].forEach(function (suf) {
+            const pieBtn = document.getElementById('categoryPieBtn' + suf);
+            const listBtn = document.getElementById('categoryListBtn' + suf);
+            if (pieBtn) pieBtn.classList.toggle('active', categoryChartType === 'pie');
+            if (listBtn) listBtn.classList.toggle('active', categoryChartType === 'list');
+        });
+
+        // Restore the saved Category Trend range preference
+        catTrendRange = localStorage.getItem(getUserStorageKey('fintrack_cat_trend_range')) || 'last12';
+        catTrendCategory = localStorage.getItem(getUserStorageKey('fintrack_cat_trend_category')) || '';
+        ['', 'Compact'].forEach(function (suf) {
+            const rangeSel = document.getElementById('catTrendRangeSelect' + suf);
+            if (rangeSel) rangeSel.value = catTrendRange;
+        });
 
         updateGreeting();
         loadDashboard();
@@ -2281,6 +2466,11 @@
     }
 
     /** monthKey: 'YYYY-MM' to show that month's budget, or 'ALL'/falsy to show the real current month. */
+    // Per-category budget limits for the currently-viewed month — cached here so the Category
+    // Trend chart can draw an optional "Budget ৳X" dashed line without a second network request.
+    let cachedBudgetCategories = [];
+    let cachedBudgetMonthKey = '';
+
     async function loadCurrentBudget(monthKey) {
         const containers = ['currentBudgetBody', 'currentBudgetBodyCompact']
             .map(id => document.getElementById(id))
@@ -2291,6 +2481,8 @@
                 ? '/api/budget-plans/current?month=' + encodeURIComponent(monthKey)
                 : '/api/budget-plans/current';
             const data = await fetch(url).then(r => r.json());
+            cachedBudgetMonthKey = (monthKey && monthKey !== 'ALL') ? monthKey : currentMonthKey();
+            cachedBudgetCategories = data.hasCurrent ? (data.categories || []) : [];
             if (!data.hasCurrent) {
                 const html = '<p class="text-muted small mb-0">No budget for this period — ' +
                     '<a href="/budget-planner" class="dashboard-accent-link">Create one</a> or ' +
@@ -2393,8 +2585,10 @@
 
             const categories = await fetch('/api/categories').then(r => r.json());
             categoryColorMap = {};
+            categoryIconMap = {};
             categories.forEach(cat => {
                 if (cat.color) categoryColorMap[cat.name] = cat.color;
+                if (cat.icon) categoryIconMap[cat.name] = cat.icon;
             });
             categoryNameOrder = categories.map(cat => cat.name).sort(function (a, b) { return a.localeCompare(b); });
 
@@ -2415,6 +2609,7 @@
 
             // Populate the Monthly Trend expense-category filter (expense + general categories only)
             const expenseCategories = categories.filter(cat => !cat.categoryType || cat.categoryType === 'general' || cat.categoryType === 'expense');
+            expenseCategoryList = expenseCategories;
             ['', 'Compact'].forEach(function (suf) {
                 const sel = document.getElementById('monthlyCategoryFilter' + suf);
                 if (!sel) return;
@@ -2428,6 +2623,7 @@
                 });
                 sel.value = prev;
             });
+            populateCatTrendDropdowns(expenseCategories);
 
             const accounts = await fetch('/api/accounts').then(r => r.json()).catch(() => []);
             cachedAccounts = accounts;
@@ -2631,6 +2827,8 @@
             hasFilters
                 ? `${filteredLabel} of ${totalLabel} transaction${totalLabel !== 1 ? 's' : ''}`
                 : `${totalLabel} transaction${totalLabel !== 1 ? 's' : ''}`;
+        const filterChip = document.getElementById('txCategoryFilterChip');
+        if (filterChip) filterChip.style.display = txFilterCategory ? 'inline-flex' : 'none';
 
         // Page info
         const shown = Math.min(end, filteredTransactions.length);
@@ -3182,45 +3380,13 @@
         }
     }
 
-    function setCreditCardSpendingSummary(totalAmount, topCategoryText) {
+    function setCreditCardSpendingSummary(totalAmount, topCategoryText, countText) {
         ['', 'Compact'].forEach(function (suf) {
             setEl('creditCardSpendingTotal' + suf, totalAmount);
             setEl('creditCardSpendingTopCategory' + suf, topCategoryText);
+            setEl('creditCardSpendingCount' + suf, countText);
         });
     }
-
-    // Lighten a hex color by a given amount (0-1) — used for the top of each bar's gradient.
-    function ccLightenColor(hex, amount) {
-        const h = String(hex || '#3498db').replace('#', '');
-        if (h.length !== 6) return hex || '#3498db';
-        const r = parseInt(h.substr(0, 2), 16);
-        const g = parseInt(h.substr(2, 2), 16);
-        const b = parseInt(h.substr(4, 2), 16);
-        const mix = function (c) { return Math.round(c + (255 - c) * amount); };
-        return 'rgb(' + mix(r) + ',' + mix(g) + ',' + mix(b) + ')';
-    }
-
-    // Draws the amount value just above each bar for at-a-glance readability.
-    const ccBarValueLabelPlugin = {
-        id: 'ccBarValueLabel',
-        afterDatasetsDraw: function (chart) {
-            const ctx = chart.ctx;
-            const meta = chart.getDatasetMeta(0);
-            const dataset = chart.data.datasets[0];
-            ctx.save();
-            ctx.font = '600 11px "Inter", "Segoe UI", sans-serif';
-            ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--text-body') || '#333';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'bottom';
-            meta.data.forEach(function (bar, i) {
-                const value = dataset.data[i];
-                if (value === undefined || value === null) return;
-                const label = getCurrencySettings().symbol + Number(value).toLocaleString();
-                ctx.fillText(label, bar.x, bar.y - 6);
-            });
-            ctx.restore();
-        }
-    };
 
     function drawCreditCardSpendingChart(data, suffix) {
         suffix = suffix || '';
@@ -3228,25 +3394,46 @@
         if (!canvasEl) return;
         if (creditCardSpendingChartInstances[suffix]) {
             creditCardSpendingChartInstances[suffix].destroy();
+            creditCardSpendingChartInstances[suffix] = null;
         }
 
         if (!data.length) return;
 
+        // Sorted largest first (already the order returned by the backend), horizontal bars so
+        // category names are never rotated/squashed regardless of how many there are.
+        const sorted = data.slice().sort(function (a, b) { return (Number(b.amount) || 0) - (Number(a.amount) || 0); });
         const truncate = function (label) {
             const text = String(label || '');
-            return text.length > 14 ? text.slice(0, 14) + '…' : text;
+            return text.length > 18 ? text.slice(0, 18) + '…' : text;
         };
-        const labels = data.map(function (d) { return d.category; });
+        const labels = sorted.map(function (d) { return d.category; });
         const ctx2d = canvasEl.getContext('2d');
-        const totalAmount = data.reduce(function (sum, d) { return sum + (Number(d.amount) || 0); }, 0);
-        const barColors = data.map(function (d) {
-            const base = d.color || '#3498db';
-            const gradient = ctx2d.createLinearGradient(0, 0, 0, 220);
-            gradient.addColorStop(0, ccLightenColor(base, 0.35));
-            gradient.addColorStop(1, base);
-            return gradient;
-        });
-        const hoverColors = data.map(function (d) { return ccLightenColor(d.color || '#3498db', 0.15); });
+        const totalAmount = sorted.reduce(function (sum, d) { return sum + (Number(d.amount) || 0); }, 0);
+        const barColors = sorted.map(function (d) { return d.color || cssVar('--accent', '#3498db'); });
+
+        const appFont = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+        const mutedColor = cssVar('--text-muted', '#9a9a9a');
+        const textColor = cssVar('--text', '#e5e5e5');
+        const gridColor = hexWithAlpha(cssVar('--border', '#333333'), '0d'); // ~5% opacity
+
+        // Draws the amount at the end of each horizontal bar.
+        const ccBarValueLabelPlugin = {
+            id: 'ccBarValueLabel',
+            afterDatasetsDraw: function (chart) {
+                const ctx = chart.ctx;
+                const meta = chart.getDatasetMeta(0);
+                ctx.save();
+                ctx.font = '600 12px ' + appFont;
+                ctx.fillStyle = textColor;
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                meta.data.forEach(function (bar, i) {
+                    const value = sorted[i] ? Number(sorted[i].amount) || 0 : 0;
+                    ctx.fillText(formatAmount(value), bar.x + 8, bar.y);
+                });
+                ctx.restore();
+            }
+        };
 
         creditCardSpendingChartInstances[suffix] = new Chart(ctx2d, {
             type: 'bar',
@@ -3254,31 +3441,31 @@
                 labels: labels.map(truncate),
                 datasets: [{
                     label: 'Credit Card Spending',
-                    data: data.map(function (d) { return Number(d.amount) || 0; }),
+                    data: sorted.map(function (d) { return Number(d.amount) || 0; }),
                     backgroundColor: barColors,
-                    hoverBackgroundColor: hoverColors,
-                    borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 },
-                    borderSkipped: 'bottom',
-                    barThickness: 44,
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    maxBarThickness: 18,
                     minBarLength: 4
                 }]
             },
             plugins: [ccBarValueLabelPlugin],
             options: {
+                indexAxis: 'y',
                 responsive: true,
                 maintainAspectRatio: false,
-                layout: { padding: { top: 20 } },
-                animation: { duration: 700, easing: 'easeOutQuart' },
+                layout: { padding: { right: 56 } },
+                animation: { duration: 350 },
                 plugins: {
                     legend: { display: false },
                     tooltip: {
-                        backgroundColor: 'rgba(20, 20, 30, 0.92)',
-                        titleColor: '#fff',
-                        bodyColor: '#e5e7eb',
-                        titleFont: { weight: '700', size: 12 },
-                        bodyFont: { size: 12 },
-                        padding: 10,
-                        cornerRadius: 8,
+                        backgroundColor: cssVar('--surface-2', '#222'),
+                        titleColor: textColor,
+                        bodyColor: textColor,
+                        borderColor: cssVar('--border', '#333'),
+                        borderWidth: 1,
+                        titleFont: { size: 12, family: appFont, weight: '700' },
+                        bodyFont: { size: 12, family: appFont },
                         displayColors: false,
                         callbacks: {
                             title: function (ctx) {
@@ -3295,20 +3482,15 @@
                 },
                 scales: {
                     x: {
-                        ticks: {
-                            maxRotation: 35,
-                            minRotation: 0,
-                            font: { size: 11 }
-                        },
-                        grid: { display: false }
+                        beginAtZero: true,
+                        grid: { color: gridColor, drawTicks: false },
+                        border: { display: false },
+                        ticks: { color: mutedColor, font: { size: 12, family: appFont }, callback: v => formatCompactAxisValue(v) }
                     },
                     y: {
-                        beginAtZero: true,
-                        grid: { color: 'rgba(128,128,128,0.12)' },
-                        ticks: {
-                            callback: function (value) { return getCurrencySettings().symbol + value.toLocaleString(); },
-                            font: { size: 11 }
-                        }
+                        grid: { display: false },
+                        border: { display: false },
+                        ticks: { color: mutedColor, font: { size: 12, family: appFont } }
                     }
                 }
             }
@@ -3326,9 +3508,53 @@
         });
     }
 
+    /** Client-side per-card breakdown — the backend endpoint only returns category totals, so
+     *  the one-row-per-credit-card view is aggregated here from the already-loaded
+     *  allTransactions + cachedAccounts, mirroring the backend's signed-amount convention
+     *  (only "expense" transactions count as spend). Shown only when "All Credit Cards" is
+     *  selected, since a single-card filter already makes this redundant. */
+    function renderCreditCardPerCardBreakdown() {
+        const shouldShow = !creditCardSpendingAccountFilter;
+        const range = selectedMonthDateRange();
+        const inRange = function (dateStr) {
+            if (!range.startDate) return true;
+            return dateStr >= range.startDate && dateStr <= range.endDate;
+        };
+        const cards = (cachedAccounts || []).filter(function (a) { return a.accountType === 'CREDIT_CARD'; });
+        let rows = [];
+        if (shouldShow && cards.length) {
+            rows = cards.map(function (card) {
+                const spend = allTransactions.reduce(function (sum, tx) {
+                    if (tx.transaction_type !== 'expense') return sum;
+                    if (tx.sourceAccountId !== card.id) return sum;
+                    if (!inRange(String(tx.date).slice(0, 10))) return sum;
+                    if (creditCardSpendingCategoryFilter && String(tx.category_id) !== String(creditCardSpendingCategoryFilter)) return sum;
+                    return sum + (Number(tx.amount) || 0);
+                }, 0);
+                return { name: accountFilterOptionLabel(card), amount: spend };
+            }).filter(function (r) { return r.amount > 0; }).sort(function (a, b) { return b.amount - a.amount; });
+        }
+        const maxAmount = rows.reduce(function (m, r) { return Math.max(m, r.amount); }, 0) || 1;
+        const html = rows.length ? rows.map(function (r) {
+            const pct = Math.max(2, Math.round((r.amount / maxAmount) * 100));
+            return `
+                <div class="cc-card-breakdown-row">
+                    <div class="cc-card-breakdown-row-top">
+                        <span>${escHtml(r.name)}</span>
+                        <span class="cc-card-breakdown-row-amt">${formatAmount(r.amount)}</span>
+                    </div>
+                    <div class="cc-card-breakdown-bar-track"><div class="cc-card-breakdown-bar-fill" style="width:${pct}%"></div></div>
+                </div>`;
+        }).join('') : '';
+        ['', 'Compact'].forEach(function (suf) {
+            const el = document.getElementById('creditCardBreakdown' + suf);
+            if (el) el.innerHTML = html;
+        });
+    }
+
     async function loadCreditCardSpendingWidget() {
         const requestId = ++creditCardSpendingRequestSeq;
-        setCreditCardSpendingSummary('Loading...', 'Loading...');
+        setCreditCardSpendingSummary('Loading...', 'Loading...', 'Loading...');
         setCreditCardSpendingState('Loading spending data...');
         renderCreditCardSpendingCharts([]);
 
@@ -3352,19 +3578,22 @@
             const topText = data.topCategory
                 ? (data.topCategory.category + ' — ' + formatAmount(data.topCategory.amount || 0))
                 : '—';
-            setCreditCardSpendingSummary(totalText, topText);
+            const txCount = breakdown.reduce(function (sum, d) { return sum + (Number(d.count) || 0); }, 0);
+            setCreditCardSpendingSummary(totalText, topText, String(txCount));
 
             if (!breakdown.length) {
                 renderCreditCardSpendingCharts([]);
-                setCreditCardSpendingState('No credit card spending yet.\n\nUse your credit card for a transaction and your spending analysis will appear here.');
+                renderCreditCardPerCardBreakdown();
+                setCreditCardSpendingState('No credit card spending in this period.\n\nUse your credit card for a transaction and your spending analysis will appear here.');
                 return;
             }
 
             renderCreditCardSpendingCharts(breakdown);
+            renderCreditCardPerCardBreakdown();
             hideCreditCardSpendingState();
         } catch (e) {
             if (requestId !== creditCardSpendingRequestSeq) return;
-            setCreditCardSpendingSummary('—', '—');
+            setCreditCardSpendingSummary('—', '—', '—');
             renderCreditCardSpendingCharts([]);
             setCreditCardSpendingState('Unable to load credit card spending data.\nPlease try again.', true);
             showNotification('Unable to load credit card spending data. Please try again.', 'error');
@@ -3445,6 +3674,26 @@
         if (!canvasEl) return; // that panel isn't in the DOM (shouldn't happen, but stay safe)
 
         const model = buildCategoryChartModel(data);
+        const donutWrap = document.getElementById('categoryDonutWrap' + suffix);
+        const legendWrap = document.getElementById('categoryLegendContainer' + suffix);
+        const listWrap = document.getElementById('categoryListContainer' + suffix);
+
+        if (categoryChartType === 'list') {
+            // List view has no chart canvas at all — destroy any existing pie instance so the
+            // hidden canvas doesn't keep a stale chart alive underneath it.
+            if (categoryChartInstances[suffix]) {
+                categoryChartInstances[suffix].destroy();
+                categoryChartInstances[suffix] = null;
+            }
+            categoryChartSignatures[suffix] = 'list:' + JSON.stringify(model.slices.map(s => [s.category, s.total]));
+            if (donutWrap) donutWrap.style.display = 'none';
+            if (legendWrap) legendWrap.style.display = 'none';
+            renderCategoryListView(model, suffix, listWrap);
+            return;
+        }
+
+        if (donutWrap) donutWrap.style.display = '';
+        if (listWrap) listWrap.style.display = 'none';
         renderCategoryLegend(model, suffix);
 
         // Memoize: skip destroying/recreating the Chart.js instance (and its first-render
@@ -3454,9 +3703,8 @@
             type: categoryChartType,
             slices: model.slices.map(function (s) { return [s.category, s.total, s.color]; })
         });
-        const legendWrap = document.getElementById('categoryLegendContainer' + suffix);
         if (categoryChartSignatures[suffix] === signature && categoryChartInstances[suffix]) {
-            if (legendWrap) legendWrap.style.display = categoryChartType === 'pie' ? 'block' : 'none';
+            if (legendWrap) legendWrap.style.display = 'block';
             return;
         }
         categoryChartSignatures[suffix] = signature;
@@ -3466,123 +3714,110 @@
             categoryChartInstances[suffix].destroy();
         }
 
-        if (categoryChartType === 'pie') {
-            const centerTextPlugin = {
-                id: 'categoryCenterText',
-                afterDraw: function (chart) {
-                    const area = chart.chartArea;
-                    const cx = (area.left + area.right) / 2;
-                    const cy = (area.top + area.bottom) / 2;
-                    const c = chart.ctx;
-                    c.save();
-                    c.textAlign = 'center';
-                    c.textBaseline = 'middle';
-                    c.fillStyle = cssVar('--text', '#e5e5e5');
-                    c.font = '700 1.1rem sans-serif';
-                    c.fillText(formatAmount(model.total), cx, cy - 8);
-                    c.font = '400 0.72rem sans-serif';
-                    c.fillStyle = cssVar('--text-muted', '#9a9a9a');
-                    c.fillText('Total expense', cx, cy + 12);
-                    c.restore();
-                }
-            };
-            categoryChartInstances[suffix] = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: model.slices.map(d => d.category),
-                    datasets: [{
-                        data: model.slices.map(d => d.total),
-                        backgroundColor: model.slices.map(d => d.color || '#3498db'),
-                        borderWidth: 0,
-                        spacing: 2
-                    }]
+        const centerTextPlugin = {
+            id: 'categoryCenterText',
+            afterDraw: function (chart) {
+                const area = chart.chartArea;
+                const cx = (area.left + area.right) / 2;
+                const cy = (area.top + area.bottom) / 2;
+                const c = chart.ctx;
+                c.save();
+                c.textAlign = 'center';
+                c.textBaseline = 'middle';
+                c.fillStyle = cssVar('--text', '#e5e5e5');
+                c.font = '700 1.1rem sans-serif';
+                c.fillText(formatAmount(model.total), cx, cy - 8);
+                c.font = '400 0.72rem sans-serif';
+                c.fillStyle = cssVar('--text-muted', '#9a9a9a');
+                c.fillText('Total expense', cx, cy + 12);
+                c.restore();
+            }
+        };
+        categoryChartInstances[suffix] = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: model.slices.map(d => d.category),
+                datasets: [{
+                    data: model.slices.map(d => d.total),
+                    backgroundColor: model.slices.map(d => d.color || '#3498db'),
+                    borderWidth: 0,
+                    spacing: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 400 },
+                cutout: '72%',
+                onHover: function (evt, elements) {
+                    highlightCategoryLegendRow(suffix, elements.length ? elements[0].index : null);
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: { duration: 400 },
-                    cutout: '72%',
-                    onHover: function (evt, elements) {
-                        highlightCategoryLegendRow(suffix, elements.length ? elements[0].index : null);
-                    },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: cssVar('--surface-2', '#222'),
-                            titleColor: cssVar('--text', '#e5e5e5'),
-                            bodyColor: cssVar('--text', '#e5e5e5'),
-                            borderColor: cssVar('--border', '#333'),
-                            borderWidth: 1,
-                            callbacks: {
-                                label: function (ctx) {
-                                    const i = ctx.dataIndex;
-                                    const s = model.slices[i];
-                                    return s.category + ': ' + formatAmount(s.total) + ' (' + model.percentLabels[i] + ')';
-                                }
-                            }
-                        }
-                    }
-                },
-                plugins: [centerTextPlugin]
-            });
-            if (legendWrap) legendWrap.style.display = 'block';
-        } else if (categoryChartType === 'bar') {
-            categoryChartInstances[suffix] = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: model.slices.map(d => d.category),
-                    datasets: [{
-                        label: 'Expense',
-                        data: model.slices.map(d => d.total),
-                        backgroundColor: model.slices.map(d => d.color || '#3498db'),
-                        borderRadius: 6,
-                        borderSkipped: false
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: { duration: 400 },
-                    indexAxis: 'y',
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: cssVar('--surface-2', '#222'),
-                            titleColor: cssVar('--text', '#e5e5e5'),
-                            bodyColor: cssVar('--text', '#e5e5e5'),
-                            borderColor: cssVar('--border', '#333'),
-                            borderWidth: 1,
-                            callbacks: {
-                                label: function (ctx) {
-                                    const i = ctx.dataIndex;
-                                    return formatAmount(model.slices[i].total) + ' (' + model.percentLabels[i] + ')';
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return getCurrencySettings().symbol + value;
-                                }
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: cssVar('--surface-2', '#222'),
+                        titleColor: cssVar('--text', '#e5e5e5'),
+                        bodyColor: cssVar('--text', '#e5e5e5'),
+                        borderColor: cssVar('--border', '#333'),
+                        borderWidth: 1,
+                        callbacks: {
+                            label: function (ctx) {
+                                const i = ctx.dataIndex;
+                                const s = model.slices[i];
+                                return s.category + ': ' + formatAmount(s.total) + ' (' + model.percentLabels[i] + ')';
                             }
                         }
                     }
                 }
-            });
-            if (legendWrap) legendWrap.style.display = 'none';
+            },
+            plugins: [centerTextPlugin]
+        });
+        if (legendWrap) legendWrap.style.display = 'block';
+    }
+
+    /** List view: one row per category, sorted largest first — icon + name, amount + percentage,
+     *  and a full-width progress bar sized relative to the largest category. Clicking a row
+     *  filters Recent Transactions to that category. */
+    function renderCategoryListView(model, suffix, listWrap) {
+        if (!listWrap) return;
+        listWrap.style.display = 'flex';
+        listWrap.className = 'cat-list-view' + (model.slices.length > 8 ? ' cat-list-scroll' : '');
+        if (!model.slices.length) {
+            listWrap.innerHTML = '<p class="text-muted small mb-0 py-2">No expenses yet.</p>';
+            return;
         }
+        const maxAmount = model.slices.reduce(function (m, s) { return Math.max(m, s.total); }, 0) || 1;
+        listWrap.innerHTML = model.slices.map(function (d, i) {
+            const icon = categoryIconMap[d.category] || 'tag';
+            const widthPct = Math.max(2, Math.round((d.total / maxAmount) * 100));
+            return `
+                <button type="button" class="cat-list-row" data-idx="${i}" onclick="filterTransactionsByCategory('${escHtml(d.category).replace(/'/g, "\\'")}')">
+                    <div class="cat-list-row-top">
+                        <span class="cat-list-row-left">
+                            <span class="cat-list-row-icon" style="background:${hexWithAlpha(d.color || '#3498db', '26')};color:${d.color || '#3498db'}"><i class="fas fa-${icon}"></i></span>
+                            <span class="cat-list-row-name" title="${escHtml(d.category)}">${escHtml(d.category)}</span>
+                        </span>
+                        <span class="cat-list-row-right">
+                            <span class="cat-list-row-amt">${formatAmount(d.total)}</span>
+                            <span class="cat-list-row-pct">${model.percentLabels[i]}</span>
+                        </span>
+                    </div>
+                    <div class="cat-list-row-bar-track">
+                        <div class="cat-list-row-bar-fill" style="width:${widthPct}%;background:${d.color || '#3498db'}"></div>
+                    </div>
+                </button>
+            `;
+        }).join('');
     }
 
     function switchCategoryChart(type) {
         categoryChartType = type;
+        try { localStorage.setItem(getUserStorageKey('fintrack_category_chart_type'), type); } catch (e) {}
         ['', 'Compact'].forEach(function (suf) {
             const pieBtn = document.getElementById('categoryPieBtn' + suf);
-            const barBtn = document.getElementById('categoryBarBtn' + suf);
+            const listBtn = document.getElementById('categoryListBtn' + suf);
             if (pieBtn) pieBtn.classList.toggle('active', type === 'pie');
-            if (barBtn) barBtn.classList.toggle('active', type === 'bar');
+            if (listBtn) listBtn.classList.toggle('active', type === 'list');
         });
         drawCategoryChart(categoryChartData, activeSuffix());
     }
@@ -3592,6 +3827,30 @@
         const data = computeCategoryBreakdown(selectedMonthKey, categoryBreakdownType);
         categoryChartData = data;
         drawCategoryChart(data, activeSuffix());
+    }
+
+    /** Clicking a List-view row (or, in future, a legend row) filters Recent Transactions down
+     *  to that category and surfaces the "Filtered · Clear" chip in the table header. */
+    function filterTransactionsByCategory(categoryName) {
+        txFilterCategory = categoryName;
+        const sel = document.getElementById('txCategoryFilter');
+        if (sel) sel.value = categoryName;
+        currentPage = 0;
+        applyFiltersAndDisplay();
+        const chip = document.getElementById('txCategoryFilterChip');
+        if (chip) chip.style.display = 'inline-flex';
+        const txCard = document.querySelector('.tx-card');
+        if (txCard) txCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function clearCategoryFilterFromChip() {
+        txFilterCategory = '';
+        const sel = document.getElementById('txCategoryFilter');
+        if (sel) sel.value = '';
+        currentPage = 0;
+        applyFiltersAndDisplay();
+        const chip = document.getElementById('txCategoryFilterChip');
+        if (chip) chip.style.display = 'none';
     }
 
     let monthlyChartInstances = {}; // suffix -> Chart instance ('' = default, 'Compact' = compact)
@@ -3836,6 +4095,318 @@
             if (sel) sel.value = value;
         });
         drawMonthlyChart(monthlyChartData, activeSuffix());
+    }
+
+    // ---------------------------------------------------------------------
+    // Category Trend tab — a 12-point line chart (one line per selected
+    // category) aggregated client-side from allTransactions, with an optional
+    // "Compare" mode (up to 3 categories total) and summary chips.
+    // ---------------------------------------------------------------------
+
+    /** The N 'YYYY-MM' keys ending at endKey (inclusive), oldest first. */
+    function getLastNMonthKeys(endKey, n) {
+        const [y, m] = endKey.split('-').map(Number);
+        const keys = [];
+        for (let i = n - 1; i >= 0; i--) {
+            const d = new Date(y, (m - 1) - i, 1);
+            keys.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'));
+        }
+        return keys;
+    }
+
+    /** 'YYYY-MM' keys for Jan..endMonth of endKey's year (used for the "This year" range). */
+    function getThisYearMonthKeys(endKey) {
+        const [y, m] = endKey.split('-').map(Number);
+        const keys = [];
+        for (let i = 1; i <= m; i++) {
+            keys.push(y + '-' + String(i).padStart(2, '0'));
+        }
+        return keys;
+    }
+
+    function catTrendMonthKeys() {
+        const endKey = (selectedMonthKey && selectedMonthKey !== 'ALL') ? selectedMonthKey : currentMonthKey();
+        return catTrendRange === 'thisyear' ? getThisYearMonthKeys(endKey) : getLastNMonthKeys(endKey, 12);
+    }
+
+    /** Populates the category + compare dropdowns; default category = highest spend this month. */
+    function populateCatTrendDropdowns(expenseCategories) {
+        const thisMonthKey = currentMonthKey();
+        const spendByCategory = {};
+        allTransactions.forEach(tx => {
+            if (tx.transaction_type !== 'expense') return;
+            if (monthKeyOf(tx.date) !== thisMonthKey) return;
+            const name = tx.category_name || 'Uncategorized';
+            spendByCategory[name] = (spendByCategory[name] || 0) + (Number(tx.amount) || 0);
+        });
+        const names = expenseCategories.map(c => c.name);
+        let topCategory = names[0] || '';
+        let topAmount = -1;
+        names.forEach(name => {
+            const amt = spendByCategory[name] || 0;
+            if (amt > topAmount) { topAmount = amt; topCategory = name; }
+        });
+
+        const savedCategory = catTrendCategory && names.includes(catTrendCategory) ? catTrendCategory : '';
+        catTrendCategory = savedCategory || topCategory || '';
+        catTrendCompare = (catTrendCompare || []).filter(n => names.includes(n) && n !== catTrendCategory);
+
+        ['', 'Compact'].forEach(function (suf) {
+            const catSel = document.getElementById('catTrendCategorySelect' + suf);
+            if (catSel) {
+                catSel.innerHTML = names.map(n => `<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('');
+                catSel.value = catTrendCategory;
+            }
+            const cmpSel = document.getElementById('catTrendCompareSelect' + suf);
+            if (cmpSel) {
+                cmpSel.innerHTML = names.filter(n => n !== catTrendCategory)
+                    .map(n => `<option value="${escHtml(n)}"${catTrendCompare.includes(n) ? ' selected' : ''}>${escHtml(n)}</option>`).join('');
+            }
+        });
+    }
+
+    function onCatTrendCategoryChanged(value) {
+        catTrendCategory = value;
+        catTrendCompare = (catTrendCompare || []).filter(n => n !== value);
+        localStorage.setItem(getUserStorageKey('fintrack_cat_trend_category'), value);
+        ['', 'Compact'].forEach(function (suf) {
+            const catSel = document.getElementById('catTrendCategorySelect' + suf);
+            if (catSel) catSel.value = value;
+            const cmpSel = document.getElementById('catTrendCompareSelect' + suf);
+            if (cmpSel) {
+                Array.from(cmpSel.options).forEach(opt => { opt.selected = catTrendCompare.includes(opt.value); });
+            }
+        });
+        loadCategoryTrend(activeSuffix(), true);
+    }
+
+    function onCatTrendRangeChanged(value) {
+        catTrendRange = value;
+        localStorage.setItem(getUserStorageKey('fintrack_cat_trend_range'), value);
+        ['', 'Compact'].forEach(function (suf) {
+            const sel = document.getElementById('catTrendRangeSelect' + suf);
+            if (sel) sel.value = value;
+        });
+        loadCategoryTrend(activeSuffix(), true);
+    }
+
+    function onCatTrendCompareChanged(selectEl) {
+        // Cap the total number of lines (primary + compare) at 3.
+        let selected = Array.from(selectEl.selectedOptions).map(o => o.value);
+        if (selected.length > 2) {
+            selected = selected.slice(0, 2);
+            Array.from(selectEl.options).forEach(opt => { opt.selected = selected.includes(opt.value); });
+        }
+        catTrendCompare = selected;
+        ['', 'Compact'].forEach(function (suf) {
+            const cmpSel = document.getElementById('catTrendCompareSelect' + suf);
+            if (cmpSel && cmpSel !== selectEl) {
+                Array.from(cmpSel.options).forEach(opt => { opt.selected = selected.includes(opt.value); });
+            }
+        });
+        loadCategoryTrend(activeSuffix(), true);
+    }
+
+    /** Aggregates allTransactions into one { month -> amount } series per category name. */
+    function aggregateCategoryTrendSeries(categoryName, monthKeys) {
+        const byMonth = {};
+        monthKeys.forEach(k => { byMonth[k] = 0; });
+        allTransactions.forEach(tx => {
+            if (tx.transaction_type !== 'expense') return;
+            if ((tx.category_name || 'Uncategorized') !== categoryName) return;
+            const key = monthKeyOf(tx.date);
+            if (Object.prototype.hasOwnProperty.call(byMonth, key)) {
+                byMonth[key] += Number(tx.amount) || 0;
+            }
+        });
+        return monthKeys.map(k => byMonth[k]);
+    }
+
+    /** Renders the Total / Average / Highest month / Change-vs-previous chips (single category only). */
+    function renderCatTrendChips(suffix, categoryName, monthKeys, series) {
+        const el = document.getElementById('catTrendChips' + suffix);
+        if (!el) return;
+        if (catTrendCompare.length) { el.innerHTML = ''; return; }
+
+        const total = series.reduce((s, v) => s + v, 0);
+        const avg = series.length ? total / series.length : 0;
+        let highestIdx = 0;
+        series.forEach((v, i) => { if (v > series[highestIdx]) highestIdx = i; });
+        const highestLabel = monthKeys.length ? monthKeyLabel(monthKeys[highestIdx], true) : '—';
+
+        // "Previous period" = the same number of months immediately preceding the current range.
+        const prevKeys = monthKeys.length ? getLastNMonthKeys(monthKeys[0], monthKeys.length + 1).slice(0, -1) : [];
+        const prevSeries = aggregateCategoryTrendSeries(categoryName, prevKeys);
+        const prevTotal = prevSeries.reduce((s, v) => s + v, 0);
+        const changePct = prevTotal > 0 ? Math.round(((total - prevTotal) / prevTotal) * 100) : (total > 0 ? 100 : 0);
+        const rose = changePct > 0;
+        const changeBadge = prevTotal > 0 || total > 0
+            ? `<span class="cat-trend-chip-badge ${rose ? 'is-up' : 'is-down'}"><i class="fas fa-arrow-${rose ? 'up' : 'down'}"></i>${Math.abs(changePct)}%</span>`
+            : '<span class="cat-trend-chip-badge">—</span>';
+
+        el.innerHTML = `
+            <div class="cat-trend-chip"><span class="cat-trend-chip-label">Total</span><span class="cat-trend-chip-value">${formatAmount(total)}</span></div>
+            <div class="cat-trend-chip"><span class="cat-trend-chip-label">Monthly avg</span><span class="cat-trend-chip-value">${formatAmount(avg)}</span></div>
+            <div class="cat-trend-chip"><span class="cat-trend-chip-label">Highest</span><span class="cat-trend-chip-value">${escHtml(highestLabel)} · ${formatAmount(series[highestIdx] || 0)}</span></div>
+            <div class="cat-trend-chip"><span class="cat-trend-chip-label">vs previous</span>${changeBadge}</div>`;
+    }
+
+    function drawCategoryTrendChart(suffix) {
+        suffix = suffix || '';
+        const canvasEl = document.getElementById('categoryTrendChart' + suffix);
+        if (!canvasEl) return;
+        const stateEl = document.getElementById('categoryTrendState' + suffix);
+
+        const monthKeys = catTrendMonthKeys();
+        const categoryNames = [catTrendCategory].concat(catTrendCompare).filter(Boolean);
+        if (!categoryNames.length) {
+            if (categoryTrendChartInstances[suffix]) { categoryTrendChartInstances[suffix].destroy(); categoryTrendChartInstances[suffix] = null; }
+            if (stateEl) { stateEl.style.display = 'block'; stateEl.textContent = 'Pick a category to see its trend.'; }
+            return;
+        }
+
+        const seriesByCategory = {};
+        categoryNames.forEach(name => { seriesByCategory[name] = aggregateCategoryTrendSeries(name, monthKeys); });
+        const hasAnyData = Object.values(seriesByCategory).some(s => s.some(v => v > 0));
+
+        renderCatTrendChips(suffix, catTrendCategory, monthKeys, seriesByCategory[catTrendCategory] || []);
+
+        if (!hasAnyData) {
+            if (categoryTrendChartInstances[suffix]) { categoryTrendChartInstances[suffix].destroy(); categoryTrendChartInstances[suffix] = null; }
+            if (stateEl) { stateEl.style.display = 'block'; stateEl.textContent = 'No spending in this range yet.'; }
+            return;
+        }
+        if (stateEl) stateEl.style.display = 'none';
+
+        const monthLabels = monthKeys.map((k, i) => {
+            const [y, m] = k.split('-');
+            const short = monthKeyLabel(k, true).split(' ')[0];
+            // The year appears on the first label and on every January, per spec.
+            return (i === 0 || m === '01') ? (short + ' ' + y) : short;
+        });
+
+        const appFont = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+        const textColor = cssVar('--text', '#e5e5e5');
+        const mutedColor = cssVar('--text-muted', '#9a9a9a');
+        const gridColor = hexWithAlpha(cssVar('--border', '#333333'), '0d');
+        const warnColor = cssVar('--warning', '#f0ad4e');
+
+        const isPartialLastMonth = monthKeys.length > 1 && monthKeys[monthKeys.length - 1] === currentMonthKey();
+        const lastSegmentIdx = monthKeys.length - 2;
+
+        const datasets = categoryNames.map(name => {
+            const color = getCategoryColor(name);
+            const ds = {
+                label: name,
+                data: seriesByCategory[name],
+                borderColor: color,
+                backgroundColor: 'transparent',
+                borderWidth: 2,
+                tension: 0.35,
+                pointRadius: 0,
+                pointHoverRadius: 4,
+                pointHitRadius: 10,
+                fill: false
+            };
+            if (isPartialLastMonth) {
+                ds.segment = { borderDash: ctx => ctx.p0DataIndex === lastSegmentIdx ? [6, 4] : undefined };
+            }
+            return ds;
+        });
+
+        // Optional dashed budget-limit line for the primary category — only when that category
+        // has a fixed limit for the currently selected month (skipped if the budget varies
+        // month-to-month and we only have one month's figure to go on).
+        let budgetLine = null;
+        if (!catTrendCompare.length) {
+            const budgetCat = (cachedBudgetCategories || []).find(c => c.categoryName === catTrendCategory);
+            if (budgetCat && budgetCat.budgetAmount > 0 && monthKeys.includes(cachedBudgetMonthKey)) {
+                budgetLine = {
+                    label: 'Budget ' + formatAmount(budgetCat.budgetAmount),
+                    data: monthKeys.map(() => budgetCat.budgetAmount),
+                    borderColor: warnColor,
+                    backgroundColor: 'transparent',
+                    borderWidth: 1.5,
+                    borderDash: [5, 4],
+                    pointRadius: 0,
+                    tension: 0,
+                    fill: false
+                };
+            }
+        }
+        const finalDatasets = budgetLine ? datasets.concat([budgetLine]) : datasets;
+
+        const signature = JSON.stringify({ categoryNames, monthKeys, seriesByCategory, hasBudgetLine: !!budgetLine });
+        if (categoryTrendChartSignatures[suffix] === signature && categoryTrendChartInstances[suffix]) return;
+        categoryTrendChartSignatures[suffix] = signature;
+
+        if (categoryTrendChartInstances[suffix]) categoryTrendChartInstances[suffix].destroy();
+        const ctx = canvasEl.getContext('2d');
+        categoryTrendChartInstances[suffix] = new Chart(ctx, {
+            type: 'line',
+            data: { labels: monthLabels, datasets: finalDatasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 350 },
+                layout: { padding: { top: 8, right: 16 } },
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: categoryNames.length > 1 || budgetLine
+                        ? { position: 'bottom', labels: { color: mutedColor, font: { size: 12, family: appFont }, boxWidth: 10, usePointStyle: true } }
+                        : { display: false },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: cssVar('--surface-2', '#222'),
+                        titleColor: textColor,
+                        bodyColor: textColor,
+                        borderColor: cssVar('--border', '#333'),
+                        borderWidth: 1,
+                        titleFont: { size: 13, family: appFont },
+                        bodyFont: { size: 13, family: appFont },
+                        callbacks: {
+                            title: function (items) {
+                                if (!items.length) return '';
+                                const idx = items[0].dataIndex;
+                                const label = monthKeyLabel(monthKeys[idx], true);
+                                return (isPartialLastMonth && idx === monthKeys.length - 1) ? label + ' (so far)' : label;
+                            },
+                            label: function (item) { return item.dataset.label + ': ' + formatAmount(item.parsed.y); }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        border: { display: false },
+                        ticks: { color: mutedColor, font: { size: 12, family: appFont } }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: gridColor, drawTicks: false },
+                        border: { display: false },
+                        ticks: { color: mutedColor, font: { size: 12, family: appFont }, callback: v => formatCompactAxisValue(v) }
+                    }
+                }
+            }
+        });
+    }
+
+    let categoryTrendChartSignatures = {};
+
+    /** Lazy-loads (and caches per category|range) the Category Trend tab's data, then draws it. */
+    function loadCategoryTrend(suffix, forceRedraw) {
+        suffix = suffix || '';
+        if (!catTrendCategory) return; // dropdowns not populated yet
+        const cacheKey = [catTrendCategory].concat(catTrendCompare).sort().join(',') + '|' + catTrendRange + '|' + (selectedMonthKey || currentMonthKey());
+        if (catTrendLoaded && catTrendCache[cacheKey] && !forceRedraw) {
+            drawCategoryTrendChart(suffix);
+            return;
+        }
+        catTrendLoaded = true;
+        catTrendCache[cacheKey] = true; // aggregation itself is cheap (client-side), this just marks it "seen"
+        drawCategoryTrendChart(suffix);
     }
 
     const TOAST_ICONS = { success: 'fa-circle-check', error: 'fa-circle-exclamation', warning: 'fa-triangle-exclamation', info: 'fa-circle-info' };
