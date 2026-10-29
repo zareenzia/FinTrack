@@ -420,8 +420,6 @@
         .cc-filters-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
         /* ---- Category Trend tab ---- */
-        .cat-trend-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
-        .cat-trend-controls .tx-filter-select { min-width: 150px; }
         .cat-trend-chips { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
         .cat-trend-chip {
             flex: 1 1 150px;
@@ -436,6 +434,87 @@
         .cat-trend-chip-badge.is-up { color: var(--negative); background: color-mix(in srgb, var(--negative) 15%, transparent); }
         .cat-trend-chip-badge.is-down { color: var(--positive); background: color-mix(in srgb, var(--positive) 15%, transparent); }
         .cat-trend-chart-wrap { position: relative; height: 320px; padding-right: 8px; }
+
+        /* ---- CategoryPicker: themed replacement for native <select>/<select multiple> ---- */
+        .cat-picker { position: relative; display: inline-flex; }
+        .cat-picker-trigger {
+            display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px 0 10px;
+            background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+            color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; min-width: 150px;
+            max-width: 220px; transition: border-color 0.15s ease, background 0.15s ease;
+        }
+        .cat-picker-trigger:hover { background: var(--accent-soft); }
+        .cat-picker-trigger:focus-visible, .cat-picker-trigger.is-open {
+            outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+        .cat-picker-trigger-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+        .cat-picker-trigger-icon { font-size: 12px; color: var(--text-muted); flex-shrink: 0; }
+        .cat-picker-trigger-name { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+        .cat-picker-trigger-chevron { font-size: 11px; color: var(--text-muted); flex-shrink: 0; transition: transform 0.15s ease; }
+        .cat-picker-trigger.is-open .cat-picker-trigger-chevron { transform: rotate(180deg); }
+        .cat-picker-popover {
+            position: absolute; top: calc(100% + 6px); left: 0; z-index: 1060; width: 270px;
+            max-height: 320px; display: flex; flex-direction: column;
+            background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.28); overflow: hidden;
+        }
+        .cat-picker-search-wrap { padding: 8px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+        .cat-picker-search {
+            width: 100%; height: 32px; padding: 0 10px; background: var(--surface-2);
+            border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 13px; outline: none;
+        }
+        .cat-picker-search:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+        .cat-picker-list { overflow-y: auto; flex: 1 1 auto; padding: 4px; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+        .cat-picker-list::-webkit-scrollbar { width: 6px; }
+        .cat-picker-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        .cat-picker-section-label {
+            font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+            color: var(--text-muted); padding: 8px 10px 4px;
+        }
+        .cat-picker-row {
+            display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 10px; border: none;
+            background: none; border-radius: 8px; color: var(--text); font-size: 13px; text-align: left; cursor: pointer;
+        }
+        .cat-picker-row.is-highlighted, .cat-picker-row:hover { background: var(--accent-soft); }
+        .cat-picker-row.is-muted { color: var(--text-muted); }
+        .cat-picker-row.is-muted .cat-picker-row-amount { color: var(--text-muted); }
+        .cat-picker-row-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+        .cat-picker-row-icon { font-size: 12px; width: 14px; text-align: center; color: var(--text-muted); flex-shrink: 0; }
+        .cat-picker-row-name { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .cat-picker-row-amount { font-size: 0.78rem; color: var(--text-muted); flex-shrink: 0; }
+        .cat-picker-row-check { color: var(--accent); font-size: 12px; flex-shrink: 0; width: 14px; text-align: center; }
+        .cat-picker-empty { padding: 16px 10px; text-align: center; color: var(--text-muted); font-size: 13px; }
+
+        /* Compare chips + "+ Compare" ghost button + segmented range toggle */
+        .cat-trend-controls-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+        .cat-compare-chips { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .cat-compare-chip {
+            display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 6px 0 10px;
+            background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+            font-size: 13px; color: var(--text); transition: opacity 0.15s ease;
+        }
+        .cat-compare-chip.is-hidden-series { opacity: 0.5; }
+        .cat-compare-chip-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; cursor: pointer; }
+        .cat-compare-chip-name { white-space: nowrap; max-width: 110px; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+        .cat-compare-chip-remove {
+            display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px;
+            border-radius: 50%; border: none; background: none; color: var(--text-muted); font-size: 11px; cursor: pointer;
+        }
+        .cat-compare-chip-remove:hover { background: var(--accent-soft); color: var(--text); }
+        .cat-trend-add-compare-btn {
+            display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px;
+            background: transparent; border: 1px dashed var(--border); border-radius: 10px;
+            color: var(--text-muted); font-size: 13px; font-weight: 600; cursor: pointer;
+        }
+        .cat-trend-add-compare-btn:hover:not(:disabled) { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
+        .cat-trend-add-compare-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .cat-trend-range-toggle { display: inline-flex; height: 36px; padding: 3px; gap: 2px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; }
+        .cat-trend-range-btn {
+            display: inline-flex; align-items: center; height: 100%; padding: 0 12px; border: none; border-radius: 7px;
+            background: none; color: var(--text-muted); font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;
+        }
+        .cat-trend-range-btn.is-active { background: var(--accent-soft); color: var(--accent); }
+        @media (max-width: 576px) { .cat-picker-popover { width: 240px; } }
         @media (max-width: 768px) { .cat-trend-chart-wrap { height: 240px; } }
     </style>
 </head>
@@ -645,9 +724,7 @@
                             <select class="tx-filter-select" id="creditCardAccountFilter" title="Filter by credit card account" onchange="onCreditCardAccountFilterChanged(this.value)">
                                 <option value="">All Credit Cards</option>
                             </select>
-                            <select class="tx-filter-select" id="creditCardCategoryFilter" title="Filter by category" onchange="onCreditCardCategoryFilterChanged(this.value)">
-                                <option value="">All Categories</option>
-                            </select>
+                            <div id="creditCardCategoryFilterPicker"></div>
                         </div>
                     </div>
                 </div>
@@ -660,15 +737,16 @@
                             </div>
                         </div>
                         <div class="tab-pane fade" id="categoryTrendPanel" role="tabpanel" aria-labelledby="categoryTrendTab">
-                            <div class="cat-trend-controls">
-                                <select class="tx-filter-select" id="catTrendCategorySelect" title="Category" onchange="onCatTrendCategoryChanged(this.value)">
-                                </select>
-                                <select class="tx-filter-select" id="catTrendRangeSelect" title="Range" onchange="onCatTrendRangeChanged(this.value)">
-                                    <option value="last12">Last 12 months</option>
-                                    <option value="thisyear">This year</option>
-                                </select>
-                                <select class="tx-filter-select" id="catTrendCompareSelect" title="Compare (up to 3 total)" multiple onchange="onCatTrendCompareChanged(this)">
-                                </select>
+                            <div class="cat-trend-controls-row">
+                                <div id="catTrendPrimaryPicker"></div>
+                                <div class="cat-compare-chips" id="catTrendCompareChips"></div>
+                                <button type="button" class="cat-trend-add-compare-btn" id="catTrendAddCompareBtn" title="Compare up to 3 categories total">
+                                    <i class="fas fa-plus"></i>Compare
+                                </button>
+                                <div class="cat-trend-range-toggle" role="group" aria-label="Date range" id="catTrendRangeToggle">
+                                    <button type="button" class="cat-trend-range-btn" data-range="last12">12 months</button>
+                                    <button type="button" class="cat-trend-range-btn" data-range="thisyear">This year</button>
+                                </div>
                             </div>
                             <div class="cat-trend-chips" id="catTrendChips"></div>
                             <div class="cat-trend-chart-wrap">
@@ -949,9 +1027,7 @@
                             <select class="tx-filter-select" id="creditCardAccountFilterCompact" title="Filter by credit card account" onchange="onCreditCardAccountFilterChanged(this.value)">
                                 <option value="">All Credit Cards</option>
                             </select>
-                            <select class="tx-filter-select" id="creditCardCategoryFilterCompact" title="Filter by category" onchange="onCreditCardCategoryFilterChanged(this.value)">
-                                <option value="">All Categories</option>
-                            </select>
+                            <div id="creditCardCategoryFilterPickerCompact"></div>
                         </div>
                     </div>
                     <div class="card-body">
@@ -963,15 +1039,16 @@
                                 </div>
                             </div>
                             <div class="tab-pane fade" id="categoryTrendPanelCompact" role="tabpanel" aria-labelledby="categoryTrendTabCompact">
-                                <div class="cat-trend-controls">
-                                    <select class="tx-filter-select" id="catTrendCategorySelectCompact" title="Category" onchange="onCatTrendCategoryChanged(this.value)">
-                                    </select>
-                                    <select class="tx-filter-select" id="catTrendRangeSelectCompact" title="Range" onchange="onCatTrendRangeChanged(this.value)">
-                                        <option value="last12">Last 12 months</option>
-                                        <option value="thisyear">This year</option>
-                                    </select>
-                                    <select class="tx-filter-select" id="catTrendCompareSelectCompact" title="Compare (up to 3 total)" multiple onchange="onCatTrendCompareChanged(this)">
-                                    </select>
+                                <div class="cat-trend-controls-row">
+                                    <div id="catTrendPrimaryPickerCompact"></div>
+                                    <div class="cat-compare-chips" id="catTrendCompareChipsCompact"></div>
+                                    <button type="button" class="cat-trend-add-compare-btn" id="catTrendAddCompareBtnCompact" title="Compare up to 3 categories total">
+                                        <i class="fas fa-plus"></i>Compare
+                                    </button>
+                                    <div class="cat-trend-range-toggle" role="group" aria-label="Date range" id="catTrendRangeToggleCompact">
+                                        <button type="button" class="cat-trend-range-btn" data-range="last12">12 months</button>
+                                        <button type="button" class="cat-trend-range-btn" data-range="thisyear">This year</button>
+                                    </div>
                                 </div>
                                 <div class="cat-trend-chips" id="catTrendChipsCompact"></div>
                                 <div class="cat-trend-chart-wrap">
@@ -1979,15 +2056,18 @@
         });
     }
 
+    let ccCategoryPickers = {};
+
     function syncCreditCardSpendingFilters(accountValue, categoryValue) {
         ['', 'Compact'].forEach(function (suf) {
             const accountSel = document.getElementById('creditCardAccountFilter' + suf);
-            const categorySel = document.getElementById('creditCardCategoryFilter' + suf);
             if (accountSel) accountSel.value = accountValue || '';
-            if (categorySel) categorySel.value = categoryValue || '';
+            if (ccCategoryPickers[suf]) ccCategoryPickers[suf].update();
         });
     }
 
+    /** Builds the CC Spending category items (keyed by category ID, unlike the Category Trend
+     *  picker which is keyed by name) and mounts the shared CategoryPicker trigger per suffix. */
     function populateCreditCardSpendingFilters(categories, accounts) {
         const creditCards = (accounts || []).filter(function (a) { return a.accountType === 'CREDIT_CARD'; });
         const expenseCategories = (categories || []).filter(function (cat) {
@@ -2001,20 +2081,33 @@
             creditCardSpendingCategoryFilter = '';
         }
 
+        const allOption = { id: '', name: 'All Categories' };
+        const buildItems = function () {
+            return expenseCategories.map(function (c) {
+                return { id: String(c.id), name: c.name, icon: categoryIconMap[c.name] || 'tag', color: getCategoryColor(c.name) };
+            });
+        };
+
         ['', 'Compact'].forEach(function (suf) {
             const accountSel = document.getElementById('creditCardAccountFilter' + suf);
-            const categorySel = document.getElementById('creditCardCategoryFilter' + suf);
             if (accountSel) {
                 accountSel.innerHTML = '<option value="">All Credit Cards</option>'
                     + creditCards.map(function (a) {
                         return '<option value="' + a.id + '">' + escHtml(accountFilterOptionLabel(a)) + '</option>';
                     }).join('');
             }
-            if (categorySel) {
-                categorySel.innerHTML = '<option value="">All Categories</option>'
-                    + expenseCategories.map(function (c) {
-                        return '<option value="' + c.id + '">' + escHtml(c.name) + '</option>';
-                    }).join('');
+            const mount = document.getElementById('creditCardCategoryFilterPicker' + suf);
+            if (mount) {
+                ccCategoryPickers[suf] = mountCategoryPickerTrigger(mount, {
+                    ariaLabel: 'Category filter',
+                    getItems: buildItems,
+                    extraRow: allOption,
+                    getSelectedItem: function () {
+                        if (!creditCardSpendingCategoryFilter) return allOption;
+                        return buildItems().find(function (it) { return it.id === String(creditCardSpendingCategoryFilter); }) || allOption;
+                    },
+                    onPick: function (item) { onCreditCardCategoryFilterChanged(item.id); }
+                });
             }
         });
         syncCreditCardSpendingFilters(creditCardSpendingAccountFilter, creditCardSpendingCategoryFilter);
@@ -2194,13 +2287,11 @@
             if (listBtn) listBtn.classList.toggle('active', categoryChartType === 'list');
         });
 
-        // Restore the saved Category Trend range preference
+        // Restore the saved Category Trend range/category/compare preferences (validated
+        // against the real category list once populateCatTrendDropdowns() runs).
         catTrendRange = localStorage.getItem(getUserStorageKey('fintrack_cat_trend_range')) || 'last12';
         catTrendCategory = localStorage.getItem(getUserStorageKey('fintrack_cat_trend_category')) || '';
-        ['', 'Compact'].forEach(function (suf) {
-            const rangeSel = document.getElementById('catTrendRangeSelect' + suf);
-            if (rangeSel) rangeSel.value = catTrendRange;
-        });
+        try { catTrendCompare = JSON.parse(localStorage.getItem(getUserStorageKey('fintrack_cat_trend_compare')) || '[]'); } catch (e) { catTrendCompare = []; }
 
         updateGreeting();
         loadDashboard();
@@ -4098,6 +4189,185 @@
     }
 
     // ---------------------------------------------------------------------
+    // CategoryPicker — a themed popover replacement for native <select>/
+    // <select multiple> wherever the dashboard needs to choose a category.
+    // Used by: Category Trend (primary + compare) and the Credit Card
+    // Spending category filter.
+    // ---------------------------------------------------------------------
+    let catPickerOpenState = null; // tracks the single currently-open popover, so only one is ever open
+
+    /** Renders & wires a themed popover anchored under triggerEl.
+     *  config: {
+     *    items: [{id,name,icon,color,amount,hasSpend}]  (pre-sorted desc by amount),
+     *    isSelected: (item) => bool,
+     *    multi: bool,            // when true, the popover stays open after a pick (for Compare)
+     *    onPick: (item) => void, // caller updates state + (for multi) calls popover.refresh()
+     *    extraRow: {id:'', name:'All Categories'} | null // single-select "clear filter" row, shown first
+     *  }
+     *  Returns { refresh(), close() }.
+     */
+    function openCategoryPickerPopover(triggerEl, config) {
+        if (catPickerOpenState) catPickerOpenState.close();
+
+        const popover = document.createElement('div');
+        popover.className = 'cat-picker-popover';
+        popover.setAttribute('role', 'listbox');
+        if (config.multi) popover.setAttribute('aria-multiselectable', 'true');
+
+        const searchWrap = document.createElement('div');
+        searchWrap.className = 'cat-picker-search-wrap';
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.className = 'cat-picker-search';
+        searchInput.placeholder = 'Search categories...';
+        searchInput.setAttribute('role', 'combobox');
+        searchInput.setAttribute('aria-expanded', 'true');
+        searchWrap.appendChild(searchInput);
+
+        const listEl = document.createElement('div');
+        listEl.className = 'cat-picker-list';
+
+        popover.appendChild(searchWrap);
+        popover.appendChild(listEl);
+        triggerEl.parentElement.style.position = triggerEl.parentElement.style.position || 'relative';
+        triggerEl.parentElement.appendChild(popover);
+        triggerEl.classList.add('is-open');
+        triggerEl.setAttribute('aria-expanded', 'true');
+
+        let highlightIdx = -1;
+        let flatRows = []; // [{item, rowEl}] in current visual order, for keyboard nav
+
+        function buildRows(filterText) {
+            listEl.innerHTML = '';
+            flatRows = [];
+            const text = (filterText || '').trim().toLowerCase();
+            const allItems = config.extraRow ? [config.extraRow].concat(config.items) : config.items;
+            const matches = allItems.filter(it => !text || it.name.toLowerCase().includes(text));
+            const withSpend = matches.filter(it => it === config.extraRow || it.hasSpend !== false);
+            const noSpend = matches.filter(it => it !== config.extraRow && it.hasSpend === false);
+
+            const renderRow = (item) => {
+                const row = document.createElement('button');
+                row.type = 'button';
+                row.className = 'cat-picker-row' + (item.hasSpend === false ? ' is-muted' : '');
+                row.setAttribute('role', 'option');
+                const selected = config.isSelected(item);
+                row.setAttribute('aria-selected', selected ? 'true' : 'false');
+                const dot = item.color ? `<span class="cat-picker-row-dot" style="background:${item.color}"></span>` : '<span class="cat-picker-row-dot" style="background:var(--text-muted)"></span>';
+                const icon = item.icon ? `<i class="fas fa-${item.icon} cat-picker-row-icon"></i>` : '';
+                const amount = (item.amount !== undefined && item.amount !== null) ? `<span class="cat-picker-row-amount">${formatAmount(item.amount)}</span>` : '';
+                const check = selected ? '<i class="fas fa-check cat-picker-row-check"></i>' : '<span class="cat-picker-row-check"></span>';
+                row.innerHTML = dot + icon + `<span class="cat-picker-row-name">${escHtml(item.name)}</span>` + amount + check;
+                row.addEventListener('click', function () {
+                    config.onPick(item);
+                    if (!config.multi) close();
+                    else { buildRows(searchInput.value); }
+                });
+                row.addEventListener('mouseenter', function () {
+                    highlightIdx = flatRows.findIndex(r => r.row === row);
+                    applyHighlight();
+                });
+                listEl.appendChild(row);
+                flatRows.push({ item, row });
+            };
+
+            withSpend.forEach(renderRow);
+            if (noSpend.length) {
+                const label = document.createElement('div');
+                label.className = 'cat-picker-section-label';
+                label.textContent = 'No spending';
+                listEl.appendChild(label);
+                noSpend.forEach(renderRow);
+            }
+            if (!flatRows.length) {
+                const empty = document.createElement('div');
+                empty.className = 'cat-picker-empty';
+                empty.textContent = 'No categories found.';
+                listEl.appendChild(empty);
+            }
+            highlightIdx = flatRows.length ? 0 : -1;
+            applyHighlight();
+        }
+
+        function applyHighlight() {
+            flatRows.forEach((r, i) => r.row.classList.toggle('is-highlighted', i === highlightIdx));
+            if (highlightIdx >= 0) flatRows[highlightIdx].row.scrollIntoView({ block: 'nearest' });
+        }
+
+        function onKeyDown(e) {
+            if (e.key === 'Escape') { e.preventDefault(); close(); triggerEl.focus(); return; }
+            if (e.key === 'ArrowDown') { e.preventDefault(); if (flatRows.length) { highlightIdx = Math.min(highlightIdx + 1, flatRows.length - 1); applyHighlight(); } return; }
+            if (e.key === 'ArrowUp') { e.preventDefault(); if (flatRows.length) { highlightIdx = Math.max(highlightIdx - 1, 0); applyHighlight(); } return; }
+            if (e.key === 'Enter') { e.preventDefault(); if (highlightIdx >= 0 && flatRows[highlightIdx]) flatRows[highlightIdx].row.click(); }
+        }
+
+        searchInput.addEventListener('keydown', onKeyDown);
+        searchInput.addEventListener('input', function () { buildRows(searchInput.value); });
+
+        function onOutsideClick(e) {
+            if (!popover.contains(e.target) && e.target !== triggerEl && !triggerEl.contains(e.target)) close();
+        }
+
+        function close() {
+            document.removeEventListener('mousedown', onOutsideClick, true);
+            if (popover.parentElement) popover.parentElement.removeChild(popover);
+            triggerEl.classList.remove('is-open');
+            triggerEl.setAttribute('aria-expanded', 'false');
+            if (catPickerOpenState && catPickerOpenState.close === close) catPickerOpenState = null;
+        }
+
+        buildRows('');
+        setTimeout(function () {
+            searchInput.focus();
+            document.addEventListener('mousedown', onOutsideClick, true);
+        }, 0);
+
+        const state = { refresh: function () { buildRows(searchInput.value); }, close: close };
+        catPickerOpenState = state;
+        return state;
+    }
+
+    /** Mounts a persistent single-select CategoryPicker trigger button into containerEl.
+     *  config: { getItems, getSelectedItem, onPick, extraRow, ariaLabel } */
+    function mountCategoryPickerTrigger(containerEl, config) {
+        containerEl.innerHTML = '';
+        const wrap = document.createElement('div');
+        wrap.className = 'cat-picker';
+        const trigger = document.createElement('button');
+        trigger.type = 'button';
+        trigger.className = 'cat-picker-trigger';
+        trigger.setAttribute('aria-haspopup', 'listbox');
+        trigger.setAttribute('aria-expanded', 'false');
+        if (config.ariaLabel) trigger.setAttribute('aria-label', config.ariaLabel);
+        wrap.appendChild(trigger);
+        containerEl.appendChild(wrap);
+
+        function renderTrigger() {
+            const item = config.getSelectedItem();
+            const dot = item && item.color ? `<span class="cat-picker-trigger-dot" style="background:${item.color}"></span>` : '';
+            const icon = item && item.icon ? `<i class="fas fa-${item.icon} cat-picker-trigger-icon"></i>` : '';
+            trigger.innerHTML = dot + icon + `<span class="cat-picker-trigger-name">${escHtml(item ? item.name : 'Select category')}</span><i class="fas fa-chevron-down cat-picker-trigger-chevron"></i>`;
+        }
+
+        trigger.addEventListener('click', function () {
+            if (trigger.classList.contains('is-open')) { catPickerOpenState && catPickerOpenState.close(); return; }
+            openCategoryPickerPopover(trigger, {
+                items: config.getItems(),
+                isSelected: function (item) {
+                    const sel = config.getSelectedItem();
+                    return sel ? (sel.id === item.id || (sel.id === '' && item.id === '')) : false;
+                },
+                multi: false,
+                extraRow: config.extraRow || null,
+                onPick: function (item) { config.onPick(item); renderTrigger(); }
+            });
+        });
+
+        renderTrigger();
+        return { update: renderTrigger };
+    }
+
+    // ---------------------------------------------------------------------
     // Category Trend tab — a 12-point line chart (one line per selected
     // category) aggregated client-side from allTransactions, with an optional
     // "Compare" mode (up to 3 categories total) and summary chips.
@@ -4129,8 +4399,13 @@
         return catTrendRange === 'thisyear' ? getThisYearMonthKeys(endKey) : getLastNMonthKeys(endKey, 12);
     }
 
-    /** Populates the category + compare dropdowns; default category = highest spend this month. */
-    function populateCatTrendDropdowns(expenseCategories) {
+    let catTrendHiddenSeries = new Set(); // category names toggled off via the compare-chip color dot
+    let catTrendPickers = {}; // suffix -> { update() } from mountCategoryPickerTrigger
+
+    /** Builds the { id, name, icon, color, amount, hasSpend } item list for the pickers, sorted
+     *  by this month's spend (largest first); zero-spend categories are flagged hasSpend:false
+     *  so the popover can show them muted under a "No spending" label. */
+    function buildCatTrendItems() {
         const thisMonthKey = currentMonthKey();
         const spendByCategory = {};
         allTransactions.forEach(tx => {
@@ -4139,72 +4414,146 @@
             const name = tx.category_name || 'Uncategorized';
             spendByCategory[name] = (spendByCategory[name] || 0) + (Number(tx.amount) || 0);
         });
-        const names = expenseCategories.map(c => c.name);
-        let topCategory = names[0] || '';
-        let topAmount = -1;
-        names.forEach(name => {
-            const amt = spendByCategory[name] || 0;
-            if (amt > topAmount) { topAmount = amt; topCategory = name; }
-        });
+        return (expenseCategoryList || []).map(c => {
+            const amount = spendByCategory[c.name] || 0;
+            return { id: c.name, name: c.name, icon: categoryIconMap[c.name] || 'tag', color: getCategoryColor(c.name), amount: amount, hasSpend: amount > 0 };
+        }).sort((a, b) => b.amount - a.amount);
+    }
+
+    /** Populates the primary/compare CategoryPickers; default category = highest spend this month. */
+    function populateCatTrendDropdowns(expenseCategories) {
+        const items = buildCatTrendItems();
+        const names = items.map(it => it.name);
 
         const savedCategory = catTrendCategory && names.includes(catTrendCategory) ? catTrendCategory : '';
-        catTrendCategory = savedCategory || topCategory || '';
+        catTrendCategory = savedCategory || names[0] || '';
         catTrendCompare = (catTrendCompare || []).filter(n => names.includes(n) && n !== catTrendCategory);
 
         ['', 'Compact'].forEach(function (suf) {
-            const catSel = document.getElementById('catTrendCategorySelect' + suf);
-            if (catSel) {
-                catSel.innerHTML = names.map(n => `<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('');
-                catSel.value = catTrendCategory;
+            const mount = document.getElementById('catTrendPrimaryPicker' + suf);
+            if (mount) {
+                catTrendPickers[suf] = mountCategoryPickerTrigger(mount, {
+                    ariaLabel: 'Category',
+                    getItems: buildCatTrendItems,
+                    getSelectedItem: function () { return items.find(it => it.name === catTrendCategory) || { id: catTrendCategory, name: catTrendCategory }; },
+                    onPick: function (item) { selectCatTrendPrimaryCategory(item.name); }
+                });
             }
-            const cmpSel = document.getElementById('catTrendCompareSelect' + suf);
-            if (cmpSel) {
-                cmpSel.innerHTML = names.filter(n => n !== catTrendCategory)
-                    .map(n => `<option value="${escHtml(n)}"${catTrendCompare.includes(n) ? ' selected' : ''}>${escHtml(n)}</option>`).join('');
-            }
+            wireCatTrendAddCompareBtn(suf);
+            wireCatTrendRangeToggle(suf);
         });
+        renderCatTrendCompareChips();
     }
 
-    function onCatTrendCategoryChanged(value) {
-        catTrendCategory = value;
-        catTrendCompare = (catTrendCompare || []).filter(n => n !== value);
-        localStorage.setItem(getUserStorageKey('fintrack_cat_trend_category'), value);
-        ['', 'Compact'].forEach(function (suf) {
-            const catSel = document.getElementById('catTrendCategorySelect' + suf);
-            if (catSel) catSel.value = value;
-            const cmpSel = document.getElementById('catTrendCompareSelect' + suf);
-            if (cmpSel) {
-                Array.from(cmpSel.options).forEach(opt => { opt.selected = catTrendCompare.includes(opt.value); });
-            }
-        });
+    function selectCatTrendPrimaryCategory(name) {
+        catTrendCategory = name;
+        catTrendCompare = (catTrendCompare || []).filter(n => n !== name);
+        catTrendHiddenSeries.delete(name);
+        localStorage.setItem(getUserStorageKey('fintrack_cat_trend_category'), name);
+        localStorage.setItem(getUserStorageKey('fintrack_cat_trend_compare'), JSON.stringify(catTrendCompare));
+        ['', 'Compact'].forEach(function (suf) { if (catTrendPickers[suf]) catTrendPickers[suf].update(); });
+        renderCatTrendCompareChips();
         loadCategoryTrend(activeSuffix(), true);
     }
 
-    function onCatTrendRangeChanged(value) {
+    function setCatTrendRange(value) {
         catTrendRange = value;
         localStorage.setItem(getUserStorageKey('fintrack_cat_trend_range'), value);
         ['', 'Compact'].forEach(function (suf) {
-            const sel = document.getElementById('catTrendRangeSelect' + suf);
-            if (sel) sel.value = value;
+            const toggle = document.getElementById('catTrendRangeToggle' + suf);
+            if (!toggle) return;
+            toggle.querySelectorAll('.cat-trend-range-btn').forEach(function (btn) {
+                btn.classList.toggle('is-active', btn.dataset.range === value);
+            });
         });
         loadCategoryTrend(activeSuffix(), true);
     }
 
-    function onCatTrendCompareChanged(selectEl) {
-        // Cap the total number of lines (primary + compare) at 3.
-        let selected = Array.from(selectEl.selectedOptions).map(o => o.value);
-        if (selected.length > 2) {
-            selected = selected.slice(0, 2);
-            Array.from(selectEl.options).forEach(opt => { opt.selected = selected.includes(opt.value); });
-        }
-        catTrendCompare = selected;
+    function wireCatTrendRangeToggle(suf) {
+        const toggle = document.getElementById('catTrendRangeToggle' + suf);
+        if (!toggle || toggle.dataset.wired) return;
+        toggle.dataset.wired = '1';
+        toggle.querySelectorAll('.cat-trend-range-btn').forEach(function (btn) {
+            btn.classList.toggle('is-active', btn.dataset.range === catTrendRange);
+            btn.addEventListener('click', function () { setCatTrendRange(btn.dataset.range); });
+        });
+    }
+
+    function wireCatTrendAddCompareBtn(suf) {
+        const btn = document.getElementById('catTrendAddCompareBtn' + suf);
+        if (!btn || btn.dataset.wired) return;
+        btn.dataset.wired = '1';
+        btn.addEventListener('click', function () {
+            if (btn.disabled) return;
+            const chosen = [catTrendCategory].concat(catTrendCompare);
+            const candidates = buildCatTrendItems().filter(it => !chosen.includes(it.name));
+            openCategoryPickerPopover(btn, {
+                items: candidates,
+                isSelected: function () { return false; },
+                multi: true,
+                onPick: function (item) { addCatTrendCompareCategory(item.name); }
+            });
+        });
+    }
+
+    function addCatTrendCompareCategory(name) {
+        const total = [catTrendCategory].concat(catTrendCompare);
+        if (total.includes(name) || total.length >= 3) return;
+        catTrendCompare = catTrendCompare.concat([name]);
+        catTrendHiddenSeries.delete(name);
+        localStorage.setItem(getUserStorageKey('fintrack_cat_trend_compare'), JSON.stringify(catTrendCompare));
+        renderCatTrendCompareChips();
+        loadCategoryTrend(activeSuffix(), true);
+        if (catPickerOpenState && [catTrendCategory].concat(catTrendCompare).length >= 3) catPickerOpenState.close();
+    }
+
+    function removeCatTrendCompareCategory(name) {
+        catTrendCompare = catTrendCompare.filter(n => n !== name);
+        catTrendHiddenSeries.delete(name);
+        localStorage.setItem(getUserStorageKey('fintrack_cat_trend_compare'), JSON.stringify(catTrendCompare));
+        renderCatTrendCompareChips();
+        loadCategoryTrend(activeSuffix(), true);
+    }
+
+    /** Clicking a compare chip's color dot toggles that series' visibility on the chart
+     *  (dimming the chip to 50%); the chip itself replaces the old Chart.js legend. At least
+     *  one series must always stay visible. */
+    function toggleCatTrendSeriesVisibility(name) {
+        const allNames = [catTrendCategory].concat(catTrendCompare);
+        const willHide = !catTrendHiddenSeries.has(name);
+        if (willHide && allNames.filter(n => !catTrendHiddenSeries.has(n)).length <= 1) return; // keep at least one visible
+        if (willHide) catTrendHiddenSeries.add(name); else catTrendHiddenSeries.delete(name);
+        renderCatTrendCompareChips();
+        drawCategoryTrendChart(activeSuffix());
+    }
+
+    function renderCatTrendCompareChips() {
         ['', 'Compact'].forEach(function (suf) {
-            const cmpSel = document.getElementById('catTrendCompareSelect' + suf);
-            if (cmpSel && cmpSel !== selectEl) {
-                Array.from(cmpSel.options).forEach(opt => { opt.selected = selected.includes(opt.value); });
+            const el = document.getElementById('catTrendCompareChips' + suf);
+            const addBtn = document.getElementById('catTrendAddCompareBtn' + suf);
+            if (!el) return;
+            const allNames = [catTrendCategory].concat(catTrendCompare).filter(Boolean);
+            el.innerHTML = allNames.map(function (name) {
+                const color = getCategoryColor(name);
+                const isHidden = catTrendHiddenSeries.has(name);
+                const isPrimary = name === catTrendCategory;
+                const removeBtn = isPrimary ? '' : `<button type="button" class="cat-compare-chip-remove" aria-label="Remove ${escHtml(name)}" data-name="${escHtml(name)}"><i class="fas fa-times"></i></button>`;
+                return `<span class="cat-compare-chip${isHidden ? ' is-hidden-series' : ''}" data-name="${escHtml(name)}">` +
+                    `<span class="cat-compare-chip-dot" style="background:${color}" data-toggle="${escHtml(name)}" title="Toggle visibility"></span>` +
+                    `<span class="cat-compare-chip-name" data-toggle="${escHtml(name)}">${escHtml(name)}</span>${removeBtn}</span>`;
+            }).join('');
+            el.querySelectorAll('[data-toggle]').forEach(function (node) {
+                node.addEventListener('click', function () { toggleCatTrendSeriesVisibility(node.dataset.toggle); });
+            });
+            el.querySelectorAll('.cat-compare-chip-remove').forEach(function (btn) {
+                btn.addEventListener('click', function (e) { e.stopPropagation(); removeCatTrendCompareCategory(btn.dataset.name); });
+            });
+            if (addBtn) {
+                const atMax = allNames.length >= 3;
+                addBtn.disabled = atMax;
+                addBtn.title = atMax ? 'Maximum 3 categories' : 'Compare up to 3 categories total';
             }
         });
-        loadCategoryTrend(activeSuffix(), true);
     }
 
     /** Aggregates allTransactions into one { month -> amount } series per category name. */
@@ -4306,7 +4655,8 @@
                 pointRadius: 0,
                 pointHoverRadius: 4,
                 pointHitRadius: 10,
-                fill: false
+                fill: false,
+                hidden: catTrendHiddenSeries.has(name)
             };
             if (isPartialLastMonth) {
                 ds.segment = { borderDash: ctx => ctx.p0DataIndex === lastSegmentIdx ? [6, 4] : undefined };
@@ -4336,7 +4686,7 @@
         }
         const finalDatasets = budgetLine ? datasets.concat([budgetLine]) : datasets;
 
-        const signature = JSON.stringify({ categoryNames, monthKeys, seriesByCategory, hasBudgetLine: !!budgetLine });
+        const signature = JSON.stringify({ categoryNames, monthKeys, seriesByCategory, hasBudgetLine: !!budgetLine, hidden: Array.from(catTrendHiddenSeries).sort() });
         if (categoryTrendChartSignatures[suffix] === signature && categoryTrendChartInstances[suffix]) return;
         categoryTrendChartSignatures[suffix] = signature;
 
@@ -4352,9 +4702,7 @@
                 layout: { padding: { top: 8, right: 16 } },
                 interaction: { mode: 'index', intersect: false },
                 plugins: {
-                    legend: categoryNames.length > 1 || budgetLine
-                        ? { position: 'bottom', labels: { color: mutedColor, font: { size: 12, family: appFont }, boxWidth: 10, usePointStyle: true } }
-                        : { display: false },
+                    legend: { display: false }, // replaced by the clickable compare chips above the chart
                     tooltip: {
                         mode: 'index',
                         intersect: false,
