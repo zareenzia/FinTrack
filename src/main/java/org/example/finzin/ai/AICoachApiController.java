@@ -68,8 +68,9 @@ public class AICoachApiController {
     }
 
     @GetMapping("/dashboard-summary")
-    public DashboardSummaryService.DashboardSummary getDashboardSummary(HttpServletRequest request) {
-        return dashboardSummaryService.summarize(getUserId(request));
+    public DashboardSummaryService.DashboardSummary getDashboardSummary(HttpServletRequest request,
+                                                                          @RequestParam(required = false) String month) {
+        return dashboardSummaryService.summarize(getUserId(request), month);
     }
 
     @GetMapping("/monthly-report")

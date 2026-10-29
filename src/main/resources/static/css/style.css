@@ -1314,15 +1314,20 @@ body.has-sidebar {
 /* Never truncated: the shrink-to-fit script (fitStatAmounts) is the sole safety net for
    extreme values, so the CSS itself must not clip or ellipsize. */
 .stat-card-amount {
-    font-weight: 800 !important;
+    font-weight: 700 !important;
     color: var(--text) !important;
     white-space: nowrap;
     line-height: 1.1;
     margin: 0 !important;
-    font-size: clamp(20px, 2.2vw, 32px);
+    font-size: clamp(24px, 2.2vw, 32px);
     -webkit-text-fill-color: unset !important;
     text-shadow: none;
     font-variant-numeric: tabular-nums;
+}
+/* Hero ("Total Expense") keeps its own larger scale (~1.25x) to restore visual hierarchy —
+   the other 4 cards share the base clamp above via fitStatAmounts' synchronized shrink. */
+.stat-card-amount--hero {
+    font-size: clamp(30px, 2.75vw, 40px);
 }
 /* Negative/positive amounts carry meaning only — set via a modifier class from JS, not per-card color. */
 .stat-card-amount.is-negative { color: var(--negative) !important; }
@@ -2671,7 +2676,7 @@ h3.stat-card-amount,
    keeps its own filled-bar header untouched). ===== */
 body.dashboard-page .tx-card-header {
     background: transparent !important;
-    padding: 0 0 12px !important;
+    padding: 16px 20px !important;
     border-bottom: 1px solid var(--border) !important;
     border-radius: 0 !important;
 }
