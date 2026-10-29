@@ -4,6 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - TakaFlow</title>
+    <script>
+        // Apply the saved theme/color-theme attributes before any CSS loads or paint happens,
+        // so there's no flash of the wrong theme (sidebar.js reapplies this later as a harmless no-op).
+        (function () {
+            try {
+                function userKey(base) {
+                    var u = JSON.parse(localStorage.getItem('finzin_user') || localStorage.getItem('user'));
+                    return (u && u.id) ? base + '_' + u.id : base;
+                }
+                var s = {};
+                try { s = JSON.parse(localStorage.getItem(userKey('fintrack_settings')) || '{}'); } catch (e) {}
+                var savedTheme = localStorage.getItem(userKey('fintrack_theme')) || s.theme;
+                var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                var theme = (s.displayMode === 'system') ? (prefersDark ? 'dark' : 'light') : (savedTheme || (prefersDark ? 'dark' : 'light'));
+                document.documentElement.setAttribute('data-theme', theme);
+                var colorTheme = localStorage.getItem(userKey('fintrack_color_theme')) || 'forest';
+                if (colorTheme && colorTheme !== 'forest') {
+                    document.documentElement.setAttribute('data-color-theme', colorTheme);
+                }
+            } catch (e) { /* silently ignore */ }
+        })();
+    </script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
@@ -11,9 +33,9 @@
     <link rel="icon" type="image/png" href="/images/logo.png">
     <style>
         /* Net Balance card flips to a warning tone when the selected month is running negative */
-        .stat-card--balance-negative .sc-icon-circle { background: rgba(220, 53, 69, 0.15); color: #dc3545; }
+        .stat-card--balance-negative .sc-icon-circle { background: color-mix(in srgb, var(--negative, #dc3545) 15%, transparent); color: var(--negative, #dc3545); }
         .stat-card--balance-negative #balance,
-        .stat-card--balance-negative #balanceCompact { color: #dc3545; }
+        .stat-card--balance-negative #balanceCompact { color: var(--negative, #dc3545); }
         #monthViewSelect { cursor: pointer; }
 
         /* Default / Compact dashboard view toggle */
@@ -94,10 +116,10 @@
 
         /* Current Budget widget */
         #currentBudgetBody, #currentBudgetBodyCompact { font-variant-numeric: tabular-nums; }
-        .cb-progress { height: 10px; border-radius: 6px; background: var(--bg-input); overflow: hidden; }
-        .cb-progress-bar { height: 100%; transition: width 0.3s ease; background: #28a745; }
-        .cb-progress-bar.warn { background: #fd7e14; }
-        .cb-progress-bar.over { background: #dc3545; }
+        .cb-progress { height: 10px; border-radius: 6px; background: var(--surface-2, var(--bg-input)); overflow: hidden; }
+        .cb-progress-bar { height: 100%; transition: width 0.3s ease; background: var(--accent, #28a745); }
+        .cb-progress-bar.warn { background: var(--warning, #fd7e14); }
+        .cb-progress-bar.over { background: var(--negative, #dc3545); }
         .cb-progress-sm { height: 6px; }
         .cb-category-list { margin-top: 4px; padding-right: 2px; }
         .cb-category-row:not(:last-child) { margin-bottom: 8px; }
@@ -274,46 +296,55 @@
         }
     </style>
 </head>
-<body>
+<body class="dashboard-page">
 <div id="toastContainer" class="notification-toast-container" aria-live="polite" aria-atomic="true"></div>
 
 <div class="container-fluid mt-4">
-    <div class="row mb-3">
-        <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div class="dashboard-topbar" id="dashboardTopbar">
+        <div class="dashboard-topbar-inner">
             <div class="dashboard-header-greeting">
-                <div id="dashboardGreeting">Dashboard</div>
-                <small id="monthViewSubtitle">Loading...</small>
-            </div>
-             <div class="d-flex align-items-center gap-2 flex-wrap">
-                <button type="button" class="btn-add-transaction" id="openAddTxModalBtn" title="Add new transaction">
-                    <i class="fas fa-plus"></i>Add Transaction
-                </button>
-                <button type="button" class="btn-add-transaction" id="openScanReceiptBtn" title="Scan a receipt with AI">
-                    <i class="fas fa-camera"></i>Scan Receipt
-                </button>
-                <a href="/budget-planner" class="btn-add-transaction" title="Plan a budget">
-                    <i class="fas fa-wallet"></i>Plan a Budget
+                <div id="dashboardGreeting">Good evening</div>
+                <a href="/achievements" class="ach-chip" id="achChip" title="Open Achievements">
+                    <i class="fas fa-trophy"></i>
+                    <span id="achChipLevel">Lvl —</span>
+                    <span class="ach-chip-sep">·</span>
+                    <span id="achChipStreak">— day streak</span>
                 </a>
-                <div class="btn-group btn-group-sm view-mode-toggle" role="group" aria-label="Dashboard view mode">
-                    <button type="button" class="btn active" id="viewModeDefaultBtn" onclick="setDashboardView('default')" title="Default view">
-                        <i class="fas fa-table-cells-large me-1"></i>DEFAULT
-                    </button>
-                    <button type="button" class="btn" id="viewModeCompactBtn" onclick="setDashboardView('compact')" title="Compact view">
-                        <i class="fas fa-list me-1"></i>COMPACT
-                    </button>
-                </div>
-                <select class="form-select form-select-sm" id="monthViewSelect" style="width:auto; min-width:190px;">
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap dashboard-topbar-actions">
+                <select class="form-select form-select-sm dashboard-month-select" id="monthViewSelect">
                     <option value="">Loading…</option>
                 </select>
-                <button type="button" class="btn-add-transaction hide-values-toggle" id="hideValuesToggleBtn"
+                <button type="button" class="icon-btn hide-values-toggle" id="hideValuesToggleBtn"
                         onclick="toggleHideValues()" title="Hide/Show values" aria-label="Hide values" aria-pressed="false">
                     <i class="fas fa-eye"></i>
                 </button>
+                <button type="button" class="icon-btn" id="refreshAllBtn" onclick="refreshAllWidgets()" title="Refresh all widgets" aria-label="Refresh all widgets">
+                    <i class="fas fa-rotate"></i><span class="refresh-all-label d-none d-sm-inline">All</span>
+                </button>
+                <button type="button" class="btn-add-transaction" id="openAddTxModalBtn" title="Add new transaction">
+                    <i class="fas fa-plus"></i>Add Transaction
+                </button>
+                <div class="dropdown dashboard-more-dropdown">
+                    <button type="button" class="btn-ghost dropdown-toggle" id="dashboardMoreBtn" data-bs-toggle="dropdown" aria-expanded="false" title="More actions">
+                        More
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dashboardMoreBtn">
+                        <li><button type="button" class="dropdown-item" id="openScanReceiptBtn"><i class="fas fa-camera me-2"></i>Scan Receipt</button></li>
+                        <li><a class="dropdown-item" href="/budget-planner"><i class="fas fa-wallet me-2"></i>Plan a Budget</a></li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
 
     <div id="dashboardDefaultView" class="dashboard-view-panel active">
+    <!-- Upcoming Recurring Transactions: slim banner, only shown when something is due in the next 3 days -->
+    <div class="recurring-banner d-none" id="recurringBanner">
+        <i class="fas fa-sync-alt"></i>
+        <span class="recurring-banner-text" id="recurringBannerText"></span>
+        <a href="/transactions" class="recurring-banner-link">View All <i class="fas fa-arrow-right"></i></a>
+    </div>
     <div class="row mb-4">
         <div class="col-12 col-md-12 col-xl-4 mb-3">
             <div class="card stat-card stat-card--hero">
@@ -409,14 +440,14 @@
     <div class="row mb-4 chart-pair-row">
        <div class="col-md-4">
             <div class="card h-100">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center flex-wrap gap-1">
+                <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center flex-wrap gap-1">
                     <h6 class="mb-0" id="categoryChartTitle"><i class="fas fa-pie-chart"></i> Expense by Category</h6>
                     <div class="d-flex gap-1 flex-wrap">
                         <div class="btn-group btn-group-sm" role="group">
-                            <button type="button" class="btn btn-outline-light active" id="categoryPieBtn" onclick="switchCategoryChart('pie')" title="Pie Chart">
+                            <button type="button" class="btn btn-outline-primary active" id="categoryPieBtn" onclick="switchCategoryChart('pie')" title="Pie Chart">
                                 <i class="fas fa-chart-pie"></i>
                             </button>
-                            <button type="button" class="btn btn-outline-light" id="categoryBarBtn" onclick="switchCategoryChart('bar')" title="Bar Chart">
+                            <button type="button" class="btn btn-outline-primary" id="categoryBarBtn" onclick="switchCategoryChart('bar')" title="Bar Chart">
                                 <i class="fas fa-bars"></i>
                             </button>
                         </div>
@@ -438,7 +469,7 @@
        </div>
        <div class="col-md-8">
             <div class="card h-100">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header dashboard-card-header">
                     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <ul class="nav trend-cc-tabs" role="tablist">
                             <li class="nav-item" role="presentation">
@@ -501,10 +532,10 @@
         </div>
     </div>
 
-    <!-- Account Balances + Upcoming Recurring Transactions (shortened, side by side) -->
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="card acct-summary-card">
+    <!-- Account Balances + Current Budget + AI Financial Coach -->
+    <div class="row mb-4 g-3 align-items-stretch">
+        <div class="col-md-4">
+            <div class="card acct-summary-card h-100">
                 <div class="card-header dashboard-card-header">
                     <h6 class="mb-0"><i class="fas fa-wallet me-2"></i>Account Balances</h6>
                 </div>
@@ -568,32 +599,6 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card dashboard-shortened-card">
-                <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0"><i class="fas fa-sync-alt me-2"></i>Upcoming Recurring Transactions</h6>
-                    <a href="/transactions" class="btn btn-sm btn-outline-primary"><i class="fas fa-external-link-alt"></i> View All</a>
-                </div>
-                <div class="card-body" id="upcomingRecurringBody">
-                    <p class="text-muted small mb-0">Loading…</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- AI Financial Coach + Current Budget + Financial Planner (merged row) -->
-    <div class="row mb-4 g-3 align-items-stretch">
-        <div class="col-md-4" id="aiSummaryRow">
-            <div class="card h-100">
-                <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
-                    <h6 class="mb-0"><i class="fas fa-robot me-2"></i>AI Financial Coach</h6>
-                    <a href="/ai-assistant" class="btn btn-sm btn-outline-primary" title="Open AI Assistant"><i class="fas fa-comment-dots"></i></a>
-                </div>
-                <div class="card-body" id="aiSummaryBody">
-                    <p class="text-muted small mb-0">Loading…</p>
-                </div>
-            </div>
-        </div>
         <div class="col-md-4">
             <div class="card h-100">
                 <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
@@ -605,79 +610,62 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-4" id="aiSummaryRow">
             <div class="card h-100">
                 <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
-                    <h6 class="mb-0"><i class="fas fa-bullseye me-2"></i>Financial Planner</h6>
-                    <a href="/financial-planner" class="btn btn-sm btn-primary" title="Open Financial Planner"><i class="fas fa-arrow-right"></i></a>
+                    <h6 class="mb-0"><i class="fas fa-robot me-2"></i>AI Financial Coach</h6>
+                    <a href="/ai-assistant" class="btn btn-sm btn-outline-primary" title="Open AI Assistant"><i class="fas fa-comment-dots"></i></a>
                 </div>
-                <div class="card-body">
-                    <div class="row g-2" id="fpWidgetCards">
-                        <div class="col-6">
-                            <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);height:64px;">
-                                <div style="width:32px;height:32px;border-radius:8px;background:rgba(31,125,83,0.15);color:var(--color-surface);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-chart-line"></i></div>
-                                <div style="min-width:0;"><div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwInvValue">—</div><div style="font-size:0.68rem;color:var(--text-muted-custom);">Investments</div></div>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);height:64px;">
-                                <div style="width:32px;height:32px;border-radius:8px;background:rgba(239,68,68,0.15);color:#ef4444;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-hand-holding-usd"></i></div>
-                                <div style="min-width:0;"><div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwLoans">—</div><div style="font-size:0.68rem;color:var(--text-muted-custom);">Loans</div></div>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);height:64px;">
-                                <div style="width:32px;height:32px;border-radius:8px;background:rgba(249,115,22,0.15);color:#f97316;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-bell"></i></div>
-                                <div style="min-width:0;"><div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwRenewals">—</div><div style="font-size:0.68rem;color:var(--text-muted-custom);">Renewals</div></div>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:var(--bg-table-stripe);border:1px solid var(--border-color);height:64px;">
-                                <div style="width:32px;height:32px;border-radius:8px;background:rgba(168,85,247,0.15);color:#a855f7;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem;"><i class="fas fa-cart-shopping"></i></div>
-                                <div class="flex-grow-1" style="min-width:0;">
-                                    <div style="font-weight:700;font-size:0.85rem;" class="text-truncate" id="fpwWishlistPct">—</div>
-                                    <div style="font-size:0.68rem;color:var(--text-muted-custom);">Wishlist</div>
-                                    <div style="margin-top:3px;height:4px;border-radius:999px;background:var(--bg-input);overflow:hidden;"><div id="fpwWishlistBar" style="height:100%;background:#a855f7;border-radius:999px;width:0%;transition:width 0.4s ease;"></div></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="card-body" id="aiSummaryBody">
+                    <p class="text-muted small mb-0">Loading…</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Gamification (Achievements) summary -->
-    <div class="row mb-4 g-3 align-items-stretch">
-        <div class="col-md-4" id="gamificationRow">
-            <div class="card h-100">
-                <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
-                    <h6 class="mb-0"><i class="fas fa-trophy me-2"></i>Achievements</h6>
-                    <a href="/achievements" class="btn btn-sm btn-outline-primary" title="Open Achievements"><i class="fas fa-arrow-right"></i></a>
-                </div>
-                <div class="card-body" id="gamificationBody">
-                    <p class="text-muted small mb-0">Loading…</p>
-                </div>
+    <!-- Quick Links strip: Planner, Achievements, To-Do, Recurring, Loans, Wishlist -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="quick-links-strip" id="quickLinksStrip">
+                <a href="/financial-planner" class="quick-link-pill">
+                    <span class="qlp-icon"><i class="fas fa-bullseye"></i></span>
+                    <span class="qlp-text"><span class="qlp-label">Planner</span><span class="qlp-sub" id="fpwInvValue">—</span></span>
+                </a>
+                <a href="/achievements" class="quick-link-pill">
+                    <span class="qlp-icon"><i class="fas fa-trophy"></i></span>
+                    <span class="qlp-text"><span class="qlp-label">Achievements</span><span class="qlp-sub" id="qlpAchievementsSub">—</span></span>
+                </a>
+                <a href="/todos" class="quick-link-pill">
+                    <span class="qlp-icon"><i class="fas fa-thumbtack"></i></span>
+                    <span class="qlp-text"><span class="qlp-label">To-Do</span></span>
+                    <span class="qlp-badge" id="qlpTodoBadge">0</span>
+                </a>
+                <a href="/transactions" class="quick-link-pill">
+                    <span class="qlp-icon"><i class="fas fa-sync-alt"></i></span>
+                    <span class="qlp-text"><span class="qlp-label">Recurring</span></span>
+                    <span class="qlp-badge" id="qlpRecurringBadge">0</span>
+                </a>
+                <a href="/financial-planner" class="quick-link-pill">
+                    <span class="qlp-icon"><i class="fas fa-hand-holding-usd"></i></span>
+                    <span class="qlp-text"><span class="qlp-label">Loans</span><span class="qlp-sub" id="fpwLoans">—</span></span>
+                </a>
+                <a href="/financial-planner" class="quick-link-pill">
+                    <span class="qlp-icon"><i class="fas fa-cart-shopping"></i></span>
+                    <span class="qlp-text"><span class="qlp-label">Wishlist</span><span class="qlp-sub" id="fpwWishlistPct">—</span></span>
+                </a>
             </div>
         </div>
-        <div class="col-md-4 d-none" id="familySummaryRow">
+    </div>
+
+    <!-- Family Finance (conditional — only rendered for users in a household) -->
+    <div class="row mb-4 g-3 align-items-stretch d-none" id="familySummaryRow">
+        <div class="col-md-4">
             <div class="card h-100">
                 <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
                     <h6 class="mb-0"><i class="fas fa-users me-2"></i>Family Finance</h6>
                     <a href="/family-finance" class="btn btn-sm btn-outline-primary" title="Open Family Finance"><i class="fas fa-arrow-right"></i></a>
                 </div>
                 <div class="card-body" id="familySummaryBody">
-                    <p class="text-muted small mb-0">Loading…</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-header dashboard-card-header d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0"><i class="fas fa-thumbtack me-2"></i>Pinned To-Do</h6>
-                    <a href="/todos" class="btn btn-sm btn-outline-primary" title="Open To-Do"><i class="fas fa-arrow-right"></i></a>
-                </div>
-                <div class="card-body" id="pinnedTodoBody">
                     <p class="text-muted small mb-0">Loading…</p>
                 </div>
             </div>
@@ -1230,6 +1218,45 @@
     /** Back-compat alias — formatAmount was the original name used across the dashboard. */
     function formatAmount(value) { return formatMoney(value); }
     let categoryColorMap      = {};
+
+    /** Reads a semantic design-token CSS variable from the active theme (falls back if unset/unthemed). */
+    function cssVar(name, fallback) {
+        const v = getComputedStyle(document.documentElement).getPropertyValue(name);
+        return (v && v.trim()) || fallback;
+    }
+    /** Appends a 2-hex-digit alpha suffix to a 6-digit hex color (e.g. for chart fill opacity). Leaves non-hex colors untouched. */
+    function hexWithAlpha(hex, alphaHex) {
+        hex = (hex || '').trim();
+        return /^#[0-9a-fA-F]{6}$/.test(hex) ? (hex + alphaHex) : hex;
+    }
+    /** Theme-derived fallback palette for categories with no user-chosen color — hue rotations of --accent
+     *  (user-set category colors always take priority; this only fills in the gaps). */
+    function getThemeCategoryPalette(count) {
+        const hex = cssVar('--accent', '#3b82f6').replace('#', '');
+        const r = parseInt(hex.substring(0, 2), 16) / 255, g = parseInt(hex.substring(2, 4), 16) / 255, b = parseInt(hex.substring(4, 6), 16) / 255;
+        const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2;
+        let h = 0, s = 0;
+        const d = max - min;
+        if (d !== 0) {
+            s = d / (1 - Math.abs(2 * l - 1));
+            if (max === r) h = ((g - b) / d) % 6;
+            else if (max === g) h = (b - r) / d + 2;
+            else h = (r - g) / d + 4;
+            h *= 60; if (h < 0) h += 360;
+        }
+        const hslToHex = (hh, ss, ll) => {
+            const c = (1 - Math.abs(2 * ll - 1)) * ss, x = c * (1 - Math.abs((hh / 60) % 2 - 1)), m = ll - c / 2;
+            let rr, gg, bb;
+            if (hh < 60) { rr = c; gg = x; bb = 0; } else if (hh < 120) { rr = x; gg = c; bb = 0; }
+            else if (hh < 180) { rr = 0; gg = c; bb = x; } else if (hh < 240) { rr = 0; gg = x; bb = c; }
+            else if (hh < 300) { rr = x; gg = 0; bb = c; } else { rr = c; gg = 0; bb = x; }
+            const toHex = v => Math.round((v + m) * 255).toString(16).padStart(2, '0');
+            return '#' + toHex(rr) + toHex(gg) + toHex(bb);
+        };
+        const palette = [];
+        for (let i = 0; i < count; i++) palette.push(hslToHex((h + (360 / count) * i) % 360, Math.max(0.45, s), Math.max(0.4, Math.min(0.62, l))));
+        return palette;
+    }
 
     /** Shrink .stat-card-amount font until text fits on one line */
     function fitStatAmounts() {
@@ -1867,13 +1894,52 @@
         loadReceiptScannerAvailability();
     });
 
+    /** "↻ All" top-bar button — refetches every widget's data (no full page reload). */
+    async function refreshAllWidgets() {
+        const btn = document.getElementById('refreshAllBtn');
+        if (btn) { btn.classList.add('is-spinning'); btn.disabled = true; }
+        try {
+            await Promise.all([
+                loadDashboard(),
+                loadAccountBalances(),
+                loadUpcomingRecurring(),
+                loadCurrentBudget(selectedMonthKey),
+                loadAiSummary(),
+                loadFpWidget(),
+                loadGamificationWidget(),
+                loadFamilySummaryWidget(),
+                loadPinnedTodoWidget()
+            ]);
+        } finally {
+            if (btn) { btn.classList.remove('is-spinning'); btn.disabled = false; }
+        }
+    }
+
+
     async function loadUpcomingRecurring() {
-        const containers = ['upcomingRecurringBody', 'upcomingRecurringBodyCompact']
+        // Default view no longer has a big "Upcoming Recurring" card — it's a slim banner
+        // (shown only when items are due) plus a badge on the "Recurring" quick-link pill.
+        // The Compact view still uses its own full card.
+        const containers = ['upcomingRecurringBodyCompact']
             .map(id => document.getElementById(id))
             .filter(Boolean);
-        if (!containers.length) return;
+        const banner = document.getElementById('recurringBanner');
+        const bannerText = document.getElementById('recurringBannerText');
+        const badge = document.getElementById('qlpRecurringBadge');
         try {
             const items = await fetch('/api/recurring-transactions/upcoming?days=3').then(r => r.json());
+            if (badge) badge.textContent = items.length;
+            if (banner && bannerText) {
+                if (!items.length) {
+                    banner.classList.add('d-none');
+                } else {
+                    const names = items.slice(0, 3).map(r => r.transactionName).join(', ');
+                    bannerText.textContent = items.length + ' upcoming recurring transaction' + (items.length !== 1 ? 's' : '') +
+                        ' in the next 3 days' + (names ? ' — ' + names : '') + (items.length > 3 ? '…' : '');
+                    banner.classList.remove('d-none');
+                }
+            }
+            if (!containers.length) return;
             if (!items.length) {
                 containers.forEach(c => c.innerHTML = '<p class="text-muted small mb-0">No upcoming recurring transactions in the next 3 days.</p>');
                 return;
@@ -1895,6 +1961,7 @@
             `).join('') + '</div>';
             containers.forEach(c => c.innerHTML = html);
         } catch (e) {
+            if (banner) banner.classList.add('d-none');
             containers.forEach(c => c.innerHTML = '<p class="text-muted small mb-0">Unable to load upcoming recurring transactions.</p>');
         }
     }
@@ -1924,15 +1991,26 @@
     }
 
     async function loadGamificationWidget() {
+        // Default view no longer has a big "Achievements" card — the same data now also
+        // feeds a small XP/streak chip in the top bar and the "Achievements" quick-link pill.
         const bodies = ['gamificationBody', 'gamificationBodyCompact'].map(id => document.getElementById(id)).filter(Boolean);
         const rows = ['gamificationRow', 'gamificationRowCompact'].map(id => document.getElementById(id)).filter(Boolean);
-        if (!bodies.length) return;
+        const achChip = document.getElementById('achChip');
+        const achChipLevel = document.getElementById('achChipLevel');
+        const achChipStreak = document.getElementById('achChipStreak');
+        const qlpAchievementsSub = document.getElementById('qlpAchievementsSub');
         try {
             const data = await fetch('/api/gamification/summary').then(r => r.json());
             if (!data.enabled) {
                 rows.forEach(r => r.classList.add('d-none'));
+                if (achChip) achChip.classList.add('d-none');
                 return;
             }
+            if (achChip) achChip.classList.remove('d-none');
+            if (achChipLevel) achChipLevel.textContent = 'Lvl ' + data.currentLevel;
+            if (achChipStreak) achChipStreak.textContent = data.currentStreak + '-day streak';
+            if (qlpAchievementsSub) qlpAchievementsSub.textContent = data.achievementsUnlocked + '/' + data.achievementsTotal + ' unlocked';
+            if (!bodies.length) return;
             const span = Math.max(1, data.nextLevelXp ? (data.nextLevelXp - data.currentLevelXp) : 1);
             const pct = data.nextLevelXp ? Math.max(0, Math.min(100, Math.round(((data.totalXp - data.currentLevelXp) / span) * 100))) : 100;
             let html = '<div class="d-flex justify-content-between align-items-center mb-1">';
@@ -1963,7 +2041,7 @@
             }
             rows.forEach(r => r.classList.remove('d-none'));
             const balance = data.yourNetBalance || 0;
-            const balanceColor = balance >= 0 ? '#22c55e' : '#ef4444';
+            const balanceColor = balance >= 0 ? cssVar('--positive', '#22c55e') : cssVar('--negative', '#ef4444');
             const balanceLabel = (balance >= 0 ? '+' : '') + formatAmount(balance);
             let html = `<div class="d-flex justify-content-between align-items-center mb-1">
                 <span class="fw-semibold">${escapeAiSummaryText(data.householdName)}</span>
@@ -1980,10 +2058,14 @@
     /** Always visible (unlike Family Finance) — starring a to-do is always something the user
      * could do, so there's no "not applicable" state to hide behind. */
     async function loadPinnedTodoWidget() {
-        const bodies = ['pinnedTodoBody', 'pinnedTodoBodyCompact'].map(id => document.getElementById(id)).filter(Boolean);
-        if (!bodies.length) return;
+        // Default view no longer has a big "Pinned To-Do" card — it's now a count badge on
+        // the "To-Do" quick-link pill. The Compact view still shows the full starred list.
+        const bodies = ['pinnedTodoBodyCompact'].map(id => document.getElementById(id)).filter(Boolean);
+        const qlpTodoBadge = document.getElementById('qlpTodoBadge');
         try {
             const items = await fetch('/api/todo/items/starred').then(r => r.json());
+            if (qlpTodoBadge) qlpTodoBadge.textContent = items.length;
+            if (!bodies.length) return;
             let html;
             if (!items.length) {
                 html = '<p class="text-muted small mb-2">Nothing starred yet.</p>' +
@@ -2013,7 +2095,7 @@
                 rows.forEach(r => r.classList.add('d-none'));
                 return;
             }
-            const scoreColor = data.healthScore >= 75 ? '#28a745' : (data.healthScore >= 50 ? '#ffc107' : '#dc3545');
+            const scoreColor = data.healthScore >= 75 ? cssVar('--positive', '#28a745') : (data.healthScore >= 50 ? cssVar('--warning', '#ffc107') : cssVar('--negative', '#dc3545'));
             let html = '<div class="d-flex align-items-center gap-3 mb-2">';
             html += `<div class="text-center" style="min-width:70px;"><div class="fw-bold" style="font-size:1.6rem;color:${scoreColor};">${data.healthScore}</div><div class="small text-muted">Health Score</div></div>`;
             html += '<div class="flex-grow-1">';
@@ -2063,7 +2145,7 @@
             // selected month — rather than the plan's own (possibly stale/mismatched) name/period.
             const effectiveMonthKey = (monthKey && monthKey !== 'ALL') ? monthKey : currentMonthKey();
             const remainingHtml = isOverBudget
-                ? `Over by <strong style="color:#dc3545;">${formatMoney((data.summary.actualExpense + data.summary.actualSavings) - data.summary.plannedIncome, { html: true })}</strong>`
+                ? `Over by <strong style="color: var(--negative, #dc3545);">${formatMoney((data.summary.actualExpense + data.summary.actualSavings) - data.summary.plannedIncome, { html: true })}</strong>`
                 : `Remaining: <strong style="color: var(--accent-color);">${formatMoney(data.summary.remaining, { html: true })}</strong>`;
             const categories = data.categories || [];
             const topCategories = categories.slice().sort((a, b) => b.percentUsed - a.percentUsed).slice(0, 3);
@@ -3139,6 +3221,11 @@
         });
         if (otherTotal > 0) slices.push({ category: 'Other', total: otherTotal, color: '#9ca3af' });
 
+        // Any category without a user-chosen color falls back to a theme-derived palette
+        // (hue rotations of --accent) instead of a fixed hard-coded blue.
+        const palette = getThemeCategoryPalette(Math.max(1, slices.length));
+        slices.forEach(function (s, i) { if (!s.color) s.color = palette[i % palette.length]; });
+
         const raw = slices.map(function (s) { return (s.total / total) * 100; });
         const floors = raw.map(Math.floor);
         const used = floors.reduce(function (a, b) { return a + b; }, 0);
@@ -3207,11 +3294,11 @@
                     c.save();
                     c.textAlign = 'center';
                     c.textBaseline = 'middle';
-                    c.fillStyle = getComputedStyle(document.body).getPropertyValue('--text-body') || '#333';
+                    c.fillStyle = cssVar('--text', '#e5e5e5');
                     c.font = '700 1.1rem sans-serif';
                     c.fillText(formatAmount(model.total), cx, cy - 8);
                     c.font = '400 0.72rem sans-serif';
-                    c.fillStyle = getComputedStyle(document.body).getPropertyValue('--text-muted-custom') || '#888';
+                    c.fillStyle = cssVar('--text-muted', '#9a9a9a');
                     c.fillText('Total expense', cx, cy + 12);
                     c.restore();
                 }
@@ -3233,6 +3320,11 @@
                     plugins: {
                         legend: { display: false },
                         tooltip: {
+                            backgroundColor: cssVar('--surface-2', '#222'),
+                            titleColor: cssVar('--text', '#e5e5e5'),
+                            bodyColor: cssVar('--text', '#e5e5e5'),
+                            borderColor: cssVar('--border', '#333'),
+                            borderWidth: 1,
                             callbacks: {
                                 label: function (ctx) {
                                     const i = ctx.dataIndex;
@@ -3267,6 +3359,11 @@
                     plugins: {
                         legend: { display: false },
                         tooltip: {
+                            backgroundColor: cssVar('--surface-2', '#222'),
+                            titleColor: cssVar('--text', '#e5e5e5'),
+                            bodyColor: cssVar('--text', '#e5e5e5'),
+                            borderColor: cssVar('--border', '#333'),
+                            borderWidth: 1,
                             callbacks: {
                                 label: function (ctx) {
                                     const i = ctx.dataIndex;
@@ -3361,6 +3458,15 @@
         const ctx = canvasEl.getContext('2d');
         if (monthlyChartInstances[suffix]) monthlyChartInstances[suffix].destroy();
 
+        // Series colors are read from the active theme's semantic tokens (not hard-coded)
+        // so Income/Expense/Savings always mean the same thing while matching the theme.
+        const posColor  = cssVar('--positive', '#28a745');
+        const negColor  = cssVar('--negative', '#dc3545');
+        const accColor  = cssVar('--accent',   '#3b82f6');
+        const textColor = cssVar('--text', '#e5e5e5');
+        const mutedColor = cssVar('--text-muted', '#9a9a9a');
+        const gridColor = hexWithAlpha(cssVar('--border', '#333333'), '0d'); // ~5% opacity gridlines
+
         const commonOptions = {
             responsive: true,
             maintainAspectRatio: false,
@@ -3370,21 +3476,30 @@
                 legend: {
                     position: 'top',
                     align: 'center',
-                    labels: { boxWidth: 12, padding: 12 }
+                    labels: { boxWidth: 12, padding: 12, color: textColor }
+                },
+                tooltip: {
+                    backgroundColor: cssVar('--surface-2', '#222'),
+                    titleColor: textColor,
+                    bodyColor: textColor,
+                    borderColor: cssVar('--border', '#333'),
+                    borderWidth: 1
                 }
             },
             scales: {
+                x: { grid: { color: gridColor }, ticks: { color: mutedColor } },
                 y: {
                     beginAtZero: true,
-                    ticks: { callback: v => getCurrencySettings().symbol + v }
+                    grid: { color: gridColor },
+                    ticks: { color: mutedColor, callback: v => getCurrencySettings().symbol + v }
                 }
             }
         };
 
         const expenseLabel = monthlyCategoryFilter ? ('Expense: ' + monthlyCategoryFilter) : 'Expense';
-        const incomeDataset  = { label: 'Income',  data: monthKeys.map(k => months[k].income),  borderColor: '#28a745', backgroundColor: 'rgba(40,167,69,0.1)',  tension: 0.4, fill: true };
-        const expenseDataset = { label: expenseLabel, data: monthKeys.map(k => months[k].expense), borderColor: '#dc3545', backgroundColor: 'rgba(220,53,69,0.1)',   tension: 0.4, fill: true };
-        const savingsDataset = { label: 'Savings', data: monthKeys.map(k => months[k].savings), borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)',  tension: 0.4, fill: true };
+        const incomeDataset  = { label: 'Income',  data: monthKeys.map(k => months[k].income),  borderColor: posColor, backgroundColor: hexWithAlpha(posColor, '1a'),  tension: 0.4, fill: true };
+        const expenseDataset = { label: expenseLabel, data: monthKeys.map(k => months[k].expense), borderColor: negColor, backgroundColor: hexWithAlpha(negColor, '1a'),   tension: 0.4, fill: true };
+        const savingsDataset = { label: 'Savings', data: monthKeys.map(k => months[k].savings), borderColor: accColor, backgroundColor: hexWithAlpha(accColor, '1a'),  tension: 0.4, fill: true };
 
         // A category filter narrows the chart down to that category's expense trend only —
         // mixing it with unfiltered income/savings totals would be misleading (wildly different scales).

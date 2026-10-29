@@ -32,19 +32,6 @@
     --stat-card-height:      130px;
     --stat-card-radius:      14px;
 
-    /* ===== Calm dark stat-card style (one shared card look, theme-agnostic) + per-card
-       accent tokens used only for the small icon badge and, where meaningful, the value text. ===== */
-    --card-dark-bg:          linear-gradient(160deg, #1c2b22 0%, #15201a 100%);
-    --card-dark-border:      rgba(255, 255, 255, 0.08);
-    --card-dark-text:        #f1f5f1;
-    --card-dark-text-muted:  rgba(241, 245, 241, 0.68);
-    --card-accent-income:    #34d399;
-    --card-accent-expense:   #f87171;
-    --card-accent-savings:   #60a5fa;
-    --card-accent-balance:   #fbbf24;
-    --card-accent-networth:  #22d3ee;
-    --card-hero-gradient:    linear-gradient(135deg,#b91c1c 0%,#e03c3c 45%,#f87171 100%);
-
     /* ===== Theme Variables â€” Light Mode ===== */
     --bg-body-1: #f0f4f0;
     --bg-body-2: #e8f1e8;
@@ -579,6 +566,92 @@
     --nav-active-text:       #d4e070;
 }
 
+/* ===================================================================
+   DASHBOARD DESIGN TOKENS (semantic, theme-driven)
+   These always resolve to a calm dark surface regardless of the global
+   light/dark mode toggle above — only --color-theme changes them.
+   Every theme defines the full token set so dashboard widgets never
+   fall back to a hard-coded color. --accent-soft/--border are derived
+   with color-mix() rather than being hand-picked per theme.
+   =================================================================== */
+:root {
+    /* Forest (default) */
+    --bg:            #0d1a0b;
+    --surface:       #15241a;
+    --surface-2:     #1c2b22;
+    --border:        rgba(255, 255, 255, 0.08);
+    --accent:        #2f8f5b;
+    --accent-soft:   color-mix(in srgb, var(--accent) 14%, transparent);
+    --on-accent:     #0b150f;
+    --text:          #e9f3ec;
+    --text-muted:    #a5c8a8;
+    --text-subtle:   #7faa84;
+    --positive:      #2dd4bf;
+    --negative:      #f87171;
+    --warning:       #fbbf24;
+
+    /* Shape / spacing tokens (shared by every theme) */
+    --radius:        16px;
+    --radius-sm:     10px;
+    --space-1:       8px;
+    --space-2:       16px;
+    --card-padding:  20px;
+    --font-label:    12px;
+    --font-body:     14px;
+    --font-title:    16px;
+    --font-hero:     32px;
+}
+
+[data-color-theme="wine"] {
+    --bg: #180208; --surface: #220310; --surface-2: #2c0415;
+    --border: rgba(255, 255, 255, 0.08);
+    --accent: #d4578a; --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent); --on-accent: #0d0105;
+    --text: #f5dbe4; --text-muted: #cc90a8; --text-subtle: #a06878;
+    --positive: #34d399; --negative: #ef4444; --warning: #fbbf24;
+}
+[data-color-theme="ocean"] {
+    --bg: #081525; --surface: #0e1d33; --surface-2: #132742;
+    --border: rgba(255, 255, 255, 0.08);
+    --accent: #1fa4c9; --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent); --on-accent: #051019;
+    --text: #d7eef5; --text-muted: #80b0c8; --text-subtle: #508898;
+    --positive: #34d399; --negative: #f87171; --warning: #fbbf24;
+}
+[data-color-theme="cafe-mocha"] {
+    --bg: #1a0f05; --surface: #22150a; --surface-2: #2c1c0d;
+    --border: rgba(255, 255, 255, 0.08);
+    --accent: #cbab86; --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent); --on-accent: #1c1006;
+    --text: #f3ecdd; --text-muted: #d4c4a0; --text-subtle: #a08060;
+    --positive: #34d399; --negative: #f87171; --warning: #fbbf24;
+}
+[data-color-theme="clover"] {
+    --bg: #0e1a08; --surface: #15260d; --surface-2: #1c3112;
+    --border: rgba(255, 255, 255, 0.08);
+    --accent: #79a854; --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent); --on-accent: #0b1507;
+    --text: #e4f3d4; --text-muted: #9ec880; --text-subtle: #70a050;
+    --positive: #2dd4bf; --negative: #f87171; --warning: #fbbf24;
+}
+[data-color-theme="palm"] {
+    --bg: #0e0810; --surface: #160c1a; --surface-2: #201124;
+    --border: rgba(255, 255, 255, 0.08);
+    --accent: #b85f8a; --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent); --on-accent: #0a0509;
+    --text: #f3ddee; --text-muted: #c090b8; --text-subtle: #906888;
+    --positive: #34d399; --negative: #f87171; --warning: #fbbf24;
+}
+[data-color-theme="dracula"] {
+    --bg: #0d0d0d; --surface: #161616; --surface-2: #1f1f1f;
+    --border: rgba(255, 255, 255, 0.08);
+    --accent: #d9506f; --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent); --on-accent: #0a0a0a;
+    --text: #f2f2f2; --text-muted: #cccccc; --text-subtle: #999999;
+    --positive: #34d399; --negative: #ef4444; --warning: #fbbf24;
+}
+[data-color-theme="obsidian"] {
+    --bg: #080808; --surface: #121212; --surface-2: #1a1a1a;
+    --border: rgba(255, 255, 255, 0.08);
+    --accent: #a3b35c; --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent); --on-accent: #0a0a08;
+    --text: #f0f0f0; --text-muted: #cccccc; --text-subtle: #888888;
+    --positive: #34d399; --negative: #f87171; --warning: #fbbf24;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -1067,58 +1140,44 @@ body.has-sidebar {
     opacity: 0.2;
 }
 
-/* ===== STAT CARDS ===== */
+/* ===== STAT CARDS (fully theme-driven — no hard-coded per-card colors) ===== */
 .stat-card {
-    border: none !important;
-    border-radius: 20px !important;
-    /* A true fixed height (not min-height) so every card is identical regardless of how many
-       lines its title/subtitle wrap to — .sc-title below is clamped to 2 lines specifically so
-       its content always fits within this. */
-    height: 176px !important;
-    min-height: 176px !important;
-    max-height: 176px !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius) !important;
+    background: var(--surface) !important;
+    min-height: 150px;
+    height: auto !important;
+    max-height: none !important;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.18) !important;
-    transition: transform 0.28s cubic-bezier(.23,1,.32,1), box-shadow 0.28s ease !important;
+    box-shadow: none !important;
+    transition: border-color 0.2s ease;
     animation: none !important;
 }
-/* Glossy corner sheen — same treatment on every card so they all read as one consistent family. */
-.stat-card::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(130% 100% at 100% 0%, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0) 55%);
-    pointer-events: none;
-}
+.stat-card::before { content: none; }
 .stat-card:hover {
-    transform: translateY(-6px) scale(1.025) !important;
-    box-shadow: 0 16px 48px rgba(0,0,0,0.28) !important;
+    transform: none !important;
+    border-color: var(--accent-soft) !important;
+    box-shadow: none !important;
 }
 
-/* Net Worth now carries an extra "Assets ৳…" sub-line, and the hero card's value font is
-   noticeably larger — both need a little more room than the fixed 176px used elsewhere so
-   nothing gets clipped (overflow stays hidden so the corner sheen is still contained). */
-.stat-card--networth, .stat-card--hero {
-    height: auto !important;
-    min-height: 176px !important;
-    max-height: none !important;
-}
+.stat-card--networth, .stat-card--hero { height: auto !important; min-height: 150px; max-height: none !important; }
 
-/* One consistent dark card look shared by every grid stat-card — individual cards are told
-   apart only by their small colored icon badge and (where meaningful) colored value text,
-   instead of six different bright per-card gradients. */
+/* Every card shares one calm surface — only the hero card gets a subtle accent treatment. */
 .stat-card--income, .stat-card--savings, .stat-card--balance, .stat-card--networth {
-    background: var(--card-dark-bg) !important;
-    border: 1px solid var(--card-dark-border) !important;
+    background: var(--surface) !important;
+    border: 1px solid var(--border) !important;
 }
-/* Hero card ("Total Expense") keeps the only gradient on the dashboard, per design. */
+/* Hero card ("Total Expense") — the ONLY card allowed an accent treatment: a soft gradient
+   from --accent-soft to transparent, plus a thin accent border on top. */
 .stat-card--hero {
-    background: var(--card-hero-gradient) !important;
+    background: linear-gradient(135deg, var(--accent-soft) 0%, transparent 70%), var(--surface) !important;
+    border: 1px solid var(--border) !important;
+    border-top: 3px solid var(--accent) !important;
 }
 
 .stat-card .card-body {
-    padding: 18px 18px 16px 18px !important;
+    padding: var(--card-padding) !important;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -1133,48 +1192,43 @@ body.has-sidebar {
     gap: 12px;
 }
 
-/* Small colored icon badge — only the hero card keeps the old white-circle treatment, since
-   it sits on a bright gradient rather than the shared dark card background. */
+/* Small colored icon badge — tinted with --accent-soft/--accent in every theme. */
 .sc-icon-circle {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-    background: rgba(255,255,255,0.08);
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    background: var(--accent-soft);
+    color: var(--accent);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.15rem;
+    font-size: 1.05rem;
     flex-shrink: 0;
 }
 .stat-card--hero .sc-icon-circle {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.92);
-    box-shadow: 0 4px 14px rgba(0,0,0,0.15);
-    color: #b91c1c;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    background: var(--accent-soft);
+    box-shadow: none;
+    color: var(--accent);
 }
 
-/* Icon badge background/color per card type — driven by the shared accent tokens above. */
-.stat-card--income  .sc-icon-circle { background: rgba(52,211,153,0.15); color: var(--card-accent-income); }
-.stat-card--savings .sc-icon-circle { background: rgba(96,165,250,0.15); color: var(--card-accent-savings); }
-.stat-card--balance .sc-icon-circle { background: rgba(251,191,36,0.15); color: var(--card-accent-balance); }
-.stat-card--networth .sc-icon-circle { background: rgba(34,211,238,0.15); color: var(--card-accent-networth); }
+/* All icon badges use the same accent token — cards are told apart by label/position, not color. */
+.stat-card--income  .sc-icon-circle,
+.stat-card--savings .sc-icon-circle,
+.stat-card--balance .sc-icon-circle,
+.stat-card--networth .sc-icon-circle { background: var(--accent-soft); color: var(--accent); }
 
 .sc-title-block {
     flex: 1;
     min-width: 0;
 }
 .sc-title {
-    font-size: 0.88rem;
+    font-size: var(--font-label);
     font-weight: 700;
-    color: #fff;
+    color: var(--text-muted);
     line-height: 1.25;
-    /* Clamp to 2 whole-word lines instead of an unbounded wrap (which, combined with the fixed
-       card height above, could otherwise overflow) or a mid-word break (which used to split
-       "Expense" into "Expens"/"e" on narrower cards) — word-break:normal keeps whole words
-       together, wrapping "Total Expense" as "Total"/"Expense" and only falling back to an
-       ellipsis on a label too long to fit even that way. */
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -1183,16 +1237,14 @@ body.has-sidebar {
     overflow-wrap: normal;
 }
 .sc-subtitle {
-    font-size: 0.72rem;
-    color: rgba(255,255,255,0.78);
+    font-size: var(--font-label);
+    color: var(--text-subtle);
     margin-top: 2px;
     display: flex;
     align-items: center;
     gap: 4px;
     min-width: 0;
 }
-/* Subtitle label text (e.g. "This month", "Total value · All time") — truncate with an
-   ellipsis on narrow cards instead of wrapping word-by-word into a multi-line mess. */
 .sc-subtitle .sc-month-label,
 .sc-subtitle .sc-subtitle-text {
     overflow: hidden;
@@ -1200,32 +1252,32 @@ body.has-sidebar {
     white-space: nowrap;
     min-width: 0;
 }
-.sc-trend-up   { color: #bbf7d0; }
-.sc-trend-down { color: #fecaca; }
+.sc-trend-up   { color: var(--positive); }
+.sc-trend-down { color: var(--negative); }
 
 /* "View breakdown" button — sits in .sc-bottom next to the amount (savings card only). */
 .sc-details-btn {
-    background: rgba(255,255,255,0.18);
-    border: none;
-    border-radius: 8px;
-    color: rgba(255,255,255,0.85);
-    width: 30px;
-    height: 30px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     transition: background 0.2s, color 0.2s;
     padding: 0;
     flex-shrink: 0;
 }
-.sc-details-btn:hover { background: rgba(255,255,255,0.35); color: #fff; }
+.sc-details-btn:hover { background: var(--accent-soft); color: var(--accent); }
 
 /* Divider */
 .sc-divider {
     border: none;
-    border-top: 1px solid rgba(255,255,255,0.25);
+    border-top: 1px solid var(--border);
     margin: 14px 0 12px;
 }
 
@@ -1237,51 +1289,52 @@ body.has-sidebar {
     gap: 8px;
 }
 
-/* Overlapping decorative circles — removed */
 .sc-deco-circles { display: none !important; }
 
 /* ── Amount ── */
 .stat-card-amount {
     font-weight: 800 !important;
-    color: #ffffff !important;
+    color: var(--text) !important;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     line-height: 1.1;
     margin: 0 !important;
-    font-size: clamp(1.3rem, 2.2vw, 1.8rem);
+    font-size: clamp(1.2rem, 2vw, 1.6rem);
     -webkit-text-fill-color: unset !important;
-    text-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    text-shadow: none;
     font-variant-numeric: tabular-nums;
 }
+/* Negative/positive amounts carry meaning only — set via a modifier class from JS, not per-card color. */
+.stat-card-amount.is-negative { color: var(--negative) !important; }
+.stat-card-amount.is-positive { color: var(--positive) !important; }
+
 /* Hero ("Total Expense") card gets a visibly larger value to read as the dashboard's focal point. */
 .stat-card-amount--hero {
-    font-size: clamp(1.8rem, 3vw, 2.6rem);
+    font-size: var(--font-hero);
 }
 /* Net Worth's merged "Assets ৳…" sub-line */
 .sc-sub-line {
-    font-size: 0.72rem;
-    color: var(--card-dark-text-muted);
+    font-size: var(--font-label);
+    color: var(--text-subtle);
     margin-top: 6px;
     font-variant-numeric: tabular-nums;
 }
 
-/* Individual card amount hidden — handled via JS text swap */
-
 /* Keep old classes from breaking anything */
 .stat-card .card-title {
-    font-size: 0.78rem !important;
+    font-size: var(--font-label) !important;
     font-weight: 600 !important;
-    color: rgba(255,255,255,0.8) !important;
+    color: var(--text-muted) !important;
     text-transform: uppercase;
     letter-spacing: 0.7px;
     margin-bottom: 6px !important;
     -webkit-text-fill-color: unset !important;
 }
 .stat-card-label {
-    font-size: 0.75rem;
+    font-size: var(--font-label);
     font-weight: 600;
-    color: rgba(255,255,255,0.8);
+    color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.8px;
     margin: 0;
@@ -1294,7 +1347,7 @@ body.has-sidebar {
 
 /* Responsive */
 @media (max-width: 768px) {
-    .stat-card { min-height: 140px !important; }
+    .stat-card { min-height: 130px; }
 }
 
 /* ===== CARDS ===== */
@@ -1548,15 +1601,15 @@ body.has-sidebar {
 }
 
 .btn-add-transaction {
-    background: var(--color-surface);
-    color: #f5f5f0;
+    background: var(--accent, var(--color-surface));
+    color: var(--on-accent, #f5f5f0);
     border: none;
     padding: 8px 18px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm, 8px);
     font-size: 0.85rem;
     font-weight: 600;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 8px rgba(31, 125, 83, 0.2);
+    box-shadow: none;
     text-decoration: none;
     display: inline-flex;
     align-items: center;
@@ -1565,14 +1618,199 @@ body.has-sidebar {
 }
 
 .btn-add-transaction:hover {
-    background: var(--color-accent);
-    color: #f5f5f0;
-    box-shadow: 0 4px 12px rgba(31, 125, 83, 0.35);
+    background: var(--accent, var(--color-accent));
+    color: var(--on-accent, #f5f5f0);
+    filter: brightness(1.08);
     transform: translateY(-1px);
 }
 
 .btn-add-transaction:active {
     transform: translateY(0);
+}
+
+/* ===== DASHBOARD TOP BAR (theme-token-driven) ===== */
+body.dashboard-page .dashboard-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 1015;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 0;
+    margin: 0 -0.75rem 1rem;
+}
+body.dashboard-page .dashboard-topbar-inner {
+    padding: 0 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+body.dashboard-page .dashboard-header-greeting {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+body.dashboard-page .dashboard-header-greeting #dashboardGreeting {
+    font-size: var(--font-title, 16px);
+    font-weight: 600;
+    color: var(--text);
+}
+body.dashboard-page .ach-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-radius: 999px;
+    padding: 4px 12px;
+    font-size: var(--font-label, 12px);
+    font-weight: 600;
+    text-decoration: none;
+    transition: filter 0.15s ease;
+}
+body.dashboard-page .ach-chip:hover { filter: brightness(1.1); color: var(--accent); }
+body.dashboard-page .ach-chip .ach-chip-sep { opacity: 0.6; }
+
+body.dashboard-page .dashboard-month-select {
+    width: auto;
+    min-width: 170px;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+}
+body.dashboard-page .dashboard-month-select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 0.2rem var(--accent-soft);
+}
+
+body.dashboard-page .icon-btn {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: var(--radius-sm, 10px);
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease;
+}
+body.dashboard-page .icon-btn:hover { border-color: var(--accent-soft); color: var(--accent); }
+body.dashboard-page .icon-btn .refresh-all-label { font-size: 0.75rem; font-weight: 600; }
+body.dashboard-page .icon-btn.is-spinning i { animation: dashIconSpin 0.8s linear infinite; }
+@keyframes dashIconSpin { to { transform: rotate(360deg); } }
+
+body.dashboard-page .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: var(--radius-sm, 10px);
+    padding: 8px 14px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+body.dashboard-page .btn-ghost:hover { border-color: var(--accent-soft); color: var(--accent); }
+body.dashboard-page .dashboard-more-dropdown .dropdown-menu {
+    background: var(--surface);
+    border: 1px solid var(--border);
+}
+body.dashboard-page .dashboard-more-dropdown .dropdown-item {
+    color: var(--text);
+}
+body.dashboard-page .dashboard-more-dropdown .dropdown-item:hover {
+    background: var(--surface-2);
+    color: var(--accent);
+}
+
+@media (max-width: 767.98px) {
+    body.dashboard-page .dashboard-topbar-inner { flex-direction: column; align-items: stretch; }
+    body.dashboard-page .dashboard-topbar-actions { justify-content: space-between; }
+    body.dashboard-page #openAddTxModalBtn { flex: 1 1 100%; justify-content: center; }
+}
+
+/* Slim "Upcoming Recurring Transactions" banner — replaces the old full-width card, shown only when items exist */
+body.dashboard-page .recurring-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--accent-soft);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm, 10px);
+    padding: 10px 16px;
+    margin-bottom: 1rem;
+    font-size: var(--font-body, 14px);
+}
+body.dashboard-page .recurring-banner i.fa-sync-alt { color: var(--accent); }
+body.dashboard-page .recurring-banner-text { flex: 1 1 auto; }
+body.dashboard-page .recurring-banner-link {
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-decoration: none;
+    white-space: nowrap;
+}
+body.dashboard-page .recurring-banner-link:hover { text-decoration: underline; }
+
+/* Quick Links strip — horizontal row of equal pills (Planner, Achievements, To-Do, Recurring, Loans, Wishlist) */
+body.dashboard-page .quick-links-strip {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+}
+body.dashboard-page .quick-link-pill {
+    flex: 1 1 0;
+    min-width: 150px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius, 16px);
+    padding: 12px 14px;
+    text-decoration: none;
+    color: var(--text);
+    transition: border-color 0.15s ease;
+}
+body.dashboard-page .quick-link-pill:hover { border-color: var(--accent-soft); }
+body.dashboard-page .qlp-icon {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm, 10px);
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+body.dashboard-page .qlp-text { min-width: 0; display: flex; flex-direction: column; }
+body.dashboard-page .qlp-label { font-size: 0.8rem; font-weight: 600; color: var(--text); }
+body.dashboard-page .qlp-sub {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+body.dashboard-page .qlp-badge {
+    margin-left: auto;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 0.72rem;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 2px 8px;
+    flex-shrink: 0;
+}
+
+@media (max-width: 575.98px) {
+    body.dashboard-page .quick-link-pill { min-width: 130px; }
 }
 
 .btn-outline-primary {
@@ -2826,13 +3064,13 @@ h3.stat-card-amount,
     --tx-transfer-color: #94a3b8;
 }
 
-/* ── Dark mode: stat card icon circles stay readable ── */
-[data-theme="dark"] .stat-card--income  .sc-icon-circle { background: rgba(74,222,128,0.2);  color: #4ade80; }
-[data-theme="dark"] .stat-card--expense .sc-icon-circle { background: rgba(248,113,113,0.2); color: #f87171; }
-[data-theme="dark"] .stat-card--savings .sc-icon-circle { background: rgba(96,165,250,0.2);  color: #60a5fa; }
-[data-theme="dark"] .stat-card--balance .sc-icon-circle { background: rgba(251,191,36,0.2);  color: #fbbf24; }
-[data-theme="dark"] .stat-card--assets  .sc-icon-circle { background: rgba(167,139,250,0.2); color: #a78bfa; }
-[data-theme="dark"] .stat-card--networth .sc-icon-circle { background: rgba(34,211,238,0.2); color: #22d3ee; }
+/* ── Dark mode: stat card icon circles use the same theme-driven accent, no per-card hex ── */
+[data-theme="dark"] .stat-card--income  .sc-icon-circle,
+[data-theme="dark"] .stat-card--expense .sc-icon-circle,
+[data-theme="dark"] .stat-card--savings .sc-icon-circle,
+[data-theme="dark"] .stat-card--balance .sc-icon-circle,
+[data-theme="dark"] .stat-card--assets  .sc-icon-circle,
+[data-theme="dark"] .stat-card--networth .sc-icon-circle { background: var(--accent-soft); color: var(--accent); }
 
 [data-theme="dark"] .tx-page-btn,
 [data-theme="dark"] .tx-page-num {
@@ -3212,6 +3450,70 @@ h3.stat-card-amount,
     box-shadow: none;
 }
 
+/* ===== Dashboard page only: slim theme-driven section header =====
+   Replaces the filled accent-colored bar with a thin bottom divider; the icon glyph already
+   present in every header's <h6> becomes a small accent-soft badge instead of a plain white
+   icon, and the right-side link/button reads in --accent on transparent, not white-on-fill. */
+body.dashboard-page .dashboard-card-header {
+    background: transparent;
+    color: var(--text);
+    padding: 0 0 12px;
+    height: auto;
+    min-height: auto;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 14px;
+}
+body.dashboard-page .dashboard-card-header h6 {
+    color: var(--text);
+    font-size: var(--font-title);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+}
+body.dashboard-page .dashboard-card-header h6 i:first-child {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 0.85rem;
+    margin-right: 10px !important;
+}
+body.dashboard-page .dashboard-card-header .btn-outline-primary,
+body.dashboard-page .dashboard-card-header .btn-primary {
+    color: var(--accent);
+}
+body.dashboard-page .dashboard-card-header .btn-outline-primary:hover,
+body.dashboard-page .dashboard-card-header .btn-primary:hover {
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+/* "Updated 2m ago" text + spinning refresh icon button, used by widgets with onRefresh wired up */
+body.dashboard-page .widget-updated-at {
+    font-size: var(--font-label);
+    color: var(--text-subtle);
+    white-space: nowrap;
+}
+body.dashboard-page .widget-refresh-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    width: 26px;
+    height: 26px;
+    border-radius: var(--radius-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+body.dashboard-page .widget-refresh-btn:hover { background: var(--accent-soft); color: var(--accent); }
+body.dashboard-page .widget-refresh-btn.is-spinning i { animation: widgetRefreshSpin 0.8s linear infinite; }
+@keyframes widgetRefreshSpin { to { transform: rotate(360deg); } }
+
 /* Compact toggle buttons — same size in every header */
 .dashboard-chart-toggle { display: flex; gap: 0; }
 .dashboard-chart-toggle .btn {
@@ -3256,13 +3558,8 @@ h3.stat-card-amount,
     box-shadow: none !important;
 }
 
-/* Left-border accent on hover */
-.summary-stat-row.stat-card--income:hover  { border-left: 3px solid #1a9e5c !important; }
-.summary-stat-row.stat-card--expense:hover { border-left: 3px solid #e03c3c !important; }
-.summary-stat-row.stat-card--savings:hover { border-left: 3px solid #2563eb !important; }
-.summary-stat-row.stat-card--balance:hover { border-left: 3px solid #d97706 !important; }
-.summary-stat-row.stat-card--assets:hover  { border-left: 3px solid #7c3aed !important; }
-.summary-stat-row.stat-card--networth:hover{ border-left: 3px solid #0e7490 !important; }
+/* Left-border accent on hover — one theme-driven accent, not six per-card hues */
+.summary-stat-row.stat-card:hover { border-left: 3px solid var(--accent) !important; }
 
 .summary-stat-inner {
     display: flex;
@@ -3285,13 +3582,8 @@ h3.stat-card-amount,
 }
 .summary-stat-row:hover .summary-stat-icon { transform: scale(1.12); }
 
-/* Icon colors per type */
-.stat-card--income.summary-stat-row  .summary-stat-icon { background: rgba(26,158,92,0.15);  color: #1a9e5c; }
-.stat-card--expense.summary-stat-row .summary-stat-icon { background: rgba(224,60,60,0.15);   color: #e03c3c; }
-.stat-card--savings.summary-stat-row .summary-stat-icon { background: rgba(37,99,235,0.15);   color: #2563eb; }
-.stat-card--balance.summary-stat-row .summary-stat-icon { background: rgba(217,119,6,0.15);   color: #d97706; }
-.stat-card--assets.summary-stat-row  .summary-stat-icon { background: rgba(124,58,237,0.15);  color: #7c3aed; }
-.stat-card--networth.summary-stat-row .summary-stat-icon{ background: rgba(14,116,144,0.15);  color: #0e7490; }
+/* Icon badges — one theme-driven accent for every row, cards are told apart by label only */
+.summary-stat-row .summary-stat-icon { background: var(--accent-soft); color: var(--accent); }
 
 /* Text block */
 .summary-stat-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
@@ -3307,14 +3599,9 @@ h3.stat-card-amount,
     line-height: 1.2;
     text-shadow: none !important;
 }
-/* Amount color per type — !important needed to beat the global white
-   .stat-card-amount rule (designed for the colored gradient stat cards) */
-.stat-card--income.summary-stat-row  .stat-card-amount { color: #1a9e5c !important; }
-.stat-card--expense.summary-stat-row .stat-card-amount { color: #e03c3c !important; }
-.stat-card--savings.summary-stat-row .stat-card-amount { color: #2563eb !important; }
-.stat-card--balance.summary-stat-row .stat-card-amount { color: #d97706 !important; }
-.stat-card--assets.summary-stat-row  .stat-card-amount { color: #7c3aed !important; }
-.stat-card--networth.summary-stat-row .stat-card-amount{ color: #0e7490 !important; }
+/* Amount color — only the expense row is inherently a negative flow; everything else stays
+   --text unless JS adds .is-negative/.is-positive (net balance / net worth can go either way). */
+.stat-card--expense.summary-stat-row .stat-card-amount { color: var(--negative) !important; }
 
 /* "View breakdown" button for the compact/summary savings row */
 .summary-details-btn {
@@ -3333,32 +3620,15 @@ h3.stat-card-amount,
     color: var(--text-body);
 }
 
-/* Dark mode */
-[data-theme="dark"] .stat-card--income.summary-stat-row  .summary-stat-icon { background: rgba(74,222,128,0.18);  color: #4ade80; }
-[data-theme="dark"] .stat-card--expense.summary-stat-row .summary-stat-icon { background: rgba(248,113,113,0.18); color: #f87171; }
-[data-theme="dark"] .stat-card--savings.summary-stat-row .summary-stat-icon { background: rgba(96,165,250,0.18);  color: #60a5fa; }
-[data-theme="dark"] .stat-card--balance.summary-stat-row .summary-stat-icon { background: rgba(251,191,36,0.18);  color: #fbbf24; }
-[data-theme="dark"] .stat-card--assets.summary-stat-row  .summary-stat-icon { background: rgba(167,139,250,0.18); color: #a78bfa; }
-[data-theme="dark"] .stat-card--networth.summary-stat-row .summary-stat-icon{ background: rgba(34,211,238,0.18);  color: #22d3ee; }
-
-[data-theme="dark"] .stat-card--income.summary-stat-row  .stat-card-amount { color: #4ade80 !important; }
-[data-theme="dark"] .stat-card--expense.summary-stat-row .stat-card-amount { color: #f87171 !important; }
-[data-theme="dark"] .stat-card--savings.summary-stat-row .stat-card-amount { color: #60a5fa !important; }
-[data-theme="dark"] .stat-card--balance.summary-stat-row .stat-card-amount { color: #fbbf24 !important; }
-[data-theme="dark"] .stat-card--assets.summary-stat-row  .stat-card-amount { color: #a78bfa !important; }
-[data-theme="dark"] .stat-card--networth.summary-stat-row .stat-card-amount{ color: #22d3ee !important; }
+/* Dark mode: icon badges already theme-driven above; no per-mode override needed. */
 
 [data-theme="dark"] .summary-details-btn { color: rgba(255,255,255,0.4); }
 [data-theme="dark"] .summary-details-btn:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.85); }
 
 /* ===== ACCOUNT BALANCE SUMMARY WIDGET ===== */
 .acct-summary-card .card-body { padding: 0 !important; }
-.acct-icon { width: 34px; height: 34px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
-.acct-icon-bank   { background: rgba(59,130,246,0.15); color: #2563eb; }
-.acct-icon-card   { background: rgba(139,92,246,0.15); color: #7c3aed; }
-.acct-icon-credit { background: rgba(220,38,38,0.15);  color: #dc2626; }
-.acct-icon-mfs    { background: rgba(16,185,129,0.15); color: #059669; }
-.acct-icon-cash   { background: rgba(245,158,11,0.15); color: #d97706; }
+.acct-icon { width: 34px; height: 34px; border-radius: var(--radius-sm); display: inline-flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; background: var(--accent-soft); color: var(--accent); }
+.acct-icon-credit { background: color-mix(in srgb, var(--negative) 15%, transparent); color: var(--negative); }
 .acct-summary-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .acct-summary-item { border-bottom: 1px solid var(--border-color, #e5e7eb); padding: 0; display: flex; flex-direction: column; }
 .acct-summary-item:last-child { border-bottom: none; }
