@@ -145,7 +145,7 @@
             line-height: 1.15;
             white-space: nowrap;
         }
-        .asset-summary-value.is-masked { filter: blur(6px); opacity: 0.55; user-select: none; }
+        .asset-summary-value.is-masked { filter: none; opacity: 1; user-select: none; }
         .asset-rates-card {
             padding: 12px 16px;
             background: var(--surface);
@@ -187,77 +187,328 @@
         .asset-price-details .gp-price-table-wrap { border-top: 0; }
         .asset-price-details .asset-table thead th { background: var(--surface-2); color: var(--text); }
         .asset-inventory-header {
-            background: linear-gradient(135deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 72%, var(--surface)) 100%) !important;
-            color: var(--on-accent) !important;
-            padding: 12px 20px !important;
-            border-bottom: 0 !important;
-            border-radius: var(--radius) var(--radius) 0 0 !important;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 0 0 12px;
+            margin-bottom: 14px;
+            background: transparent;
+            border: 0;
+            border-bottom: 1px solid var(--border);
+            border-radius: 0;
         }
-        .asset-inventory-header h6 { color: var(--on-accent) !important; font-size: 16px; }
-        .asset-inventory-header .tx-filter-select,
-        .asset-inventory-header .tx-filter-search,
-        .asset-inventory-header .btn {
-            background: color-mix(in srgb, var(--on-accent) 12%, transparent) !important;
-            border: 1px solid color-mix(in srgb, var(--on-accent) 35%, transparent) !important;
-            color: var(--on-accent) !important;
+        .asset-inventory-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0;
+            color: var(--text);
+            font-size: 16px;
+            font-weight: 600;
+            white-space: nowrap;
         }
-        .asset-inventory-header .tx-filter-select option { background: var(--surface); color: var(--text); }
-        .asset-inventory-header .tx-filter-select:focus,
-        .asset-inventory-header .tx-filter-search:focus {
-            border-color: var(--on-accent) !important;
-            box-shadow: 0 0 0 2px color-mix(in srgb, var(--on-accent) 20%, transparent);
+        .asset-inventory-title-icon {
+            display: inline-flex;
+            width: 28px;
+            height: 28px;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-sm);
+            background: var(--accent-soft);
+            color: var(--accent);
+            font-size: 13px;
         }
-        .asset-inventory-header .tx-filter-search::placeholder { color: color-mix(in srgb, var(--on-accent) 72%, transparent); }
-        .asset-inventory-header .filter-bar { flex-wrap: wrap; }
-        .asset-inventory-header #searchInput { width: 170px; }
-        .asset-inventory-header #filterPurity { width: 125px; }
-        .asset-inventory-header #filterType { width: 115px; }
-        .asset-inventory-header #pageSizeSelect { width: 90px; }
-        .asset-inventory-header #sellDiscount { width: 58px; }
-        .asset-inventory-header .sell-disc-wrap { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; color: var(--on-accent); font-size: 12px; }
-        #inventoryAssetTable { table-layout: fixed; width: 100%; min-width: 1320px; }
+        .asset-inventory-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .asset-inventory-search {
+            position: relative;
+            flex: 0 1 190px;
+            min-width: 160px;
+        }
+        .asset-inventory-search > i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            z-index: 1;
+            color: var(--text-muted);
+            font-size: 12px;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+        body.dashboard-page .asset-inventory-header .tx-filter-select,
+        body.dashboard-page .asset-inventory-header .tx-filter-search,
+        body.dashboard-page .asset-inventory-header .asset-sell-input {
+            box-sizing: border-box;
+            height: 36px;
+            padding: 0 10px;
+            border: 1px solid var(--border) !important;
+            border-radius: 10px !important;
+            background-color: var(--surface-2) !important;
+            color: var(--text) !important;
+            font-size: 13px !important;
+            font-weight: 400 !important;
+            letter-spacing: normal;
+            text-transform: none;
+            box-shadow: none;
+        }
+        body.dashboard-page .asset-inventory-header .tx-filter-search { width: 100%; padding-left: 32px; }
+        body.dashboard-page .asset-inventory-header .tx-filter-select { min-width: 0; max-width: none; cursor: pointer; }
+        body.dashboard-page .asset-inventory-header #filterPurity { width: 122px; }
+        body.dashboard-page .asset-inventory-header #filterType { width: 112px; }
+        body.dashboard-page .asset-inventory-header #pageSizeSelect { width: 94px; }
+        body.dashboard-page .asset-inventory-header .tx-filter-select option { background: var(--surface); color: var(--text); }
+        body.dashboard-page .asset-inventory-header .tx-filter-select:focus,
+        body.dashboard-page .asset-inventory-header .tx-filter-search:focus,
+        body.dashboard-page .asset-inventory-header .asset-sell-input:focus {
+            border-color: var(--accent) !important;
+            box-shadow: 0 0 0 3px var(--accent-soft) !important;
+            outline: 0;
+        }
+        body.dashboard-page .asset-inventory-header .tx-filter-search::placeholder { color: var(--text-muted); opacity: 1; }
+        .asset-sell-wrap {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            height: 36px;
+            padding: 0 8px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--surface-2);
+            white-space: nowrap;
+        }
+        .asset-sell-wrap label { margin: 0; color: var(--text-muted); font-size: 12px; }
+        body.dashboard-page .asset-inventory-header .asset-sell-input {
+            width: 48px;
+            height: 28px;
+            padding: 0 4px;
+            text-align: center;
+        }
+        .asset-inventory-icon-btn {
+            display: inline-flex;
+            width: 36px;
+            height: 36px;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid transparent !important;
+            border-radius: 10px !important;
+            background: transparent !important;
+            color: var(--text-muted) !important;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+        }
+        .asset-inventory-icon-btn:hover,
+        .asset-inventory-icon-btn:focus-visible {
+            border-color: var(--border) !important;
+            background: var(--accent-soft) !important;
+            color: var(--accent) !important;
+            outline: 0;
+        }
+        #inventoryAssetTable { table-layout: fixed; width: 100%; min-width: 0; border-collapse: separate; border-spacing: 0; }
         #inventoryAssetTable th, #inventoryAssetTable td { vertical-align: middle; }
         #inventoryAssetTable th[data-align="right"], #inventoryAssetTable td[data-align="right"] { text-align: right; }
         #inventoryAssetTable th[data-align="center"], #inventoryAssetTable td[data-align="center"] { text-align: center; }
-        #inventoryAssetTable th[data-column="gain"], #inventoryAssetTable td[data-column="gain"],
+        #inventoryAssetTable thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            padding: 11px 10px;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            line-height: 1.2;
+            text-transform: uppercase;
+        }
+        #inventoryAssetTable thead th[data-column="asset"],
+        #inventoryAssetTable thead th[data-column="type"],
+        #inventoryAssetTable thead th[data-column="purity"],
+        #inventoryAssetTable thead th[data-column="weight"] { text-align: left; }
+        #inventoryAssetTable tbody tr { background: transparent; transition: background-color 150ms ease; }
+        #inventoryAssetTable tbody tr:nth-child(even) { background: transparent; }
+        #inventoryAssetTable tbody tr:hover,
+        #inventoryAssetTable tbody tr:focus-within { background: color-mix(in srgb, var(--accent-soft) 40%, transparent); }
+        #inventoryAssetTable tbody td {
+            height: 64px;
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--border);
+            background: transparent;
+            color: var(--text);
+            font-size: 14px;
+        }
         #inventoryAssetTable th[data-column="currentValue"], #inventoryAssetTable td[data-column="currentValue"],
         #inventoryAssetTable th[data-column="purchasePrice"], #inventoryAssetTable td[data-column="purchasePrice"],
         #inventoryAssetTable th[data-column="sellPrice"], #inventoryAssetTable td[data-column="sellPrice"] {
             white-space: nowrap;
+            font-size: 14px;
             font-variant-numeric: tabular-nums;
         }
-        #inventoryAssetTable th[data-column="gain"], #inventoryAssetTable td[data-column="gain"] { min-width: 190px; }
+        #inventoryAssetTable td[data-column="currentValue"] { color: var(--text); font-weight: 600; }
+        #inventoryAssetTable td[data-column="purchasePrice"],
+        #inventoryAssetTable td[data-column="sellPrice"] { color: var(--text); font-weight: 400; }
+        #inventoryAssetTable th[data-column="gain"], #inventoryAssetTable td[data-column="gain"] { white-space: nowrap; }
+        #inventoryAssetTable td[data-column="actions"],
         #inventoryAssetTable th[data-column="actions"],
-        #inventoryAssetTable tbody tr[data-id] td[data-column="actions"],
-        #inventoryAssetTable tfoot td:last-child { padding-right: 88px; }
+        #inventoryAssetTable tfoot td[data-column="actions"] { padding-right: 88px; }
         #inventoryAssetTable td[data-column="actions"] .d-flex { justify-content: flex-end; }
-        .asset-inventory-pagination { padding-right: 96px !important; }
-        .asset-inventory-pagination .page-link {
-            background: var(--surface);
-            border-color: var(--border);
+        .asset-cell-copy { min-width: 0; }
+        .asset-name, .asset-note {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .asset-name { color: var(--text); font-weight: 500; }
+        .asset-note { max-width: 100%; color: var(--text-muted); font-size: 12px; }
+        .asset-type-icon {
+            border-radius: 9px;
+            background: var(--accent-soft);
+            color: var(--accent);
+        }
+        .asset-type-pill {
+            display: inline-flex;
+            max-width: 100%;
+            align-items: center;
+            padding: 4px 8px;
+            overflow: hidden;
+            border-radius: 999px;
+            background: var(--surface-2);
             color: var(--text-muted);
+            font-size: 12px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        #inventoryAssetTable .asset-purity-badge {
+            padding: 4px 8px;
+            border: 1px solid var(--accent-soft);
+            background: var(--accent-soft);
+            color: var(--accent);
+            font-size: 12px;
+        }
+        .asset-weight-value, .asset-weight-breakdown { display: block; white-space: nowrap; }
+        .asset-weight-value { color: var(--text); font-size: 13px; font-variant-numeric: tabular-nums; }
+        .asset-weight-breakdown { overflow: hidden; color: var(--text-muted); font-size: 11px; text-overflow: ellipsis; }
+        .asset-gain {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-variant-numeric: tabular-nums;
+            font-weight: 600;
+        }
+        .asset-gain.gain-positive { background: color-mix(in srgb, var(--positive) 14%, transparent); color: var(--positive); }
+        .asset-gain.gain-negative { background: color-mix(in srgb, var(--negative) 14%, transparent); color: var(--negative); }
+        .asset-action-btn {
+            display: inline-flex;
+            width: 32px;
+            height: 32px;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            border: 0;
+            border-radius: 8px;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            opacity: 0.6;
+            transition: background-color 150ms ease, color 150ms ease, opacity 150ms ease;
+        }
+        #inventoryAssetTable tbody tr:hover .asset-action-btn,
+        #inventoryAssetTable tbody tr:focus-within .asset-action-btn { opacity: 1; }
+        .asset-action-edit:hover, .asset-action-edit:focus-visible { background: var(--accent-soft); color: var(--accent); }
+        .asset-action-delete:hover, .asset-action-delete:focus-visible { background: color-mix(in srgb, var(--negative) 14%, transparent); color: var(--negative); }
+        .asset-action-edit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        .asset-action-delete:focus-visible { outline: 2px solid var(--negative); outline-offset: 2px; }
+        .drag-handle-btn { color: var(--text-muted); }
+        #inventoryAssetTable tbody tr:hover .drag-handle-btn { color: var(--text); }
+        #inventoryAssetTable tfoot td {
+            padding: 11px 10px;
+            border-top: 1px solid var(--border);
+            background: var(--surface-2);
+            color: var(--text);
+            font-size: 13px;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+        .asset-inventory-pagination { padding: 12px 96px 12px 12px !important; }
+        .asset-inventory-pagination #paginationInfo { color: var(--text-muted); font-size: 12px; }
+        .asset-inventory-pagination .pagination { gap: 6px; }
+        .asset-inventory-pagination .page-link {
+            display: inline-flex;
+            min-width: 32px;
+            height: 32px;
+            align-items: center;
+            justify-content: center;
+            padding: 0 8px;
+            border: 1px solid var(--border);
+            border-radius: 8px !important;
+            background: var(--surface);
+            color: var(--text-muted);
+            font-size: 12px;
+            text-decoration: none;
         }
         .asset-inventory-pagination .page-link:hover,
-        .asset-inventory-pagination .page-link:focus {
+        .asset-inventory-pagination .page-link:focus-visible {
             background: var(--surface-2);
-            border-color: var(--border);
+            border-color: var(--accent);
             color: var(--text);
         }
         .asset-inventory-pagination .page-item.active .page-link {
             background: var(--accent-soft);
-            border-color: var(--border);
+            border-color: var(--accent-soft);
             color: var(--accent);
         }
-        .asset-inventory-pagination .page-item.disabled .page-link {
-            background: var(--surface);
-            border-color: var(--border);
-            color: var(--text-muted);
-            opacity: 0.6;
+        .asset-inventory-pagination .page-item.disabled .page-link { opacity: 0.4; pointer-events: none; }
+        .inventory-table-wrap { overflow: visible; }
+        @media (max-width: 1099.98px) {
+            .inventory-table-wrap { overflow-x: auto; }
+            #inventoryAssetTable { min-width: 1260px; }
+            #inventoryAssetTable th[data-column="drag"],
+            #inventoryAssetTable td[data-column="drag"] {
+                position: sticky;
+                left: 0;
+                z-index: 2;
+                background: var(--surface);
+            }
+            #inventoryAssetTable th[data-column="asset"],
+            #inventoryAssetTable td[data-column="asset"] {
+                position: sticky;
+                left: 36px;
+                z-index: 1;
+                background: var(--surface);
+            }
+            #inventoryAssetTable thead th[data-column="drag"] { z-index: 4; }
+            #inventoryAssetTable tbody tr:hover td[data-column="asset"],
+            #inventoryAssetTable tbody tr:focus-within td[data-column="asset"] {
+                background: color-mix(in srgb, var(--accent-soft) 40%, var(--surface));
+            }
+            #inventoryAssetTable thead th[data-column="asset"] { z-index: 3; }
         }
         @media (max-width: 767.98px) {
             .asset-summary-grid { grid-template-columns: 1fr; }
+            .asset-inventory-header { align-items: stretch; }
+            .asset-inventory-toolbar { justify-content: flex-start; }
+            .asset-inventory-search { flex: 1 1 100%; }
         }
-
+        @media (hover: none) {
+            .asset-action-btn { opacity: 1; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            #inventoryAssetTable tbody tr,
+            .asset-inventory-icon-btn,
+            .asset-action-btn { transition: none; }
+        }
         /* ═══ WEIGHT CONVERTER ═══ */
         .weight-input-group { position: relative; }
         .weight-input-group input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
@@ -276,11 +527,10 @@
             align-items: center;
             justify-content: center;
             font-size: 1.0rem;
-            background: rgba(212,175,55,0.15);
-            color: #b8860b;
+            background: var(--accent-soft);
+            color: var(--accent);
             flex-shrink: 0;
         }
-        [data-theme="dark"] .asset-type-icon { color: #f0d060; background: rgba(212,175,55,0.12); }
 
         /* ═══ GOLD INVENTORY — DRAG-AND-DROP ROW REORDERING ═══ */
         .drag-handle-cell { width: 34px; text-align: center; vertical-align: middle; }
@@ -291,14 +541,14 @@
             width: 26px; height: 26px;
             border: none;
             background: transparent;
-            color: var(--text-muted-custom);
+            color: var(--text-muted);
             cursor: grab;
             border-radius: 6px;
             font-size: 0.85rem;
             touch-action: none;
         }
-        .drag-handle-btn:hover { background: var(--nav-active-bg); color: var(--color-accent); }
-        .drag-handle-btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+        .drag-handle-btn:hover { background: var(--accent-soft); color: var(--accent); }
+        .drag-handle-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
         .drag-handle-btn:active { cursor: grabbing; }
         .drag-handle-btn.disabled {
             opacity: 0.35;
@@ -307,18 +557,18 @@
         }
         #assetTableBody tr.gp-row-ghost {
             opacity: 0.4;
-            background: var(--nav-active-bg);
+            background: var(--accent-soft);
         }
         #assetTableBody tr.gp-row-chosen {
-            box-shadow: 0 6px 16px rgba(0,0,0,0.25);
-            background: var(--bg-card);
+            box-shadow: 0 6px 16px color-mix(in srgb, var(--text) 20%, transparent);
+            background: var(--surface);
         }
         #assetTableBody tr.gp-row-drag {
-            box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+            box-shadow: 0 10px 24px color-mix(in srgb, var(--text) 28%, transparent);
         }
         .gp-reorder-hint {
             font-size: 0.72rem;
-            color: var(--text-muted-custom);
+            color: var(--text-muted);
             padding: 4px 12px 0;
         }
 
@@ -466,12 +716,14 @@
     <div class="row">
         <div class="col-md-12">
             <div class="card">
-                <div class="card-header asset-inventory-header d-flex align-items-center justify-content-between flex-wrap gap-2">
-                    <h6 class="mb-0"><i class="fas fa-gem me-2"></i>Gold Inventory</h6>
-                    <div class="d-flex align-items-center gap-2 flex-wrap">
-                        <div class="filter-bar">
-                            <input type="text" class="form-control form-control-sm tx-filter-search" id="searchInput" placeholder="Search assets…" autocomplete="off" oninput="renderTable()">
-                            <select class="form-select form-select-sm tx-filter-select" id="filterPurity" onchange="renderTable()">
+                <div class="card-header asset-inventory-header">
+                    <h6 class="asset-inventory-title"><span class="asset-inventory-title-icon"><i class="fas fa-gem"></i></span>Gold Inventory</h6>
+                    <div class="asset-inventory-toolbar">
+                        <div class="asset-inventory-search">
+                            <i class="fas fa-search" aria-hidden="true"></i>
+                            <input type="text" class="form-control tx-filter-search" id="searchInput" placeholder="Search assets…" autocomplete="off" oninput="renderTable()">
+                        </div>
+                        <select class="form-select tx-filter-select" id="filterPurity" aria-label="Filter by purity" onchange="renderTable()">
                                 <option value="">All Purities</option>
                                 <option value="22K">22K</option>
                                 <option value="21K">21K</option>
@@ -480,34 +732,33 @@
                                 <option value="TRADITIONAL">Traditional</option>
                                 <option value="CUSTOM">Custom</option>
                             </select>
-                            <select class="form-select form-select-sm tx-filter-select" id="filterType" onchange="renderTable()">
+                            <select class="form-select tx-filter-select" id="filterType" aria-label="Filter by type" onchange="renderTable()">
                                 <option value="">All Types</option>
                                 <option value="ORNAMENT">Ornament</option>
                                 <option value="BAR">Bar</option>
                                 <option value="COIN">Coin</option>
                                 <option value="CUSTOM">Custom</option>
                             </select>
-                            <select class="form-select form-select-sm tx-filter-select" id="pageSizeSelect" title="Rows per page" onchange="setPageSize(this.value)">
+                            <select class="form-select tx-filter-select" id="pageSizeSelect" title="Rows per page" aria-label="Rows per page" onchange="setPageSize(this.value)">
                                 <option value="5">5 / page</option>
                                 <option value="10" selected>10 / page</option>
                                 <option value="20">20 / page</option>
                                 <option value="50">50 / page</option>
                                 <option value="100">100 / page</option>
                             </select>
-                            <div class="sell-disc-wrap">
+                            <div class="asset-sell-wrap">
                                 <label for="sellDiscount">Sell −</label>
-                                <input type="number" class="form-control form-control-sm" id="sellDiscount" value="17" min="0" max="100" step="0.1" oninput="setSellDiscount(this.value)">
+                                <input type="number" class="form-control asset-sell-input" id="sellDiscount" value="17" min="0" max="100" step="0.1" aria-label="Sell price deduction percentage" oninput="setSellDiscount(this.value)">
                                 <label for="sellDiscount">%</label>
                             </div>
-                            <button type="button" class="btn btn-sm" id="assetImportBtn" title="Import gold assets from CSV" aria-label="Import gold assets from CSV" onclick="document.getElementById('assetImportFileInput').click()"><i class="fas fa-file-import"></i></button>
-                            <button type="button" class="btn btn-sm" id="assetExportBtn" title="Export filtered gold assets to CSV" aria-label="Export filtered gold assets to CSV" onclick="exportFilteredAssetsToCsv()"><i class="fas fa-file-export"></i></button>
-                        </div>
+                            <button type="button" class="asset-inventory-icon-btn" id="assetImportBtn" title="Import" aria-label="Import" onclick="document.getElementById('assetImportFileInput').click()"><i class="fas fa-file-import" aria-hidden="true"></i></button>
+                            <button type="button" class="asset-inventory-icon-btn" id="assetExportBtn" title="Export" aria-label="Export" onclick="exportFilteredAssetsToCsv()"><i class="fas fa-file-export" aria-hidden="true"></i></button>
                         <input type="file" id="assetImportFileInput" accept=".csv" style="display:none;" onchange="handleAssetImportFile(this)">
                     </div>
                 </div>
                 <div class="gp-reorder-hint" id="reorderHint"></div>
                 <div class="card-body p-0">
-                    <div class="table-responsive">
+                    <div class="inventory-table-wrap">
                         <table class="table asset-table mb-0" id="inventoryAssetTable">
                             <colgroup id="inventoryTableColumns"></colgroup>
                             <thead><tr id="inventoryTableHeader"></tr></thead>
