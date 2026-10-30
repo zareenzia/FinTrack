@@ -23,13 +23,102 @@
     let syncPollTimer = null;
     let sellDiscountPct = 17;   // default sell deduction %
 
+    const INVENTORY_COLUMNS = [
+        {
+            id: 'drag', label: '', width: '36px', align: 'center',
+            render: asset => `<button type="button" class="drag-handle-btn" data-id="${asset.id}"
+                    title="Drag to reorder, or focus and press Arrow Up/Down"
+                    aria-label="Reorder ${escHtml(asset.assetName)}" aria-roledescription="Sortable row handle">
+                <i class="fas fa-grip-vertical"></i>
+            </button>`
+        },
+        {
+            id: 'asset', label: 'Asset', width: '17%', align: 'left',
+            render: asset => `<div class="d-flex align-items-center gap-2">
+                <div class="asset-type-icon">${goldTypeIcon(asset.goldType)}</div>
+                <div>
+                    <div class="fw-semibold" style="cursor:pointer;" onclick="openDetailModal(${asset.id})">${escHtml(asset.assetName)}</div>
+                    ${asset.description ? `<small class="text-muted">${escHtml(asset.description)}</small>` : ''}
+                </div>
+            </div>`
+        },
+        { id: 'type', label: 'Type', width: '7%', align: 'left', render: asset => `<small class="text-muted">${fmtGoldType(asset.goldType)}</small>` },
+        { id: 'purity', label: 'Purity', width: '7%', align: 'left', render: asset => purityBadge(asset.purity) },
+        {
+            id: 'weight', label: 'Weight', width: '9%', align: 'left',
+            render: asset => {
+                const conversions = asset.weightConversions || convertAll(asset.weight, asset.weightUnit);
+                const grams = conversions.GRAM || 0;
+                const unit = asset.weightUnit.charAt(0) + asset.weightUnit.slice(1).toLowerCase();
+                return `<span class="asset-nowrap">${asset.weight} ${unit}</span><small class="d-block text-muted">${formatVoriBreakdown(grams)}</small>`;
+            }
+        },
+        { id: 'currentValue', label: 'Current Value', width: '10%', align: 'right', render: asset => asset.currentValue ? `৳${fmt(asset.currentValue)}` : '<span class="text-muted">—</span>' },
+        { id: 'purchasePrice', label: 'Purchase Price', width: '11%', align: 'right', render: asset => asset.purchasePrice ? `৳${fmt(asset.purchasePrice)}` : '<span class="text-muted">—</span>' },
+        {
+            id: 'gain', label: 'Gain / Loss', width: '16%', align: 'right',
+            render: asset => {
+                if (!asset.purchasePrice) return '<span class="text-muted">—</span>';
+                const gain = asset.gainLoss || 0;
+                const gainPct = asset.gainLossPct || 0;
+                const sign = gain >= 0 ? '+' : '';
+                const className = gain >= 0 ? 'gain-positive' : 'gain-negative';
+                return `<span class="asset-gain ${className}">${sign}৳${fmt(Math.abs(gain))} (${sign}${gainPct.toFixed(1)}%)</span>`;
+            }
+        },
+        {
+            id: 'sellPrice', label: 'Sell Price', width: '7%', align: 'right',
+            render: asset => {
+                const sellPrice = asset.currentValue ? asset.currentValue * (1 - sellDiscountPct / 100) : null;
+                return sellPrice ? `৳${fmt(sellPrice)}` : '<span class="text-muted">—</span>';
+            }
+        },
+        {
+            id: 'actions', label: 'Actions', width: '180px', align: 'right',
+            render: asset => `<div class="d-flex gap-1">
+                <button class="btn btn-xs btn-outline-primary" title="Edit" onclick="openEditModal(${asset.id})" style="padding:3px 7px;font-size:0.78rem;">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-xs btn-outline-danger" title="Delete" onclick="openDeleteModal(${asset.id}, '${escHtml(asset.assetName)}')" style="padding:3px 7px;font-size:0.78rem;">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>`
+        }
+    ];
+
     // ── Init ──────────────────────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', function () {
+        resetInventoryFilters();
+        renderInventoryColumns();
         loadSummaryVisibilityState();
         loadShowMoreUnitsState();
         loadPriceDetailsState();
         loadAll();
     });
+
+    function resetInventoryFilters() {
+        const search = document.getElementById('searchInput');
+        const purity = document.getElementById('filterPurity');
+        const type = document.getElementById('filterType');
+        const sellDiscount = document.getElementById('sellDiscount');
+        if (search) search.value = '';
+        if (purity) purity.selectedIndex = 0;
+        if (type) type.selectedIndex = 0;
+        if (sellDiscount) sellDiscount.value = String(sellDiscountPct);
+    }
+
+    function renderInventoryColumns() {
+        const colgroup = document.getElementById('inventoryTableColumns');
+        const header = document.getElementById('inventoryTableHeader');
+        if (colgroup) {
+            colgroup.innerHTML = INVENTORY_COLUMNS.map(column => `<col style="width:${column.width}">`).join('');
+        }
+        if (header) {
+            header.innerHTML = INVENTORY_COLUMNS.map(column =>
+                `<th data-column="${column.id}" data-align="${column.align}">${column.label}</th>`
+            ).join('');
+        }
+    }
 
     function loadAll() {
         loadSummary();
@@ -374,18 +463,8 @@
         });
     }
 
-    // Hide the Type column and its filter when every asset shares one goldType (nothing to filter/show).
-    function updateTypeColumnVisibility() {
-        const distinctTypes = new Set(allAssets.map(a => a.goldType).filter(Boolean));
-        const showTypeColumn = distinctTypes.size > 1;
-        document.querySelectorAll('.asset-type-col').forEach(el => el.classList.toggle('d-none', !showTypeColumn));
-        const filterType = document.getElementById('filterType');
-        if (filterType) filterType.classList.toggle('d-none', !showTypeColumn);
-    }
-
     window.renderTable = function () {
         let filtered = getFilteredAssets();
-        updateTypeColumnVisibility();
 
         const total = filtered.length;
         const pages = Math.ceil(total / PAGE_SIZE) || 1;
@@ -397,14 +476,16 @@
         if (!tbody) return;
 
         if (page.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state">
+            tbody.innerHTML = `<tr><td colspan="${INVENTORY_COLUMNS.length}"><div class="empty-state">
                 <div class="empty-state-icon"><i class="fas fa-coins"></i></div>
                 <h5 class="text-muted">${total === 0 ? 'No gold assets yet' : 'No assets match your filters'}</h5>
                 ${total === 0 ? `<p class="text-muted mb-3">Click "Add Gold Asset" to start tracking.</p>
                 <button class="btn btn-primary btn-sm" onclick="openAddAssetModal()"><i class="fas fa-plus me-1"></i> Add Gold Asset</button>` : ''}
             </div></td></tr>`;
         } else {
-            tbody.innerHTML = page.map(a => renderAssetRow(a)).join('');
+            tbody.innerHTML = page.map(asset => `<tr data-id="${asset.id}">${INVENTORY_COLUMNS.map(column =>
+                `<td data-column="${column.id}" data-align="${column.align}">${column.render(asset)}</td>`
+            ).join('')}</tr>`).join('');
         }
 
         renderPagination(total, pages);
@@ -428,59 +509,6 @@
         return parts.join(' ');
     }
 
-    function renderAssetRow(a) {
-        const gain     = (a.gainLoss   || 0);
-        const gainPct  = (a.gainLossPct || 0);
-        const gainCls  = gain >= 0 ? 'gain-positive' : 'gain-negative';
-        const gainSign = gain >= 0 ? '+' : '';
-        const gainHtml = a.purchasePrice
-            ? `<span class="${gainCls}">${gainSign}৳${fmt(Math.abs(gain))} (${gainSign}${gainPct.toFixed(1)}%)</span>`
-            : '<span class="text-muted">—</span>';
-
-        const conv = a.weightConversions || convertAll(a.weight, a.weightUnit);
-        const grams = conv.GRAM || 0;
-        const unitLabel = a.weightUnit.charAt(0) + a.weightUnit.slice(1).toLowerCase();
-        const weightDisplay = `${a.weight} ${unitLabel}<small class="d-block text-muted">${formatVoriBreakdown(grams)}</small>`;
-
-        const sellPrice = a.currentValue ? a.currentValue * (1 - sellDiscountPct / 100) : null;
-
-        return `<tr data-id="${a.id}">
-            <td class="drag-handle-cell">
-                <button type="button" class="drag-handle-btn" data-id="${a.id}"
-                        title="Drag to reorder, or focus and press Arrow Up/Down"
-                        aria-label="Reorder ${escHtml(a.assetName)}" aria-roledescription="Sortable row handle">
-                    <i class="fas fa-grip-vertical"></i>
-                </button>
-            </td>
-            <td>
-                <div class="d-flex align-items-center gap-2">
-                    <div class="asset-type-icon">${goldTypeIcon(a.goldType)}</div>
-                    <div>
-                        <div class="fw-semibold" style="cursor:pointer;" onclick="openDetailModal(${a.id})">${escHtml(a.assetName)}</div>
-                        ${a.description ? `<small class="text-muted">${escHtml(a.description)}</small>` : ''}
-                    </div>
-                </div>
-            </td>
-            <td class="asset-type-col"><small class="text-muted">${fmtGoldType(a.goldType)}</small></td>
-            <td>${purityBadge(a.purity)}</td>
-            <td style="font-size:0.85rem;">${weightDisplay}</td>
-            <td class="fw-semibold">${a.currentValue ? '৳' + fmt(a.currentValue) : '<span class="text-muted">—</span>'}</td>
-            <td>${a.purchasePrice ? '৳' + fmt(a.purchasePrice) : '<span class="text-muted">—</span>'}</td>
-            <td>${gainHtml}</td>
-            <td class="fw-semibold">${sellPrice ? '৳' + fmt(sellPrice) : '<span class="text-muted">—</span>'}</td>
-            <td>
-                <div class="d-flex gap-1">
-                    <button class="btn btn-xs btn-outline-primary" title="Edit" onclick="openEditModal(${a.id})" style="padding:3px 7px;font-size:0.78rem;">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-xs btn-outline-danger" title="Delete" onclick="openDeleteModal(${a.id}, '${escHtml(a.assetName)}')" style="padding:3px 7px;font-size:0.78rem;">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </td>
-        </tr>`;
-    }
-
     function renderSummaryFoot(assets) {
         const tfoot = document.getElementById('assetTableFoot');
         if (!tfoot) return;
@@ -499,13 +527,21 @@
         const gainCls  = totalGain >= 0 ? 'gain-positive' : 'gain-negative';
         const gainSign = totalGain >= 0 ? '+' : '';
 
+        const summaryValues = {
+            currentValue: hasCurrentValue ? `৳${fmt(totalCurrentValue)}` : '<span class="text-muted">—</span>',
+            purchasePrice: hasPurchase ? `৳${fmt(totalPurchasePrice)}` : '<span class="text-muted">—</span>',
+            gain: `<span class="asset-gain ${gainCls}">${hasPurchase ? gainSign + '৳' + fmt(Math.abs(totalGain)) : '<span class="text-muted">—</span>'}</span>`,
+            sellPrice: hasCurrentValue ? `৳${fmt(totalSellPrice)}` : '<span class="text-muted">—</span>',
+            actions: ''
+        };
+        const totalColumnIndex = INVENTORY_COLUMNS.findIndex(column => column.id === 'currentValue');
+        const labelSpan = totalColumnIndex;
+        const valueCells = INVENTORY_COLUMNS.slice(totalColumnIndex).map(column =>
+            `<td data-column="${column.id}" data-align="${column.align}">${summaryValues[column.id] || ''}</td>`
+        ).join('');
         tfoot.innerHTML = `<tr>
-            <td colspan="5" style="color:var(--text-muted-custom);font-size:0.78rem;">Totals (${assets.length} asset${assets.length !== 1 ? 's' : ''})</td>
-            <td>${hasCurrentValue ? '৳' + fmt(totalCurrentValue) : '<span class="text-muted">—</span>'}</td>
-            <td>${hasPurchase ? '৳' + fmt(totalPurchasePrice) : '<span class="text-muted">—</span>'}</td>
-            <td><span class="${gainCls}">${hasPurchase ? gainSign + '৳' + fmt(Math.abs(totalGain)) : '<span class="text-muted">—</span>'}</span></td>
-            <td>${hasCurrentValue ? '৳' + fmt(totalSellPrice) : '<span class="text-muted">—</span>'}</td>
-            <td></td>
+            <td colspan="${labelSpan}" data-align="left" style="color:var(--text-muted);font-size:0.78rem;">Totals (${assets.length} asset${assets.length !== 1 ? 's' : ''})</td>
+            ${valueCells}
         </tr>`;
     }
 

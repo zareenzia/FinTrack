@@ -37,8 +37,8 @@
         /* ═══ ASSET TABLE ═══ */
         .asset-table { border-collapse: separate; border-spacing: 0; }
         .asset-table thead th {
-            background: var(--color-primary);
-            color: #f0f0e8;
+            background: var(--accent);
+            color: var(--on-accent);
             font-weight: 600;
             font-size: 0.82rem;
             padding: 10px 14px;
@@ -186,9 +186,51 @@
         .asset-price-details { margin: 12px -16px -12px; border-top: 1px solid var(--border); }
         .asset-price-details .gp-price-table-wrap { border-top: 0; }
         .asset-price-details .asset-table thead th { background: var(--surface-2); color: var(--text); }
-        #inventoryAssetTable thead th:last-child,
-        #inventoryAssetTable tbody tr[data-id] td:last-child,
+        .asset-inventory-header {
+            background: linear-gradient(135deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 72%, var(--surface)) 100%) !important;
+            color: var(--on-accent) !important;
+            padding: 12px 20px !important;
+            border-bottom: 0 !important;
+            border-radius: var(--radius) var(--radius) 0 0 !important;
+        }
+        .asset-inventory-header h6 { color: var(--on-accent) !important; font-size: 16px; }
+        .asset-inventory-header .tx-filter-select,
+        .asset-inventory-header .tx-filter-search,
+        .asset-inventory-header .btn {
+            background: color-mix(in srgb, var(--on-accent) 12%, transparent) !important;
+            border: 1px solid color-mix(in srgb, var(--on-accent) 35%, transparent) !important;
+            color: var(--on-accent) !important;
+        }
+        .asset-inventory-header .tx-filter-select option { background: var(--surface); color: var(--text); }
+        .asset-inventory-header .tx-filter-select:focus,
+        .asset-inventory-header .tx-filter-search:focus {
+            border-color: var(--on-accent) !important;
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--on-accent) 20%, transparent);
+        }
+        .asset-inventory-header .tx-filter-search::placeholder { color: color-mix(in srgb, var(--on-accent) 72%, transparent); }
+        .asset-inventory-header .filter-bar { flex-wrap: wrap; }
+        .asset-inventory-header #searchInput { width: 170px; }
+        .asset-inventory-header #filterPurity { width: 125px; }
+        .asset-inventory-header #filterType { width: 115px; }
+        .asset-inventory-header #pageSizeSelect { width: 90px; }
+        .asset-inventory-header #sellDiscount { width: 58px; }
+        .asset-inventory-header .sell-disc-wrap { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; color: var(--on-accent); font-size: 12px; }
+        #inventoryAssetTable { table-layout: fixed; width: 100%; min-width: 1320px; }
+        #inventoryAssetTable th, #inventoryAssetTable td { vertical-align: middle; }
+        #inventoryAssetTable th[data-align="right"], #inventoryAssetTable td[data-align="right"] { text-align: right; }
+        #inventoryAssetTable th[data-align="center"], #inventoryAssetTable td[data-align="center"] { text-align: center; }
+        #inventoryAssetTable th[data-column="gain"], #inventoryAssetTable td[data-column="gain"],
+        #inventoryAssetTable th[data-column="currentValue"], #inventoryAssetTable td[data-column="currentValue"],
+        #inventoryAssetTable th[data-column="purchasePrice"], #inventoryAssetTable td[data-column="purchasePrice"],
+        #inventoryAssetTable th[data-column="sellPrice"], #inventoryAssetTable td[data-column="sellPrice"] {
+            white-space: nowrap;
+            font-variant-numeric: tabular-nums;
+        }
+        #inventoryAssetTable th[data-column="gain"], #inventoryAssetTable td[data-column="gain"] { min-width: 190px; }
+        #inventoryAssetTable th[data-column="actions"],
+        #inventoryAssetTable tbody tr[data-id] td[data-column="actions"],
         #inventoryAssetTable tfoot td:last-child { padding-right: 88px; }
+        #inventoryAssetTable td[data-column="actions"] .d-flex { justify-content: flex-end; }
         .asset-inventory-pagination { padding-right: 96px !important; }
         .asset-inventory-pagination .page-link {
             background: var(--surface);
@@ -310,9 +352,6 @@
         .filter-bar #filterPurity  { width: 125px; }
         .filter-bar #filterType    { width: 115px; }
         .filter-bar #pageSizeSelect { width: 90px; }
-        /* Sell-deduction % now lives in the 3-dot menu, not the toolbar. */
-        .gp-menu-sell-disc { display: flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 0.82rem; color: var(--text-muted); }
-        .gp-menu-sell-disc input { width: 60px; }
         /* ═══ TABLE SUMMARY FOOTER ═══ */
         .asset-table tfoot td {
             font-weight: 700; font-size: 0.82rem; border-top: 2px solid var(--border-color);
@@ -359,20 +398,8 @@
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="assetsMoreBtn">
                         <li><button type="button" class="dropdown-item d-none" id="menuEditManualPrices" onclick="openManualPriceModal()"><i class="fas fa-pencil-alt me-2"></i>Edit manual prices</button></li>
                         <li><button type="button" class="dropdown-item" id="menuShowMoreUnits" onclick="toggleShowMoreUnits()"><i class="fas fa-ruler-combined me-2"></i><span id="menuShowMoreUnitsLabel">Show more units (Per Ana / Per Rati)</span></button></li>
-                        <li><hr class="dropdown-divider my-1"></li>
-                        <li>
-                            <div class="gp-menu-sell-disc" onclick="event.stopPropagation()">
-                                <label for="sellDiscount" class="mb-0">Sell deduction</label>
-                                <input type="number" class="form-control form-control-sm" id="sellDiscount" value="17" min="0" max="100" step="0.1" oninput="setSellDiscount(this.value)">
-                                <span>%</span>
-                            </div>
-                        </li>
-                        <li><hr class="dropdown-divider my-1"></li>
-                        <li><button type="button" class="dropdown-item" id="assetImportBtn" onclick="document.getElementById('assetImportFileInput').click()"><i class="fas fa-file-import me-2"></i>Import</button></li>
-                        <li><button type="button" class="dropdown-item" id="assetExportBtn" onclick="exportFilteredAssetsToCsv()"><i class="fas fa-file-export me-2"></i>Export</button></li>
                     </ul>
                 </div>
-                <input type="file" id="assetImportFileInput" accept=".csv" style="display:none;" onchange="handleAssetImportFile(this)">
             </div>
         </div>
     </div>
@@ -439,11 +466,11 @@
     <div class="row">
         <div class="col-md-12">
             <div class="card">
-                <div class="card-header dashboard-card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="card-header asset-inventory-header d-flex align-items-center justify-content-between flex-wrap gap-2">
                     <h6 class="mb-0"><i class="fas fa-gem me-2"></i>Gold Inventory</h6>
                     <div class="d-flex align-items-center gap-2 flex-wrap">
                         <div class="filter-bar">
-                            <input type="text" class="form-control form-control-sm tx-filter-search" id="searchInput" placeholder="Search assets…" oninput="renderTable()">
+                            <input type="text" class="form-control form-control-sm tx-filter-search" id="searchInput" placeholder="Search assets…" autocomplete="off" oninput="renderTable()">
                             <select class="form-select form-select-sm tx-filter-select" id="filterPurity" onchange="renderTable()">
                                 <option value="">All Purities</option>
                                 <option value="22K">22K</option>
@@ -467,41 +494,24 @@
                                 <option value="50">50 / page</option>
                                 <option value="100">100 / page</option>
                             </select>
+                            <div class="sell-disc-wrap">
+                                <label for="sellDiscount">Sell −</label>
+                                <input type="number" class="form-control form-control-sm" id="sellDiscount" value="17" min="0" max="100" step="0.1" oninput="setSellDiscount(this.value)">
+                                <label for="sellDiscount">%</label>
+                            </div>
+                            <button type="button" class="btn btn-sm" id="assetImportBtn" title="Import gold assets from CSV" aria-label="Import gold assets from CSV" onclick="document.getElementById('assetImportFileInput').click()"><i class="fas fa-file-import"></i></button>
+                            <button type="button" class="btn btn-sm" id="assetExportBtn" title="Export filtered gold assets to CSV" aria-label="Export filtered gold assets to CSV" onclick="exportFilteredAssetsToCsv()"><i class="fas fa-file-export"></i></button>
                         </div>
+                        <input type="file" id="assetImportFileInput" accept=".csv" style="display:none;" onchange="handleAssetImportFile(this)">
                     </div>
                 </div>
                 <div class="gp-reorder-hint" id="reorderHint"></div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table asset-table mb-0" id="inventoryAssetTable">
-                            <thead>
-                                <tr>
-                                    <th style="width:34px;"></th>
-                                    <th>Asset</th>
-                                    <th id="thAssetType" class="asset-type-col">Type</th>
-                                    <th>Purity</th>
-                                    <th>Weight</th>
-                                    <th>Current Value</th>
-                                    <th>Purchase Price</th>
-                                    <th>Gain / Loss</th>
-                                    <th>Sell Price</th>
-                                    <th style="width:90px;">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="assetTableBody">
-                                <tr>
-                                    <td colspan="10">
-                                        <div class="empty-state">
-                                            <div class="empty-state-icon"><i class="fas fa-coins"></i></div>
-                                            <h5 class="text-muted">No gold assets yet</h5>
-                                            <p class="text-muted mb-3">Click "Add Gold Asset" to start tracking your gold portfolio.</p>
-                                            <button class="btn btn-primary btn-sm" onclick="openAddAssetModal()">
-                                                <i class="fas fa-plus me-1"></i> Add Gold Asset
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
+                            <colgroup id="inventoryTableColumns"></colgroup>
+                            <thead><tr id="inventoryTableHeader"></tr></thead>
+                            <tbody id="assetTableBody"></tbody>
                             <tfoot id="assetTableFoot"></tfoot>
                         </table>
                     </div>
