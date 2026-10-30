@@ -26,6 +26,7 @@
     // ── Init ──────────────────────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', function () {
         loadSummaryVisibilityState();
+        loadShowMoreUnitsState();
         loadAll();
     });
 
@@ -134,8 +135,12 @@
             el.textContent = summaryValuesHidden ? '••••••' : (real !== undefined ? real : el.textContent);
             el.classList.toggle('is-masked', summaryValuesHidden);
         });
-        const icon = document.querySelector('#assetSummaryEyeBtn i');
-        if (icon) icon.className = summaryValuesHidden ? 'fas fa-eye-slash' : 'fas fa-eye';
+        const btn = document.getElementById('assetSummaryEyeBtn');
+        if (btn) {
+            btn.setAttribute('aria-pressed', String(summaryValuesHidden));
+            const icon = btn.querySelector('i');
+            if (icon) icon.className = summaryValuesHidden ? 'fas fa-eye-slash' : 'fas fa-eye';
+        }
     }
 
     window.toggleAssetSummaryVisibility = function () {
@@ -182,18 +187,11 @@
     function renderSyncStatus(data) {
         const { lastSyncTime, lastSyncError, syncInProgress, mode } = data;
 
-        const dot  = document.getElementById('syncDot');
-        const text = document.getElementById('syncStatusText');
-        const errB = document.getElementById('syncErrorBlock');
-        const mBadge = document.getElementById('syncModeBadge');
-
-        if (mBadge) {
-            mBadge.textContent = mode === 'AUTOMATIC' ? 'Auto' : 'Manual';
-            mBadge.className = 'gold-badge ' + (mode === 'AUTOMATIC' ? 'mode-auto' : 'mode-manual');
-        }
+        const chip = document.getElementById('syncStatusChip');
 
         if (syncInProgress) {
-            setSyncStatus('syncing', 'Syncing prices…');
+            setSyncStatus('syncing', 'Syncing…');
+            if (chip) chip.title = 'Source: goldr.org';
             if (!syncPollTimer) {
                 syncPollTimer = setInterval(() => {
                     loadPrices().then(() => {
@@ -207,17 +205,15 @@
                 }, 3000);
             }
         } else if (lastSyncError) {
-            setSyncStatus('error', 'Last sync failed');
-            if (errB) { errB.classList.remove('d-none'); errB.textContent = lastSyncError; }
+            setSyncStatus('error', lastSyncTime ? 'Synced ' + fmtDateTime(lastSyncTime) : 'Sync failed');
+            if (chip) chip.title = 'Source: goldr.org — ' + lastSyncError;
         } else if (lastSyncTime) {
-            setSyncStatus('success', 'Prices up to date');
-            if (errB) errB.classList.add('d-none');
+            setSyncStatus('success', 'Synced ' + fmtDateTime(lastSyncTime));
+            if (chip) chip.title = 'Source: goldr.org — ' + fmtDateTime(lastSyncTime);
         } else {
-            setSyncStatus('error', 'No price data available. Click "Sync Gold Prices".');
+            setSyncStatus('error', 'No price data');
+            if (chip) chip.title = 'Source: goldr.org — click the reload icon to sync';
         }
-
-        const timeEl = document.getElementById('lastSyncTime');
-        if (timeEl) timeEl.textContent = lastSyncTime ? 'Last sync: ' + fmtDateTime(lastSyncTime) : 'Never synced';
 
         const updEl = document.getElementById('priceTableUpdated');
         if (updEl && lastSyncTime) updEl.textContent = 'Updated: ' + fmtDateTime(lastSyncTime);
@@ -232,12 +228,37 @@
         const syncIcon = document.getElementById('syncIcon');
         if (state === 'syncing') {
             if (syncBtn)  syncBtn.disabled = true;
-            if (syncIcon) { syncIcon.className = 'fas fa-sync-alt fa-spin me-1'; }
+            if (syncIcon) { syncIcon.className = 'fas fa-rotate fa-spin'; }
         } else {
             if (syncBtn)  syncBtn.disabled = false;
-            if (syncIcon) { syncIcon.className = 'fas fa-sync-alt me-1'; }
+            if (syncIcon) { syncIcon.className = 'fas fa-rotate'; }
         }
     }
+
+    // "Show more units" (Per Ana / Per Rati columns) — persisted per user, toggled from the 3-dot menu.
+    function loadShowMoreUnitsState() {
+        let on = false;
+        try {
+            on = localStorage.getItem(getUserStorageKey('assets_show_more_units')) === 'true';
+        } catch (e) { /* ignore */ }
+        applyShowMoreUnits(on);
+    }
+
+    function applyShowMoreUnits(on) {
+        const table = document.getElementById('gpPriceTable');
+        if (table) table.classList.toggle('show-more-units', on);
+        const label = document.getElementById('menuShowMoreUnitsLabel');
+        if (label) label.textContent = (on ? '✓ ' : '') + 'Show more units (Per Ana / Per Rati)';
+    }
+
+    window.toggleShowMoreUnits = function () {
+        const table = document.getElementById('gpPriceTable');
+        const on = !(table && table.classList.contains('show-more-units'));
+        applyShowMoreUnits(on);
+        try {
+            localStorage.setItem(getUserStorageKey('assets_show_more_units'), String(on));
+        } catch (e) { /* ignore */ }
+    };
 
     function renderPriceTable(prices) {
         const tbody = document.getElementById('priceTableBody');
@@ -270,8 +291,8 @@
                 <td>${purityBadge(purity)}</td>
                 <td>${fmtPrice(gramPrice)}</td>
                 <td>${fmtPrice(voriPrice)}</td>
-                <td>${fmtPrice(anaPrice)}</td>
-                <td>${fmtPrice(ratiPrice)}</td>
+                <td class="gp-col-ana">${fmtPrice(anaPrice)}</td>
+                <td class="gp-col-rati">${fmtPrice(ratiPrice)}</td>
             </tr>`;
         }).join('');
     }
@@ -307,8 +328,18 @@
         });
     }
 
+    // Hide the Type column and its filter when every asset shares one goldType (nothing to filter/show).
+    function updateTypeColumnVisibility() {
+        const distinctTypes = new Set(allAssets.map(a => a.goldType).filter(Boolean));
+        const showTypeColumn = distinctTypes.size > 1;
+        document.querySelectorAll('.asset-type-col').forEach(el => el.classList.toggle('d-none', !showTypeColumn));
+        const filterType = document.getElementById('filterType');
+        if (filterType) filterType.classList.toggle('d-none', !showTypeColumn);
+    }
+
     window.renderTable = function () {
         let filtered = getFilteredAssets();
+        updateTypeColumnVisibility();
 
         const total = filtered.length;
         const pages = Math.ceil(total / PAGE_SIZE) || 1;
@@ -384,7 +415,7 @@
                     </div>
                 </div>
             </td>
-            <td><small class="text-muted">${fmtGoldType(a.goldType)}</small></td>
+            <td class="asset-type-col"><small class="text-muted">${fmtGoldType(a.goldType)}</small></td>
             <td>${purityBadge(a.purity)}</td>
             <td style="font-size:0.85rem;">${weightDisplay}</td>
             <td class="fw-semibold">${a.currentValue ? '৳' + fmt(a.currentValue) : '<span class="text-muted">—</span>'}</td>
@@ -907,7 +938,7 @@
 
     window.triggerPriceSync = async function () {
         try {
-            setSyncStatus('syncing', 'Syncing prices…');
+            setSyncStatus('syncing', 'Syncing…');
             await apiFetch('/api/gold/prices/sync', { method: 'POST' });
             // Poll until done
             if (!syncPollTimer) {
@@ -932,15 +963,15 @@
     // ── PRICING MODE ───────────────────────────────────────────────────────────
 
     function updatePriceModeUI(mode) {
-        const label = document.getElementById('priceModeLabel');
-        if (label) {
-            label.textContent = mode === 'MANUAL' ? 'Manual' : 'Automatic';
-            label.className = 'gold-badge ' + (mode === 'MANUAL' ? 'mode-manual' : 'mode-auto');
-        }
+        const isManual = mode === 'MANUAL';
         const autoBtn = document.getElementById('btnAutoMode');
         const manBtn  = document.getElementById('btnManualMode');
-        if (autoBtn) autoBtn.classList.toggle('active', mode === 'AUTOMATIC');
-        if (manBtn)  manBtn.classList.toggle('active', mode === 'MANUAL');
+        if (autoBtn) autoBtn.classList.toggle('is-active', !isManual);
+        if (manBtn)  manBtn.classList.toggle('is-active', isManual);
+        const badge = document.getElementById('gpManualBadge');
+        if (badge) badge.classList.toggle('d-none', !isManual);
+        const menuEdit = document.getElementById('menuEditManualPrices');
+        if (menuEdit) menuEdit.classList.toggle('d-none', !isManual);
     }
 
     window.setPriceMode = async function (mode) {
