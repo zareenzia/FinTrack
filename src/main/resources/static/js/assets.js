@@ -27,6 +27,7 @@
     document.addEventListener('DOMContentLoaded', function () {
         loadSummaryVisibilityState();
         loadShowMoreUnitsState();
+        loadPriceDetailsState();
         loadAll();
     });
 
@@ -116,7 +117,7 @@
         applyAssetSummaryVisibility();
     }
 
-    const SUMMARY_VALUE_IDS = ['totalGoldValue', 'totalWeight', 'numberOfAssets', 'currentGoldPrice'];
+    const SUMMARY_VALUE_IDS = ['totalGoldValue', 'totalWeight', 'numberOfAssets'];
     const summaryDisplayValues = {}; // id -> latest real (unmasked) text, refreshed on every loadSummary()
 
     function setSummaryValue(id, text) {
@@ -161,8 +162,6 @@
                 ? summary.totalWeightVori.toFixed(4) + ' Vori'
                 : (summary.totalWeightGrams != null ? summary.totalWeightGrams.toFixed(2) + ' g' : '—');
             setSummaryValue('totalWeight', vori);
-            const p22 = summary.pricesPerGram && summary.pricesPerGram['22K'];
-            setSummaryValue('currentGoldPrice', p22 ? '৳' + fmt(p22) + ' /g' : '—');
             updatePriceModeUI(summary.priceMode);
         } catch (e) {
             console.error('loadSummary error:', e);
@@ -185,7 +184,7 @@
     }
 
     function renderSyncStatus(data) {
-        const { lastSyncTime, lastSyncError, syncInProgress, mode } = data;
+        const { lastSyncTime, lastSyncError, syncInProgress } = data;
 
         const chip = document.getElementById('syncStatusChip');
 
@@ -206,7 +205,9 @@
             }
         } else if (lastSyncError) {
             setSyncStatus('error', lastSyncTime ? 'Synced ' + fmtDateTime(lastSyncTime) : 'Sync failed');
-            if (chip) chip.title = 'Source: goldr.org — ' + lastSyncError;
+            if (chip) chip.title = 'Source: goldr.org' +
+                (lastSyncTime ? ' — Last sync: ' + fmtDateTime(lastSyncTime) : '') +
+                ' — ' + lastSyncError;
         } else if (lastSyncTime) {
             setSyncStatus('success', 'Synced ' + fmtDateTime(lastSyncTime));
             if (chip) chip.title = 'Source: goldr.org — ' + fmtDateTime(lastSyncTime);
@@ -215,8 +216,6 @@
             if (chip) chip.title = 'Source: goldr.org — click the reload icon to sync';
         }
 
-        const updEl = document.getElementById('priceTableUpdated');
-        if (updEl && lastSyncTime) updEl.textContent = 'Updated: ' + fmtDateTime(lastSyncTime);
     }
 
     function setSyncStatus(state, message) {
@@ -260,8 +259,33 @@
         } catch (e) { /* ignore */ }
     };
 
+    function loadPriceDetailsState() {
+        let expanded = false;
+        try {
+            expanded = localStorage.getItem(getUserStorageKey('assets_price_details_expanded')) === 'true';
+        } catch (e) { /* ignore */ }
+        applyPriceDetailsExpanded(expanded);
+    }
+
+    function applyPriceDetailsExpanded(expanded) {
+        const panel = document.getElementById('priceDetailsPanel');
+        const button = document.getElementById('priceDetailsToggle');
+        if (panel) panel.classList.toggle('d-none', !expanded);
+        if (button) button.setAttribute('aria-expanded', String(expanded));
+    }
+
+    window.togglePriceDetails = function () {
+        const button = document.getElementById('priceDetailsToggle');
+        const expanded = !(button && button.getAttribute('aria-expanded') === 'true');
+        applyPriceDetailsExpanded(expanded);
+        try {
+            localStorage.setItem(getUserStorageKey('assets_price_details_expanded'), String(expanded));
+        } catch (e) { /* ignore */ }
+    };
+
     function renderPriceTable(prices) {
         const tbody = document.getElementById('priceTableBody');
+        const chips = document.getElementById('assetRateChips');
         if (!tbody) return;
 
         // Group by purity — for each purity collect unit prices
@@ -276,17 +300,22 @@
 
         if (rows.length === 0) {
             tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">No price data. Click "Sync Gold Prices".</td></tr>';
+            if (chips) chips.innerHTML = '<span class="text-muted small">No price data available</span>';
             return;
         }
 
         // If we only have VORI prices (common with goldr.org), derive others via conversion
         // For GRAM column: if no GRAM record, derive from VORI price / 11.664
-        tbody.innerHTML = rows.map(purity => {
+        const normalizedRows = rows.map(purity => {
             const rec = byPurity[purity];
             const gramPrice  = rec['GRAM']  ? rec['GRAM'].marketPrice  : (rec['VORI'] ? rec['VORI'].marketPrice / 11.664 : null);
             const voriPrice  = rec['VORI']  ? rec['VORI'].marketPrice  : (gramPrice   ? gramPrice * 11.664 : null);
             const anaPrice   = rec['ANA']   ? rec['ANA'].marketPrice   : (gramPrice   ? gramPrice * 11.664 / 16 : null);
             const ratiPrice  = rec['RATI']  ? rec['RATI'].marketPrice  : (gramPrice   ? gramPrice * 11.664 / 96 : null);
+            return { purity, gramPrice, voriPrice, anaPrice, ratiPrice };
+        });
+
+        tbody.innerHTML = normalizedRows.map(({ purity, gramPrice, voriPrice, anaPrice, ratiPrice }) => {
             return `<tr>
                 <td>${purityBadge(purity)}</td>
                 <td>${fmtPrice(gramPrice)}</td>
@@ -295,6 +324,23 @@
                 <td class="gp-col-rati">${fmtPrice(ratiPrice)}</td>
             </tr>`;
         }).join('');
+
+        if (chips) {
+            const chipPurities = ['22K', '21K', '18K', 'TRADITIONAL'];
+            const ratesByPurity = new Map(normalizedRows.map(row => [row.purity, row]));
+            chips.innerHTML = chipPurities.map(purity => {
+                    const rate = ratesByPurity.get(purity);
+                    const gramPrice = rate ? rate.gramPrice : null;
+                    const voriPrice = rate ? rate.voriPrice : null;
+                    const label = purity === 'TRADITIONAL' ? 'Traditional' : purity;
+                    const perVori = voriPrice == null || isNaN(voriPrice) || voriPrice === 0 ? '—' : '৳' + fmt(voriPrice);
+                    const perGram = gramPrice == null || isNaN(gramPrice) || gramPrice === 0 ? '—' : '৳' + fmt(gramPrice);
+                    return `<span class="asset-rate-chip" title="Per Vori: ${perVori}">
+                        <span class="gold-badge">${label}</span>
+                        <span class="asset-rate-chip-value">${perGram}/g</span>
+                    </span>`;
+                }).join('');
+        }
     }
 
     // ── ASSETS ──────────────────────────────────────────────────────────────────

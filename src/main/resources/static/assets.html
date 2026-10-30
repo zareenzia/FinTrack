@@ -107,6 +107,114 @@
         /* Per Ana / Per Rati columns are hidden unless "Show more units" is on (3-dot menu). */
         .gp-price-table:not(.show-more-units) .gp-col-ana,
         .gp-price-table:not(.show-more-units) .gp-col-rati { display: none; }
+        .gp-price-table:not(.show-more-units) th:not(.gp-col-ana):not(.gp-col-rati),
+        .gp-price-table:not(.show-more-units) td:not(.gp-col-ana):not(.gp-col-rati) { width: 33.333%; }
+        .assets-page { padding-bottom: 96px; }
+        .assets-content-stack { display: grid; gap: 16px; }
+        .asset-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+        }
+        .asset-summary-card {
+            box-sizing: border-box;
+            height: 84px;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+        }
+        .asset-summary-card .sc-icon-circle { flex: 0 0 40px; }
+        .asset-summary-card-content { min-width: 0; }
+        .asset-summary-label {
+            margin-bottom: 2px;
+            color: var(--text-muted);
+            font-size: 12px;
+            line-height: 1.2;
+        }
+        .asset-summary-value {
+            margin: 0;
+            color: var(--text);
+            font-size: clamp(22px, 2vw, 28px);
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            line-height: 1.15;
+            white-space: nowrap;
+        }
+        .asset-summary-value.is-masked { filter: blur(6px); opacity: 0.55; user-select: none; }
+        .asset-rates-card {
+            padding: 12px 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+        }
+        .asset-rate-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .asset-rate-chips { display: flex; align-items: center; flex: 1 1 auto; flex-wrap: wrap; gap: 8px; }
+        .asset-rate-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            white-space: nowrap;
+        }
+        .asset-rate-chip .gold-badge { background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-soft); }
+        .asset-rate-chip-value { color: var(--text); font-size: 13px; font-weight: 600; }
+        .asset-rate-manual { background: color-mix(in srgb, var(--warning) 16%, transparent); color: var(--warning); border: 1px solid color-mix(in srgb, var(--warning) 40%, transparent); }
+        .asset-rate-details {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 4px;
+            border: 0;
+            background: transparent;
+            color: var(--accent);
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .asset-rate-details:hover, .asset-rate-details:focus-visible { color: var(--accent); text-decoration: underline; }
+        .asset-rate-details[aria-expanded="true"] i { transform: rotate(180deg); }
+        .asset-rate-details i { transition: transform 0.15s ease; }
+        .asset-price-details { margin: 12px -16px -12px; border-top: 1px solid var(--border); }
+        .asset-price-details .gp-price-table-wrap { border-top: 0; }
+        .asset-price-details .asset-table thead th { background: var(--surface-2); color: var(--text); }
+        #inventoryAssetTable thead th:last-child,
+        #inventoryAssetTable tbody tr[data-id] td:last-child,
+        #inventoryAssetTable tfoot td:last-child { padding-right: 88px; }
+        .asset-inventory-pagination { padding-right: 96px !important; }
+        .asset-inventory-pagination .page-link {
+            background: var(--surface);
+            border-color: var(--border);
+            color: var(--text-muted);
+        }
+        .asset-inventory-pagination .page-link:hover,
+        .asset-inventory-pagination .page-link:focus {
+            background: var(--surface-2);
+            border-color: var(--border);
+            color: var(--text);
+        }
+        .asset-inventory-pagination .page-item.active .page-link {
+            background: var(--accent-soft);
+            border-color: var(--border);
+            color: var(--accent);
+        }
+        .asset-inventory-pagination .page-item.disabled .page-link {
+            background: var(--surface);
+            border-color: var(--border);
+            color: var(--text-muted);
+            opacity: 0.6;
+        }
+        @media (max-width: 767.98px) {
+            .asset-summary-grid { grid-template-columns: 1fr; }
+        }
 
         /* ═══ WEIGHT CONVERTER ═══ */
         .weight-input-group { position: relative; }
@@ -216,7 +324,7 @@
 <body class="dashboard-page">
 <div id="toastContainer" class="notification-toast-container" aria-live="polite" aria-atomic="true"></div>
 
-<div class="container-fluid mt-4">
+<div class="container-fluid mt-4 assets-page">
     <div class="dashboard-topbar" id="assetsTopbar">
         <div class="dashboard-topbar-inner">
             <div class="dashboard-header-greeting">
@@ -269,110 +377,66 @@
         </div>
     </div>
 
-    <!-- ── STAT STRIP ─────────────────────────────────────────────── -->
-    <div class="row mb-4 g-3 align-items-stretch">
-        <div class="col-xl-3 col-md-6">
-            <div class="card stat-card h-100">
-                <div class="card-body">
-                    <div class="sc-top">
-                        <div class="sc-icon-circle"><i class="fas fa-coins"></i></div>
-                        <div class="sc-title-block">
-                            <div class="sc-title">Total Gold Value</div>
-                            <div class="sc-subtitle"><i class="fas fa-gem sc-trend-up"></i> Current market</div>
-                        </div>
-                    </div>
-                    <hr class="sc-divider">
-                    <div class="sc-bottom">
-                        <h3 class="stat-card-amount" id="totalGoldValue">...</h3>
-                    </div>
+    <div class="assets-content-stack">
+        <!-- ── COMPACT STAT STRIP ──────────────────────────────────── -->
+        <div class="asset-summary-grid" aria-label="Gold asset summary">
+            <section class="asset-summary-card">
+                <span class="sc-icon-circle"><i class="fas fa-coins"></i></span>
+                <div class="asset-summary-card-content">
+                    <div class="asset-summary-label">Total Gold Value</div>
+                    <div class="asset-summary-value" id="totalGoldValue">...</div>
                 </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card stat-card h-100">
-                <div class="card-body">
-                    <div class="sc-top">
-                        <div class="sc-icon-circle"><i class="fas fa-weight-hanging"></i></div>
-                        <div class="sc-title-block">
-                            <div class="sc-title">Total Weight</div>
-                            <div class="sc-subtitle"><i class="fas fa-balance-scale sc-trend-up"></i> Combined</div>
-                        </div>
-                    </div>
-                    <hr class="sc-divider">
-                    <div class="sc-bottom">
-                        <h3 class="stat-card-amount" id="totalWeight">...</h3>
-                    </div>
+            </section>
+            <section class="asset-summary-card">
+                <span class="sc-icon-circle"><i class="fas fa-weight-hanging"></i></span>
+                <div class="asset-summary-card-content">
+                    <div class="asset-summary-label">Total Weight</div>
+                    <div class="asset-summary-value" id="totalWeight">...</div>
                 </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card stat-card h-100">
-                <div class="card-body">
-                    <div class="sc-top">
-                        <div class="sc-icon-circle"><i class="fas fa-layer-group"></i></div>
-                        <div class="sc-title-block">
-                            <div class="sc-title">Gold Assets</div>
-                            <div class="sc-subtitle"><i class="fas fa-list sc-trend-up"></i> Total items</div>
-                        </div>
-                    </div>
-                    <hr class="sc-divider">
-                    <div class="sc-bottom">
-                        <h3 class="stat-card-amount" id="numberOfAssets">...</h3>
-                    </div>
+            </section>
+            <section class="asset-summary-card">
+                <span class="sc-icon-circle"><i class="fas fa-layer-group"></i></span>
+                <div class="asset-summary-card-content">
+                    <div class="asset-summary-label">Gold Assets</div>
+                    <div class="asset-summary-value" id="numberOfAssets">...</div>
                 </div>
-            </div>
+            </section>
         </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card stat-card h-100">
-                <div class="card-body">
-                    <div class="sc-top">
-                        <div class="sc-icon-circle"><i class="fas fa-chart-line"></i></div>
-                        <div class="sc-title-block">
-                            <div class="sc-title">22K Gold / Gram</div>
-                            <div class="sc-subtitle"><i class="fas fa-tag sc-trend-up"></i> Current price</div>
-                        </div>
-                    </div>
-                    <hr class="sc-divider">
-                    <div class="sc-bottom">
-                        <h3 class="stat-card-amount" id="currentGoldPrice">...</h3>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- ── GOLD PRICES ───────────────────────────────────────────── -->
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header dashboard-card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
-                    <h6 class="mb-0"><i class="fas fa-table me-2"></i>Gold Prices <span class="gold-badge mode-manual ms-2 d-none" id="gpManualBadge" style="font-size:0.7rem;">Manual prices</span></h6>
-                    <small class="text-muted" id="priceTableUpdated"></small>
+        <!-- ── COMPACT GOLD RATES ─────────────────────────────────── -->
+        <section class="asset-rates-card" aria-label="Gold prices">
+            <div class="asset-rate-row">
+                <span class="gold-badge asset-rate-manual d-none" id="gpManualBadge">Manual</span>
+                <div class="asset-rate-chips" id="assetRateChips" aria-live="polite">
+                    <span class="text-muted small">Loading prices…</span>
                 </div>
-                <div class="card-body p-0">
-                    <div class="gp-price-table-wrap">
-                        <table class="table table-sm asset-table mb-0 gp-price-table" id="gpPriceTable">
-                            <thead>
-                                <tr>
-                                    <th>Purity</th>
-                                    <th>Per Gram (৳)</th>
-                                    <th>Per Vori (৳)</th>
-                                    <th class="gp-col-ana">Per Ana (৳)</th>
-                                    <th class="gp-col-rati">Per Rati (৳)</th>
-                                </tr>
-                            </thead>
-                            <tbody id="priceTableBody">
-                                <tr><td colspan="5" class="text-center text-muted py-3">Loading prices…</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
+                <button type="button" class="asset-rate-details" id="priceDetailsToggle"
+                        aria-controls="priceDetailsPanel" aria-expanded="false" onclick="togglePriceDetails()">
+                    Details <i class="fas fa-chevron-down" aria-hidden="true"></i>
+                </button>
+            </div>
+            <div class="asset-price-details d-none" id="priceDetailsPanel">
+                <div class="gp-price-table-wrap">
+                    <table class="table table-sm asset-table mb-0 gp-price-table" id="gpPriceTable">
+                        <thead>
+                            <tr>
+                                <th>Purity</th>
+                                <th>Per Gram (৳)</th>
+                                <th>Per Vori (৳)</th>
+                                <th class="gp-col-ana">Per Ana (৳)</th>
+                                <th class="gp-col-rati">Per Rati (৳)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="priceTableBody">
+                            <tr><td colspan="5" class="text-center text-muted py-3">Loading prices…</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-        </div>
-    </div>
+        </section>
 
     <!-- ── GOLD INVENTORY ─────────────────────────────────────────── -->
-    <div class="row mb-4">
+    <div class="row">
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header dashboard-card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
@@ -409,7 +473,7 @@
                 <div class="gp-reorder-hint" id="reorderHint"></div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table asset-table mb-0">
+                        <table class="table asset-table mb-0" id="inventoryAssetTable">
                             <thead>
                                 <tr>
                                     <th style="width:34px;"></th>
@@ -442,7 +506,7 @@
                         </table>
                     </div>
                     <!-- Pagination -->
-                    <div class="d-flex align-items-center justify-content-between px-3 py-2" id="paginationBar" style="display:none!important; padding-right:96px;">
+                    <div class="d-flex align-items-center justify-content-between px-3 py-2 asset-inventory-pagination" id="paginationBar" style="display:none;">
                         <small class="text-muted" id="paginationInfo"></small>
                         <nav><ul class="pagination pagination-sm mb-0" id="paginationLinks"></ul></nav>
                     </div>
