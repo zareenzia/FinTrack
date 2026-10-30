@@ -33,53 +33,55 @@
             </button>`
         },
         {
-            id: 'asset', label: 'Asset', width: '17%', align: 'left',
+            id: 'asset', label: 'Asset', width: 'auto', align: 'left',
             render: asset => `<div class="d-flex align-items-center gap-2">
                 <div class="asset-type-icon">${goldTypeIcon(asset.goldType)}</div>
-                <div>
-                    <div class="fw-semibold" style="cursor:pointer;" onclick="openDetailModal(${asset.id})">${escHtml(asset.assetName)}</div>
-                    ${asset.description ? `<small class="text-muted">${escHtml(asset.description)}</small>` : ''}
+                <div class="asset-cell-copy">
+                    <div class="asset-name" title="${escHtml(asset.assetName)}" style="cursor:pointer;" onclick="openDetailModal(${asset.id})">${escHtml(asset.assetName)}</div>
+                    ${asset.description ? `<small class="asset-note" title="${escHtml(asset.description)}">${escHtml(asset.description)}</small>` : ''}
                 </div>
             </div>`
         },
-        { id: 'type', label: 'Type', width: '7%', align: 'left', render: asset => `<small class="text-muted">${fmtGoldType(asset.goldType)}</small>` },
-        { id: 'purity', label: 'Purity', width: '7%', align: 'left', render: asset => purityBadge(asset.purity) },
+        { id: 'type', label: 'Type', width: '84px', align: 'left', render: asset => `<span class="asset-type-pill">${escHtml(fmtGoldType(asset.goldType))}</span>` },
+        { id: 'purity', label: 'Purity', width: '76px', align: 'left', render: asset => purityBadge(asset.purity) },
         {
-            id: 'weight', label: 'Weight', width: '9%', align: 'left',
+            id: 'weight', label: 'Weight', width: '150px', align: 'left',
             render: asset => {
                 const conversions = asset.weightConversions || convertAll(asset.weight, asset.weightUnit);
                 const grams = conversions.GRAM || 0;
                 const unit = asset.weightUnit.charAt(0) + asset.weightUnit.slice(1).toLowerCase();
-                return `<span class="asset-nowrap">${asset.weight} ${unit}</span><small class="d-block text-muted">${formatVoriBreakdown(grams)}</small>`;
+                const breakdown = formatVoriBreakdown(grams);
+                return `<span class="asset-weight-value">${asset.weight} ${unit}</span><small class="asset-weight-breakdown" title="${escHtml(breakdown)}">${breakdown}</small>`;
             }
         },
-        { id: 'currentValue', label: 'Current Value', width: '10%', align: 'right', render: asset => asset.currentValue ? `৳${fmt(asset.currentValue)}` : '<span class="text-muted">—</span>' },
-        { id: 'purchasePrice', label: 'Purchase Price', width: '11%', align: 'right', render: asset => asset.purchasePrice ? `৳${fmt(asset.purchasePrice)}` : '<span class="text-muted">—</span>' },
+        { id: 'currentValue', label: 'Current Value', width: '122px', align: 'right', render: asset => asset.currentValue != null ? `৳${fmt(asset.currentValue)}` : '<span class="text-muted">—</span>' },
+        { id: 'purchasePrice', label: 'Purchase Price', width: '138px', align: 'right', render: asset => asset.purchasePrice != null ? `৳${fmt(asset.purchasePrice)}` : '<span class="text-muted">—</span>' },
         {
-            id: 'gain', label: 'Gain / Loss', width: '16%', align: 'right',
+            id: 'gain', label: 'Gain / Loss', width: '182px', align: 'right',
             render: asset => {
-                if (!asset.purchasePrice) return '<span class="text-muted">—</span>';
+                if (asset.gainLoss == null || !asset.purchasePrice || asset.gainLoss === 0) return '<span class="text-muted">—</span>';
                 const gain = asset.gainLoss || 0;
-                const gainPct = asset.gainLossPct || 0;
-                const sign = gain >= 0 ? '+' : '';
+                const gainPct = Math.abs(asset.gainLossPct || 0);
+                const sign = gain >= 0 ? '+' : '-';
                 const className = gain >= 0 ? 'gain-positive' : 'gain-negative';
-                return `<span class="asset-gain ${className}">${sign}৳${fmt(Math.abs(gain))} (${sign}${gainPct.toFixed(1)}%)</span>`;
+                const arrow = gain >= 0 ? '▲' : '▼';
+                return `<span class="asset-gain ${className}"><span aria-hidden="true">${arrow}</span> ${sign}৳${fmt(Math.abs(gain))} · ${gainPct.toFixed(1)}%</span>`;
             }
         },
         {
-            id: 'sellPrice', label: 'Sell Price', width: '7%', align: 'right',
+            id: 'sellPrice', label: 'Sell Price', width: '110px', align: 'right',
             render: asset => {
-                const sellPrice = asset.currentValue ? asset.currentValue * (1 - sellDiscountPct / 100) : null;
-                return sellPrice ? `৳${fmt(sellPrice)}` : '<span class="text-muted">—</span>';
+                const sellPrice = asset.currentValue != null ? asset.currentValue * (1 - sellDiscountPct / 100) : null;
+                return sellPrice != null ? `৳${fmt(sellPrice)}` : '<span class="text-muted">—</span>';
             }
         },
         {
             id: 'actions', label: 'Actions', width: '180px', align: 'right',
             render: asset => `<div class="d-flex gap-1">
-                <button class="btn btn-xs btn-outline-primary" title="Edit" onclick="openEditModal(${asset.id})" style="padding:3px 7px;font-size:0.78rem;">
+                <button class="asset-action-btn asset-action-edit" type="button" title="Edit asset" aria-label="Edit asset" onclick="openEditModal(${asset.id})">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button class="btn btn-xs btn-outline-danger" title="Delete" onclick="openDeleteModal(${asset.id}, '${escHtml(asset.assetName)}')" style="padding:3px 7px;font-size:0.78rem;">
+                <button class="asset-action-btn asset-action-delete" type="button" title="Delete asset" aria-label="Delete asset" onclick="openDeleteModal(${asset.id}, '${escHtml(asset.assetName)}')">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>`
@@ -525,12 +527,15 @@
         }
 
         const gainCls  = totalGain >= 0 ? 'gain-positive' : 'gain-negative';
-        const gainSign = totalGain >= 0 ? '+' : '';
+        const gainSign = totalGain >= 0 ? '+' : '-';
+        const gainArrow = totalGain >= 0 ? '▲' : '▼';
 
         const summaryValues = {
             currentValue: hasCurrentValue ? `৳${fmt(totalCurrentValue)}` : '<span class="text-muted">—</span>',
             purchasePrice: hasPurchase ? `৳${fmt(totalPurchasePrice)}` : '<span class="text-muted">—</span>',
-            gain: `<span class="asset-gain ${gainCls}">${hasPurchase ? gainSign + '৳' + fmt(Math.abs(totalGain)) : '<span class="text-muted">—</span>'}</span>`,
+            gain: hasPurchase && totalGain !== 0
+                ? `<span class="asset-gain ${gainCls}"><span aria-hidden="true">${gainArrow}</span> ${gainSign}৳${fmt(Math.abs(totalGain))}</span>`
+                : '<span class="text-muted">—</span>',
             sellPrice: hasCurrentValue ? `৳${fmt(totalSellPrice)}` : '<span class="text-muted">—</span>',
             actions: ''
         };
@@ -554,7 +559,7 @@
         bar.style.display = 'flex';
         const start = (currentPage - 1) * PAGE_SIZE + 1;
         const end   = Math.min(currentPage * PAGE_SIZE, total);
-        if (info) info.textContent = `Showing ${start}–${end} of ${total}`;
+        if (info) info.textContent = `Showing ${start}-${end} of ${total}`;
         if (ul) {
             let html = `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
                 <a class="page-link" href="#" onclick="goPage(${currentPage - 1});return false;">&laquo;</a></li>`;
@@ -617,7 +622,7 @@
 
         rowSortable = Sortable.create(tbody, {
             handle: '.drag-handle-btn',
-            animation: 150,
+            animation: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 150,
             ghostClass: 'gp-row-ghost',
             chosenClass: 'gp-row-chosen',
             dragClass: 'gp-row-drag',
@@ -1151,7 +1156,7 @@
                       '24K': 'gold-badge-24k', 'TRADITIONAL': 'gold-badge-trad', 'CUSTOM': 'gold-badge-cust' };
         const cls = map[purity] || 'gold-badge-cust';
         const label = purity === 'TRADITIONAL' ? 'Traditional' : (purity || '—');
-        return `<span class="gold-badge ${cls}">${label}</span>`;
+        return `<span class="gold-badge asset-purity-badge ${cls}">${label}</span>`;
     }
 
     function fmtGoldType(t) {
