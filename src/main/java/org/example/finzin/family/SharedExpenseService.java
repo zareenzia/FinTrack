@@ -82,7 +82,7 @@ public class SharedExpenseService {
         sharedTransaction.setSplitMethod(splitMethod);
         sharedTransaction.setDescription(transaction.getDescription());
         sharedTransaction.setCategory(transaction.getCategory() != null ? transaction.getCategory().getName() : null);
-        LocalDate expenseDate = transaction.getDate() != null ? transaction.getDate().toLocalDate() : LocalDate.now();
+        LocalDate expenseDate = transaction.getDate() != null ? transaction.getDate().toLocalDate() : org.example.finzin.util.AppClock.today();
         sharedTransaction.setExpenseDate(expenseDate);
         SharedTransactionEntity saved = sharedTransactionRepository.save(sharedTransaction);
 

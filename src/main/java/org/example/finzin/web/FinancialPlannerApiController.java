@@ -72,7 +72,7 @@ public class FinancialPlannerApiController {
 
         // Subscriptions
         List<SubscriptionEntity> activeSubs = subscriptionRepository.findByUserIdAndStatus(userId, "ACTIVE");
-        LocalDate today = LocalDate.now();
+        LocalDate today = org.example.finzin.util.AppClock.today();
         LocalDate nextMonth = today.plusDays(30);
         long upcomingRenewals = activeSubs.stream()
                 .filter(s -> s.getRenewalDate() != null
@@ -424,7 +424,7 @@ public class FinancialPlannerApiController {
         m.put("status", e.getStatus());
         // Days until renewal
         if (e.getRenewalDate() != null) {
-            long days = ChronoUnit.DAYS.between(LocalDate.now(), e.getRenewalDate());
+            long days = ChronoUnit.DAYS.between(org.example.finzin.util.AppClock.today(), e.getRenewalDate());
             m.put("daysUntilRenewal", days);
         } else {
             m.put("daysUntilRenewal", null);

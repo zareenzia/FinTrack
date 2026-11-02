@@ -3,6 +3,7 @@ package org.example.finzin.ai;
 import org.example.finzin.entity.CategoryEntity;
 import org.example.finzin.repository.CategoryRepository;
 import org.example.finzin.repository.TransactionRepository;
+import org.example.finzin.util.AppClock;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -39,9 +40,10 @@ public class InsightService {
 
     public List<Insight> generateInsights(Long userId) {
         List<Insight> insights = new ArrayList<>();
-        YearMonth current = YearMonth.now();
+        LocalDate todayDhaka = AppClock.today();
+        YearMonth current = YearMonth.from(todayDhaka);
         YearMonth previous = current.minusMonths(1);
-        int throughDay = LocalDate.now().getDayOfMonth();
+        int throughDay = todayDhaka.getDayOfMonth();
 
         for (CategoryEntity cat : categoryRepository.findByUserId(userId)) {
             double currentSpend = monthToDateSum(userId, "expense", cat.getId(), current, throughDay);
@@ -71,7 +73,7 @@ public class InsightService {
                         + " compared to the same point last month.",
                 Math.abs(changePercent) >= MOM_HIGH_PERCENT ? "HIGH" : "MEDIUM",
                 categoryName,
-                LocalDate.now(),
+                AppClock.today(),
                 "TRANSACTIONS_MOM",
                 0.85));
     }
@@ -84,7 +86,7 @@ public class InsightService {
                         + TREND_MONTHS + "-month average of " + formatAmount(trailingAvg) + ".",
                 "HIGH",
                 categoryName,
-                LocalDate.now(),
+                AppClock.today(),
                 "TRANSACTIONS_TREND",
                 0.8));
     }
@@ -100,7 +102,7 @@ public class InsightService {
                         + formatAmount(current) + " (" + formatPercent(changePercent) + "%) compared to the same point last month.",
                 Math.abs(changePercent) >= MOM_HIGH_PERCENT ? "HIGH" : "MEDIUM",
                 "Income",
-                LocalDate.now(),
+                AppClock.today(),
                 "TRANSACTIONS_INCOME",
                 0.85));
     }
@@ -118,7 +120,7 @@ public class InsightService {
                         + " to " + formatAmount(current) + " compared to the same point last month.",
                 "MEDIUM",
                 "Savings",
-                LocalDate.now(),
+                AppClock.today(),
                 "TRANSACTIONS_SAVINGS",
                 0.85));
     }
@@ -131,7 +133,7 @@ public class InsightService {
                         + "-month average of " + formatAmount(trailingAvg) + ".",
                 "LOW",
                 "Savings",
-                LocalDate.now(),
+                AppClock.today(),
                 "TRANSACTIONS_SAVINGS_TREND",
                 0.8));
     }

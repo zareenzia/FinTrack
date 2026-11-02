@@ -211,16 +211,16 @@ public class GamificationEventListener {
         progressService.incrementCounter(userId, "ai.conversations_count", 1);
         achievementEngine.checkMetric(userId, "ai.conversations_count");
         // Capped once per day (dedup'd on the date-derived sourceId) to avoid trivial farming via rapid chat spam.
-        xpService.awardXp(userId, xpAiAssistantUsed, "AI_ASSISTANT_USED", "AI_CHAT", LocalDate.now().toString());
+        xpService.awardXp(userId, xpAiAssistantUsed, "AI_ASSISTANT_USED", "AI_CHAT", org.example.finzin.util.AppClock.today().toString());
     }
 
     private void handleDailyActive(GamificationEvent event) {
         Long userId = event.userId();
-        String today = LocalDate.now().toString();
+        String today = org.example.finzin.util.AppClock.today().toString();
         xpService.awardXp(userId, xpDailyLogin, "DAILY_LOGIN", "DAILY_LOGIN", today);
         if (!isEnabled(userId)) return;
         if (!Boolean.TRUE.equals(settingsService.getOrDefault(userId).getEnableStreakTracking())) return;
-        streakService.recordActivity(userId, "DAILY_ACTIVE", LocalDate.now());
+        streakService.recordActivity(userId, "DAILY_ACTIVE", org.example.finzin.util.AppClock.today());
         achievementEngine.checkMetric(userId, "streak.daily_active");
     }
 

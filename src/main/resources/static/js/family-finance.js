@@ -438,7 +438,7 @@
         document.getElementById('ffExpenseAmount').value = '';
         document.getElementById('ffExpenseCategory').value = '';
         document.getElementById('ffExpenseAccount').value = '';
-        document.getElementById('ffExpenseDate').value = new Date().toISOString().slice(0, 10);
+        document.getElementById('ffExpenseDate').value = window.Datetime ? window.Datetime.todayKeyDhaka() : new Date().toISOString().slice(0, 10);
         document.getElementById('ffExpenseSplitMethod').value = 'EQUAL';
         renderContributorRows();
         bootstrap.Modal.getOrCreateInstance(document.getElementById('ffExpenseModal')).show();
@@ -712,7 +712,7 @@
         document.getElementById('ffContributeAmount').value = '';
         document.getElementById('ffContributeCategory').value = '';
         document.getElementById('ffContributeAccount').value = '';
-        document.getElementById('ffContributeDate').value = new Date().toISOString().slice(0, 10);
+        document.getElementById('ffContributeDate').value = window.Datetime ? window.Datetime.todayKeyDhaka() : new Date().toISOString().slice(0, 10);
         document.getElementById('ffContributeNote').value = '';
         bootstrap.Modal.getOrCreateInstance(document.getElementById('ffContributeModal')).show();
     };

@@ -41,7 +41,7 @@ public class NotificationService {
     public boolean createIfNotRecent(Long userId, String type, String title, String message,
                                       String relatedEntityType, Long relatedEntityId) {
         boolean alreadyFired = notificationRepository.existsByUserIdAndTypeAndRelatedEntityIdAndCreatedAtAfter(
-                userId, type, relatedEntityId, LocalDate.now().atStartOfDay());
+                userId, type, relatedEntityId, org.example.finzin.util.AppClock.today().atStartOfDay());
         if (alreadyFired) {
             return false;
         }

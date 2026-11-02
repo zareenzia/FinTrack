@@ -40,7 +40,7 @@ public class HouseholdGoalContributionEntity {
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
-        if (contributedAt == null) contributedAt = LocalDate.now();
+        if (contributedAt == null) contributedAt = org.example.finzin.util.AppClock.today();
     }
 
     public Long getId() { return id; }

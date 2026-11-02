@@ -116,7 +116,7 @@ public class HouseholdGoalService {
         contribution.setTransactionId(transaction.getId());
         contribution.setAmount(transaction.getAmount());
         contribution.setNote(request.note());
-        contribution.setContributedAt(transaction.getDate() != null ? transaction.getDate().toLocalDate() : LocalDate.now());
+        contribution.setContributedAt(transaction.getDate() != null ? transaction.getDate().toLocalDate() : org.example.finzin.util.AppClock.today());
         HouseholdGoalContributionEntity saved = contributionRepository.save(contribution);
 
         double totalContributed = contributionRepository.findByHouseholdGoalIdOrderByContributedAtDesc(goal.getId()).stream()

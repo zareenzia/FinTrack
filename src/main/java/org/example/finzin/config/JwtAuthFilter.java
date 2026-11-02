@@ -126,7 +126,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     private void markDailyActive(Long userId) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = org.example.finzin.util.AppClock.today();
         LocalDate previous = lastActiveDayByUser.put(userId, today);
         if (today.equals(previous)) return; // already recorded today, skip without touching the DB
         eventPublisher.publishEvent(new GamificationEvent(userId, GamificationEventType.DAILY_ACTIVE, Map.of()));

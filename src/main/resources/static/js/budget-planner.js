@@ -112,7 +112,7 @@
         select.innerHTML = plans.map(p => `<option value="${p.id}">${p.name} (${p.period})</option>`).join('');
         let idToSelect = selectId;
         if (!idToSelect) {
-            const currentMonthKey = ymd(new Date()).slice(0, 7);
+            const currentMonthKey = window.Datetime ? window.Datetime.monthKeyDhaka() : ymd(new Date()).slice(0, 7);
             const match = plans.find(p => p.status === 'ACTIVE' && p.period === currentMonthKey) || plans[0];
             idToSelect = match.id;
         }
@@ -252,9 +252,9 @@
         planSaveMode = 'create';
         document.getElementById('planModalTitle').innerHTML = '<i class="fas fa-wallet me-2"></i>Create Budget';
         document.getElementById('planName').value = '';
-        const now = new Date();
+        const now = window.Datetime ? window.Datetime.nowInDhaka() : new Date();
         document.getElementById('planPeriodType').value = 'MONTH';
-        document.getElementById('planPeriod').value = ymd(now).slice(0, 7);
+        document.getElementById('planPeriod').value = window.Datetime ? window.Datetime.monthKeyDhaka() : ymd(now).slice(0, 7);
         const first = new Date(now.getFullYear(), now.getMonth(), 1);
         const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
         document.getElementById('planStartDate').value = ymd(first);
@@ -694,7 +694,8 @@
         const start = new Date(currentPlanData.startDate + 'T00:00:00');
         const end = new Date(currentPlanData.endDate + 'T23:59:59');
         const txs = await fetch('/api/transactions?limit=1000').then(r => r.json());
-        const inRange = txs.filter(t => { const d = new Date(t.date); return d >= start && d <= end; });
+        // Lexical "YYYY-MM-DD" comparison avoids any Date-object timezone reinterpretation.
+        const inRange = txs.filter(t => { const key = (t.date || '').slice(0, 10); return key >= currentPlanData.startDate && key <= currentPlanData.endDate; });
 
         const byDay = {};
         inRange.forEach(t => {
@@ -710,7 +711,7 @@
         const cumSpend = {};
         const exceededDays = new Set();
         inRange.filter(t => t.transaction_type === 'expense' && t.category_id)
-            .sort((a, b) => new Date(a.date) - new Date(b.date))
+            .sort((a, b) => (a.date || '').slice(0, 10).localeCompare((b.date || '').slice(0, 10)))
             .forEach(t => {
                 const catId = t.category_id;
                 if (!(catId in catBudgetMap)) return;
@@ -932,10 +933,10 @@
 
     function openApplyTemplateModal(id) {
         applyTemplateId = id;
-        const now = new Date();
+        const now = window.Datetime ? window.Datetime.nowInDhaka() : new Date();
         document.getElementById('applyName').value = '';
         document.getElementById('applyPeriodType').value = 'MONTH';
-        document.getElementById('applyPeriod').value = ymd(now).slice(0, 7);
+        document.getElementById('applyPeriod').value = window.Datetime ? window.Datetime.monthKeyDhaka() : ymd(now).slice(0, 7);
         const first = new Date(now.getFullYear(), now.getMonth(), 1);
         const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
         document.getElementById('applyStartDate').value = ymd(first);

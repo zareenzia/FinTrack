@@ -31,7 +31,7 @@ public class RecurringTransactionService {
     }
 
     public List<RecurringTransactionEntity> getUpcoming(Long userId, int days) {
-        LocalDate cutoff = LocalDate.now().plusDays(days);
+        LocalDate cutoff = org.example.finzin.util.AppClock.today().plusDays(days);
         return recurringTransactionRepository.findByUserIdAndStatus(userId, "ACTIVE").stream()
                 .filter(r -> !r.getNextExecutionDate().isAfter(cutoff))
                 .sorted((a, b) -> a.getNextExecutionDate().compareTo(b.getNextExecutionDate()))
@@ -94,7 +94,7 @@ public class RecurringTransactionService {
     /** Resuming a paused schedule skips the paused window rather than backfilling it. */
     public LocalDate nextOccurrenceOnOrAfterToday(RecurringTransactionEntity entity) {
         LocalDate date = entity.getNextExecutionDate();
-        LocalDate today = LocalDate.now();
+        LocalDate today = org.example.finzin.util.AppClock.today();
         while (date.isBefore(today)) {
             date = RecurringTransactionExecutionService.computeNextDate(date, entity.getFrequency(), entity.getIntervalValue());
         }
@@ -111,7 +111,7 @@ public class RecurringTransactionService {
      */
     public LocalDate recalculateNextExecutionDateForEdit(LocalDate startDate, String frequency, int intervalValue,
                                                           LocalDate lastExecutionDate) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = org.example.finzin.util.AppClock.today();
         LocalDate candidate = startDate;
         while ((lastExecutionDate != null && !candidate.isAfter(lastExecutionDate)) || candidate.isBefore(today)) {
             candidate = RecurringTransactionExecutionService.computeNextDate(candidate, frequency, intervalValue);

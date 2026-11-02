@@ -71,7 +71,7 @@ public class RecurringTransactionApiController {
     @GetMapping("/pending")
     public List<Map<String, Object>> getPending(HttpServletRequest request) {
         Long userId = getUserId(request);
-        LocalDate today = LocalDate.now();
+        LocalDate today = org.example.finzin.util.AppClock.today();
         return recurringTransactionService.getForUser(userId).stream()
                 .filter(r -> "ACTIVE".equals(r.getStatus()) && !r.getNextExecutionDate().isAfter(today))
                 .sorted((a, b) -> a.getNextExecutionDate().compareTo(b.getNextExecutionDate()))
@@ -130,7 +130,7 @@ public class RecurringTransactionApiController {
         // execution (which would re-trigger/duplicate a period that already ran).
         LocalDate explicitNextExecutionDate = parseDate(body.nextExecutionDate());
         if (explicitNextExecutionDate != null) {
-            if (explicitNextExecutionDate.isBefore(LocalDate.now())) {
+            if (explicitNextExecutionDate.isBefore(org.example.finzin.util.AppClock.today())) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Next Run cannot be set to a date in the past."));
             }
             if (entity.getLastExecutionDate() != null && !explicitNextExecutionDate.isAfter(entity.getLastExecutionDate())) {

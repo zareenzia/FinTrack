@@ -52,7 +52,7 @@ public class PromptBuilder {
                 coaching-shaped — "how am I doing", "why did X change", "how can I save more", budget/savings \
                 check-ins — rather than only the narrower single-fact tools. As always, never state a number \
                 you didn't get from a tool call.
-                """.formatted(LocalDate.now());
+                """.formatted(org.example.finzin.util.AppClock.today());
     }
 
     /**

@@ -88,7 +88,7 @@ public class SettlementService {
 
         List<SuggestedTransfer> transfers = simplifyDebts(netBalanceByUser);
         String periodStart = household.getCreatedAt() != null ? household.getCreatedAt().toLocalDate().toString() : null;
-        return new SettlementSummaryResponse(periodStart, LocalDate.now().toString(), balances, transfers);
+        return new SettlementSummaryResponse(periodStart, org.example.finzin.util.AppClock.today().toString(), balances, transfers);
     }
 
     /** Greedy debt-simplification: repeatedly match the largest creditor with the largest debtor,

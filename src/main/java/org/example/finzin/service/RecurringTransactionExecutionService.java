@@ -2,6 +2,7 @@ package org.example.finzin.service;
 
 import org.example.finzin.entity.RecurringTransactionEntity;
 import org.example.finzin.repository.RecurringTransactionRepository;
+import org.example.finzin.util.AppClock;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -29,14 +30,14 @@ public class RecurringTransactionExecutionService {
     }
 
     public void processAllDue() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = AppClock.today();
         List<RecurringTransactionEntity> due = recurringTransactionRepository
                 .findByStatusAndNextExecutionDateLessThanEqual("ACTIVE", today);
         due.forEach(this::remindOne);
     }
 
     public void processDueForUser(Long userId) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = AppClock.today();
         List<RecurringTransactionEntity> due = recurringTransactionRepository
                 .findByUserIdAndStatusAndNextExecutionDateLessThanEqual(userId, "ACTIVE", today);
         due.forEach(this::remindOne);
@@ -67,7 +68,7 @@ public class RecurringTransactionExecutionService {
 
     /** Generates "due soon" reminder notifications (tomorrow / in 2 days) — avoids duplicate reminders per day. */
     public void sendUpcomingReminders() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = AppClock.today();
         List<RecurringTransactionEntity> upcoming = recurringTransactionRepository.findByStatusAndNextExecutionDateLessThanEqual("ACTIVE", today.plusDays(2));
         for (RecurringTransactionEntity recurring : upcoming) {
             long daysUntil = today.until(recurring.getNextExecutionDate()).getDays();

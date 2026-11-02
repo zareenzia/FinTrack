@@ -257,7 +257,7 @@ public class PurchaseItemService {
         }
 
         return new ExpenseDraftResponse(item.getEstimatedPrice(), item.getItemName(), categoryId, categoryName,
-                LocalDate.now().toString(), details.length() > 0 ? details.toString() : null);
+                org.example.finzin.util.AppClock.today().toString(), details.length() > 0 ? details.toString() : null);
     }
 
     private Long resolveCategoryId(Long userId, String label) {
@@ -419,7 +419,7 @@ public class PurchaseItemService {
         double totalValue = activeItems.stream().mapToDouble(PurchaseItemEntity::getEstimatedPrice).sum();
         double averageCost = activeItems.isEmpty() ? 0 : totalValue / activeItems.size();
 
-        int currentYear = LocalDate.now().getYear();
+        int currentYear = org.example.finzin.util.AppClock.today().getYear();
         int purchasedThisYear = (int) all.stream()
                 .filter(i -> "PURCHASED".equals(i.getStatus()) && i.getPurchasedAt() != null && i.getPurchasedAt().getYear() == currentYear)
                 .count();

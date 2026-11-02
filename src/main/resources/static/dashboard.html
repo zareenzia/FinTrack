@@ -1469,15 +1469,17 @@
     let rdCurrentReceiptId   = null;
     let savingsBreakdownModal = null;
 
-    /** 'YYYY-MM' key for a date string/object */
+    /** 'YYYY-MM' key for a date string/object (transaction dates are date-only semantics; uses
+     *  Dhaka-safe parsing so no instant is ever reinterpreted in the viewer's own timezone). */
     function monthKeyOf(dateVal) {
+        if (window.Datetime) return window.Datetime.monthKeyDhaka(dateVal);
         const d = new Date(dateVal);
         return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
     }
 
-    /** 'YYYY-MM' key for right now */
+    /** 'YYYY-MM' key for right now, in Asia/Dhaka */
     function currentMonthKey() {
-        return monthKeyOf(new Date());
+        return window.Datetime ? window.Datetime.monthKeyDhaka() : monthKeyOf(new Date());
     }
 
     /** Human label for a 'YYYY-MM' key, e.g. "July 2026" */
@@ -2132,9 +2134,9 @@
         creditCardSpendingDebounceTimer = setTimeout(loadCreditCardSpendingWidget, 180);
     }
 
-    /** Get greeting based on current time of day */
+    /** Get greeting based on current time of day (Asia/Dhaka, not the viewer's device timezone) */
     function getTimeGreeting() {
-        const hour = new Date().getHours();
+        const hour = window.Datetime ? window.Datetime.nowInDhaka().getHours() : new Date().getHours();
         if (hour >= 5 && hour < 12) return 'Good Morning';
         if (hour >= 12 && hour < 17) return 'Good Afternoon';
         if (hour >= 17 && hour < 21) return 'Good Evening';
@@ -2344,10 +2346,11 @@
                 if (!items.length) {
                     banner.classList.add('d-none');
                 } else {
-                    const today = new Date(); today.setHours(0, 0, 0, 0);
+                    const todayKey = window.Datetime ? window.Datetime.todayKeyDhaka() : (() => { const t = new Date(); t.setHours(0, 0, 0, 0); return t; })();
                     const isDueToday = (r) => {
+                        if (window.Datetime) return String(r.nextExecutionDate).slice(0, 10) === todayKey;
                         const d = new Date(r.nextExecutionDate); d.setHours(0, 0, 0, 0);
-                        return d.getTime() === today.getTime();
+                        return d.getTime() === todayKey.getTime();
                     };
                     if (items.every(isDueToday)) {
                         // All items are due today — call that out explicitly with separate
@@ -2370,8 +2373,15 @@
                 containers.forEach(c => c.innerHTML = '<p class="text-muted small mb-0">No upcoming recurring transactions in the next 3 days.</p>');
                 return;
             }
+            const todayKeyForLabels = window.Datetime ? window.Datetime.todayKeyDhaka() : null;
             const today = new Date(); today.setHours(0, 0, 0, 0);
             const dayLabel = (dateStr) => {
+                if (window.Datetime) {
+                    const diffDays = window.Datetime.daysBetweenDateOnly(todayKeyForLabels, dateStr);
+                    if (diffDays === 0) return 'Today';
+                    if (diffDays === 1) return 'Tomorrow';
+                    return window.Datetime.formatDateOnly(dateStr, { includeYear: false });
+                }
                 const d = new Date(dateStr); d.setHours(0, 0, 0, 0);
                 const diffDays = Math.round((d - today) / 86400000);
                 if (diffDays === 0) return 'Today';
@@ -2501,7 +2511,7 @@
                 html = shown.map(t => `
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <span class="fw-semibold small">${escapeAiSummaryText(t.title)}</span>
-                        ${t.dueDate ? `<span class="text-muted small ms-2">${new Date(t.dueDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</span>` : ''}
+                        ${t.dueDate ? `<span class="text-muted small ms-2">${window.Datetime ? window.Datetime.formatDateOnly(t.dueDate, { includeYear: false }) : new Date(t.dueDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</span>` : ''}
                     </div>`).join('');
                 if (items.length > 3) html += `<div class="text-muted small">+${items.length - 3} more starred</div>`;
             }
@@ -2832,10 +2842,11 @@
                 // nor a loss, so it gets its own neutral styling instead of expense-red with a sign.
                 const isTransfer = tx.transaction_type === 'transfer' && !isExternalIncoming;
                 const txClass   = isIncome ? 'income' : (isSavings ? 'savings' : (isTransfer ? 'transfer' : 'expense'));
+                const dateParts = window.Datetime ? window.Datetime.parseDateOnly(tx.date) : null;
                 const dateObj   = new Date(tx.date);
-                const dayName   = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
-                const dateStr   = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                const yearStr   = dateObj.getFullYear();
+                const dayName   = dateParts ? ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date(Date.UTC(dateParts.y, dateParts.m - 1, dateParts.d)).getUTCDay()] : dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+                const dateStr   = dateParts ? window.Datetime.formatDateOnly(tx.date, { includeYear: false }) : dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const yearStr   = dateParts ? dateParts.y : dateObj.getFullYear();
                 const catIcon   = getCatIcon(tx.category_name);
                 const amtPrefix = isIncome ? '+' : (isSavings ? '⇒' : (isTransfer ? '' : '−'));
                 return `
@@ -4922,6 +4933,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+<script src="/js/datetime.js"></script>
 <script src="/js/sidebar.js"></script>
 </body>
 </html>

@@ -468,10 +468,15 @@
         var active = subData.filter(function (s) { return s.status === 'ACTIVE'; });
         var monthly = active.reduce(function (sum, s) { return sum + (s.monthlyCost || 0); }, 0);
         var yearly  = active.reduce(function (sum, s) { return sum + (s.yearlyCost || 0); }, 0);
-        var today = new Date(); today.setHours(0, 0, 0, 0);
-        var nextMonth = new Date(today); nextMonth.setDate(today.getDate() + 30);
+        var todayKey = window.Datetime ? window.Datetime.todayKeyDhaka() : null;
         var renewals = active.filter(function (s) {
             if (!s.renewalDate) return false;
+            if (window.Datetime) {
+                var diff = window.Datetime.daysBetweenDateOnly(todayKey, s.renewalDate);
+                return diff >= 0 && diff <= 30;
+            }
+            var today = new Date(); today.setHours(0, 0, 0, 0);
+            var nextMonth = new Date(today); nextMonth.setDate(today.getDate() + 30);
             var d = new Date(s.renewalDate);
             return d >= today && d <= nextMonth;
         }).length;
@@ -503,12 +508,14 @@
             renderPagination('subPagination', 0, 'subscriptions');
             return;
         }
+        var todayKey = window.Datetime ? window.Datetime.todayKeyDhaka() : null;
         var today = new Date(); today.setHours(0, 0, 0, 0);
         tbody.innerHTML = page.map(function (s) {
             var rowCls = '';
             if (s.renewalDate && s.status === 'ACTIVE') {
-                var d = new Date(s.renewalDate);
-                var diff = Math.ceil((d - today) / 86400000);
+                var diff = window.Datetime
+                    ? window.Datetime.daysBetweenDateOnly(todayKey, s.renewalDate)
+                    : Math.ceil((new Date(s.renewalDate) - today) / 86400000);
                 if (diff < 0) rowCls = 'fp-renewal-overdue';
                 else if (diff <= 7) rowCls = 'fp-renewal-soon';
             }
