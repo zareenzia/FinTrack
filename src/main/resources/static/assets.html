@@ -239,7 +239,6 @@
             flex-wrap: nowrap;
             flex-shrink: 0;
             gap: 8px;
-            margin-left: auto;
         }
         .asset-inventory-search {
             position: relative;
@@ -261,7 +260,7 @@
         body.dashboard-page .asset-inventory-header .asset-sell-input {
             box-sizing: border-box;
             height: 36px;
-            padding: 0 10px;
+            padding: 0 10px !important;
             border: 1px solid var(--border) !important;
             border-radius: 10px !important;
             background-color: var(--surface-2) !important;
@@ -272,7 +271,7 @@
             text-transform: none;
             box-shadow: none;
         }
-        body.dashboard-page .asset-inventory-header .tx-filter-search { width: 100%; padding-left: 36px; }
+        body.dashboard-page .asset-inventory-header .tx-filter-search { width: 100% !important; padding-left: 36px !important; min-width: 0; max-width: none; }
         body.dashboard-page .asset-inventory-header .tx-filter-select { min-width: 0; max-width: none; cursor: pointer; }
         body.dashboard-page .asset-inventory-header #filterPurity { width: 122px; }
         body.dashboard-page .asset-inventory-header #filterType { width: 112px; }
