@@ -33,6 +33,7 @@
     }
 
     function todayIso() {
+        if (window.Datetime) return window.Datetime.todayKeyDhaka();
         var d = new Date();
         var mm = String(d.getMonth() + 1).padStart(2, '0');
         var dd = String(d.getDate()).padStart(2, '0');

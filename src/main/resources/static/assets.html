@@ -192,12 +192,16 @@
             justify-content: space-between;
             flex-wrap: wrap;
             gap: 12px;
-            padding: 0 0 12px;
-            margin-bottom: 14px;
+            padding: 10px 0;
+            margin-bottom: 10px;
             background: transparent;
+            color: var(--text);
             border: 0;
             border-bottom: 1px solid var(--border);
             border-radius: 0;
+            /* Override .card-header's gradient box-shadow, which otherwise leaves a dark
+               divider-like strip under this transparent, flattened header. */
+            box-shadow: none;
         }
         .asset-inventory-title {
             display: flex;
@@ -226,6 +230,16 @@
             justify-content: flex-end;
             flex-wrap: wrap;
             gap: 8px;
+        }
+        /* Import/export icon buttons stay side by side at the toolbar's right end and never wrap
+           or overflow the card padding, even while the rest of the toolbar wraps. */
+        .asset-inventory-io-group {
+            display: flex;
+            align-items: center;
+            flex-wrap: nowrap;
+            flex-shrink: 0;
+            gap: 8px;
+            margin-left: auto;
         }
         .asset-inventory-search {
             position: relative;
@@ -258,7 +272,7 @@
             text-transform: none;
             box-shadow: none;
         }
-        body.dashboard-page .asset-inventory-header .tx-filter-search { width: 100%; padding-left: 32px; }
+        body.dashboard-page .asset-inventory-header .tx-filter-search { width: 100%; padding-left: 36px; }
         body.dashboard-page .asset-inventory-header .tx-filter-select { min-width: 0; max-width: none; cursor: pointer; }
         body.dashboard-page .asset-inventory-header #filterPurity { width: 122px; }
         body.dashboard-page .asset-inventory-header #filterType { width: 112px; }
@@ -325,10 +339,11 @@
             background: var(--surface);
             color: var(--text-muted);
             font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 0.06em;
+            font-weight: 600;
+            letter-spacing: 0.04em;
             line-height: 1.2;
             text-transform: uppercase;
+            white-space: nowrap;
         }
         #inventoryAssetTable thead th[data-column="asset"],
         #inventoryAssetTable thead th[data-column="type"],
@@ -346,9 +361,9 @@
             color: var(--text);
             font-size: 14px;
         }
-        #inventoryAssetTable th[data-column="currentValue"], #inventoryAssetTable td[data-column="currentValue"],
-        #inventoryAssetTable th[data-column="purchasePrice"], #inventoryAssetTable td[data-column="purchasePrice"],
-        #inventoryAssetTable th[data-column="sellPrice"], #inventoryAssetTable td[data-column="sellPrice"] {
+        #inventoryAssetTable td[data-column="currentValue"],
+        #inventoryAssetTable td[data-column="purchasePrice"],
+        #inventoryAssetTable td[data-column="sellPrice"] {
             white-space: nowrap;
             font-size: 14px;
             font-variant-numeric: tabular-nums;
@@ -401,12 +416,15 @@
         .asset-gain {
             display: inline-flex;
             align-items: center;
+            justify-content: flex-end;
             gap: 4px;
+            min-width: 150px;
             padding: 5px 8px;
             border-radius: 999px;
             font-size: 12px;
             font-variant-numeric: tabular-nums;
             font-weight: 600;
+            white-space: nowrap;
         }
         .asset-gain.gain-positive { background: color-mix(in srgb, var(--positive) 14%, transparent); color: var(--positive); }
         .asset-gain.gain-negative { background: color-mix(in srgb, var(--negative) 14%, transparent); color: var(--negative); }
@@ -485,7 +503,7 @@
             #inventoryAssetTable th[data-column="asset"],
             #inventoryAssetTable td[data-column="asset"] {
                 position: sticky;
-                left: 36px;
+                left: 40px;
                 z-index: 1;
                 background: var(--surface);
             }
@@ -752,9 +770,11 @@
                                 <input type="number" class="form-control asset-sell-input" id="sellDiscount" value="17" min="0" max="100" step="0.1" aria-label="Sell price deduction percentage" oninput="setSellDiscount(this.value)">
                                 <label for="sellDiscount">%</label>
                             </div>
-                            <button type="button" class="asset-inventory-icon-btn" id="assetImportBtn" title="Import" aria-label="Import" onclick="document.getElementById('assetImportFileInput').click()"><i class="fas fa-file-import" aria-hidden="true"></i></button>
-                            <button type="button" class="asset-inventory-icon-btn" id="assetExportBtn" title="Export" aria-label="Export" onclick="exportFilteredAssetsToCsv()"><i class="fas fa-file-export" aria-hidden="true"></i></button>
-                        <input type="file" id="assetImportFileInput" accept=".csv" style="display:none;" onchange="handleAssetImportFile(this)">
+                            <div class="asset-inventory-io-group">
+                                <button type="button" class="asset-inventory-icon-btn" id="assetImportBtn" title="Import" aria-label="Import" onclick="document.getElementById('assetImportFileInput').click()"><i class="fas fa-file-import" aria-hidden="true"></i></button>
+                                <button type="button" class="asset-inventory-icon-btn" id="assetExportBtn" title="Export" aria-label="Export" onclick="exportFilteredAssetsToCsv()"><i class="fas fa-file-export" aria-hidden="true"></i></button>
+                                <input type="file" id="assetImportFileInput" accept=".csv" style="display:none;" onchange="handleAssetImportFile(this)">
+                            </div>
                     </div>
                 </div>
                 <div class="gp-reorder-hint" id="reorderHint"></div>
@@ -995,6 +1015,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script src="/js/auth.js"></script>
 <script src="/js/sidebar.js"></script>
+<script src="/js/datetime.js"></script>
 <script src="/js/profile.js"></script>
 <script src="/js/assets.js"></script>
 </body>

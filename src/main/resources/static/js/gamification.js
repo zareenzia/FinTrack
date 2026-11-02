@@ -131,7 +131,7 @@
             var container = document.getElementById('gamXpHistoryList');
             if (!items.length) { container.innerHTML = '<p class="text-muted small">No XP earned yet.</p>'; return; }
             container.innerHTML = items.map(function (h) {
-                var when = h.createdAt ? new Date(h.createdAt).toLocaleString() : '';
+                var when = h.createdAt ? (window.Datetime ? window.Datetime.formatDateTime(h.createdAt) : new Date(h.createdAt).toLocaleString()) : '';
                 return '<div class="d-flex justify-content-between align-items-center py-2 border-bottom">' +
                     '<div><div class="small fw-semibold">' + escHtml(prettyReason(h.reason)) + '</div>' +
                     '<div class="text-muted" style="font-size:0.75rem">' + escHtml(when) + '</div></div>' +

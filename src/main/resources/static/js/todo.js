@@ -266,7 +266,7 @@
                 '<div id="tdSubItemsList">' + subItems.map(buildSubItemRowHtml).join('') + '</div>' +
                 '<input type="text" class="td-add-step-input" id="tdAddStepInput" placeholder="+ Add a step" onkeydown="if(event.key===\'Enter\') window.tdAddStep()">' +
             '</div>' +
-            '<div class="td-detail-footer">Created ' + (item.createdAt ? new Date(item.createdAt).toLocaleString() : '') + '</div>';
+            '<div class="td-detail-footer">Created ' + (item.createdAt ? (window.Datetime ? window.Datetime.formatDateTime(item.createdAt) : new Date(item.createdAt).toLocaleString()) : '') + '</div>';
 
         document.getElementById('tdDetailCompleted').addEventListener('change', function (e) { window.tdToggleItemCompleted(item.id, e.target.checked); });
         document.getElementById('tdDetailStarBtn').addEventListener('click', function () { window.tdToggleItemImportant(item.id, !item.important); });

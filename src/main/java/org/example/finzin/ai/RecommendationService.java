@@ -122,7 +122,7 @@ public class RecommendationService {
         List<Map<String, Object>> categoryStatuses = budgetPlanService.computeCategoryStatuses(plan);
         Map<String, Object> summary = budgetPlanService.computeSummary(plan, categoryStatuses);
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = org.example.finzin.util.AppClock.today();
         int daysRemaining = plan.getEndDate().isBefore(today) ? 0 : (int) today.until(plan.getEndDate()).getDays() + 1;
 
         List<CategoryAdvice> categories = new ArrayList<>();

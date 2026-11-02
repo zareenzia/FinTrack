@@ -32,14 +32,14 @@ public class BudgetScheduler {
     public void checkAllActivePlans() {
         for (BudgetPlanEntity plan : budgetPlanRepository.findAll()) {
             if (!"ACTIVE".equals(plan.getStatus())) continue;
-            if (plan.getEndDate().isBefore(java.time.LocalDate.now())) continue;
+            if (plan.getEndDate().isBefore(org.example.finzin.util.AppClock.today())) continue;
             budgetPlanService.checkAndNotifyThresholds(plan);
         }
     }
 
     public void checkPlansForUser(Long userId) {
         for (BudgetPlanEntity plan : budgetPlanRepository.findByUserIdAndStatus(userId, "ACTIVE")) {
-            if (plan.getEndDate().isBefore(java.time.LocalDate.now())) continue;
+            if (plan.getEndDate().isBefore(org.example.finzin.util.AppClock.today())) continue;
             budgetPlanService.checkAndNotifyThresholds(plan);
         }
     }

@@ -1559,7 +1559,7 @@
 
             const dateEl = rowEl.querySelector('.tx-row-date');
             if (row.date) dateEl.value = row.date;
-            else dateEl.valueAsDate = new Date();
+            else dateEl.value = window.Datetime ? window.Datetime.todayKeyDhaka() : new Date().toISOString().slice(0, 10);
             row.date = dateEl.value;
             dateEl.addEventListener('input', function () { row.date = this.value; });
 
@@ -1846,9 +1846,9 @@
 
     function isRtPending(r) {
         if (r.status !== 'ACTIVE') return false;
-        const due = new Date(r.nextExecutionDate + 'T00:00:00');
-        const today = new Date(new Date().toDateString());
-        const diffDays = Math.round((due - today) / 86400000);
+        const diffDays = window.Datetime
+            ? window.Datetime.daysBetweenDateOnly(window.Datetime.todayKeyDhaka(), r.nextExecutionDate)
+            : Math.round((new Date(r.nextExecutionDate + 'T00:00:00') - new Date(new Date().toDateString())) / 86400000);
         // Show as pending when due within the next 3 days or already overdue
         return diffDays <= 3;
     }
@@ -1867,10 +1867,11 @@
         card.classList.remove('d-none');
         countEl.textContent = `${pending.length} item${pending.length > 1 ? 's' : ''}`;
 
-        const today = new Date(new Date().toDateString());
+        const todayKey = window.Datetime ? window.Datetime.todayKeyDhaka() : null;
         body.innerHTML = pending.map(r => {
-            const due = new Date(r.nextExecutionDate + 'T00:00:00');
-            const diffDays = Math.round((due - today) / 86400000);
+            const diffDays = window.Datetime
+                ? window.Datetime.daysBetweenDateOnly(todayKey, r.nextExecutionDate)
+                : Math.round((new Date(r.nextExecutionDate + 'T00:00:00') - new Date(new Date().toDateString())) / 86400000);
             let whenText;
             if (diffDays < 0) whenText = `overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) > 1 ? 's' : ''}`;
             else if (diffDays === 0) whenText = 'due today';
@@ -1897,7 +1898,7 @@
         document.getElementById('confirmOccurrenceIntro').innerHTML =
             `<strong>${escHtml(r.transactionName)}</strong> was due on ${formatDateDDMMYYYY(r.nextExecutionDate)}. Confirm the details of what actually happened.`;
         document.getElementById('confirmAmount').value = r.amount;
-        document.getElementById('confirmDate').valueAsDate = new Date();
+        document.getElementById('confirmDate').value = window.Datetime ? window.Datetime.todayKeyDhaka() : new Date().toISOString().slice(0, 10);
 
         const label = { income: 'Received Into', expense: 'Paid From', savings: 'Savings Account', transfer: 'From Account' }[r.transactionType] || 'Account';
         document.getElementById('confirmAccountLabel').innerHTML = label + ' <small class="text-muted">(optional)</small>';
@@ -2215,7 +2216,7 @@
         document.getElementById('saveRecurringBtn').title = 'Create Recurring Transaction';
         document.getElementById('saveRecurringBtnIcon').className = 'fas fa-plus';
         document.getElementById('recurringForm').reset();
-        document.getElementById('recurStartDate').valueAsDate = new Date();
+        document.getElementById('recurStartDate').value = window.Datetime ? window.Datetime.todayKeyDhaka() : new Date().toISOString().slice(0, 10);
         document.getElementById('recurEndDate').value = '';
         document.getElementById('recurNeverEnds').checked = true;
         onRecurNeverEndsChange();
@@ -2246,7 +2247,7 @@
         document.getElementById('recurNextRunWrap').classList.remove('d-none');
         const nextRunEl = document.getElementById('recurNextRun');
         nextRunEl.value = r.nextExecutionDate;
-        nextRunEl.min = new Date().toISOString().slice(0, 10);
+        nextRunEl.min = window.Datetime ? window.Datetime.todayKeyDhaka() : new Date().toISOString().slice(0, 10);
         recurNextRunManuallyEdited = false;
 
         // onRecurTypeChange() disables Save until the (async, type-filtered) category reload
@@ -2388,7 +2389,7 @@
     }
 
     async function renderForecast() {
-        const now = new Date();
+        const now = window.Datetime ? window.Datetime.nowInDhaka() : new Date();
         const rangeStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
         const rangeEnd = new Date(now.getFullYear(), now.getMonth() + 2, 0);
         document.getElementById('rtForecastMonthLabel').textContent = rangeStart.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -2488,15 +2489,17 @@
     }
 
     // ============== RECENT TRANSACTIONS TAB ==============
-    /** 'YYYY-MM' key for a date string/object */
+    /** 'YYYY-MM' key for a date string/object (transaction dates are date-only semantics; uses
+     *  Dhaka-safe parsing so no instant is ever reinterpreted in the viewer's own timezone). */
     function monthKeyOf(dateVal) {
+        if (window.Datetime) return window.Datetime.monthKeyDhaka(dateVal);
         const d = new Date(dateVal);
         return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
     }
 
-    /** 'YYYY-MM' key for right now */
+    /** 'YYYY-MM' key for right now, in Asia/Dhaka */
     function currentMonthKey() {
-        return monthKeyOf(new Date());
+        return window.Datetime ? window.Datetime.monthKeyDhaka() : monthKeyOf(new Date());
     }
 
     /** Human label for a 'YYYY-MM' key, e.g. "July 2026" */
@@ -2831,10 +2834,11 @@
                 // nor a loss, so it gets its own neutral styling instead of expense-red with a sign.
                 const isTransfer = tx.transaction_type === 'transfer' && !isExternalIncoming;
                 const txClass   = isIncome ? 'income' : (isSavings ? 'savings' : (isTransfer ? 'transfer' : 'expense'));
+                const dateParts = window.Datetime ? window.Datetime.parseDateOnly(tx.date) : null;
                 const dateObj   = new Date(tx.date);
-                const dayName   = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
-                const dateStr   = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                const yearStr   = dateObj.getFullYear();
+                const dayName   = dateParts ? ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date(Date.UTC(dateParts.y, dateParts.m - 1, dateParts.d)).getUTCDay()] : dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+                const dateStr   = dateParts ? window.Datetime.formatDateOnly(tx.date, { includeYear: false }) : dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const yearStr   = dateParts ? dateParts.y : dateObj.getFullYear();
                 const catIcon   = getCatIcon(tx.category_name);
                 const amtPrefix = isIncome ? '+' : (isSavings ? '⇒' : (isTransfer ? '' : '−'));
                 return `
@@ -3136,6 +3140,7 @@
     }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/datetime.js"></script>
 <script src="/js/sidebar.js"></script>
 </body>
 </html>

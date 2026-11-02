@@ -179,7 +179,7 @@ public class ProgressService {
     private double resolveBudgetConsecutiveMonthsWithin(Long userId) {
         List<BudgetPlanEntity> closedMonthlyPlans = budgetPlanRepository.findByUserId(userId).stream()
                 .filter(p -> "MONTH".equals(p.getPeriodType()))
-                .filter(p -> p.getEndDate().isBefore(LocalDate.now()))
+                .filter(p -> p.getEndDate().isBefore(org.example.finzin.util.AppClock.today()))
                 .sorted(Comparator.comparing(BudgetPlanEntity::getEndDate).reversed())
                 .toList();
 

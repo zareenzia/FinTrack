@@ -25,7 +25,7 @@
 
     const INVENTORY_COLUMNS = [
         {
-            id: 'drag', label: '', width: '36px', align: 'center',
+            id: 'drag', label: '', width: '40px', align: 'center',
             render: asset => `<button type="button" class="drag-handle-btn" data-id="${asset.id}"
                     title="Drag to reorder, or focus and press Arrow Up/Down"
                     aria-label="Reorder ${escHtml(asset.assetName)}" aria-roledescription="Sortable row handle">
@@ -42,10 +42,10 @@
                 </div>
             </div>`
         },
-        { id: 'type', label: 'Type', width: '84px', align: 'left', render: asset => `<span class="asset-type-pill">${escHtml(fmtGoldType(asset.goldType))}</span>` },
-        { id: 'purity', label: 'Purity', width: '76px', align: 'left', render: asset => purityBadge(asset.purity) },
+        { id: 'type', label: 'Type', width: '110px', align: 'left', render: asset => `<span class="asset-type-pill">${escHtml(fmtGoldType(asset.goldType))}</span>` },
+        { id: 'purity', label: 'Purity', width: '90px', align: 'left', render: asset => purityBadge(asset.purity) },
         {
-            id: 'weight', label: 'Weight', width: '150px', align: 'left',
+            id: 'weight', label: 'Weight', width: '170px', align: 'left',
             render: asset => {
                 const conversions = asset.weightConversions || convertAll(asset.weight, asset.weightUnit);
                 const grams = conversions.GRAM || 0;
@@ -54,10 +54,10 @@
                 return `<span class="asset-weight-value">${asset.weight} ${unit}</span><small class="asset-weight-breakdown" title="${escHtml(breakdown)}">${breakdown}</small>`;
             }
         },
-        { id: 'currentValue', label: 'Current Value', width: '122px', align: 'right', render: asset => asset.currentValue != null ? `৳${fmt(asset.currentValue)}` : '<span class="text-muted">—</span>' },
-        { id: 'purchasePrice', label: 'Purchase Price', width: '138px', align: 'right', render: asset => asset.purchasePrice != null ? `৳${fmt(asset.purchasePrice)}` : '<span class="text-muted">—</span>' },
+        { id: 'currentValue', label: 'Current Value', width: '150px', align: 'right', render: asset => asset.currentValue != null ? `৳${fmtMoney(asset.currentValue)}` : '<span class="text-muted">—</span>' },
+        { id: 'purchasePrice', label: 'Purchase Price', width: '140px', align: 'right', render: asset => asset.purchasePrice != null ? `৳${fmtMoney(asset.purchasePrice)}` : '<span class="text-muted">—</span>' },
         {
-            id: 'gain', label: 'Gain / Loss', width: '182px', align: 'right',
+            id: 'gain', label: 'Gain / Loss', width: '190px', align: 'right',
             render: asset => {
                 if (asset.gainLoss == null || !asset.purchasePrice || asset.gainLoss === 0) return '<span class="text-muted">—</span>';
                 const gain = asset.gainLoss || 0;
@@ -65,18 +65,18 @@
                 const sign = gain >= 0 ? '+' : '-';
                 const className = gain >= 0 ? 'gain-positive' : 'gain-negative';
                 const arrow = gain >= 0 ? '▲' : '▼';
-                return `<span class="asset-gain ${className}"><span aria-hidden="true">${arrow}</span> ${sign}৳${fmt(Math.abs(gain))} · ${gainPct.toFixed(1)}%</span>`;
+                return `<span class="asset-gain ${className}"><span aria-hidden="true">${arrow}</span> ${sign}৳${fmtMoney(Math.abs(gain))} · ${gainPct.toFixed(1)}%</span>`;
             }
         },
         {
-            id: 'sellPrice', label: 'Sell Price', width: '110px', align: 'right',
+            id: 'sellPrice', label: 'Sell Price', width: '140px', align: 'right',
             render: asset => {
                 const sellPrice = asset.currentValue != null ? asset.currentValue * (1 - sellDiscountPct / 100) : null;
-                return sellPrice != null ? `৳${fmt(sellPrice)}` : '<span class="text-muted">—</span>';
+                return sellPrice != null ? `৳${fmtMoney(sellPrice)}` : '<span class="text-muted">—</span>';
             }
         },
         {
-            id: 'actions', label: 'Actions', width: '180px', align: 'right',
+            id: 'actions', label: 'Actions', width: '100px', align: 'right',
             render: asset => `<div class="d-flex gap-1">
                 <button class="asset-action-btn asset-action-edit" type="button" title="Edit asset" aria-label="Edit asset" onclick="openEditModal(${asset.id})">
                     <i class="fas fa-edit"></i>
@@ -87,6 +87,7 @@
             </div>`
         }
     ];
+
 
     // ── Init ──────────────────────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', function () {
@@ -295,13 +296,13 @@
                 }, 3000);
             }
         } else if (lastSyncError) {
-            setSyncStatus('error', lastSyncTime ? 'Synced ' + fmtDateTime(lastSyncTime) : 'Sync failed');
+            setSyncStatus('error', lastSyncTime ? fmtSyncStatus(lastSyncTime) : 'Sync failed');
             if (chip) chip.title = 'Source: goldr.org' +
-                (lastSyncTime ? ' — Last sync: ' + fmtDateTime(lastSyncTime) : '') +
+                (lastSyncTime ? ' — Last sync: ' + fmtSyncTooltip(lastSyncTime) : '') +
                 ' — ' + lastSyncError;
         } else if (lastSyncTime) {
-            setSyncStatus('success', 'Synced ' + fmtDateTime(lastSyncTime));
-            if (chip) chip.title = 'Source: goldr.org — ' + fmtDateTime(lastSyncTime);
+            setSyncStatus('success', fmtSyncStatus(lastSyncTime));
+            if (chip) chip.title = fmtSyncTooltip(lastSyncTime) + ' — Source: goldr.org';
         } else {
             setSyncStatus('error', 'No price data');
             if (chip) chip.title = 'Source: goldr.org — click the reload icon to sync';
@@ -529,23 +530,27 @@
         const gainCls  = totalGain >= 0 ? 'gain-positive' : 'gain-negative';
         const gainSign = totalGain >= 0 ? '+' : '-';
         const gainArrow = totalGain >= 0 ? '▲' : '▼';
+        const totalGainPct = hasPurchase && totalPurchasePrice !== 0 ? Math.abs(totalGain / totalPurchasePrice) * 100 : 0;
 
         const summaryValues = {
-            currentValue: hasCurrentValue ? `৳${fmt(totalCurrentValue)}` : '<span class="text-muted">—</span>',
-            purchasePrice: hasPurchase ? `৳${fmt(totalPurchasePrice)}` : '<span class="text-muted">—</span>',
+            currentValue: hasCurrentValue ? `৳${fmtMoney(totalCurrentValue)}` : '<span class="text-muted">—</span>',
+            purchasePrice: hasPurchase ? `৳${fmtMoney(totalPurchasePrice)}` : '<span class="text-muted">—</span>',
             gain: hasPurchase && totalGain !== 0
-                ? `<span class="asset-gain ${gainCls}"><span aria-hidden="true">${gainArrow}</span> ${gainSign}৳${fmt(Math.abs(totalGain))}</span>`
+                ? `<span class="asset-gain ${gainCls}"><span aria-hidden="true">${gainArrow}</span> ${gainSign}৳${fmtMoney(Math.abs(totalGain))} · ${totalGainPct.toFixed(1)}%</span>`
                 : '<span class="text-muted">—</span>',
-            sellPrice: hasCurrentValue ? `৳${fmt(totalSellPrice)}` : '<span class="text-muted">—</span>',
+            sellPrice: hasCurrentValue ? `৳${fmtMoney(totalSellPrice)}` : '<span class="text-muted">—</span>',
             actions: ''
         };
         const totalColumnIndex = INVENTORY_COLUMNS.findIndex(column => column.id === 'currentValue');
-        const labelSpan = totalColumnIndex;
         const valueCells = INVENTORY_COLUMNS.slice(totalColumnIndex).map(column =>
             `<td data-column="${column.id}" data-align="${column.align}">${summaryValues[column.id] || ''}</td>`
         ).join('');
+        // The label spans drag..weight but is tagged data-column="asset" (not colspan'd starting at
+        // drag) so it inherits the Asset column's own left padding and its text lines up with the
+        // Asset column's content, not the narrower drag-handle column's padding.
         tfoot.innerHTML = `<tr>
-            <td colspan="${labelSpan}" data-align="left" style="color:var(--text-muted);font-size:0.78rem;">Totals (${assets.length} asset${assets.length !== 1 ? 's' : ''})</td>
+            <td data-column="drag"></td>
+            <td colspan="${totalColumnIndex - 1}" data-column="asset" data-align="left" style="color:var(--text-muted);font-size:0.78rem;">Totals (${assets.length} asset${assets.length !== 1 ? 's' : ''})</td>
             ${valueCells}
         </tr>`;
     }
@@ -1121,6 +1126,16 @@
 
     // ── FORMATTING HELPERS ──────────────────────────────────────────────────────
 
+    // Single source of truth for how many decimal places the Gold Inventory table (rows + totals)
+    // shows for money values. Change this one constant (e.g. to 2) to switch precision everywhere;
+    // values are always computed unrounded and only rounded here for display.
+    const INVENTORY_DECIMALS = 0;
+
+    function fmtMoney(v) {
+        if (v == null || isNaN(v)) return '—';
+        return parseFloat(v).toLocaleString('en-BD', { minimumFractionDigits: INVENTORY_DECIMALS, maximumFractionDigits: INVENTORY_DECIMALS });
+    }
+
     function fmt(v) {
         if (v == null || isNaN(v)) return '—';
         return parseFloat(v).toLocaleString('en-BD', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
@@ -1131,24 +1146,22 @@
         return '৳' + parseFloat(v).toLocaleString('en-BD', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
     }
 
+    // Bangladesh (Asia/Dhaka) date/time formatting lives in the shared datetime.js helper so every
+    // page renders the same, correct local time regardless of the viewer's device timezone.
     function fmtDate(str) {
-        if (!str) return '—';
-        try { return new Date(str).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); }
-        catch { return str; }
+        return window.Datetime ? window.Datetime.formatDate(str) : (str || '—');
     }
 
     function fmtDateTime(str) {
-        if (!str) return '—';
-        try {
-            const d = new Date(str);
-            const day = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-            let h = d.getHours();
-            const m = d.getMinutes().toString().padStart(2, '0');
-            const ampm = h >= 12 ? 'pm' : 'am';
-            h = h % 12; if (h === 0) h = 12;
-            return `${day}, ${h}:${m} ${ampm}`;
-        }
-        catch { return str; }
+        return window.Datetime ? window.Datetime.formatDateTime(str) : (str || '—');
+    }
+
+    function fmtSyncStatus(str) {
+        return window.Datetime ? 'Synced ' + window.Datetime.formatRelative(str) : 'Synced ' + str;
+    }
+
+    function fmtSyncTooltip(str) {
+        return window.Datetime ? window.Datetime.formatFullTooltip(str) : str;
     }
 
     function purityBadge(purity) {

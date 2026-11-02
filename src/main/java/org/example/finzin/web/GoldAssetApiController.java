@@ -49,6 +49,16 @@ public class GoldAssetApiController {
         return (Long) id;
     }
 
+    /**
+     * Server timestamps are stored as naive {@link java.time.LocalDateTime} values measured on the
+     * server's clock (UTC in production). Serializing them with a trailing "Z" marks the instant
+     * as UTC so the client parses it correctly instead of mistaking it for local wall-clock time
+     * (the root cause of the sync-time display bug — see static/js/datetime.js).
+     */
+    private static String toUtcIso(java.time.LocalDateTime dt) {
+        return dt == null ? null : dt.toString() + "Z";
+    }
+
     // ── ASSETS ────────────────────────────────────────────────────────────────
 
     @GetMapping("/assets")
@@ -134,7 +144,7 @@ public class GoldAssetApiController {
 
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("mode", mode);
-        response.put("lastSyncTime", lastSync.map(Object::toString).orElse(null));
+        response.put("lastSyncTime", lastSync.map(GoldAssetApiController::toUtcIso).orElse(null));
         response.put("lastSyncError", syncService.getLastSyncError());
         response.put("syncInProgress", syncService.isSyncInProgress());
         response.put("sourceUrl", "https://www.goldr.org/gold-calculator/");
@@ -145,7 +155,7 @@ public class GoldAssetApiController {
             m.put("unit", p.getUnit());
             m.put("marketPrice", p.getMarketPrice());
             m.put("oldSellingPrice", p.getOldSellingPrice());
-            m.put("retrievedAt", p.getRetrievedAt().toString());
+            m.put("retrievedAt", toUtcIso(p.getRetrievedAt()));
             return m;
         }).collect(Collectors.toList());
         response.put("prices", priceList);
@@ -190,7 +200,7 @@ public class GoldAssetApiController {
         response.put("totalWeightGrams", totalWeightGrams);
         response.put("totalWeightVori", GoldWeightConverter.fromGrams(totalWeightGrams, "VORI"));
         response.put("priceMode", assetService.getUserPriceMode(userId));
-        response.put("lastSyncTime", syncService.getLastSuccessfulSyncTime().map(Object::toString).orElse(null));
+        response.put("lastSyncTime", syncService.getLastSuccessfulSyncTime().map(GoldAssetApiController::toUtcIso).orElse(null));
 
         String mode = assetService.getUserPriceMode(userId);
         Map<String, Double> pricesPerGram = new LinkedHashMap<>();

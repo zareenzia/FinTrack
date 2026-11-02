@@ -262,7 +262,7 @@
         }
 
         container.innerHTML = notes.map(function (note) {
-            const dateStr = new Date(note.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+            const dateStr = window.Datetime ? window.Datetime.formatDate(note.updated_at) : new Date(note.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
             const tagsHtml = note.tags ? note.tags.split(',').filter(Boolean).map(function (t) {
                 return `<span class="note-tag-chip">${escapeHtml(t.trim())}</span>`;
             }).join('') : '';

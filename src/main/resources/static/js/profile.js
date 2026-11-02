@@ -104,7 +104,7 @@ function populateModal(data) {
 
     if (data.createdAt) {
         const d = document.getElementById('profileMemberSince');
-        if (d) d.textContent = new Date(data.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        if (d) d.textContent = window.Datetime ? window.Datetime.formatDate(data.createdAt) : new Date(data.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
     }
 
     refreshPhotoButtons(!!picUrl);

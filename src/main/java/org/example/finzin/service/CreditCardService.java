@@ -134,7 +134,7 @@ public class CreditCardService {
 
     private Integer computeDaysUntilDue(Integer dueDay) {
         if (dueDay == null) return null;
-        LocalDate today = LocalDate.now();
+        LocalDate today = org.example.finzin.util.AppClock.today();
         LocalDate dueThisMonth = today.withDayOfMonth(Math.min(dueDay, today.lengthOfMonth()));
         LocalDate due = dueThisMonth.isBefore(today) ? dueThisMonth.plusMonths(1) : dueThisMonth;
         due = due.withDayOfMonth(Math.min(dueDay, due.lengthOfMonth()));

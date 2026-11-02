@@ -83,7 +83,7 @@ public class BudgetPlanService {
     private static final Map<String, Integer> PERIOD_TYPE_SPECIFICITY = Map.of("MONTH", 0, "QUARTER", 1, "YEAR", 2);
 
     public BudgetPlanEntity getCurrentPlan(Long userId) {
-        return getPlanForDate(userId, LocalDate.now());
+        return getPlanForDate(userId, org.example.finzin.util.AppClock.today());
     }
 
     /**
@@ -320,7 +320,7 @@ public class BudgetPlanService {
     }
 
     public List<Map<String, Object>> computeCategoryStatuses(BudgetPlanEntity plan) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = org.example.finzin.util.AppClock.today();
         LocalDate periodStart = periodStart(plan);
         LocalDate periodEnd = periodEnd(plan);
         boolean periodEnded = periodEnd.isBefore(today);

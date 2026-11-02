@@ -298,9 +298,9 @@ public class HeuristicIntentParser implements IntentParser {
     /** Deliberately limited to today/tomorrow/yesterday — no full relative-date NLP in the fallback tier. */
     private LocalDate extractRelativeDate(String text) {
         String lower = text.toLowerCase();
-        if (lower.contains("tomorrow")) return LocalDate.now().plusDays(1);
-        if (lower.contains("yesterday")) return LocalDate.now().minusDays(1);
-        if (lower.contains("today")) return LocalDate.now();
+        if (lower.contains("tomorrow")) return org.example.finzin.util.AppClock.today().plusDays(1);
+        if (lower.contains("yesterday")) return org.example.finzin.util.AppClock.today().minusDays(1);
+        if (lower.contains("today")) return org.example.finzin.util.AppClock.today();
         return null;
     }
 

@@ -67,7 +67,7 @@ public class BudgetPlanApiController {
     @GetMapping("/current")
     public ResponseEntity<?> current(HttpServletRequest request, @RequestParam(required = false) String month) {
         Long userId = getUserId(request);
-        LocalDate date = LocalDate.now();
+        LocalDate date = org.example.finzin.util.AppClock.today();
         if (month != null && !month.isBlank()) {
             try {
                 date = java.time.YearMonth.parse(month).atDay(1);

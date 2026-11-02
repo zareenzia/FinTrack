@@ -68,7 +68,7 @@
     }
     function fmtDateTime(iso) {
         if (!iso) return '';
-        try { return new Date(iso).toLocaleString(); } catch (e) { return iso; }
+        try { return window.Datetime ? window.Datetime.formatDateTime(iso) : new Date(iso).toLocaleString(); } catch (e) { return iso; }
     }
     function affordabilityBadgeHtml(item) {
         var aff = item.affordability;
@@ -116,7 +116,7 @@
         var should = active.filter(function (i) { return i.needLevel === 'SHOULD_HAVE'; }).length;
         var nice = active.filter(function (i) { return i.needLevel === 'NICE_TO_HAVE'; }).length;
         var ready = active.filter(function (i) { return i.status === 'READY'; }).length;
-        var currentMonth = new Date().toISOString().slice(0, 7);
+        var currentMonth = window.Datetime ? window.Datetime.monthKeyDhaka() : new Date().toISOString().slice(0, 7);
         var planned = active.filter(function (i) { return i.targetMonth === currentMonth; })
             .reduce(function (s, i) { return s + (i.estimatedPrice || 0); }, 0);
         setText('wpTotalValue', fmtCurrency(totalValue));
@@ -264,7 +264,7 @@
 
     function buildTimelineMonths(list) {
         var months = [];
-        var now = new Date();
+        var now = window.Datetime ? window.Datetime.nowInDhaka() : new Date();
         for (var i = 0; i < 12; i++) {
             var d = new Date(now.getFullYear(), now.getMonth() + i, 1);
             months.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'));

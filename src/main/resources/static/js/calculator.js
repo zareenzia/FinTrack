@@ -452,7 +452,10 @@
     }
 
     function formatTime(iso) {
-        try { return new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }); }
+        try {
+            if (window.Datetime && typeof window.Datetime.formatTime === 'function') return window.Datetime.formatTime(iso);
+            return new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        }
         catch (_) { return ''; }
     }
 
