@@ -88,7 +88,8 @@
             flex-shrink: 0;
         }
         .sync-dot.success { background: var(--positive); }
-        .sync-dot.error   { background: var(--warning); }
+        .sync-dot.stale   { background: var(--warning); }
+        .sync-dot.error   { background: var(--negative); }
         .sync-dot.syncing { background: var(--warning); animation: pulse 1s infinite; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
@@ -131,7 +132,7 @@
         .asset-summary-card .sc-icon-circle { flex: 0 0 40px; }
         .asset-summary-card-content { min-width: 0; }
         .asset-summary-label {
-            margin-bottom: 2px;
+            margin-bottom: 8px;
             color: var(--text-muted);
             font-size: 12px;
             line-height: 1.2;
@@ -348,12 +349,15 @@
         #inventoryAssetTable thead th[data-column="type"],
         #inventoryAssetTable thead th[data-column="purity"],
         #inventoryAssetTable thead th[data-column="weight"] { text-align: left; }
+        #inventoryAssetTable th[data-column="asset"],
+        #inventoryAssetTable td[data-column="asset"] { min-width: 240px; }
         #inventoryAssetTable tbody tr { background: transparent; transition: background-color 150ms ease; }
         #inventoryAssetTable tbody tr:nth-child(even) { background: transparent; }
         #inventoryAssetTable tbody tr:hover,
         #inventoryAssetTable tbody tr:focus-within { background: color-mix(in srgb, var(--accent-soft) 40%, transparent); }
         #inventoryAssetTable tbody td {
-            height: 64px;
+            min-height: 64px;
+            height: auto;
             padding: 8px 10px;
             border-bottom: 1px solid var(--border);
             background: transparent;
@@ -363,18 +367,33 @@
         #inventoryAssetTable td[data-column="currentValue"],
         #inventoryAssetTable td[data-column="purchasePrice"],
         #inventoryAssetTable td[data-column="sellPrice"] {
+            padding: 8px 16px;
             white-space: nowrap;
             font-size: 14px;
             font-variant-numeric: tabular-nums;
         }
+        #inventoryAssetTable th[data-column="currentValue"],
+        #inventoryAssetTable th[data-column="purchasePrice"],
+        #inventoryAssetTable th[data-column="sellPrice"] { padding-left: 16px; padding-right: 16px; }
         #inventoryAssetTable td[data-column="currentValue"] { color: var(--text); font-weight: 600; }
         #inventoryAssetTable td[data-column="purchasePrice"],
         #inventoryAssetTable td[data-column="sellPrice"] { color: var(--text); font-weight: 400; }
         #inventoryAssetTable th[data-column="gain"], #inventoryAssetTable td[data-column="gain"] { white-space: nowrap; }
+        /* Actions is its own table-cell (not flexed) with a right-aligned 16px-padded inner flex
+           row; this keeps the cell's own box within the 100px column so it never overlaps the
+           Sell Price column to its left (previously an oversized padding-right pushed the buttons
+           out of the cell's box and over the adjacent column). */
         #inventoryAssetTable td[data-column="actions"],
         #inventoryAssetTable th[data-column="actions"],
-        #inventoryAssetTable tfoot td[data-column="actions"] { padding-right: 88px; }
-        #inventoryAssetTable td[data-column="actions"] .d-flex { justify-content: flex-end; }
+        #inventoryAssetTable tfoot td[data-column="actions"] { padding: 8px 16px; text-align: right; }
+        #inventoryAssetTable th[data-column="actions"] { padding-left: 16px; }
+        #inventoryAssetTable td[data-column="actions"] { display: table-cell; }
+        .actions-cell-inner {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+        }
         .asset-cell-copy { min-width: 0; }
         .asset-name, .asset-note {
             display: block;
@@ -389,16 +408,11 @@
             background: var(--accent-soft);
             color: var(--accent);
         }
-        .asset-type-pill {
-            display: inline-flex;
-            max-width: 100%;
-            align-items: center;
-            padding: 4px 8px;
+        .asset-type-text {
+            display: block;
             overflow: hidden;
-            border-radius: 999px;
-            background: var(--surface-2);
             color: var(--text-muted);
-            font-size: 12px;
+            font-size: 13px;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
@@ -425,8 +439,8 @@
             font-weight: 600;
             white-space: nowrap;
         }
-        .asset-gain.gain-positive { background: color-mix(in srgb, var(--positive) 14%, transparent); color: var(--positive); }
-        .asset-gain.gain-negative { background: color-mix(in srgb, var(--negative) 14%, transparent); color: var(--negative); }
+        .asset-gain.gain-positive { background: color-mix(in srgb, var(--positive) 18%, transparent); color: color-mix(in srgb, var(--positive) 70%, white); }
+        .asset-gain.gain-negative { background: color-mix(in srgb, var(--negative) 18%, transparent); color: color-mix(in srgb, var(--negative) 70%, white); }
         .asset-action-btn {
             display: inline-flex;
             width: 32px;
@@ -448,8 +462,6 @@
         .asset-action-delete:hover, .asset-action-delete:focus-visible { background: color-mix(in srgb, var(--negative) 14%, transparent); color: var(--negative); }
         .asset-action-edit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         .asset-action-delete:focus-visible { outline: 2px solid var(--negative); outline-offset: 2px; }
-        .drag-handle-btn { color: var(--text-muted); }
-        #inventoryAssetTable tbody tr:hover .drag-handle-btn { color: var(--text); }
         #inventoryAssetTable tfoot td {
             padding: 11px 10px;
             border-top: 1px solid var(--border);
@@ -488,10 +500,13 @@
             color: var(--accent);
         }
         .asset-inventory-pagination .page-item.disabled .page-link { opacity: 0.4; pointer-events: none; }
-        .inventory-table-wrap { overflow: visible; }
+        /* The Asset column is the only non-fixed-width column (flex, min 240px); the other nine
+           columns' specified widths already sum to 1140px, so the table needs a floor wide enough
+           to guarantee Asset's minimum without collapsing to 0 on narrower viewports (horizontal
+           scroll kicks in below that floor, same as the existing < 1100px breakpoint below). */
+        .inventory-table-wrap { overflow-x: auto; }
+        #inventoryAssetTable { min-width: 1380px; }
         @media (max-width: 1099.98px) {
-            .inventory-table-wrap { overflow-x: auto; }
-            #inventoryAssetTable { min-width: 1260px; }
             #inventoryAssetTable th[data-column="drag"],
             #inventoryAssetTable td[data-column="drag"] {
                 position: sticky;
@@ -563,9 +578,13 @@
             cursor: grab;
             border-radius: 6px;
             font-size: 0.85rem;
+            opacity: 0.7;
             touch-action: none;
         }
-        .drag-handle-btn:hover { background: var(--accent-soft); color: var(--accent); }
+        .drag-handle-btn:hover,
+        .drag-handle-btn:focus-visible { background: var(--accent-soft); color: var(--accent); opacity: 1; }
+        #inventoryAssetTable tbody tr:hover .drag-handle-btn,
+        #inventoryAssetTable tbody tr:focus-within .drag-handle-btn { color: var(--text); opacity: 1; }
         .drag-handle-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
         .drag-handle-btn:active { cursor: grabbing; }
         .drag-handle-btn.disabled {

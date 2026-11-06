@@ -42,7 +42,7 @@
                 </div>
             </div>`
         },
-        { id: 'type', label: 'Type', width: '110px', align: 'left', render: asset => `<span class="asset-type-pill">${escHtml(fmtGoldType(asset.goldType))}</span>` },
+        { id: 'type', label: 'Type', width: '110px', align: 'left', render: asset => `<span class="asset-type-text">${escHtml(fmtGoldType(asset.goldType))}</span>` },
         { id: 'purity', label: 'Purity', width: '90px', align: 'left', render: asset => purityBadge(asset.purity) },
         {
             id: 'weight', label: 'Weight', width: '170px', align: 'left',
@@ -69,7 +69,7 @@
             }
         },
         {
-            id: 'sellPrice', label: 'Sell Price', width: '140px', align: 'right',
+            id: 'sellPrice', label: 'Sell Price', width: '150px', align: 'right',
             render: asset => {
                 const sellPrice = asset.currentValue != null ? asset.currentValue * (1 - sellDiscountPct / 100) : null;
                 return sellPrice != null ? `৳${fmtMoney(sellPrice)}` : '<span class="text-muted">—</span>';
@@ -77,7 +77,7 @@
         },
         {
             id: 'actions', label: 'Actions', width: '100px', align: 'right',
-            render: asset => `<div class="d-flex gap-1">
+            render: asset => `<div class="actions-cell-inner">
                 <button class="asset-action-btn asset-action-edit" type="button" title="Edit asset" aria-label="Edit asset" onclick="openEditModal(${asset.id})">
                     <i class="fas fa-edit"></i>
                 </button>
@@ -97,7 +97,30 @@
         loadShowMoreUnitsState();
         loadPriceDetailsState();
         loadAll();
+        setupDragStateCleanup();
     });
+
+    // Defensive safety net: SortableJS (forceFallback:false) uses the native HTML5 drag API, whose
+    // 'dragend'/'drop' events fire on every drag attempt (including cancelled drags). If a drag is
+    // interrupted before Sortable's own onEnd cleanup runs, this strips any leftover ghost/chosen/
+    // drag classes or inline styles so no single row is ever left squashed, faded or shadowed.
+    function setupDragStateCleanup() {
+        const tbody = document.getElementById('assetTableBody');
+        if (!tbody) return;
+        const clear = () => clearRowDragState(tbody);
+        tbody.addEventListener('dragend', clear);
+        tbody.addEventListener('drop', clear);
+    }
+
+    function clearRowDragState(tbody) {
+        tbody.querySelectorAll('tr').forEach(tr => {
+            tr.classList.remove('gp-row-ghost', 'gp-row-chosen', 'gp-row-drag', 'dragging', 'drag-over', 'placeholder');
+            tr.style.removeProperty('transform');
+            tr.style.removeProperty('opacity');
+            tr.style.removeProperty('height');
+            tr.style.removeProperty('max-height');
+        });
+    }
 
     function resetInventoryFilters() {
         const search = document.getElementById('searchInput');
@@ -279,6 +302,7 @@
         const { lastSyncTime, lastSyncError, syncInProgress } = data;
 
         const chip = document.getElementById('syncStatusChip');
+        const AppTimeLib = window.AppTime || window.Datetime;
 
         if (syncInProgress) {
             setSyncStatus('syncing', 'Syncing…');
@@ -297,12 +321,16 @@
             }
         } else if (lastSyncError) {
             setSyncStatus('error', lastSyncTime ? fmtSyncStatus(lastSyncTime) : 'Sync failed');
-            if (chip) chip.title = 'Source: goldr.org' +
-                (lastSyncTime ? ' — Last sync: ' + fmtSyncTooltip(lastSyncTime) : '') +
+            if (chip) chip.title = (lastSyncTime ? fmtSyncTooltip(lastSyncTime) + ' · goldr.org' : 'Source: goldr.org') +
                 ' — ' + lastSyncError;
         } else if (lastSyncTime) {
-            setSyncStatus('success', fmtSyncStatus(lastSyncTime));
-            if (chip) chip.title = fmtSyncTooltip(lastSyncTime) + ' — Source: goldr.org';
+            // Dot color reflects freshness, not just success: still green under 24h old, amber
+            // ("stale") once older than that, even though the sync itself didn't error.
+            const parsed = AppTimeLib ? AppTimeLib.parseTimestamp(lastSyncTime) : null;
+            const ageMs = parsed ? Date.now() - parsed.getTime() : 0;
+            const stale = ageMs >= 24 * 60 * 60 * 1000;
+            setSyncStatus(stale ? 'stale' : 'success', fmtSyncStatus(lastSyncTime));
+            if (chip) chip.title = fmtSyncTooltip(lastSyncTime) + ' · goldr.org';
         } else {
             setSyncStatus('error', 'No price data');
             if (chip) chip.title = 'Source: goldr.org — click the reload icon to sync';
@@ -487,7 +515,7 @@
             </div></td></tr>`;
         } else {
             tbody.innerHTML = page.map(asset => `<tr data-id="${asset.id}">${INVENTORY_COLUMNS.map(column =>
-                `<td data-column="${column.id}" data-align="${column.align}">${column.render(asset)}</td>`
+                `<td data-column="${column.id}" data-align="${column.align}"${column.id === 'actions' ? ' class="actions-cell"' : ''}>${column.render(asset)}</td>`
             ).join('')}</tr>`).join('');
         }
 
@@ -1149,19 +1177,23 @@
     // Bangladesh (Asia/Dhaka) date/time formatting lives in the shared datetime.js helper so every
     // page renders the same, correct local time regardless of the viewer's device timezone.
     function fmtDate(str) {
-        return window.Datetime ? window.Datetime.formatDate(str) : (str || '—');
+        const lib = window.AppTime || window.Datetime;
+        return lib ? lib.formatDate(str) : (str || '—');
     }
 
     function fmtDateTime(str) {
-        return window.Datetime ? window.Datetime.formatDateTime(str) : (str || '—');
+        const lib = window.AppTime || window.Datetime;
+        return lib ? lib.formatDateTime(str) : (str || '—');
     }
 
     function fmtSyncStatus(str) {
-        return window.Datetime ? 'Synced ' + window.Datetime.formatRelative(str) : 'Synced ' + str;
+        const lib = window.AppTime || window.Datetime;
+        return lib ? 'Synced ' + lib.formatRelative(str) : 'Synced ' + str;
     }
 
     function fmtSyncTooltip(str) {
-        return window.Datetime ? window.Datetime.formatFullTooltip(str) : str;
+        const lib = window.AppTime || window.Datetime;
+        return lib ? lib.formatFullTooltip(str) : str;
     }
 
     function purityBadge(purity) {
